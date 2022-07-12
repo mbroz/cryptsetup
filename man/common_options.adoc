@@ -261,12 +261,15 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONFIG,ACTION_TOKEN,ACTION_REENCRYPT[]
 *--key-slot, -S <0-N>*::
+ifndef::ACTION_OPEN[]
 For LUKS operations that add key material, this options allows you to
 specify which key slot is selected for the new key.
-+
-In addition, for _open_, this option selects a specific key-slot to
+endif::[]
+ifdef::ACTION_OPEN[]
+This option selects a specific key-slot to
 compare the passphrase against. If the given passphrase would only
 match a different key-slot, the operation fails.
+endif::[]
 +
 Maximum number of key slots depends on LUKS version. LUKS1 can have up
 to 8 key slots. LUKS2 can have up to 32 key slots based on key slot area
@@ -411,9 +414,7 @@ ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVE
 *--iter-time, -i <number of milliseconds>*::
 ifndef::ACTION_REENCRYPT[]
 The number of milliseconds to spend with PBKDF passphrase processing.
-This option is only relevant for LUKS operations that set or change
-passphrases, such as _luksFormat_ or _luksAddKey_. Specifying 0 as
-parameter selects the compiled-in default.
+Specifying 0 as parameter selects the compiled-in default.
 endif::[]
 ifdef::ACTION_REENCRYPT[]
 The number of milliseconds to spend with PBKDF passphrase processing for the
@@ -484,9 +485,7 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_REENCRYPT[]
 *--tries, -T*::
-How often the input of the passphrase shall be retried. This option is
-relevant every time a passphrase is asked, for example for _open_,
-_luksFormat_, _luksAddKey_ or _reencrypt_. The default is 3 tries.
+How often the input of the passphrase shall be retried. The default is 3 tries.
 endif::[]
 
 ifdef::ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
@@ -588,20 +587,19 @@ header is stored. This option allows one to store ciphertext and LUKS
 header on different devices.
 +
 ifndef::ACTION_REENCRYPT[]
-This option is only relevant for LUKS devices and can be used with the
-_luksFormat_, _open_, _luksSuspend_, _luksResume_, _status_ and _resize_
-commands.
-+
+ifdef::ACTION_LUKSFORMAT[]
 For _luksFormat_ with a file name as the argument to --header, the file
 will be automatically created if it does not exist. See the cryptsetup
 FAQ for header size calculation.
 +
-For other commands that change the LUKS header (e.g. _luksAddKey_),
+The --align-payload option is taken as absolute sector alignment on ciphertext
+device and can be zero.
+endif::[]
+ifndef::ACTION_LUKSFORMAT[]
+For commands that change the LUKS header (e.g. _luksAddKey_),
 specify the device or file with the LUKS header directly as the LUKS
 device.
-+
-If used with _luksFormat_, the --align-payload option is taken as
-absolute sector alignment on ciphertext device and can be zero.
+endif::[]
 endif::[]
 ifdef::ACTION_REENCRYPT[]
 If used with --encrypt/--new option, the header file will created (or overwritten).
