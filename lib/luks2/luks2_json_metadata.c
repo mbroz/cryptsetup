@@ -1500,7 +1500,7 @@ int LUKS2_config_set_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
 /* LUKS2 library requirements */
 struct requirement_flag {
 	uint32_t flag;
-	uint32_t version;
+	uint8_t version;
 	const char *description;
 };
 
@@ -1543,7 +1543,7 @@ static json_object *mandatory_requirements_jobj(struct luks2_hdr *hdr)
 	return jobj_mandatory;
 }
 
-int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint32_t *version)
+int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint8_t *version)
 {
 	json_object *jobj_mandatory, *jobj;
 	int i, len;
@@ -1747,7 +1747,7 @@ static json_object *LUKS2_get_mandatory_requirements_filtered_jobj(struct luks2_
 int LUKS2_config_set_requirement_version(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	uint32_t req_id,
-	uint32_t req_version,
+	uint8_t req_version,
 	bool commit)
 {
 	json_object *jobj_config, *jobj_requirements, *jobj_mandatory;

@@ -1387,7 +1387,7 @@ static int modify_offset(uint64_t *offset, uint64_t data_shift, crypt_reencrypt_
 	return r;
 }
 
-static int reencrypt_update_flag(struct crypt_device *cd, uint32_t version,
+static int reencrypt_update_flag(struct crypt_device *cd, uint8_t version,
 	bool enable, bool commit)
 {
 	uint32_t reqs;
@@ -3606,7 +3606,7 @@ static int reencrypt_repair_by_passphrase(
 	struct crypt_lock_handle *reencrypt_lock;
 	struct luks2_reencrypt *rh;
 	crypt_reencrypt_info ri;
-	uint32_t requirement_version;
+	uint8_t requirement_version;
 	const char *resilience;
 	struct volume_key *vks = NULL;
 
@@ -4317,7 +4317,7 @@ crypt_reencrypt_info LUKS2_reencrypt_get_params(struct luks2_hdr *hdr,
 {
 	crypt_reencrypt_info ri;
 	int digest;
-	uint32_t version;
+	uint8_t version;
 
 	if (params)
 		memset(params, 0, sizeof(*params));
