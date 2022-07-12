@@ -34,7 +34,7 @@ Print more information on command execution.
 endif::[]
 
 ifdef::ALL_OPTIONS,ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_ISLUKS,ACTION_LUKSDUMP,ACTION_CONVERT,ACTION_REPAIR,ACTION_REENCRYPT[]
-*--type* <device-type>*::
+*--type <device-type>*::
 ifndef::ACTION_REENCRYPT[]
 Specifies required device type, for more info read _BASIC ACTIONS_ section in *cryptsetup*(8).
 endif::[]
@@ -366,7 +366,7 @@ ifdef::ALL_OPTIONS,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTI
 Set Password-Based Key Derivation Function (PBKDF) algorithm for LUKS
 keyslot. The PBKDF can be: _pbkdf2_ (for PBKDF2 according to RFC2898),
 _argon2i_ for Argon2i or _argon2id_ for Argon2id (see
-https://www.cryptolux.org/index.php/Argon2 for more info).
+https://www.cryptolux.org/index.php/Argon2[Argon2] for more info).
 +
 For LUKS1, only PBKDF2 is accepted (no need to use this option). The
 default PBKDF for LUKS2 is set during compilation time and is available
@@ -512,7 +512,7 @@ rounding. For fixed data device offset use _--offset_ option instead.
 endif::[]
 
 ifdef::ALL_OPTIONS,ACTION_LUKSFORMAT,ACTION_LUKSUUID,ACTION_REENCRYPT[]
-**--uuid=**__UUID__::
+*--uuid <UUID>*::
 ifndef::ACTION_REENCRYPT[]
 Use the provided _UUID_ for the _luksFormat_ command instead of
 generating a new one. Changes the existing _UUID_ when used with the

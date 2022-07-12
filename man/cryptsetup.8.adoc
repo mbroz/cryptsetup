@@ -27,93 +27,45 @@ For more information about specific cryptsetup action see
 *cryptsetup-<action>*(8), where *<action>* is the name of the
 cryptsetup action.
 
-== PLAIN DM-CRYPT OR LUKS?
-
-Unless you understand the cryptographic background well, use LUKS. With
-plain dm-crypt there are a number of possible user errors that massively
-decrease security. While LUKS cannot fix them all, it can lessen the
-impact for many of them.
-
-== WARNINGS
-
-A lot of good information on the risks of using encrypted storage, on
-handling problems and on security aspects can be found in the
-_Cryptsetup FAQ_. Read it. Nonetheless, some risks deserve to be
-mentioned here.
-
-*Backup:* Storage media die. Encryption has no influence on that. Backup
-is mandatory for encrypted data as well, if the data has any worth. See
-the Cryptsetup FAQ for advice on how to do a backup of an encrypted
-volume.
-
-*Character encoding:* If you enter a passphrase with special symbols,
-the passphrase can change depending on character encoding. Keyboard
-settings can also change, which can make blind input hard or impossible.
-For example, switching from some ASCII 8-bit variant to UTF-8 can lead
-to a different binary encoding and hence different passphrase seen by
-cryptsetup, even if what you see on the terminal is exactly the same. It
-is therefore highly recommended to select passphrase characters only
-from 7-bit ASCII, as the encoding for 7-bit ASCII stays the same for all
-ASCII variants and UTF-8.
-
-*LUKS header:* If the header of a LUKS volume gets damaged, all data is
-permanently lost unless you have a header-backup. If a key-slot is
-damaged, it can only be restored from a header-backup or if another
-active key-slot with known passphrase is undamaged. Damaging the LUKS
-header is something people manage to do with surprising frequency. This
-risk is the result of a trade-off between security and safety, as LUKS
-is designed for fast and secure wiping by just overwriting header and
-key-slot area.
-
-*Previously used partitions:* If a partition was previously used, it is
-a very good idea to wipe filesystem signatures, data, etc. before
-creating a LUKS or plain dm-crypt container on it. For a quick removal
-of filesystem signatures, use "wipefs". Take care though that this may
-not remove everything. In particular, MD RAID signatures at the end of a
-device may survive. It also does not remove data. For a full wipe,
-overwrite the whole partition before container creation. If you do not
-know how to do that, the cryptsetup FAQ describes several options.
-
 == BASIC ACTIONS
 
 The following are valid actions for all supported device types.
 
-_open_ <device> <name> --type <device_type>
-____
-Opens (creates a mapping with) <name> backed by device <device>.
+=== OPEN
+*open <device> <name> --type <device_type>*
+
+Opens (creates a mapping with) <name> backed by device <device>. +
 See *cryptsetup-open*(8).
-____
 
-_close_ <name>
-____
-Removes the existing mapping <name> and wipes the key from kernel
-memory.
+=== CLOSE
+*close <name>*
+
+Removes the existing mapping <name> and wipes the key from kernel memory. +
 See *cryptsetup-close*(8).
-____
 
-_status_ <name>
-____
-Reports the status for the mapping <name>.
+=== STATUS
+*status <name>*
+
+Reports the status for the mapping <name>. +
 See *cryptsetup-status*(8).
-____
 
-_resize_ <name>
-____
-Resizes an active mapping <name>.
+=== RESIZE
+*resize <name>*
+
+Resizes an active mapping <name>. +
 See *cryptsetup-resize*(8).
-____
 
-_refresh_ <name>
-____
-Refreshes parameters of active mapping <name>.
+=== REFRESH
+*refresh <name>*
+
+Refreshes parameters of active mapping <name>. +
 See *cryptsetup-refresh*(8).
-____
 
-_reencrypt_ <device> or --active-name <name> [<new_name>]
-____
-Run resilient reencryption (LUKS2 device only).
+=== REENCRYPT
+*reencrypt <device> or --active-name <name> [<new_name>]*
+
+Run LUKS device reencryption. +
 See *cryptsetup-reencrypt*(8).
-____
 
 == PLAIN MODE
 
@@ -126,12 +78,12 @@ including filesystem creation. Mapped devices usually reside in
 
 The following are valid plain device type actions:
 
-_open_ --type plain <device> <name> +
-_create_ <name> <device> (*OBSOLETE syntax*)
-____
-Opens (creates a mapping with) <name> backed by device <device>.
+=== OPEN
+*open --type plain <device> <name>* +
+create <name> <device> (*OBSOLETE syntax*)
+
+Opens (creates a mapping with) <name> backed by device <device>. +
 See *cryptsetup-open*(8).
-____
 
 == LUKS EXTENSION
 
@@ -152,8 +104,8 @@ Function (PBKDF).
 
 LUKS2 is a new version of header format that allows additional
 extensions like different PBKDF algorithm or authenticated encryption.
-You can format device with LUKS2 header if you specify _--type luks2_ in
-_luksFormat_ command. For activation, the format is already recognized
+You can format device with LUKS2 header if you specify *--type luks2* in
+*luksFormat* command. For activation, the format is already recognized
 automatically.
 
 Each passphrase, also called a *key* in this document, is associated
@@ -171,135 +123,134 @@ all LUKS commands and always takes precedence over the positional
 
 The following are valid LUKS actions:
 
-_luksFormat_ <device> [<key file>]
-____
-Initializes a LUKS partition and sets the initial passphrase (for
-key-slot 0).
+=== FORMAT
+*luksFormat <device> [<key file>]*
+
+Initializes a LUKS partition and sets the initial passphrase (for key-slot 0). +
 See *cryptsetup-luksFormat*(8).
-____
 
-_open_ --type luks <device> <name> +
-_luksOpen_ <device> <name> (*old syntax*)
-____
+=== OPEN
+*open --type luks <device> <name>* +
+luksOpen <device> <name> (*old syntax*)
+
 Opens the LUKS device <device> and sets up a mapping <name> after
-successful verification of the supplied passphrase.
+successful verification of the supplied passphrase. +
 See *cryptsetup-open*(8).
-____
 
-_luksSuspend_ <name>
-____
+=== SUSPEND
+*luksSuspend <name>*
+
 Suspends an active device (all IO operations will block and accesses to
 the device will wait indefinitely) and wipes the encryption key from
-kernel memory.
+kernel memory. +
 See *cryptsetup-luksSuspend*(8).
-____
 
-_luksResume_ <name>
-____
-Resumes a suspended device and reinstates the encryption key.
+=== RESUME
+*luksResume <name>*
+
+Resumes a suspended device and reinstates the encryption key. +
 See *cryptsetup-luksResume*(8).
-____
 
-_luksAddKey_ <device> [<key file with new key>]
-____
-Adds a new passphrase using an existing passphrase.
+=== ADD KEY
+*luksAddKey <device> [<key file with new key>]*
+
+Adds a new passphrase using an existing passphrase. +
 See *cryptsetup-luksAddKey*(8).
-____
 
-_luksRemoveKey_ <device> [<key file with passphrase to be removed>]
-____
-Removes the supplied passphrase from the LUKS device.
+=== REMOVE KEY
+*luksRemoveKey <device> [<key file with passphrase to be removed>]*
+
+Removes the supplied passphrase from the LUKS device. +
 See *cryptsetup-luksRemoveKey*(8).
-____
 
-_luksChangeKey_ <device> [<new key file>]
-____
-Changes an existing passphrase.
+=== CHANGE KEY
+*luksChangeKey <device> [<new key file>]*
+
+Changes an existing passphrase. +
 See *cryptsetup-luksChangeKey*(8).
-____
 
-_luksConvertKey_ <device>
-____
-Converts an existing LUKS2 keyslot to new PBKDF parameters.
+=== CONVERT KEY
+*luksConvertKey <device>*
+
+Converts an existing LUKS2 keyslot to new PBKDF parameters. +
 See *cryptsetup-luksConvertKey*(8).
-____
 
-_luksKillSlot_ <device> <key slot number>
-____
-Wipe the key-slot number <key slot> from the LUKS device.
+=== KILL SLOT
+*luksKillSlot <device> <key slot number>*
+
+Wipe the key-slot number <key slot> from the LUKS device. +
 See *cryptsetup-luksKillSlot*(8).
-____
 
-_erase_ <device> +
-_luksErase_ <device>
-____
-Erase all keyslots and make the LUKS container permanently inaccessible.
+=== ERASE
+*erase <device>* +
+luksErase <device> (*old syntax*)
+
+Erase all keyslots and make the LUKS container permanently inaccessible. +
 See *cryptsetup-erase*(8).
-____
 
-_luksUUID_ <device>
-____
-Print or set the UUID of a LUKS device.
+=== UUID
+*luksUUID <device>*
+
+Print or set the UUID of a LUKS device. +
 See *cryptsetup-luksUUID*(8).
-____
 
-_isLuks_ <device>
-____
-Returns true, if <device> is a LUKS device, false otherwise.
+=== IS LUKS
+*isLuks <device>*
+
+Returns true, if <device> is a LUKS device, false otherwise. +
 See *cryptsetup-isLuks*(8).
-____
 
-_luksDump_ <device>
-____
-Dump the header information of a LUKS device.
+=== DUMP
+*luksDump <device>*
+
+Dump the header information of a LUKS device. +
 See *cryptsetup-luksDump*(8).
-____
 
-_luksHeaderBackup_ <device> --header-backup-file <file>
-____
-Stores a binary backup of the LUKS header and keyslot area.
+=== HEADER BACKUP
+*luksHeaderBackup <device> --header-backup-file <file>*
+
+Stores a binary backup of the LUKS header and keyslot area. +
 See *cryptsetup-luksHeaderBackup*(8).
-____
 
-_luksHeaderRestore_ <device> --header-backup-file <file>
-____
+=== HEADER RESTORE
+*luksHeaderRestore <device> --header-backup-file <file>*
+
 Restores a binary backup of the LUKS header and keyslot area from the
-specified file.
+specified file. +
 See *cryptsetup-luksHeaderRestore*(8).
-____
 
-_token_ <add|remove|import|export> <device>
-____
-Manipulate token objects used for obtaining passphrases.
+=== TOKEN
+*token <add|remove|import|export> <device>*
+
+Manipulate token objects used for obtaining passphrases. +
 See *cryptsetup-token*(8).
-____
 
-_convert_ <device> --type <format>
-____
-Converts the device between LUKS1 and LUKS2 format (if possible).
+=== CONVERT
+*convert <device> --type <format>*
+
+Converts the device between LUKS1 and LUKS2 format (if possible). +
 See *cryptsetup-convert*(8).
-____
 
-_config_ <device>
-____
-Set permanent configuration options (store to LUKS header).
+=== CONFIG
+*config <device>*
+
+Set permanent configuration options (store to LUKS header). +
 See *cryptsetup-config*(8).
-____
 
 == loop-AES EXTENSION
 
 cryptsetup supports mapping loop-AES encrypted partition using a
 compatibility mode.
 
-_open_ --type loopaes <device> <name> --key-file <keyfile> +
-_loopaesOpen_ <device> <name> --key-file <keyfile> (*old syntax*)
-____
-Opens the loop-AES <device> and sets up a mapping <name>.
-See *cryptsetup-open*(8).
-____
+=== OPEN
+*open --type loopaes <device> <name> --key-file <keyfile>* +
+loopaesOpen <device> <name> --key-file <keyfile> (*old syntax*)
 
-See also section 7 of the FAQ and *http://loop-aes.sourceforge.net* for
-more information regarding loop-AES.
+Opens the loop-AES <device> and sets up a mapping <name>. +
+See *cryptsetup-open*(8).
+
+See also section 7 of the FAQ and http://loop-aes.sourceforge.net[loop-AES]
+for more information regarding loop-AES.
 
 == TCRYPT (TrueCrypt and VeraCrypt compatible) EXTENSION
 
@@ -311,8 +262,8 @@ on-device.
 TCRYPT extension requires kernel userspace crypto API to be available
 (introduced in Linux kernel 2.6.38). If you are configuring kernel
 yourself, enable "User-space interface for symmetric key cipher
-algorithms" in "Cryptographic API" section (CRYPTO_USER_API_SKCIPHER
-.config option).
+algorithms" in "Cryptographic API" section
+(CRYPTO_USER_API_SKCIPHER .config option).
 
 Because TCRYPT header is encrypted, you have to always provide valid
 passphrase and keyfiles.
@@ -333,7 +284,7 @@ be prompted for the PIM.
 
 The PIM value affects the number of iterations applied during key
 derivation. Please refer to
-*https://www.veracrypt.fr/en/Personal%20Iterations%20Multiplier%20%28PIM%29.html*
+https://www.veracrypt.fr/en/Personal%20Iterations%20Multiplier%20%28PIM%29.html[PIM]
 for more detailed information.
 
 If you need to disable VeraCrypt device support, use
@@ -371,19 +322,19 @@ is mounted. The reason is that if there were any protection, it would
 require some metadata describing what to protect in the outer volume and
 the hidden volume would become detectable.
 
-_open_ --type tcrypt <device> <name> +
-_tcryptOpen_ <device> <name> (*old syntax*)
-____
-Opens the TCRYPT (a TrueCrypt-compatible) <device> and sets up a mapping
-<name>.
-See *cryptsetup-open*(8).
-____
+=== OPEN
+*open --type tcrypt <device> <name>* +
+tcryptOpen_ <device> <name> (*old syntax*)
 
-_tcryptDump_ <device>
-____
-Dump the header information of a TCRYPT device.
+Opens the TCRYPT (a TrueCrypt-compatible) <device> and sets up a mapping
+<name>. +
+See *cryptsetup-open*(8).
+
+=== DUMP
+*tcryptDump <device>*
+
+Dump the header information of a TCRYPT device. +
 See *cryptsetup-tcryptDump*(8).
-____
 
 See also https://en.wikipedia.org/wiki/TrueCrypt[*TrueCrypt*] and
 https://en.wikipedia.org/wiki/VeraCrypt[*VeraCrypt*] pages for more information.
@@ -421,38 +372,85 @@ option. The key must be decrypted and without the header (only
 
 Other unlocking methods (TPM, SmartCard) are not supported.
 
-_open_ --type bitlk <device> <name> +
-_bitlkOpen_ <device> <name> (*old syntax*)
-____
-Opens the BITLK (a BitLocker-compatible) <device> and sets up a mapping
-<name>.
-See *cryptsetup-open*(8).
-____
+=== OPEN
+*open --type bitlk <device> <name>* +
+bitlkOpen <device> <name> (*old syntax*)
 
-_bitlkDump_ <device>
-____
-Dump the header information of a BITLK device.
+Opens the BITLK (a BitLocker-compatible) <device> and sets up a mapping
+<name>. +
+See *cryptsetup-open*(8).
+
+=== DUMP
+*bitlkDump <device>*
+
+Dump the header information of a BITLK device. +
 See *cryptsetup-bitlkDump*(8).
-____
 
 Please note that cryptsetup does not use any Windows BitLocker code,
 please report all problems related to this compatibility extension to
 the cryptsetup project.
 
-== MISCELLANEOUS
+== MISCELLANEOUS ACTIONS
 
-_repair_ <device>
-____
+=== REPAIR
+*repair <device>*
+
 Tries to repair the device metadata if possible. Currently supported
-only for LUKS device type.
+only for LUKS device type. +
 See *cryptsetup-repair*(8).
-____
 
-_benchmark_ <options>
-____
-Benchmarks ciphers and KDF (key derivation function).
+=== BENCHMARK
+*benchmark <options>*
+
+Benchmarks ciphers and KDF (key derivation function). +
 See *cryptsetup-benchmark*(8).
-____
+
+== PLAIN DM-CRYPT OR LUKS?
+
+Unless you understand the cryptographic background well, use LUKS. With
+plain dm-crypt there are a number of possible user errors that massively
+decrease security. While LUKS cannot fix them all, it can lessen the
+impact for many of them.
+
+== WARNINGS
+
+A lot of good information on the risks of using encrypted storage, on
+handling problems and on security aspects can be found in the
+Cryptsetup FAQ. Read it. Nonetheless, some risks deserve to be
+mentioned here.
+
+*Backup:* Storage media die. Encryption has no influence on that. Backup
+is mandatory for encrypted data as well, if the data has any worth. See
+the Cryptsetup FAQ for advice on how to do a backup of an encrypted
+volume.
+
+*Character encoding:* If you enter a passphrase with special symbols,
+the passphrase can change depending on character encoding. Keyboard
+settings can also change, which can make blind input hard or impossible.
+For example, switching from some ASCII 8-bit variant to UTF-8 can lead
+to a different binary encoding and hence different passphrase seen by
+cryptsetup, even if what you see on the terminal is exactly the same. It
+is therefore highly recommended to select passphrase characters only
+from 7-bit ASCII, as the encoding for 7-bit ASCII stays the same for all
+ASCII variants and UTF-8.
+
+*LUKS header:* If the header of a LUKS volume gets damaged, all data is
+permanently lost unless you have a header-backup. If a key-slot is
+damaged, it can only be restored from a header-backup or if another
+active key-slot with known passphrase is undamaged. Damaging the LUKS
+header is something people manage to do with surprising frequency. This
+risk is the result of a trade-off between security and safety, as LUKS
+is designed for fast and secure wiping by just overwriting header and
+key-slot area.
+
+*Previously used partitions:* If a partition was previously used, it is
+a very good idea to wipe filesystem signatures, data, etc. before
+creating a LUKS or plain dm-crypt container on it. For a quick removal
+of filesystem signatures, use "wipefs". Take care though that this may
+not remove everything. In particular, MD RAID signatures at the end of a
+device may survive. It also does not remove data. For a full wipe,
+overwrite the whole partition before container creation. If you do not
+know how to do that, the cryptsetup FAQ describes several options.
 
 == EXAMPLE
 
@@ -476,11 +474,11 @@ Example 6: Restore LUKS header from backup file.::
 
 == RETURN CODES
 
-Cryptsetup returns 0 on success and a non-zero value on error.
+Cryptsetup returns *0* on success and a non-zero value on error.
 
-Error codes are: 1 wrong parameters, 2 no permission (bad passphrase), 3
-out of memory, 4 wrong device specified, 5 device already exists or
-device is busy.
+Error codes are: *1* wrong parameters, *2* no permission (bad passphrase),
+*3* out of memory, *4* wrong device specified, *5* device already exists
+or device is busy.
 
 == NOTES ON PASSPHRASE PROCESSING FOR PLAIN MODE
 
@@ -626,9 +624,9 @@ device will be smaller than for length-preserving modes.
 
 The dm-crypt device then resides on top of such a dm-integrity device.
 All activation and deactivation of this device stack is performed by
-cryptsetup, there is no difference in using _luksOpen_ for integrity
+cryptsetup, there is no difference in using *luksOpen* for integrity
 protected devices. If you want to format LUKS2 device with data
-integrity protection, use _--integrity_ option.
+integrity protection, use *--integrity* option.
 
 Since dm-integrity doesn't support discards (TRIM), dm-crypt device on
 top of it inherits this, so integrity protection mode doesn't support
@@ -663,9 +661,9 @@ status command output. Also see losetup(8).
 
 The LUKS2 on-disk metadata is updated in several steps and to achieve
 proper atomic update, there is a locking mechanism. For an image in
-file, code uses _flock(2)_ system call. For a block device, lock is
+file, code uses *flock(2)* system call. For a block device, lock is
 performed over a special file stored in a locking directory (by default
-_/run/cryptsetup_). The locking directory should be created with the
+*/run/cryptsetup*). The locking directory should be created with the
 proper security context by the distribution during the boot-up phase.
 Only LUKS2 uses locks, other formats do not use this mechanism.
 
@@ -677,10 +675,10 @@ https://gitlab.com/cryptsetup/LUKS2-docs[*LUKS2*].
 
 == AUTHORS
 
-cryptsetup originally written by Jana Saout <<jana@saout.de>> +
-The LUKS extensions and original man page were written by Clemens
-Fruhwirth <<clemens@endorphin.org>>. +
-Man page extensions by Milan Broz <<gmazyland@gmail.com>>. +
-Man page rewrite and extension by Arno Wagner <<arno@wagner.name>>.
+Cryptsetup is originally written by mailto:jana@saout.de[Jana Saout]. +
+The LUKS extensions and original man page were written by
+mailto:clemens@endorphin.org[Clemens Fruhwirth]. +
+Man page extensions by mailto:gmazyland@gmail.com[Milan Broz]. +
+Man page rewrite and extension by mailto:arno@wagner.name[Arno Wagner].
 
 include::man/common_footer.adoc[]

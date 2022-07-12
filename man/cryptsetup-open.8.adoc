@@ -12,7 +12,7 @@ cryptsetup-open, cryptsetup-create, cryptsetup-plainOpen, cryptsetup-luksOpen, c
 
 == SYNOPSIS
 
-*cryptsetup _open_ --type <device_type> [<options>] <device> <name>* +
+*cryptsetup _open_ --type <device_type> [<options>] <device> <name>*
 
 == DESCRIPTION
 Opens (creates a mapping with) <name> backed by device <device>.
@@ -34,10 +34,11 @@ device types. For *create*, the order of the <name> and <device> options
 is inverted for historical reasons, all other aliases use the standard
 *<device> <name>* order.
 
-_open_ --type plain <device> <name> +
-_create_ <name> <device> (*OBSOLETE syntax*)
+=== PLAIN
+*open --type plain <device> <name>* +
+plainOpen <device> <name> (*old syntax*) +
+create <name> <device> (*OBSOLETE syntax*)
 
-____
 Opens (creates a mapping with) <name> backed by device <device>.
 
 *<options>* can be [--hash, --cipher, --verify-passphrase,
@@ -49,11 +50,11 @@ Example: 'cryptsetup open --type plain /dev/sda10 e1' maps the raw
 encrypted device /dev/sda10 to the mapped (decrypted) device
 /dev/mapper/e1, which can then be mounted, fsck-ed or have a filesystem
 created on it.
-____
 
-_open_ --type luks <device> <name> +
-_luksOpen_ <device> <name> (*old syntax*)
-____
+=== LUKS
+*open --type luks <device> <name>* +
+luksOpen <device> <name> (*old syntax*)
+
 Opens the LUKS device <device> and sets up a mapping <name> after
 successful verification of the supplied passphrase.
 
@@ -66,11 +67,11 @@ command prompts for it interactively.
 --volume-key-file, --token-id, --token-only, --token-type,
 --disable-external-tokens, --disable-keyring, --disable-locks, --type,
 --refresh, --serialize-memory-hard-pbkdf, --unbound].
-____
 
-_open_ --type loopaes <device> <name> --key-file <keyfile> +
-_loopaesOpen_ <device> <name> --key-file <keyfile> (*old syntax*)
-____
+=== loopAES
+*open --type loopaes <device> <name> --key-file <keyfile>* +
+loopaesOpen <device> <name> --key-file <keyfile> (*old syntax*)
+
 Opens the loop-AES <device> and sets up a mapping <name>.
 
 If the key file is encrypted with GnuPG, then you have to use
@@ -98,12 +99,12 @@ hashing (otherwise it is detected according to key size).
 
 *<options>* can be [--key-file, --key-size, --offset, --skip, --hash,
 --readonly, --allow-discards, --refresh].
-____
 
-_open_ --type tcrypt <device> <name> +
-_tcryptOpen_ <device> <name> (*old syntax*)
-____
-Opens the TCRYPT (a TrueCrypt an VeraCrypt compatible) <device> and sets
+=== TrueCrypt and VeraCrypt
+*open --type tcrypt <device> <name>* +
+tcryptOpen <device> <name> (*old syntax*)
+
+Opens the TCRYPT (TrueCrypt and VeraCrypt compatible) <device> and sets
 up a mapping <name>.
 
 *<options>* can be [--key-file, --tcrypt-hidden, --tcrypt-system,
@@ -128,17 +129,16 @@ original encrypted container.
 *--tcrypt-hidden*. For normal mapping, it can cause the *destruction of
 hidden volume* (hidden volume appears as unused space for outer volume
 so this space can be discarded).
-____
 
-_open_ --type bitlk <device> <name> +
-_bitlkOpen_ <device> <name> (*old syntax*)
-____
+=== BitLocker
+*open --type bitlk <device> <name>* +
+bitlkOpen <device> <name> (*old syntax*)
+
 Opens the BITLK (a BitLocker compatible) <device> and sets up a mapping
 <name>.
 
 *<options>* can be [--key-file, --readonly, --test-passphrase,
 --allow-discards --volume-key-file].
-____
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]
