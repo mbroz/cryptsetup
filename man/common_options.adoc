@@ -312,19 +312,15 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 *--offset, -o <number of 512 byte sectors>*::
-ifndef::ACTION_REENCRYPT[]
-Start offset in the backend device in 512-byte sectors. This option is
-only relevant for the _open_ action with plain or loopaes device types and for
-LUKS devices in _luksFormat_.
-+
-For LUKS, the --offset option sets the data offset (payload) of data
-device and must be be aligned to 4096-byte sectors (must be multiple of
-8). This option cannot be combined with --align-payload option.
+Start offset in the backend device in 512-byte sectors.
+ifdef::ACTION_OPEN[]
+This option is only relevant with plain or loopaes device types.
 endif::[]
 ifdef::ACTION_REENCRYPT[]
-Start offset in the backend device in 512-byte sectors. This option is
-only relevant for the encrypt mode.
+This option is only relevant for the encrypt mode.
+endif::[]
 +
+ifndef::ACTION_OPEN[]
 The --offset option sets the data offset (payload) of data
 device and must be be aligned to 4096-byte sectors (must be multiple of
 8). This option cannot be combined with --align-payload option.
@@ -335,8 +331,7 @@ ifdef::ACTION_OPEN[]
 *--skip, -p <number of 512 byte sectors>*::
 Start offset used in IV calculation in 512-byte sectors (how many
 sectors of the encrypted data to skip at the beginning). This option
-is only relevant for the _open_ action with plain or loopaes device
-types.
+is only relevant with plain or loopaes device types.
 +
 Hence, if --offset _n_, and --skip _s_, sector _n_ (the first sector of
 the encrypted device) will get a sector number of _s_ for the IV
@@ -602,7 +597,7 @@ Do not activate the device, just verify passphrase. The device mapping name is
 not mandatory if this option is used.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_STATUS,ACTOION_REENCRYPT,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSSUSPEND,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONVERT,ACTION_CONFIG,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_STATUS,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSSUSPEND,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONVERT,ACTION_CONFIG,ACTION_REENCRYPT,ACTION_CLOSE[]
 *--header <device or file storing the LUKS header>*::
 Use a detached (separated) metadata device or file where the LUKS
 header is stored. This option allows one to store ciphertext and LUKS
