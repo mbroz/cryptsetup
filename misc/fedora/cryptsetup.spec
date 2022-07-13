@@ -2,7 +2,7 @@
 
 Summary: Utility for setting up encrypted disks
 Name: cryptsetup
-Version: 2.4.0
+Version: 2.5.0
 Release: 1%{?dist}
 License: GPLv2+ and LGPLv2+
 URL: https://gitlab.com/cryptsetup/cryptsetup
@@ -13,9 +13,11 @@ BuildRequires: libpwquality-devel, libblkid-devel
 BuildRequires: make libssh-devel
 Requires: cryptsetup-libs = %{version}-%{release}
 Requires: libpwquality >= 1.2.0
+Obsoletes: %{name}-reencrypt <= %{version}
+Provides: %{name}-reencrypt = %{version}
 
 %global upstream_version %{version_no_tilde}
-Source0: https://www.kernel.org/pub/linux/utils/cryptsetup/v2.4/cryptsetup-%{upstream_version}.tar.xz
+Source0: https://www.kernel.org/pub/linux/utils/cryptsetup/v2.5/cryptsetup-%{upstream_version}.tar.xz
 
 %description
 The cryptsetup package contains a utility for setting up
@@ -59,14 +61,6 @@ Requires: cryptsetup-libs = %{version}-%{release}
 The integritysetup package contains a utility for setting up
 disk integrity protection using dm-integrity kernel module.
 
-%package reencrypt
-Summary: A utility for offline reencryption of LUKS encrypted disks
-Requires: cryptsetup-libs = %{version}-%{release}
-
-%description reencrypt
-This package contains cryptsetup-reencrypt utility which
-can be used for offline reencryption of disk in situ.
-
 %prep
 %autosetup -n cryptsetup-%{upstream_version} -p 1
 
@@ -86,8 +80,9 @@ rm -rf %{buildroot}%{_libdir}/%{name}/*.la
 
 %files
 %license COPYING
-%doc AUTHORS FAQ docs/*ReleaseNotes
+%doc AUTHORS FAQ.md docs/*ReleaseNotes
 %{_mandir}/man8/cryptsetup.8.gz
+%{_mandir}/man8/cryptsetup-*.8.gz
 %{_sbindir}/cryptsetup
 
 %files -n veritysetup
@@ -99,11 +94,6 @@ rm -rf %{buildroot}%{_libdir}/%{name}/*.la
 %license COPYING
 %{_mandir}/man8/integritysetup.8.gz
 %{_sbindir}/integritysetup
-
-%files reencrypt
-%license COPYING
-%{_mandir}/man8/cryptsetup-reencrypt.8.gz
-%{_sbindir}/cryptsetup-reencrypt
 
 %files devel
 %doc docs/examples/*
