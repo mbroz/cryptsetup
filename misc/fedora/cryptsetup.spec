@@ -11,6 +11,7 @@ BuildRequires: openssl-devel, popt-devel, device-mapper-devel
 BuildRequires: libuuid-devel, gcc, json-c-devel, libargon2-devel
 BuildRequires: libpwquality-devel, libblkid-devel
 BuildRequires: make libssh-devel
+BuildRequires: asciidoctor
 Requires: cryptsetup-libs = %{version}-%{release}
 Requires: libpwquality >= 1.2.0
 Obsoletes: %{name}-reencrypt <= %{version}
@@ -65,8 +66,11 @@ disk integrity protection using dm-integrity kernel module.
 %autosetup -n cryptsetup-%{upstream_version} -p 1
 
 %build
+# force regeneration of manual pages from AsciiDoc
+rm -f man/*.8
+
 ./autogen.sh
-%configure --enable-fips --enable-pwquality --enable-libargon2
+%configure --enable-fips --enable-pwquality --enable-libargon2 --enable-asciidoc
 %make_build
 
 %install
