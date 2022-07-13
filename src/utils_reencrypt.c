@@ -137,6 +137,10 @@ static int get_active_device_name(struct crypt_device *cd,
 				return -ENOMEM;
 			r = noDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
 			free(msg);
+		} else {
+			/* FIXME: This is temporary message to be replaced in before final relase. */
+			log_err("Unable to decide if device %s is activated or not.\n"
+				"Use --force-offline-reencrypt to bypass the check and run in offline mode (dangerous!).", data_device);
 		}
 	} else {
 		*r_active_name = NULL;
