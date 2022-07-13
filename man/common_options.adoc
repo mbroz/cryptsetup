@@ -270,6 +270,11 @@ compare the passphrase against. If the given passphrase would only
 match a different key-slot, the operation fails.
 endif::[]
 +
+ifdef::ACTION_REENCRYPT[]
+For reencryption mode it selects specific keyslot (and passphrase) that can be used to unlock new volume key.
+If used all other keyslots get removed after reencryption operation is finished.
++
+endif::[]
 The maximum number of key slots depends on the LUKS version. LUKS1 can have up
 to 8 key slots. LUKS2 can have up to 32 key slots based on key slot area
 size and key size, but a valid key slot ID can always be between 0 and
@@ -307,13 +312,23 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 *--offset, -o <number of 512 byte sectors>*::
+ifndef::ACTION_REENCRYPT[]
 Start offset in the backend device in 512-byte sectors. This option is
 only relevant for the _open_ action with plain or loopaes device types and for
-LUKS devices in _luksFormat_ and _reencrypt_.
+LUKS devices in _luksFormat_.
 +
 For LUKS, the --offset option sets the data offset (payload) of data
 device and must be be aligned to 4096-byte sectors (must be multiple of
 8). This option cannot be combined with --align-payload option.
+endif::[]
+ifdef::ACTION_REENCRYPT[]
+Start offset in the backend device in 512-byte sectors. This option is
+only relevant for the encrypt mode.
++
+The --offset option sets the data offset (payload) of data
+device and must be be aligned to 4096-byte sectors (must be multiple of
+8). This option cannot be combined with --align-payload option.
+endif::[]
 endif::[]
 
 ifdef::ACTION_OPEN[]
@@ -447,7 +462,12 @@ endif::[]
 
 ifdef::ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 *--progress-frequency* _seconds_::
+ifndef::ACTION_REENCRYPT[]
 Print separate line every _seconds_ with wipe progress.
+endif::[]
+ifdef::ACTION_REENCRYPT[]
+Print separate line every _seconds_ with reencryption progress.
+endif::[]
 endif::[]
 
 ifdef::ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
@@ -516,7 +536,8 @@ _luksUUID_ command.
 +
 endif::[]
 ifdef::ACTION_REENCRYPT[]
-When used in encryption mode, see *cryptsetup-luksFormat*(8)
+When used in encryption mode use the provided _UUID_ for the new LUKS header
+instead of generating a new one.
 +
 *LUKS1 (only in decryption mode)*:
 To find out what _UUID_ to pass look for temporary files LUKS-_UUID_.[|log|org|new]
@@ -614,7 +635,7 @@ option. Use with care.
 +
 *LUKS2*:
 For decryption mode the option may be used to export original LUKS2 header
-to a detached file. The passed value (future file) must not exist at the time
+to a detached file. The passed future file must not exist at the time
 of initializing the decryption operation. This frees space in head of data
 device so that data can be moved at original LUKS2 header location. Later on
 decryption operation continues as if the ordinary detached header was passed.
@@ -629,7 +650,10 @@ ifdef::ACTION_REENCRYPT[]
 *--force-offline-reencrypt (LUKS2 only)*::
 Bypass active device auto-detection and enforce offline reencryption.
 +
-This option is useful in case active device auto-detection on particular
+This option is useful especially for reencryption of LUKS2 images put in
+files (auto-detection is not reliable in this scenario).
++
+It may also help in case active device auto-detection on particular
 data device does not work or report errors.
 +
 *WARNING:* Use with extreme caution! This may destroy data if the device
@@ -669,6 +693,12 @@ ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSSUSPEND,ACTION_LUK
 Disable lock protection for metadata on disk. This option is valid
 only for LUKS2 and ignored for other formats.
 +
+ifdef::ACTION_REENCRYPT[]
+*NOTE:* With locking disabled LUKS2 images in files can be fully (re)encrypted
+offline without need for super user privileges provided used block ciphers are
+available in crypto backend.
++
+endif::[]
 *WARNING:* Do not use this option unless you run cryptsetup in a
 restricted environment where locking is impossible to perform (where
 /run directory cannot be used).
