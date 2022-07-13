@@ -6,7 +6,7 @@
 
 == Name
 
-cryptsetup - manage plain dm-crypt and LUKS encrypted volumes
+cryptsetup - manage plain dm-crypt, LUKS, and other encrypted volumes
 
 == SYNOPSIS
 
@@ -21,7 +21,7 @@ features than plain dm-crypt. On the other hand, the header is visible
 and vulnerable to damage.
 
 In addition, cryptsetup provides limited support for the use of loop-AES
-volumes, TrueCrypt, VeraCrypt and BitLocker compatible volumes.
+volumes, TrueCrypt, VeraCrypt, and BitLocker compatible volumes.
 
 For more information about specific cryptsetup action see
 *cryptsetup-<action>*(8), where *<action>* is the name of the
@@ -273,9 +273,8 @@ chains using LRW encryption mode with 64 bits encryption block (namely
 Blowfish in LRW mode is not recognized, this is limitation of kernel
 crypto API).
 
-VeraCrypt is just extension of TrueCrypt header with increased iteration
-count so unlocking can take quite a lot of time (in comparison with
-TCRYPT device).
+VeraCrypt is extension of TrueCrypt header with increased iteration
+count so unlocking can take quite a lot of time.
 
 To open a VeraCrypt device with a custom Personal Iteration Multiplier
 (PIM) value, use either the *--veracrypt-pim=<PIM>* option to directly
@@ -446,13 +445,13 @@ key-slot area.
 *Previously used partitions:* If a partition was previously used, it is
 a very good idea to wipe filesystem signatures, data, etc. before
 creating a LUKS or plain dm-crypt container on it. For a quick removal
-of filesystem signatures, use "wipefs". Take care though that this may
+of filesystem signatures, use *wipefs*(8). Take care though that this may
 not remove everything. In particular, MD RAID signatures at the end of a
 device may survive. It also does not remove data. For a full wipe,
 overwrite the whole partition before container creation. If you do not
 know how to do that, the cryptsetup FAQ describes several options.
 
-== EXAMPLE
+== EXAMPLES
 
 Example 1: Create LUKS 2 container on block device /dev/sdX.::
   sudo cryptsetup --type luks2 luksFormat /dev/sdX
@@ -464,7 +463,7 @@ Example 3: Create LUKS header backup and save it to file.::
 Example 4: Open LUKS container on /dev/sdX and map it to sdX_crypt.::
   sudo cryptsetup open /dev/sdX sdX_crypt
 *WARNING: The command in example 5 will erase all key slots.*::
-  Your cannot use your luks container afterwards anymore unless you have
+  Your cannot use your LUKS container afterward anymore unless you have
   a backup to restore.
 Example 5: Erase all key slots on /dev/sdX.::
   sudo cryptsetup erase /dev/sdX
@@ -480,7 +479,9 @@ Error codes are: *1* wrong parameters, *2* no permission (bad passphrase),
 *3* out of memory, *4* wrong device specified, *5* device already exists
 or device is busy.
 
-== NOTES ON PASSPHRASE PROCESSING FOR PLAIN MODE
+== NOTES
+
+=== Passphrase processing for PLAIN mode
 
 Note that no iterated hashing or salting is done in plain mode. If
 hashing is done, it is a single direct hash. This means that low-entropy
@@ -523,7 +524,7 @@ error. The maximum input size is defined by the same compiled-in default
 as for the maximum key file size and can be overwritten using
 --keyfile-size option.
 
-== NOTES ON PASSPHRASE PROCESSING FOR LUKS
+=== Passphrase processing for LUKS
 
 LUKS uses PBKDF to protect against dictionary attacks and to give some
 protection to low-entropy passphrases (see cryptsetup FAQ).
@@ -554,7 +555,7 @@ On a slow device, it may be advisable to increase the iteration time
 using the --iter-time option in order to obtain a higher iteration
 count. This does slow down all later luksOpen operations accordingly.
 
-== INCOHERENT BEHAVIOR FOR INVALID PASSPHRASES/KEYS
+=== Incoherent behavior for invalid passphrases/keys
 
 LUKS checks for a valid passphrase when an encrypted partition is
 unlocked. The behavior of plain dm-crypt is different. It will always
@@ -562,7 +563,7 @@ decrypt with the passphrase given. If the given passphrase is wrong, the
 device mapped by plain dm-crypt will essentially still contain encrypted
 data and will be unreadable.
 
-== NOTES ON SUPPORTED CIPHERS, MODES, HASHES AND KEY SIZES
+=== Supported ciphers, modes, hashes and key sizes
 
 The available combinations of ciphers, modes, hashes and key sizes
 depend on kernel support. See /proc/crypto for a list of available
@@ -573,7 +574,7 @@ For the --hash option, if the crypto backend is libgcrypt, then all
 algorithms supported by the gcrypt library are available. For other
 crypto backends, some algorithms may be missing.
 
-== NOTES ON PASSPHRASES
+=== Notes on passphrases
 
 Mathematics can't be bribed. Make sure you keep your passphrases safe.
 There are a few nice tricks for constructing a fallback, when suddenly
@@ -582,7 +583,7 @@ LUKS, as it's only possible with LUKS to have multiple passphrases.
 Still, if your attacker model does not prevent it, storing your
 passphrase in a sealed envelope somewhere may be a good idea as well.
 
-== NOTES ON RANDOM NUMBER GENERATORS
+=== Notes on Random Number Generators
 
 Random Number Generators (RNG) used in cryptsetup are always the kernel
 RNGs without any modifications or additions to data stream produced.
@@ -601,7 +602,7 @@ same time, using /dev/urandom in a low-entropy situation will produce
 low-quality keys. This is a serious problem, but solving it is out of
 scope for a mere man-page. See *urandom(4)* for more information.
 
-== AUTHENTICATED DISK ENCRYPTION (EXPERIMENTAL)
+=== Authenticated disk encryption (EXPERIMENTAL)
 
 Since Linux kernel version 4.12 dm-crypt supports authenticated disk
 encryption.
@@ -644,7 +645,7 @@ reason you want to have integrity control without using authentication
 mode, then you should separately configure dm-integrity independently of
 LUKS2.
 
-== NOTES ON LOOPBACK DEVICE USE
+=== Notes on loopback device use
 
 Cryptsetup is usually used directly on a block device (disk partition or
 LVM volume). However, if the device argument is a file, cryptsetup tries
@@ -657,7 +658,7 @@ cryptsetup FAQ for an example.
 When device mapping is active, you can see the loop backing file in the
 status command output. Also see losetup(8).
 
-== LUKS2 header locking
+=== LUKS2 header locking
 
 The LUKS2 on-disk metadata is updated in several steps and to achieve
 proper atomic update, there is a locking mechanism. For an image in
@@ -667,7 +668,7 @@ performed over a special file stored in a locking directory (by default
 proper security context by the distribution during the boot-up phase.
 Only LUKS2 uses locks, other formats do not use this mechanism.
 
-== LUKS ON-DISK FORMAT SPECIFICATION
+=== LUKS on-disk format specification
 
 For LUKS on-disk metadata specification see
 https://gitlab.com/cryptsetup/cryptsetup/wikis/Specification[*LUKS1*] and

@@ -18,7 +18,7 @@ Integritysetup is used to configure dm-integrity managed device-mapper
 mappings.
 
 Device-mapper integrity target provides read-write transparent integrity
-checking of block devices. The dm-integrity target emulates additional
+checking of block devices. The dm-integrity target emulates an additional
 data integrity field per-sector. You can use this additional field
 directly with integritysetup utility, or indirectly (for authenticated
 encryption) through cryptsetup.
@@ -85,27 +85,13 @@ kernel version 5.7, shrinking should work on older kernels too.
 *<options>* can be [--size, --device-size, --wipe]
 
 == OPTIONS
-
-*--verbose, -v*::
-Print more information on command execution.
-
-*--debug*::
-Run in debug mode with full diagnostic logs. Debug output lines are
-always prefixed by '#'.
-
-*--version*::
-Show the program version.
-
-*--batch-mode*::
-Do not ask for confirmation.
-
 *--progress-frequency <seconds>*::
 Print separate line every <seconds> with wipe progress.
 
 *--progress-json*::
 Prints wipe progress data in json format suitable mostly for machine
 processing. It prints separate line every half second (or based on
---progress-frequency value). The json output looks as follows during
+--progress-frequency value). The JSON output looks as follows during
 wipe progress (except it's compact single line):
 +
 ....
@@ -119,7 +105,7 @@ wipe progress (except it's compact single line):
 }
 ....
 +
-Note on numbers in json output: Due to json parsers limitations all
+Note on numbers in JSON output: Due to JSON parsers limitations all
 numbers are represented in a string format due to need of full 64bit
 unsigned integers.
 
@@ -263,12 +249,24 @@ it.
 Removes a previously configured deferred device removal in *close*
 command.
 
-The dm-integrity target is available since Linux kernel version 4.12.
+*--verbose, -v*::
+Print more information on command execution.
 
-*NOTE:*
-Format and activation of an integrity device always require superuser
-privilege because the superblock is calculated and handled in
-dm-integrity kernel target.
+*--debug*::
+Run in debug mode with full diagnostic logs. Debug output lines are
+always prefixed by *#*.
+
+*--version, -V*::
+Show the program version.
+
+*--batch-mode, -q*::
+Do not ask for confirmation.
+
+*--usage*::
+Show short option help.
+
+*--help, -?*::
+Show help text and default parameters.
 
 == LEGACY COMPATIBILITY OPTIONS
 
@@ -292,6 +290,13 @@ Integritysetup returns *0* on success and a non-zero value on error.
 
 Error codes are: *1* wrong parameters, *2* no permission, *3* out of memory,
 *4* wrong device specified, *5* device already exists or device is busy.
+
+== NOTES
+The dm-integrity target is available since Linux kernel version 4.12.
+
+Format and activation of an integrity device always require superuser
+privilege because the superblock is calculated and handled in
+dm-integrity kernel target.
 
 == EXAMPLES
 

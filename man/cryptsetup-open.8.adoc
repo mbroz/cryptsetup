@@ -75,12 +75,12 @@ loopaesOpen <device> <name> --key-file <keyfile> (*old syntax*)
 Opens the loop-AES <device> and sets up a mapping <name>.
 
 If the key file is encrypted with GnuPG, then you have to use
---key-file=- and decrypt it before use, e.g. like this: +
+--key-file=- and decrypt it before use, e.g., like this: +
 gpg --decrypt <keyfile> | cryptsetup loopaesOpen --key-file=- <device>
 <name>
 
-*WARNING:* The loop-AES extension cannot use the direct input of key
-file on real terminal because the keys are separated by end-of-line and
+*WARNING:* The loop-AES extension cannot use the direct input of the key
+file on the real terminal because the keys are separated by end-of-line and
 only part of the multi-key file would be read. +
 If you need it in script, just use the pipe redirection: +
 echo $keyfile | cryptsetup loopaesOpen --key-file=- <device> <name>

@@ -50,17 +50,13 @@ Specifies the passphrase hash for _open_ (for plain and loopaes device
 types).
 +
 Specifies the hash used in the LUKS key setup scheme and volume key
-digest for _luksFormat_. The specified hash is used as hash-parameter
-for PBKDF2 and for the AF splitter.
+digest for _luksFormat_. The specified hash is used for PBKDF2 and AF splitter.
 +  
 The specified hash name is passed to the compiled-in crypto backend.
 Different backends may support different hashes. For _luksFormat_, the
-hash algorithm must provide at least 160 bits of output, which excludes,
-e.g., MD5. Do not use a non-crypto hash like *"crc32"* as this breaks
+hash algorithm must provide at least 160 bits of output.
+Do not use a non-crypto hash like *xxhash* as this breaks
 security.
-+  
-Values compatible with old version of cryptsetup are *"ripemd160"* for
-_open --type plain_ and *"sha1"* for _luksFormat_.
 +  
 Use _cryptsetup --help_ to show the defaults.
 endif::[]
@@ -120,8 +116,8 @@ If the name given is "-", then the passphrase will be read from stdin.
 In this case, reading will not stop at newline characters.
 +
 ifndef::ACTION_REENCRYPT[]
-With LUKS, passphrases supplied via --key-file are always the existing
-passphrases requested by a command, except in the case of _luksFormat_
+With LUKS, the passphrase supplied via --key-file is always the existing
+passphrase requested by a command, except in the case of _luksFormat_
 where --key-file is equivalent to the positional key file argument.
 +
 If you want to set a new passphrase via key file, you have to use a
@@ -176,25 +172,28 @@ ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSDUMP,ACTION_BI
 *--volume-key-file, --master-key-file (OBSOLETE alias)*::
 ifndef::ACTION_REENCRYPT[]
 Use a volume key stored in a file.
+endif::[]
+ifdef::ACTION_FORMAT[]
 +
 For _luksFormat_ this allows creating a LUKS header with this specific
 volume key. If the volume key was taken from an existing LUKS header and
 all other parameters are the same, then the new header decrypts the data
-encrypted with the header the volume key was taken from.
-+
-Action _luksDump_ together with --dump-volume-key option: The volume key
-is stored in a file instead of being printed out to standard output.
-+
+encrypted with the header the volume key was taken from. +
+endif::[]
+ifdef::ACTION_LUKSDUMP,ACTION_BITLKDUMP[]
+The volume key is stored in a file instead of being printed out to standard output. +
+endif::[]
+ifdef::ACTION_LUKSADDKEY[]
 For _luksAddKey_ this allows adding a new passphrase without having to
-know an existing one.
-+
+know an existing one. +
+endif::[]
+ifdef::ACTION_OPEN[]
 For _open_ this allows one to open the LUKS device without giving a
-passphrase.
+passphrase. +
 endif::[]
 ifdef::ACTION_REENCRYPT[]
-Use (set) new volume key stored in a file.
+Use (set) new volume key stored in a file. +
 endif::[]
-+
 ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_REENCRYPT[]
 *WARNING:* If you create your own volume key, you need to make sure to
 do it right. Otherwise, you can end up with a low-entropy or otherwise
@@ -210,14 +209,14 @@ endif::[]
 
 ifdef::ACTION_LUKSDUMP,ACTION_TCRYPTDUMP,ACTION_BITLKDUMP[]
 *--dump-volume-key, --dump-master-key (OBSOLETE alias)*::
-For _luksDump_ this option includes the volume key in the displayed
-information. Use with care, as the volume key can be used to bypass
+Print the volume key in the displayed information. Use with care,
+as the volume key can be used to bypass
 the passphrases, see also option --volume-key-file.
 endif::[]
 
 ifdef::ACTION_TOKEN[]
 *--json-file*::
-Read token json from a file or write token to it. --json-file=- reads json from
+Read token JSON from a file or write token to it. --json-file=- reads JSON from
 standard input or writes it to standard output respectively.
 endif::[]
 
@@ -262,7 +261,7 @@ endif::[]
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONFIG,ACTION_TOKEN,ACTION_REENCRYPT[]
 *--key-slot, -S <0-N>*::
 ifndef::ACTION_OPEN[]
-For LUKS operations that add key material, this options allows you to
+For LUKS operations that add key material, this option allows you to
 specify which key slot is selected for the new key.
 endif::[]
 ifdef::ACTION_OPEN[]
@@ -271,7 +270,7 @@ compare the passphrase against. If the given passphrase would only
 match a different key-slot, the operation fails.
 endif::[]
 +
-Maximum number of key slots depends on LUKS version. LUKS1 can have up
+The maximum number of key slots depends on the LUKS version. LUKS1 can have up
 to 8 key slots. LUKS2 can have up to 32 key slots based on key slot area
 size and key size, but a valid key slot ID can always be between 0 and
 31 for LUKS2.
@@ -290,6 +289,7 @@ This option can be used for _open --type plain_ or _luksFormat_. All
 other LUKS actions will use the key-size specified in the LUKS header.
 Use _cryptsetup --help_ to show the compiled-in defaults.
 endif::[]
+ifdef::ACTION_REENCRYPT[]
 *LUKS1*:
 If you are increasing key size, there must be enough space in the LUKS header
 for enlarged keyslots (data offset must be large enough) or reencryption
@@ -297,6 +297,7 @@ cannot be performed.
 +
 If there is not enough space for keyslots with new key size,
 you can destructively shrink device with --reduce-device-size option.
+endif::[]
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_RESIZE[]
@@ -451,9 +452,9 @@ endif::[]
 
 ifdef::ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 *--progress-json*::
-Prints progress data in json format suitable mostly for machine
+Prints progress data in JSON format suitable mostly for machine
 processing. It prints separate line every half second (or based on
-_--progress-frequency_ value). The json output looks as follows during
+_--progress-frequency_ value). The JSON output looks as follows during
 progress (except it's compact single line):
 +
 ....
@@ -467,7 +468,7 @@ progress (except it's compact single line):
 }
 ....
 +
-Note on numbers in json output: Due to json parsers limitations all
+Note on numbers in JSON output: Due to JSON parsers limitations all
 numbers are represented in a string format due to need of full 64bit
 unsigned integers.
 endif::[]
@@ -785,11 +786,11 @@ Refreshes an active device with new set of parameters. See
 endif::[]
 
 ifdef::ACTION_LUKSFORMAT,ACTION_CONFIG,ACTION_REENCRYPT[]
-*--label <LABEL>*::
-*--subsystem <SUBSYSTEM>* Set label and subsystem description for
-LUKS2 device. The label and subsystem are optional fields and can be later used
-in udev scripts for triggering user actions once device marked by these labels
-is detected.
+*--label <LABEL> --subsystem <SUBSYSTEM>*::
+Set label and subsystem description for LUKS2 device.
+The label and subsystem are optional fields and can be later used
+in udev scripts for triggering user actions once the device marked
+by these labels is detected.
 endif::[]
 
 ifdef::ACTION_LUKSFORMAT[]
@@ -866,7 +867,9 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_TCRYPTDUMP[]
 *--tcrypt-hidden*::
-*--tcrypt-system* *--tcrypt-backup* Specify which TrueCrypt on-disk
+*--tcrypt-system*::
+*--tcrypt-backup*::
+Specify which TrueCrypt on-disk
 header will be used to open the device. See _TCRYPT_ section in
 *cryptsetup*(8) for more info.
 endif::[]
@@ -886,7 +889,8 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_TCRYPTDUMP[]
 *--veracrypt-pim*::
-*--veracrypt-query-pim* Use a custom Personal Iteration Multiplier (PIM) for
+*--veracrypt-query-pim*::
+Use a custom Personal Iteration Multiplier (PIM) for
 VeraCrypt device. See _TCRYPT_ section in *cryptsetup*(8) for more info.
 endif::[]
 
@@ -1000,19 +1004,20 @@ ifdef::COMMON_OPTIONS[]
 *--batch-mode, -q*::
 Suppresses all confirmation questions. Use with care!
 +
-If the -y option is not specified, this option also switches off the
-passphrase verification for _luksFormat_.
+If the --verify-passphrase option is not specified, this option also
+switches off the passphrase verification.
 endif::[]
 
 ifdef::COMMON_OPTIONS[]
 *--debug or --debug-json*::
 Run in debug mode with full diagnostic logs. Debug output lines are
-always prefixed by '#'. If --debug-json is used, additional LUKS2 JSON
-data structures are printed.
+always prefixed by *#*.
++
+If --debug-json is used, additional LUKS2 JSON data structures are printed.
 endif::[]
 
 ifdef::COMMON_OPTIONS[]
-*--version*::
+*--version, -V*::
 Show the program version.
 endif::[]
 
