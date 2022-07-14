@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: cryptsetup 2.5.0-rc1\n"
 "Report-Msgid-Bugs-To: cryptsetup@lists.linux.dev\n"
-"POT-Creation-Date: 2022-07-13 13:20+0200\n"
+"POT-Creation-Date: 2022-07-14 14:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -170,7 +170,7 @@ msgstr ""
 #: lib/luks2/luks2_json_metadata.c:1267 src/cryptsetup.c:1449
 #: src/cryptsetup.c:1581 src/cryptsetup.c:1636 src/cryptsetup.c:1756
 #: src/cryptsetup.c:1861 src/cryptsetup.c:2142 src/cryptsetup.c:2380
-#: src/cryptsetup.c:2440 src/utils_reencrypt.c:1374
+#: src/cryptsetup.c:2440 src/utils_reencrypt.c:1378
 #: src/utils_reencrypt_luks1.c:1188 tokens/ssh/cryptsetup-ssh.c:77
 #, c-format
 msgid "Device %s is not a valid LUKS device."
@@ -629,7 +629,7 @@ msgid "Cannot read requested amount of data."
 msgstr ""
 
 #: lib/utils_device.c:208 lib/utils_storage_wrappers.c:110
-#: lib/luks1/keyencryption.c:91 src/utils_reencrypt.c:1349
+#: lib/luks1/keyencryption.c:91 src/utils_reencrypt.c:1353
 #, c-format
 msgid "Device %s does not exist or access denied."
 msgstr ""
@@ -982,7 +982,7 @@ msgstr ""
 
 #: lib/luks1/keymanage.c:794 lib/luks1/keymanage.c:863
 #: lib/luks2/luks2_json_format.c:287 lib/luks2/luks2_json_metadata.c:1175
-#: src/utils_reencrypt.c:471
+#: src/utils_reencrypt.c:475
 msgid "Wrong LUKS UUID format provided."
 msgstr ""
 
@@ -1874,7 +1874,7 @@ msgid "Enter token %d PIN:"
 msgstr ""
 
 #: src/cryptsetup.c:159 src/cryptsetup.c:966 src/cryptsetup.c:1293
-#: src/utils_reencrypt.c:1044 src/utils_reencrypt_luks1.c:517
+#: src/utils_reencrypt.c:1048 src/utils_reencrypt_luks1.c:517
 #: src/utils_reencrypt_luks1.c:580
 msgid "No known cipher specification pattern detected."
 msgstr ""
@@ -1901,7 +1901,7 @@ msgstr ""
 #: src/cryptsetup.c:221 src/cryptsetup.c:1040 src/cryptsetup.c:1088
 #: src/cryptsetup.c:1154 src/cryptsetup.c:1270 src/cryptsetup.c:1343
 #: src/cryptsetup.c:1994 src/integritysetup.c:187 src/utils_reencrypt.c:138
-#: src/utils_reencrypt.c:271
+#: src/utils_reencrypt.c:275
 msgid "Operation aborted.\n"
 msgstr ""
 
@@ -3234,220 +3234,220 @@ msgid ""
 "To run reencryption in online mode, use --active-name parameter instead.\n"
 msgstr ""
 
-#: src/utils_reencrypt.c:171
+#: src/utils_reencrypt.c:175
 msgid "Device is not in LUKS2 encryption. Conflicting option --encrypt."
 msgstr ""
 
-#: src/utils_reencrypt.c:176
+#: src/utils_reencrypt.c:180
 msgid "Device is not in LUKS2 decryption. Conflicting option --decrypt."
 msgstr ""
 
-#: src/utils_reencrypt.c:183
+#: src/utils_reencrypt.c:187
 msgid ""
 "Device is in reencryption using datashift resilience. Requested --resilience "
 "option cannot be applied."
 msgstr ""
 
-#: src/utils_reencrypt.c:189 src/utils_reencrypt.c:195
-#: src/utils_reencrypt.c:201 src/utils_reencrypt.c:677
+#: src/utils_reencrypt.c:193 src/utils_reencrypt.c:199
+#: src/utils_reencrypt.c:205 src/utils_reencrypt.c:681
 msgid ""
 "Requested --resilience option cannot be applied to current reencryption "
 "operation."
 msgstr ""
 
-#: src/utils_reencrypt.c:254
+#: src/utils_reencrypt.c:258
 msgid "Device requires reencryption recovery. Run repair first."
 msgstr ""
 
-#: src/utils_reencrypt.c:264
+#: src/utils_reencrypt.c:268
 #, c-format
 msgid ""
 "Device %s is already in LUKS2 reencryption. Do you wish to resume previously "
 "initialised operation?"
 msgstr ""
 
-#: src/utils_reencrypt.c:310
+#: src/utils_reencrypt.c:314
 msgid "Legacy LUKS2 reencryption is no longer supported."
 msgstr ""
 
-#: src/utils_reencrypt.c:375
+#: src/utils_reencrypt.c:379
 msgid "Reencryption of device with integrity profile is not supported."
 msgstr ""
 
-#: src/utils_reencrypt.c:406
+#: src/utils_reencrypt.c:410
 #, c-format
 msgid ""
 "Requested --sector-size %<PRIu32> is incompatible with %s superblock\n"
 "(block size: %<PRIu32> bytes) detected on device %s."
 msgstr ""
 
-#: src/utils_reencrypt.c:451
+#: src/utils_reencrypt.c:455
 msgid ""
 "Encryption without detached header (--header) is not possible without data "
 "device size reduction (--reduce-device-size)."
 msgstr ""
 
-#: src/utils_reencrypt.c:457
+#: src/utils_reencrypt.c:461
 msgid ""
 "Requested data offset must be less than or equal to half of --reduce-device-"
 "size parameter."
 msgstr ""
 
-#: src/utils_reencrypt.c:467
+#: src/utils_reencrypt.c:471
 #, c-format
 msgid ""
 "Adjusting --reduce-device-size value to twice the --offset %<PRIu64> "
 "(sectors).\n"
 msgstr ""
 
-#: src/utils_reencrypt.c:497
+#: src/utils_reencrypt.c:501
 #, c-format
 msgid "Temporary header file %s already exists. Aborting."
 msgstr ""
 
-#: src/utils_reencrypt.c:499 src/utils_reencrypt.c:506
+#: src/utils_reencrypt.c:503 src/utils_reencrypt.c:510
 #, c-format
 msgid "Cannot create temporary header file %s."
 msgstr ""
 
-#: src/utils_reencrypt.c:531
+#: src/utils_reencrypt.c:535
 msgid "LUKS2 metadata size is larger than data shift value."
 msgstr ""
 
-#: src/utils_reencrypt.c:568
+#: src/utils_reencrypt.c:572
 #, c-format
 msgid "Failed to place new header at head of device %s."
 msgstr ""
 
-#: src/utils_reencrypt.c:578
+#: src/utils_reencrypt.c:582
 #, c-format
 msgid "%s/%s is now active and ready for online encryption.\n"
 msgstr ""
 
-#: src/utils_reencrypt.c:614
+#: src/utils_reencrypt.c:618
 #, c-format
 msgid "Active device %s is not LUKS2."
 msgstr ""
 
-#: src/utils_reencrypt.c:642
+#: src/utils_reencrypt.c:646
 msgid "Restoring original LUKS2 header."
 msgstr ""
 
-#: src/utils_reencrypt.c:650
+#: src/utils_reencrypt.c:654
 msgid "Original LUKS2 header restore failed."
 msgstr ""
 
-#: src/utils_reencrypt.c:718
+#: src/utils_reencrypt.c:722
 msgid "Failed to add read/write permissions to exported header file."
 msgstr ""
 
-#: src/utils_reencrypt.c:771
+#: src/utils_reencrypt.c:775
 #, c-format
 msgid "Reencryption initialization failed. Header backup is available in %s."
 msgstr ""
 
-#: src/utils_reencrypt.c:799
+#: src/utils_reencrypt.c:803
 msgid ""
 "LUKS2 decryption is supported with detached header device only (with data "
 "offset set to 0)."
 msgstr ""
 
-#: src/utils_reencrypt.c:930 src/utils_reencrypt.c:939
+#: src/utils_reencrypt.c:934 src/utils_reencrypt.c:943
 msgid "Not enough free keyslots for reencryption."
 msgstr ""
 
-#: src/utils_reencrypt.c:960 src/utils_reencrypt_luks1.c:1100
+#: src/utils_reencrypt.c:964 src/utils_reencrypt_luks1.c:1100
 msgid ""
 "Key file can be used only with --key-slot or with exactly one key slot "
 "active."
 msgstr ""
 
-#: src/utils_reencrypt.c:969 src/utils_reencrypt_luks1.c:1147
+#: src/utils_reencrypt.c:973 src/utils_reencrypt_luks1.c:1147
 #: src/utils_reencrypt_luks1.c:1158
 #, c-format
 msgid "Enter passphrase for key slot %d: "
 msgstr ""
 
-#: src/utils_reencrypt.c:981
+#: src/utils_reencrypt.c:985
 #, c-format
 msgid "Enter passphrase for key slot %u: "
 msgstr ""
 
-#: src/utils_reencrypt.c:1033
+#: src/utils_reencrypt.c:1037
 #, c-format
 msgid "Switching data encryption cipher to %s.\n"
 msgstr ""
 
-#: src/utils_reencrypt.c:1087
+#: src/utils_reencrypt.c:1091
 msgid "No data segment parameters changed. Reencryption aborted."
 msgstr ""
 
-#: src/utils_reencrypt.c:1183
+#: src/utils_reencrypt.c:1187
 msgid ""
 "Encryption sector size increase on offline device is not supported.\n"
 "Activate the device first or use --force-offline-reencrypt option "
 "(dangerous!)."
 msgstr ""
 
-#: src/utils_reencrypt.c:1223 src/utils_reencrypt_luks1.c:726
+#: src/utils_reencrypt.c:1227 src/utils_reencrypt_luks1.c:726
 #: src/utils_reencrypt_luks1.c:798
 msgid ""
 "\n"
 "Reencryption interrupted."
 msgstr ""
 
-#: src/utils_reencrypt.c:1228
+#: src/utils_reencrypt.c:1232
 msgid "Resuming LUKS reencryption in forced offline mode.\n"
 msgstr ""
 
-#: src/utils_reencrypt.c:1245
+#: src/utils_reencrypt.c:1249
 #, c-format
 msgid "Device %s contains broken LUKS metadata. Aborting operation."
 msgstr ""
 
-#: src/utils_reencrypt.c:1261 src/utils_reencrypt.c:1283
+#: src/utils_reencrypt.c:1265 src/utils_reencrypt.c:1287
 #, c-format
 msgid "Device %s is already LUKS device. Aborting operation."
 msgstr ""
 
-#: src/utils_reencrypt.c:1289
+#: src/utils_reencrypt.c:1293
 #, c-format
 msgid "Device %s is already in LUKS reencryption. Aborting operation."
 msgstr ""
 
-#: src/utils_reencrypt.c:1362
+#: src/utils_reencrypt.c:1366
 msgid "LUKS2 decryption requires --header option."
 msgstr ""
 
-#: src/utils_reencrypt.c:1410
+#: src/utils_reencrypt.c:1414
 msgid "Command requires device as argument."
 msgstr ""
 
-#: src/utils_reencrypt.c:1423
+#: src/utils_reencrypt.c:1427
 #, c-format
 msgid "Conflicting versions. Device %s is LUKS1."
 msgstr ""
 
-#: src/utils_reencrypt.c:1429
+#: src/utils_reencrypt.c:1433
 #, c-format
 msgid "Conflicting versions. Device %s is in LUKS1 reencryption."
 msgstr ""
 
-#: src/utils_reencrypt.c:1435
+#: src/utils_reencrypt.c:1439
 #, c-format
 msgid "Conflicting versions. Device %s is LUKS2."
 msgstr ""
 
-#: src/utils_reencrypt.c:1441
+#: src/utils_reencrypt.c:1445
 #, c-format
 msgid "Conflicting versions. Device %s is in LUKS2 reencryption."
 msgstr ""
 
-#: src/utils_reencrypt.c:1447
+#: src/utils_reencrypt.c:1451
 msgid "LUKS2 reencryption already initialized. Aborting operation."
 msgstr ""
 
-#: src/utils_reencrypt.c:1454
+#: src/utils_reencrypt.c:1458
 msgid "Device reencryption not in progress."
 msgstr ""
 
