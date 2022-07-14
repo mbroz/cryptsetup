@@ -52,7 +52,8 @@ encrypted device /dev/sda10 to the mapped (decrypted) device
 created on it.
 
 === LUKS
-*open --type luks <device> <name>* +
+*open <device> <name>* +
+open --type <luks1|luks2> <device> <name> (*explicit version request*) +
 luksOpen <device> <name> (*old syntax*)
 
 Opens the LUKS device <device> and sets up a mapping <name> after

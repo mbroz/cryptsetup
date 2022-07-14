@@ -45,20 +45,17 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_TCRYPTDUMP,ACTION_BENCHMARK,ACTION_REENCRYPT[]
 *--hash, -h* _<hash-spec>_::
-ifndef::ACTION_REENCRYPT[]
-Specifies the passphrase hash for _open_ (for plain and loopaes device
-types).
+ifdef::ACTION_OPEN[]
+Specifies the passphrase hash. Applies to _plain_ and _loopaes_ device types only.
 +
+For _tcrypt_ device type, it restricts checked PBKDF2 variants when looking for header.
+endif::[]
+ifdef::ACTION_LUKSFORMAT[]
 Specifies the hash used in the LUKS key setup scheme and volume key
-digest for _luksFormat_. The specified hash is used for PBKDF2 and AF splitter.
-+
-The specified hash name is passed to the compiled-in crypto backend.
-Different backends may support different hashes. For _luksFormat_, the
-hash algorithm must provide at least 160 bits of output.
-Do not use a non-crypto hash like *xxhash* as this breaks
-security.
-+
-Use _cryptsetup --help_ to show the defaults.
+digest.
+endif::[]
+ifndef::ACTION_REENCRYPT,ACTION_OPEN[]
+The specified hash is used for PBKDF2 and AF splitter.
 endif::[]
 ifdef::ACTION_REENCRYPT[]
 *LUKS1:*
@@ -69,16 +66,42 @@ for new LUKS1 device header.
 +
 *LUKS2:* Ignored unless new keyslot pbkdf algorithm is set to PBKDF2 (see --pbkdf).
 endif::[]
++
+The specified hash name is passed to the compiled-in crypto backend.
+Different backends may support different hashes.
+ifdef::ACTION_LUKSFORMAT[]
+The hash algorithm must provide at least 160 bits of output.
+endif::[]
+Do not use a non-crypto hash like *xxhash* as this breaks
+security.
++
+Use _cryptsetup --help_ to show the defaults.
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT,ACTION_TCRYPTDUMP,ACTION_BENCHMARK[]
 *--cipher, -c* _<cipher-spec>_::
-ifndef::ACTION_REENCRYPT[]
-Set the cipher specification string.
+ifdef::ACTION_OPEN[]
+Set the cipher specification string for _plain_ device type.
 +
-_cryptsetup --help_ shows the compiled-in defaults. The current default
-in the distributed sources is "aes-cbc-essiv:sha256" for plain dm-crypt
-and "aes-xts-plain64" for LUKS.
+For _tcrypt_ device type it restricts checked cipher chains when looking for header.
+endif::[]
+ifndef::ACTION_REENCRYPT,ACTION_OPEN[]
+Set the cipher specification string.
+endif::[]
+ifdef::ACTION_REENCRYPT[]
+*LUKS2*:
+Set the cipher specification string for data segment only.
++
+*LUKS1*:
+Set the cipher specification string for data segment and keyslots.
++
+*NOTE*: In encrypt mode, if cipher specification is omitted the default cipher is applied.
+In reencrypt mode, if no new cipher specification is requested, the existing cipher will remain
+in use. Unless the existing cipher was "cipher_null". In that case default cipher would
+be applied as in encrypt mode.
+endif::[]
++
+_cryptsetup --help_ shows the compiled-in defaults.
 +
 If a hash is part of the cipher specification, then it is used as part
 of the IV generation. For example, ESSIV needs a hash function, while
@@ -91,21 +114,15 @@ security level.
 XTS mode requires kernel 2.6.24 or later and plain64 requires kernel
 2.6.33 or later. More information can be found in the FAQ.
 endif::[]
-ifdef::ACTION_REENCRYPT[]
-*LUKS2*:
-Set the cipher specification string for data segment only.
-+
-*LUKS1*:
-Set the cipher specification string for data segment and keyslots.
-endif::[]
-endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 *--verify-passphrase, -y*::
 When interactively asking for a passphrase, ask for it twice and
-complain if both inputs do not match. Advised when creating a regular
-mapping for the first time, or when running _luksFormat_. Ignored on
-input from file or stdin.
+complain if both inputs do not match.
+ifdef::ACTION_OPEN[]
+Advised when creating a _plain_ type mapping for the first time.
+endif::[]
+Ignored on input from file or stdin.
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TCRYPTDUMP,ACTION_REENCRYPT[]
@@ -115,7 +132,13 @@ Read the passphrase from file.
 If the name given is "-", then the passphrase will be read from stdin.
 In this case, reading will not stop at newline characters.
 +
-ifndef::ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN[]
+*NOTE:* With _plain_ device type, the passphrase obtained via --key-file option is
+passed directly in dm-crypt. Unlike the interactive mode (stdin)
+where digest (--hash option) of the passphrase is passed in dm-crypt instead.
++
+endif::[]
+ifndef::ACTION_REENCRYPT,ACTION_OPEN[]
 With LUKS, the passphrase supplied via --key-file is always the existing
 passphrase requested by a command, except in the case of _luksFormat_
 where --key-file is equivalent to the positional key file argument.
@@ -123,6 +146,8 @@ where --key-file is equivalent to the positional key file argument.
 If you want to set a new passphrase via key file, you have to use a
 positional argument to _luksAddKey_.
 +
+endif::[]
+ifndef::ACTION_REENCRYPT[]
 See section _NOTES ON PASSPHRASE PROCESSING_ in *cryptsetup*(8) for more information.
 endif::[]
 ifdef::ACTION_REENCRYPT[]
@@ -137,8 +162,7 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT[]
 *--keyfile-offset* _value_::
-Skip _value_ bytes at the beginning of the key file. Works with all
-commands that accept key files.
+Skip _value_ bytes at the beginning of the key file.
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT[]
@@ -150,7 +174,6 @@ the operation.
 +
 This option is useful to cut trailing newlines, for example. If
 --keyfile-offset is also given, the size count starts after the offset.
-Works with all commands that accept key files.
 endif::[]
 
 ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY[]
@@ -188,8 +211,7 @@ For _luksAddKey_ this allows adding a new passphrase without having to
 know an existing one. +
 endif::[]
 ifdef::ACTION_OPEN[]
-For _open_ this allows one to open the LUKS device without giving a
-passphrase. +
+This allows one to open _luks_ and _bitlk_ device types without giving a passphrase. +
 endif::[]
 ifdef::ACTION_REENCRYPT[]
 Use (set) new volume key stored in a file. +
@@ -281,7 +303,7 @@ size and key size, but a valid key slot ID can always be between 0 and
 31 for LUKS2.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_BENCHMARK,ACTION_REENCRYPT,ACTION_BENCHMARK,ACTION_LUKSADDKEY[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT,ACTION_BENCHMARK,ACTION_LUKSADDKEY[]
 *--key-size, -s* _bits_::
 Sets key size in _bits_. The argument has to be a multiple of 8. The
 possible key-sizes are limited by the cipher and mode used.
@@ -289,7 +311,10 @@ possible key-sizes are limited by the cipher and mode used.
 See /proc/crypto for more information. Note that key-size in
 /proc/crypto is stated in bytes.
 +
-ifndef::ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN[]
+This option can be used for _plain_ device type only.
+endif::[]
+ifndef::ACTION_REENCRYPT,ACTION_OPEN[]
 This option can be used for _open --type plain_ or _luksFormat_. All
 other LUKS actions will use the key-size specified in the LUKS header.
 Use _cryptsetup --help_ to show the compiled-in defaults.
@@ -308,6 +333,9 @@ endif::[]
 ifdef::ACTION_OPEN,ACTION_RESIZE[]
 *--size, -b <number of 512 byte sectors>*::
 Set the size of the device in sectors of 512 bytes.
+ifdef::ACTION_OPEN[]
+Usable only with _plain_ device type.
+endif::[]
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
@@ -340,17 +368,21 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_REENCRYPT,ACTION_RESIZE[]
 *--device-size* _size[units]_::
+ifndef::ACTION_RESIZE[]
 Instead of real device size, use specified value.
-+
+endif::[]
+ifdef::ACTION_RESIZE[]
+Sets new size of the device. If unset real device size is used.
+endif::[]
+ifdef::ACTION_OPEN[]
+Usable only with _plain_ device type.
+endif::[]
 ifdef::ACTION_REENCRYPT[]
 It means that only specified area (from the start of the device
 to the specified size) will be reencrypted.
 +
 *WARNING:* This is destructive operation. Data beyond --device-size limit may
 be lost after operation gets finished.
-endif::[]
-ifndef::ACTION_REENCRYPT[]
-With _resize_ action it sets new size of the device.
 endif::[]
 +
 If no unit suffix is specified, the size is in bytes.
@@ -368,7 +400,7 @@ ifdef::ACTION_OPEN[]
 *--shared*::
 Creates an additional mapping for one common ciphertext device.
 Arbitrary mappings are supported. This option is only relevant for the
-_open --type plain_ action. Use --offset, --size and --skip to specify
+_plain_ device type. Use --offset, --size and --skip to specify
 the mapped area.
 endif::[]
 
@@ -599,34 +631,38 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_STATUS,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSSUSPEND,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONVERT,ACTION_CONFIG,ACTION_REENCRYPT,ACTION_CLOSE[]
 *--header <device or file storing the LUKS header>*::
+ifndef::ACTION_OPEN[]
 Use a detached (separated) metadata device or file where the LUKS
 header is stored. This option allows one to store ciphertext and LUKS
 header on different devices.
 +
+endif::[]
+ifdef::ACTION_OPEN[]
+Specify detached (separated) metadata device or file where the header is stored.
++
+*WARNING:* There is no check whether the ciphertext device specified
+actually belongs to the header given. In fact, you can specify an
+arbitrary device as the ciphertext device with the --header option.
+Use with care.
+endif::[]
 ifndef::ACTION_REENCRYPT[]
 ifdef::ACTION_LUKSFORMAT[]
-For _luksFormat_ with a file name as the argument to --header, the file
+With a file name as the argument to --header, the file
 will be automatically created if it does not exist. See the cryptsetup
 FAQ for header size calculation.
 +
 The --align-payload option is taken as absolute sector alignment on ciphertext
 device and can be zero.
 endif::[]
-ifndef::ACTION_LUKSFORMAT[]
+ifndef::ACTION_LUKSFORMAT,ACTION_OPEN[]
 For commands that change the LUKS header (e.g. _luksAddKey_),
 specify the device or file with the LUKS header directly as the LUKS
 device.
 endif::[]
 endif::[]
 ifdef::ACTION_REENCRYPT[]
-If used with --encrypt/--new option, the header file will created (or overwritten).
+If used with --encrypt/--new option, the header file will be created (or overwritten).
 Use with care.
-endif::[]
-+
-*WARNING:* There is no check whether the ciphertext device specified
-actually belongs to the header given. In fact, you can specify an
-arbitrary device as the ciphertext device for _open_ with the --header
-option. Use with care.
 +
 *LUKS2*:
 For decryption mode the option may be used to export original LUKS2 header
@@ -634,6 +670,7 @@ to a detached file. The passed future file must not exist at the time
 of initializing the decryption operation. This frees space in head of data
 device so that data can be moved at original LUKS2 header location. Later on
 decryption operation continues as if the ordinary detached header was passed.
+endif::[]
 endif::[]
 
 ifdef::ACTION_LUKSHEADERBACKUP,ACTION_LUKSHEADERRESTORE[]
@@ -727,8 +764,7 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME[]
 *--token-only*::
-Do not proceed further with action (any of _token_, _open_, _resize_
-or _luksResume_) if token based keyslot unlock failed. Without the
+Do not proceed further with action if token based keyslot unlock failed. Without the
 option, action asks for passphrase to proceed further.
 endif::[]
 
@@ -741,16 +777,27 @@ endif::[]
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 ifndef::ACTION_REENCRYPT[]
 *--sector-size* _bytes_::
-Set sector size for use with disk encryption. It must be power of two
-and in range 512 - 4096 bytes. This option is available only in the
-LUKS2 or plain modes.
+endif::[]
+ifndef::ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN[]
+Set encryption sector size for use with _plain_ device type. It must be power of two
+and in range 512 - 4096 bytes. The default mode is 512 bytes.
 +
-The default for plain mode is 512 bytes. For LUKS2 devices it's
-established during luksFormat operation based on parameters provided by
-underlying data device. For native 4K block devices it's 4096 bytes. For
-4K/512e (4K physical sector size with 512 bytes emulation) it's 4096
-bytes. For drives reporting only 512 bytes block size it remains 512
-bytes. If data device is regular file put in filesystem it's 4096 bytes.
+Note that if sector size is higher than underlying device hardware
+sector, using this option can increase risk on incomplete sector writes during a
+power fail.
+endif::[]
+ifdef::ACTION_LUKSFORMAT[]
+Set sector size for use with disk encryption. It must be power of two
+and in range 512 - 4096 bytes. This option is available only with LUKS2
+format.
++
+For LUKS2 devices it's established based on parameters provided by
+underlying data device. For native 4K block devices it's 4096 bytes.
+For 4K/512e (4K physical sector size with 512 bytes emulation) it's
+4096 bytes. For drives reporting only 512 bytes block size it remains
+512 bytes. If data device is regular file put in filesystem it's 4096
+bytes.
 +
 Note that if sector size is higher than underlying device hardware
 sector and there is not integrity protection that uses data journal,
@@ -760,6 +807,7 @@ power fail.
 If used together with _--integrity_ option and dm-integrity journal, the
 atomicity of writes is guaranteed in all cases (but it cost write
 performance - data has to be written twice).
+endif::[]
 +
 Increasing sector size from 512 bytes to 4096 bytes can provide better
 performance on most of the modern storage devices and also with some hw
@@ -778,8 +826,8 @@ endif::[]
 ifdef::ACTION_OPEN[]
 *--iv-large-sectors*::
 Count Initialization Vector (IV) in larger sector size (if set)
-instead of 512 bytes sectors. This option can be used only for _open_
-command and _plain_ encryption type.
+instead of 512 bytes sectors. This option can be used only with _plain_
+device type.
 +
 *NOTE:* This option does not have any performance or security impact,
 use it only for accessing incompatible existing disk images from other
@@ -882,12 +930,16 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSADDKEY,ACTION_LUKSDUMP[]
 *--unbound*::
+ifndef::ACTION_OPEN[]
 Creates new or dumps existing LUKS2 unbound keyslot.
 +
-When used in _luksOpen_ action (allowed only together with
---test-passphrase parameter), it allows to test passphrase for unbound
-LUKS2 keyslot. Otherwise, unbound keyslot passphrase can be tested only
-when specific keyslot is selected via --key-slot parameter.
+endif::[]
+ifdef::ACTION_OPEN[]
+Allowed only only together with --test-passphrase parameter, it allows
+to test passphrase for unbound LUKS2 keyslot. Otherwise, unbound keyslot
+passphrase can be tested only when specific keyslot is selected via
+--key-slot parameter.
+endif::[]
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_TCRYPTDUMP[]
