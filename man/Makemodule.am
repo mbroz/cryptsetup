@@ -1,6 +1,8 @@
-ADOCFILES = \
+ADOCFILES_COMMON = \
 	man/common_options.adoc \
-	man/common_footer.adoc \
+	man/common_footer.adoc
+
+ADOCFILES = $(ADOCFILES_COMMON) \
 	man/cryptsetup.8.adoc \
 	man/cryptsetup-open.8.adoc \
 	man/cryptsetup-close.8.adoc \
@@ -106,10 +108,11 @@ if ENABLE_ASCIIDOC
 EXTRA_DIST += $(MANPAGES_ALL)
 man8_MANS += $(MANPAGES) $(MANLINKS)
 
+$(MANPAGES): $(ADOCFILES_COMMON)
+
 SUFFIXES = .8.adoc .8
 .8.adoc.8:
-	$(AM_V_GEN) test -f ./$@ || \
-	$(ASCIIDOCTOR) -b manpage \
+	$(AM_V_GEN) $(ASCIIDOCTOR) -b manpage \
 		-a 'release-version=$(VERSION)' \
 		--base-dir=$(abs_srcdir) \
 		--destination-dir $(abs_builddir)/man $<
