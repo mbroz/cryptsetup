@@ -1,0 +1,281 @@
+Cryptsetup 2.5.0-rc1 Release Notes
+==================================
+Stable release candidate with new features and bug fixes.
+
+Changes since version 2.4.3
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Split manual pages into per-action pages and use AsciiDoc format.
+
+  Manual pages are now generated from AsciiDoc format, allowing easy
+  conditional modifications for per-action options.
+
+  Generation of man pages requires the asciidoctor tool installed.
+
+  Pre-generated man pages are also included in the distribution tarball.
+  You can use --disable-asciidoc configure option to skip man page
+  generation completely. In this case, pre-generated man pages will be
+  used for installation.
+
+  For cryptsetup, there is main man page (cryptsetup.8) that references
+  separate man pages for each command (for example, cryptsetup-open.8).
+  You can open such a man page by simply running "man cryptsetup open".
+  Also, man pages for action aliases are available (cryptsetup-luksOpen.8
+  is an alias for cryptsetup-open.8, etc.)
+
+LUKS volume reencryption changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Remove cryptsetup-reencrypt tool from the project and move reencryption
+  to already existing "cryptsetup reencrypt" command.
+
+  Cryptsetup reencrypt now handles both LUKS1 and LUKS2 reencryption,
+  encryption, and decryption.
+
+  If you need to emulate the old cryptsetup-reencrypt binary, use simple
+  wrappers script running "exec cryptsetup reencrypt $@".
+
+  All command line options should be compatible. An exception is the
+  reencryption of LUKS2 volumes with old LUKS1 reencryption code that was
+  replaced by native and more resilient LUKS2 reencryption.
+
+* LUKS2: implement --decryption option that allows LUKS removal. The
+  operation can run online or offline and supports the data shift option.
+
+  During the initialization, the LUKS2 header is exported to a file.
+  The first data segment is moved to the head of the data device in place
+  of the original header.
+
+  The feature internally introduces several new resilience modes
+  (combination of existing modes datashift and "checksum" or "journal").
+  Datashift resilience mode is applied for data moved towards the first
+  segment, and the first segment is then decrypted in place.
+
+  This decryption mode is not backward compatible with prior LUKS2
+  reencryption. Interrupted operations in progress cannot be resumed
+  using older cryptsetup releases.
+
+* Reencryption metadata options that are not compatible with recent code
+  (features implemented in more recent releases) are now only read, but
+  code will not activate or modify such metadata.
+  Reencryption metadata contains a version that is validated when
+  reencryption is resumed.
+  For more info, see the updated LUKS2 on-disk format specification.
+
+  Safe operation of reencryption is to always finish the operation with
+  only one version of the tools.
+
+* Fix decryption operation with --active-name option and restrict
+  it to be used only with LUKS2.
+
+* Do not refresh reencryption digest when not needed.
+  This should speed up the reencryption resume process.
+
+* Store proper resilience data in LUKS2 reencrypt initialization.
+  Resuming reencryption now does not require specification of resilience
+  type parameters if these are the same as during initialization.
+
+* Properly wipe the unused area after reencryption with datashift in
+  the forward direction.
+
+* Check datashift value against larger sector size.
+  For example, it could cause an issue if misaligned 4K sector appears
+  during decryption.
+
+* Do not allow sector size increase reencryption in offline mode.
+  The eventual logical block size increase on the dm-crypt device above
+  may lead to an unusable filesystem. Do not allow offline reencryption
+  when sector size increase is requested.
+
+  You can use --force-offline-reencrypt option to override this check
+  (and potentially destroy the data).
+
+* Do not allow dangerous sector size change during reencryption.
+  By changing the encryption sector size during reencryption, a user
+  may increase the effective logical block size for the dm-crypt active
+  device.
+
+  Do not allow encryption sector size to be increased over the value
+  provided by fs superblock in BLOCK_SIZE property.
+
+* Ask the user for confirmation before resuming reencryption.
+  The prompt is not shown in batch mode or when the user explicitly asks
+  for a reencryption resume via --resume-only.
+
+* Do not resume reencryption with conflicting parameters.
+  For example, if the operation was initialized as --encrypt, do not
+  allow resume with opposing parameter --decrypt and vice versa.
+  Also, the code now checks for conflicting resilience parameters
+  (datashift cannot be changed after initialization).
+
+* Add --force-offline-reencrypt option.
+  It can be used to enforce offline reencryption in batch mode when
+  the device is a regular file; therefore, cryptsetup cannot detect
+  properly active devices using it.
+  Also, it may be useful to override the active device auto-detection
+  for specific storage configurations (dangerous!).
+
+* Do not allow nested encryption in LUKS reencrypt.
+  Avoid accidental nested encryption via cryptsetup reencrypt --encrypt.
+
+* Fix --test-passphrase when the device is in reencryption.
+
+* Do not upload keys in keyring during offline reencryption.
+  Reencryption runs in userspace, so the kernel does not need the key.
+
+* Support all options allowed with luksFormat with encrypt action.
+
+Other changes
+~~~~~~~~~~~~~
+
+* Add resize action to integritysetup.
+  This allows resizing of standalone integrity devices.
+
+* Support --device-size option (that allows unit specification) for plain
+  devices (existing --size option requires 512-byte sectors units).
+
+* Fix detection of encryption sector size if a detached header is used.
+
+* Remove obsolete dracut plugin reencryption example.
+
+* Fix possible keyslot area size overflow during conversion to LUKS2.
+  If keyslots are not sorted according to binary area offset, the area
+  size calculation was wrong and could overflow.
+
+* Hardening and fixes to LUKS2 validation functions:
+
+  * Log a visible error if convert fails due to validation check.
+
+  * Check for interval (keyslot and segment area) overflow.
+
+  * Check cipher availability before LUKS conversion to LUKS2.
+    Some historic incompatibilities are ignored for LUKS1 but do not
+    work for LUKS2.
+
+  * Add empty string check to LUKS2 metadata JSON validation.
+    Most of the LUKS2 fields cannot be empty.
+
+  * Fix JSON objects validation to check JSON object type properly.
+
+* TCRYPT: Properly apply retry count and continue if some PBKDF variant
+  is unavailable.
+
+* BITLK: Add a warning when activating a device with the wrong size
+  stored in metadata.
+
+* BITLK: Add BitLocker volume size to dump command.
+
+* BITLK: Fix possible UTF16 buffer overflow in volume key dump.
+
+* BITLK: Skip question if the batch mode is set for volume key dump.
+
+* BITLK: Check dm-zero availability in the kernel.
+  Bitlocker compatible mode uses dm-zero to mask metadata area.
+  The device cannot be activated if dm-zero is not available.
+
+* Fix error message for LUKS2-only cryptsetup commands to explicitly
+  state LUKS2 version is required.
+
+* Fix error message for incompatible dm-integrity metadata.
+  If the integritysetup tool is too old, kernel dm-integrity may use
+  a more recent version of dm-integrity metadata.
+
+* Properly deactivate the integrity device even if the LUKS2 header
+  is no longer available.
+  If LUKS2 is used with integrity protection, there is always
+  a dm-integrity device underneath that must be deactivated.
+
+* Allow use of --header option for cryptsetup close.
+  This can be used to check that the activated device has the same UUID.
+
+* Fix activation of LUKS2 device with integrity and detached header.
+  The kernel-parsed dm-integrity superblock is always located on the
+  data device, the incorrectly used detached header device here.
+
+* Add ZEROOUT IOCTL support for crypt_wipe API call.
+  For block devices, we can use optimized in-kernel BLKZEROOUT ioctl.
+
+* VERITY: set loopback sector size according to dm-verity block sizes.
+  Verity block size has the same limits, so we can optimize the loop
+  device to increase performance.
+
+* Other Documentation and man page improvements:
+
+  * Update LUKS2 on-disk format description.
+
+  * Add per-keyslot LUKS2 options to the man page.
+    Some options were missing for LUKS2 luksAddKey and luksChangeKey.
+
+  * Fix cryptsetup manpage to use PBKDF consistently.
+
+  * Add compile info to README. This information was lost when we removed
+    the default automake INSTALL file.
+
+  * Use volume key consistently in FAQ and man pages.
+
+  * Use markdown version of FAQ directly for installation.
+
+  * Clarify graceful reencryption interruption.
+    Currently, it can be interrupted by both SIGINT and SIGTERM signals.
+
+  * Add new mailing list info.
+
+  * Mention non-cryptographic xxhash64 hash for integrity protection.
+
+* veritysetup: dump device sizes.
+  Calculating device sizes for verity devices is a little bit tricky.
+  Data, hash, and FEC can share devices or be separate devices.
+  Now dump command prints used device sizes, but it requires that
+  the user specifies all values that are not stored in superblock
+  (like FEC device and FEC roots).
+
+* Fix check for argp_usage in configure if argp-standalone lib is used.
+
+* Add constant time memcmp and hexa print implementation and use it for
+  cryptographic keys handling.
+
+* Display progress when wiping the end of the resized device.
+
+* LUKS2 token: prefer token PIN query before passphrase in some cases.
+  When a user provides --token-type or specific --token-id, a token PIN
+  query is preferred to a passphrase query.
+
+* LUKS2 token: allow tokens to be replaced with --token-replace option
+  for cryptsetup token command.
+
+* LUKS2 token: do not continue operation when interrupted in PIN prompt.
+
+* Add --progress-json parameter to utilities.
+  Progress data can now be printed out in JSON format suitable for
+  machine processing.
+
+* Embedded Argon2 PBKDF: optimize and simplify thread exit.
+
+* Avoid using SHA1 in tests and fix new enforcements introduced in FIPS
+  provider for OpenSSL3 (like minimal parameters for PBKDF2).
+
+* Use custom UTF conversion and avoid linking to iconv as a dependency.
+
+* Reimplement BASE64 with simplified code instead of coreutils version.
+
+Libcryptsetup API extensions and changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Properly define uint32_t constants in API.
+  This is not a real change, but it avoids strict compiler warnings.
+
+* crypt_resume_by_token_pin() - Resume crypt device using LUKS2 token.
+
+* crypt_get_label() - Get the label of the LUKS2 device.
+
+* crypt_get_subsystem() - Get the subsystem label of the LUKS2 device.
+
+* Make CRYPT_WIPE_ENCRYPTED_ZERO crypt_wipe() option obsolete.
+  It was never implemented (the idea was to speed up wipe), but with
+  the recent RNG performance changes, it makes no longer sense.
+
+* Add struct crypt_params_reencrypt changes related to decryption.
+
+* Improve crypt_reencrypt_status() return values.
+  Empty or any non-LUKS types now returns CRYPT_REENCRYPT_INVALID status.
+  For LUKS1 devices, it returns CRYPT_REENCRYPT_NONE.
