@@ -38,7 +38,7 @@ Reencryption process may be safely interrupted by a user via SIGINT
 signal (ctrl+c). Same applies to SIGTERM signal (i.e. issued by systemd
 during system shutdown).
 
-For in-place encryption mode, the _reencrypt_ action aditionally takes all
+For in-place encryption mode, the _reencrypt_ action additionally takes all
 options available for _luksFormat_ action for respective LUKS version (see
 cryptsetup-luksFormat man page for more details). See *cryptsetup-luksFormat*(8).
 
@@ -141,7 +141,7 @@ Encrypt LUKS2 device (in-place) with detached header put in a file:
 
 *cryptsetup reencrypt --encrypt --type luks2 --header my_luks2_header /dev/plaintext_device*
 
-Initalize LUKS2 in-place encryption operation only and activate the device (not yet encrypted):
+Initialize LUKS2 in-place encryption operation only and activate the device (not yet encrypted):
 
 *cryptsetup reencrypt --encrypt --type luks2 --init-only --reduce-device-size 32m /dev/plaintext_device my_future_luks_device*
 
