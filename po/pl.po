@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 2.5.0-rc0\n"
+"Project-Id-Version: cryptsetup 2.5.0-rc1\n"
 "Report-Msgid-Bugs-To: cryptsetup@lists.linux.dev\n"
-"POT-Creation-Date: 2022-06-17 19:43+0200\n"
-"PO-Revision-Date: 2022-06-22 06:29+0200\n"
+"POT-Creation-Date: 2022-07-14 14:04+0200\n"
+"PO-Revision-Date: 2022-07-14 18:45+0200\n"
 "Last-Translator: Jakub Bogusz <qboosh@pld-linux.org>\n"
 "Language-Team: Polish <translation-team-pl@lists.sourceforge.net>\n"
 "Language: pl\n"
@@ -65,7 +65,7 @@ msgid "Requested automatic recalculation of integrity tags is not supported."
 msgstr "Żądane automatyczne przeliczenie znaczników integralności nie jest obsługiwane."
 
 #: lib/libdevmapper.c:1733 lib/libdevmapper.c:1769 lib/libdevmapper.c:1772
-#: lib/luks2/luks2_json_metadata.c:2493
+#: lib/luks2/luks2_json_metadata.c:2552
 msgid "Discard/TRIM is not supported."
 msgstr "Porzucenie/TRIM nie jest obsługiwane."
 
@@ -137,7 +137,7 @@ msgstr "Ta operacja jest obsługiwana tylko dla urządzeń LUKS."
 msgid "This operation is supported only for LUKS2 device."
 msgstr "Ta operacja jest obsługiwana tylko dla urządzeń LUKS2."
 
-#: lib/setup.c:420 lib/luks2/luks2_reencrypt.c:2979
+#: lib/setup.c:420 lib/luks2/luks2_reencrypt.c:2985
 msgid "All key slots full."
 msgstr "Wszyskie miejsca na klucze są pełne."
 
@@ -161,7 +161,7 @@ msgid "Header detected but device %s is too small."
 msgstr "Wykryto nagłówek, ale urządzenie %s jest zbyt małe."
 
 #: lib/setup.c:661 lib/setup.c:2851 lib/setup.c:4335
-#: lib/luks2/luks2_reencrypt.c:3749 lib/luks2/luks2_reencrypt.c:4151
+#: lib/luks2/luks2_reencrypt.c:3757 lib/luks2/luks2_reencrypt.c:4159
 msgid "This operation is not supported for this device type."
 msgstr "Ta operacja nie jest obsługiwana dla tego rodzaju urządzenia."
 
@@ -170,11 +170,11 @@ msgid "Illegal operation with reencryption in-progress."
 msgstr "Niedozwolona operacja w trakcie ponownego szyfrowania."
 
 #: lib/setup.c:833 lib/luks1/keymanage.c:248 lib/luks1/keymanage.c:524
-#: lib/luks2/luks2_json_metadata.c:1231 src/cryptsetup.c:1449
+#: lib/luks2/luks2_json_metadata.c:1267 src/cryptsetup.c:1449
 #: src/cryptsetup.c:1581 src/cryptsetup.c:1636 src/cryptsetup.c:1756
 #: src/cryptsetup.c:1861 src/cryptsetup.c:2142 src/cryptsetup.c:2380
-#: src/cryptsetup.c:2440 src/utils_reencrypt_luks1.c:1188
-#: tokens/ssh/cryptsetup-ssh.c:77
+#: src/cryptsetup.c:2440 src/utils_reencrypt.c:1378
+#: src/utils_reencrypt_luks1.c:1188 tokens/ssh/cryptsetup-ssh.c:77
 #, c-format
 msgid "Device %s is not a valid LUKS device."
 msgstr "Urządzenie %s nie jest prawidłowym urządzeniem LUKS."
@@ -211,7 +211,7 @@ msgstr "UUID nie jest obsługiwany dla tego rodzaju szyfrowania."
 msgid "Detached metadata device is not supported for this crypt type."
 msgstr "Osobne urządzenie metadanych nie jest obsługiwane dla tego rodzaju szyfrowania."
 
-#: lib/setup.c:1553 lib/setup.c:1765 lib/luks2/luks2_reencrypt.c:2935
+#: lib/setup.c:1553 lib/setup.c:1765 lib/luks2/luks2_reencrypt.c:2941
 #: src/cryptsetup.c:1250 src/cryptsetup.c:3072
 msgid "Unsupported encryption sector size."
 msgstr "Nieobsługiwany rozmiar sektora szyfrowania."
@@ -261,7 +261,7 @@ msgid "WARNING: LUKS2 keyslots area size changed to %<PRIu64> bytes.\n"
 msgstr "UWAGA: rozmiar obszaru kluczy LUKS2 zmienił się na %<PRIu64> (w bajtach).\n"
 
 #: lib/setup.c:1916 lib/utils_device.c:909 lib/luks1/keyencryption.c:255
-#: lib/luks2/luks2_reencrypt.c:3003 lib/luks2/luks2_reencrypt.c:4246
+#: lib/luks2/luks2_reencrypt.c:3009 lib/luks2/luks2_reencrypt.c:4254
 #, c-format
 msgid "Device %s is too small."
 msgstr "Urządzenie %s jest zbyt małe."
@@ -338,8 +338,8 @@ msgstr "Nieznany typ żądanego urządzenia szyfrującego %s."
 msgid "Unsupported parameters on device %s."
 msgstr "Nieobsługiwane parametry urządzenia %s."
 
-#: lib/setup.c:2614 lib/setup.c:2707 lib/luks2/luks2_reencrypt.c:2834
-#: lib/luks2/luks2_reencrypt.c:3068 lib/luks2/luks2_reencrypt.c:3453
+#: lib/setup.c:2614 lib/setup.c:2707 lib/luks2/luks2_reencrypt.c:2837
+#: lib/luks2/luks2_reencrypt.c:3074 lib/luks2/luks2_reencrypt.c:3459
 #, c-format
 msgid "Mismatching parameters on device %s."
 msgstr "Niezgodne parametry dla urządzenia %s."
@@ -348,21 +348,21 @@ msgstr "Niezgodne parametry dla urządzenia %s."
 msgid "Crypt devices mismatch."
 msgstr "Urządzenia szyfrowane nie zgadzają się."
 
-#: lib/setup.c:2768 lib/setup.c:2773 lib/luks2/luks2_reencrypt.c:2318
-#: lib/luks2/luks2_reencrypt.c:2852 lib/luks2/luks2_reencrypt.c:3999
+#: lib/setup.c:2768 lib/setup.c:2773 lib/luks2/luks2_reencrypt.c:2315
+#: lib/luks2/luks2_reencrypt.c:2853 lib/luks2/luks2_reencrypt.c:4007
 #, c-format
 msgid "Failed to reload device %s."
 msgstr "Nie udało się przeładować urządzenia %s."
 
-#: lib/setup.c:2779 lib/setup.c:2785 lib/luks2/luks2_reencrypt.c:2289
-#: lib/luks2/luks2_reencrypt.c:2296 lib/luks2/luks2_reencrypt.c:2861
+#: lib/setup.c:2779 lib/setup.c:2785 lib/luks2/luks2_reencrypt.c:2286
+#: lib/luks2/luks2_reencrypt.c:2293 lib/luks2/luks2_reencrypt.c:2867
 #, c-format
 msgid "Failed to suspend device %s."
 msgstr "Nie udało się wstrzymać urządzenia %s."
 
-#: lib/setup.c:2791 lib/luks2/luks2_reencrypt.c:2303
-#: lib/luks2/luks2_reencrypt.c:2882 lib/luks2/luks2_reencrypt.c:3912
-#: lib/luks2/luks2_reencrypt.c:4003
+#: lib/setup.c:2791 lib/luks2/luks2_reencrypt.c:2300
+#: lib/luks2/luks2_reencrypt.c:2888 lib/luks2/luks2_reencrypt.c:3920
+#: lib/luks2/luks2_reencrypt.c:4011
 #, c-format
 msgid "Failed to resume device %s."
 msgstr "Nie udało wznowić urządzenia %s."
@@ -465,12 +465,12 @@ msgstr "Nagłówek urządzenia zachodzi na obszar danych."
 msgid "Reencryption in-progress. Cannot activate device."
 msgstr "Ponowne szyfrowanie trwa. Nie można uaktywnić urządzenia."
 
-#: lib/setup.c:4215 lib/luks2/luks2_json_metadata.c:2576
-#: lib/luks2/luks2_reencrypt.c:3559
+#: lib/setup.c:4215 lib/luks2/luks2_json_metadata.c:2635
+#: lib/luks2/luks2_reencrypt.c:3565
 msgid "Failed to get reencryption lock."
 msgstr "Nie udało się uzyskać blokady ponownego szyfrowania."
 
-#: lib/setup.c:4228 lib/luks2/luks2_reencrypt.c:3578
+#: lib/setup.c:4228 lib/luks2/luks2_reencrypt.c:3584
 msgid "LUKS2 reencryption recovery failed."
 msgstr "Odtwarzanie ponownego szyfrowania LUKS2 nie powiodło się."
 
@@ -513,7 +513,7 @@ msgstr "Nie udało się załadować klucza do pęku kluczy w jądrze."
 msgid "Could not cancel deferred remove from device %s."
 msgstr "Nie udało się anulować opóźnionego usuwania z urządzenia %s."
 
-#: lib/setup.c:4786 lib/setup.c:4802 lib/luks2/luks2_json_metadata.c:2629
+#: lib/setup.c:4786 lib/setup.c:4802 lib/luks2/luks2_json_metadata.c:2688
 #: src/utils_reencrypt.c:116
 #, c-format
 msgid "Device %s is still in use."
@@ -573,7 +573,7 @@ msgstr "Nie udało się przypisać klucza %d do skrótu."
 msgid "Kernel keyring is not supported by the kernel."
 msgstr "Pęk kluczy w jądrze nie jest obsługiwany przez jądro."
 
-#: lib/setup.c:6295 lib/luks2/luks2_reencrypt.c:3774
+#: lib/setup.c:6295 lib/luks2/luks2_reencrypt.c:3782
 #, c-format
 msgid "Failed to read passphrase from keyring (error %d)."
 msgstr "Nie udało się odczytać hasła z pęku kluczy (błąd %d)."
@@ -628,7 +628,7 @@ msgid "Cannot read requested amount of data."
 msgstr "Nie można odczytać żądanej ilości danych."
 
 #: lib/utils_device.c:208 lib/utils_storage_wrappers.c:110
-#: lib/luks1/keyencryption.c:91
+#: lib/luks1/keyencryption.c:91 src/utils_reencrypt.c:1353
 #, c-format
 msgid "Device %s does not exist or access denied."
 msgstr "Urządzenie %s nie istnieje lub dostęp jest zabroniony."
@@ -787,7 +787,7 @@ msgstr "Określenie szyfru powinno być w formacie [szyfr]-[tryb]-[iv]."
 
 #: lib/luks1/keyencryption.c:97 lib/luks1/keymanage.c:364
 #: lib/luks1/keymanage.c:674 lib/luks1/keymanage.c:1125
-#: lib/luks2/luks2_json_metadata.c:1385 lib/luks2/luks2_keyslot.c:714
+#: lib/luks2/luks2_json_metadata.c:1421 lib/luks2/luks2_keyslot.c:714
 #, c-format
 msgid "Cannot write to device %s, permission denied."
 msgstr "Nie można zapisać na urządzenie %s, brak uprawnień."
@@ -810,7 +810,7 @@ msgstr "Błąd we/wy podczas szyfrowania klucza."
 #: lib/verity/verity.c:80 lib/verity/verity.c:196 lib/verity/verity_hash.c:320
 #: lib/verity/verity_hash.c:329 lib/verity/verity_hash.c:349
 #: lib/verity/verity_fec.c:260 lib/verity/verity_fec.c:272
-#: lib/verity/verity_fec.c:277 lib/luks2/luks2_json_metadata.c:1388
+#: lib/verity/verity_fec.c:277 lib/luks2/luks2_json_metadata.c:1424
 #: src/utils_reencrypt_luks1.c:121 src/utils_reencrypt_luks1.c:133
 #, c-format
 msgid "Cannot open device %s."
@@ -832,32 +832,32 @@ msgstr "Urządzenie %s jest zbyt małe (LUKS1 wymaga przynajmniej %<PRIu64> bajt
 msgid "LUKS keyslot %u is invalid."
 msgstr "Numer klucza LUKS %u jest nieprawidłowy."
 
-#: lib/luks1/keymanage.c:266 lib/luks2/luks2_json_metadata.c:1248
+#: lib/luks1/keymanage.c:266 lib/luks2/luks2_json_metadata.c:1284
 #, c-format
 msgid "Requested header backup file %s already exists."
 msgstr "Żądany plik kopii zapasowej nagłówka %s już istnieje."
 
-#: lib/luks1/keymanage.c:268 lib/luks2/luks2_json_metadata.c:1250
+#: lib/luks1/keymanage.c:268 lib/luks2/luks2_json_metadata.c:1286
 #, c-format
 msgid "Cannot create header backup file %s."
 msgstr "Nie można utworzyć pliku kopii zapasowej nagłówka %s."
 
-#: lib/luks1/keymanage.c:275 lib/luks2/luks2_json_metadata.c:1257
+#: lib/luks1/keymanage.c:275 lib/luks2/luks2_json_metadata.c:1293
 #, c-format
 msgid "Cannot write header backup file %s."
 msgstr "Nie można zapisać pliku kopii zapasowej nagłówka %s."
 
-#: lib/luks1/keymanage.c:306 lib/luks2/luks2_json_metadata.c:1294
+#: lib/luks1/keymanage.c:306 lib/luks2/luks2_json_metadata.c:1330
 msgid "Backup file does not contain valid LUKS header."
 msgstr "Plik kopii zapasowej nie zawiera prawidłowego nagłówka LUKS."
 
 #: lib/luks1/keymanage.c:319 lib/luks1/keymanage.c:590
-#: lib/luks2/luks2_json_metadata.c:1315
+#: lib/luks2/luks2_json_metadata.c:1351
 #, c-format
 msgid "Cannot open header backup file %s."
 msgstr "Nie można otworzyć pliku kopii zapasowej nagłówka %s."
 
-#: lib/luks1/keymanage.c:327 lib/luks2/luks2_json_metadata.c:1323
+#: lib/luks1/keymanage.c:327 lib/luks2/luks2_json_metadata.c:1359
 #, c-format
 msgid "Cannot read header backup file %s."
 msgstr "Nie można odczytać pliku kopii zapasowej nagłówka %s."
@@ -879,7 +879,7 @@ msgstr "nie zawiera nagłówka LUKS. Nadpisanie nagłówka może zniszczyć dane
 msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
 msgstr "już zawiera nagłówek LUKS. Nadpisanie nagłówka zniszczy istniejące klucze."
 
-#: lib/luks1/keymanage.c:348 lib/luks2/luks2_json_metadata.c:1357
+#: lib/luks1/keymanage.c:348 lib/luks2/luks2_json_metadata.c:1393
 msgid ""
 "\n"
 "WARNING: real device header has different UUID than backup!"
@@ -972,8 +972,8 @@ msgid "Data offset for LUKS header must be either 0 or higher than header size."
 msgstr "Offset danych dla nagłówka LUKS musi wynosić 0 lub więcej niż rozmiar nagłówka."
 
 #: lib/luks1/keymanage.c:794 lib/luks1/keymanage.c:863
-#: lib/luks2/luks2_json_format.c:287 lib/luks2/luks2_json_metadata.c:1139
-#: src/utils_reencrypt.c:471
+#: lib/luks2/luks2_json_format.c:287 lib/luks2/luks2_json_metadata.c:1175
+#: src/utils_reencrypt.c:475
 msgid "Wrong LUKS UUID format provided."
 msgstr "Podano zły format LUKS UUID."
 
@@ -1349,8 +1349,8 @@ msgstr "Jądro nie obsługuje stałego wyrównania metadanych dm-integrity."
 msgid "Kernel refuses to activate insecure recalculate option (see legacy activation options to override)."
 msgstr "Jądro odmawia uaktywnienia niebezpiecznej opcji przeliczenia (p. stare opcje aktywacji, aby wymusić)."
 
-#: lib/luks2/luks2_disk_metadata.c:393 lib/luks2/luks2_json_metadata.c:1097
-#: lib/luks2/luks2_json_metadata.c:1377
+#: lib/luks2/luks2_disk_metadata.c:393 lib/luks2/luks2_json_metadata.c:1133
+#: lib/luks2/luks2_json_metadata.c:1413
 #, c-format
 msgid "Failed to acquire write lock on device %s."
 msgstr "Nie udało się uzyskać blokady dla zapisu na urządzeniu %s."
@@ -1376,40 +1376,40 @@ msgstr "Żądany offset danych jest zbyt mały."
 msgid "WARNING: keyslots area (%<PRIu64> bytes) is very small, available LUKS2 keyslot count is very limited.\n"
 msgstr "UWAGA: obszar kluczy (%<PRIu64> bajtów) bardzo mały, dostępna liczba kluczy LUKS2 jest bardzo ograniczona.\n"
 
-#: lib/luks2/luks2_json_metadata.c:1084 lib/luks2/luks2_json_metadata.c:1222
-#: lib/luks2/luks2_json_metadata.c:1283 lib/luks2/luks2_keyslot_luks2.c:92
+#: lib/luks2/luks2_json_metadata.c:1120 lib/luks2/luks2_json_metadata.c:1258
+#: lib/luks2/luks2_json_metadata.c:1319 lib/luks2/luks2_keyslot_luks2.c:92
 #: lib/luks2/luks2_keyslot_luks2.c:114
 #, c-format
 msgid "Failed to acquire read lock on device %s."
 msgstr "Nie udało się uzyskać blokady do odczytu na urządzeniu %s."
 
-#: lib/luks2/luks2_json_metadata.c:1300
+#: lib/luks2/luks2_json_metadata.c:1336
 #, c-format
 msgid "Forbidden LUKS2 requirements detected in backup %s."
 msgstr "Wykryto zabronione wymagania LUKS2 w kopii zapasowej %s."
 
-#: lib/luks2/luks2_json_metadata.c:1341
+#: lib/luks2/luks2_json_metadata.c:1377
 msgid "Data offset differ on device and backup, restore failed."
 msgstr "Offset danych różni się między urządzeniem a kopią zapasową; przywrócenie nie powiodło się."
 
-#: lib/luks2/luks2_json_metadata.c:1347
+#: lib/luks2/luks2_json_metadata.c:1383
 msgid "Binary header with keyslot areas size differ on device and backup, restore failed."
 msgstr "Nagłówek binarny z rozmiarem obszarów kluczy różni się między urządzeniem a kopią zapasową; przywrócenie nie powiodło się."
 
-#: lib/luks2/luks2_json_metadata.c:1354
+#: lib/luks2/luks2_json_metadata.c:1390
 #, c-format
 msgid "Device %s %s%s%s%s"
 msgstr "Urządzenie %s %s%s%s%s"
 
-#: lib/luks2/luks2_json_metadata.c:1355
+#: lib/luks2/luks2_json_metadata.c:1391
 msgid "does not contain LUKS2 header. Replacing header can destroy data on that device."
 msgstr "nie zawiera nagłówka LUKS2. Nadpisanie nagłówka może zniszczyć dane na tym urządzeniu."
 
-#: lib/luks2/luks2_json_metadata.c:1356
+#: lib/luks2/luks2_json_metadata.c:1392
 msgid "already contains LUKS2 header. Replacing header will destroy existing keyslots."
 msgstr "już zawiera nagłówek LUKS2. Nadpisanie nagłówka zniszczy istniejące klucze."
 
-#: lib/luks2/luks2_json_metadata.c:1358
+#: lib/luks2/luks2_json_metadata.c:1394
 msgid ""
 "\n"
 "WARNING: unknown LUKS2 requirements detected in real device header!\n"
@@ -1419,7 +1419,7 @@ msgstr ""
 "UWAGA: wykryto nieznane wymagania LUKS2 w nagłówku prawdziwego urządzenia!\n"
 "Nadpisanie nagłówka kopią zapasową może uszkodzić dane na tym urządzeniu!"
 
-#: lib/luks2/luks2_json_metadata.c:1360
+#: lib/luks2/luks2_json_metadata.c:1396
 msgid ""
 "\n"
 "WARNING: Unfinished offline reencryption detected on the device!\n"
@@ -1429,50 +1429,50 @@ msgstr ""
 "UWAGA: wykryto nie zakończone ponowne szyfrowanie offline na urządzeniu!\n"
 "Nadpisanie nagłówka kopią zapasową może uszkodzić dane."
 
-#: lib/luks2/luks2_json_metadata.c:1458
+#: lib/luks2/luks2_json_metadata.c:1494
 #, c-format
 msgid "Ignored unknown flag %s."
 msgstr "Zignorowano nieznaną flagę %s."
 
-#: lib/luks2/luks2_json_metadata.c:2343 lib/luks2/luks2_reencrypt.c:2018
+#: lib/luks2/luks2_json_metadata.c:2402 lib/luks2/luks2_reencrypt.c:2015
 #, c-format
 msgid "Missing key for dm-crypt segment %u"
 msgstr "Brak klucza dla segmentu dm-crypt %u"
 
-#: lib/luks2/luks2_json_metadata.c:2355 lib/luks2/luks2_reencrypt.c:2032
+#: lib/luks2/luks2_json_metadata.c:2414 lib/luks2/luks2_reencrypt.c:2029
 msgid "Failed to set dm-crypt segment."
 msgstr "Nie udało się ustawić segmentu dm-crypt."
 
-#: lib/luks2/luks2_json_metadata.c:2361 lib/luks2/luks2_reencrypt.c:2038
+#: lib/luks2/luks2_json_metadata.c:2420 lib/luks2/luks2_reencrypt.c:2035
 msgid "Failed to set dm-linear segment."
 msgstr "Nie udało się ustawić segmentu dm-linear."
 
-#: lib/luks2/luks2_json_metadata.c:2488
+#: lib/luks2/luks2_json_metadata.c:2547
 msgid "Unsupported device integrity configuration."
 msgstr "Nieobsługiwana konfiguracja integralności urządzenia."
 
-#: lib/luks2/luks2_json_metadata.c:2574
+#: lib/luks2/luks2_json_metadata.c:2633
 msgid "Reencryption in-progress. Cannot deactivate device."
 msgstr "Podobne szyfrowanie trwa. Nie można dezaktywować urządzenia."
 
-#: lib/luks2/luks2_json_metadata.c:2585 lib/luks2/luks2_reencrypt.c:4049
+#: lib/luks2/luks2_json_metadata.c:2644 lib/luks2/luks2_reencrypt.c:4057
 #, c-format
 msgid "Failed to replace suspended device %s with dm-error target."
 msgstr "Nie udało się zastąpić wstrzymanego urządzenia %s celem dm-error."
 
-#: lib/luks2/luks2_json_metadata.c:2665
+#: lib/luks2/luks2_json_metadata.c:2724
 msgid "Failed to read LUKS2 requirements."
 msgstr "Nie udało się odczytać wymagań LUKS2."
 
-#: lib/luks2/luks2_json_metadata.c:2672
+#: lib/luks2/luks2_json_metadata.c:2731
 msgid "Unmet LUKS2 requirements detected."
 msgstr "Wykryto nie spełnione wymagania LUKS2."
 
-#: lib/luks2/luks2_json_metadata.c:2680
+#: lib/luks2/luks2_json_metadata.c:2739
 msgid "Operation incompatible with device marked for legacy reencryption. Aborting."
 msgstr "Operacja niezgodna z urządzeniem oznaczonym do ponownego szyfrowania starym szyfrem. Przerwano."
 
-#: lib/luks2/luks2_json_metadata.c:2682
+#: lib/luks2/luks2_json_metadata.c:2741
 msgid "Operation incompatible with device marked for LUKS2 reencryption. Aborting."
 msgstr "Operacja niezgodna z urządzeniem oznaczonym do ponownego szyfrowania LUKS2. Przerwano."
 
@@ -1493,7 +1493,7 @@ msgstr "Nie można użyć szyfru %s-%s do szyfrowania kluczy."
 msgid "No space for new keyslot."
 msgstr "Brak miejsca na nowy klucz."
 
-#: lib/luks2/luks2_keyslot_reenc.c:443 lib/luks2/luks2_reencrypt.c:2614
+#: lib/luks2/luks2_keyslot_reenc.c:443 lib/luks2/luks2_reencrypt.c:2615
 #, c-format
 msgid "Hash algorithm %s is not available."
 msgstr "Algorytm skrótu %s nie jest dostępny."
@@ -1502,308 +1502,316 @@ msgstr "Algorytm skrótu %s nie jest dostępny."
 msgid "Invalid reencryption resilience mode change requested."
 msgstr "Błędne żądanie zmiany trybu odporności przy ponownym szyfrowaniu."
 
-#: lib/luks2/luks2_keyslot_reenc.c:710
+#: lib/luks2/luks2_keyslot_reenc.c:714
 #, c-format
 msgid "Can not update resilience type. New type only provides %<PRIu64> bytes, required space is: %<PRIu64> bytes."
 msgstr "Nie można uaktualnić rodzaju odporności. Nowy typ zapewnia %<PRIu64> B, wymagane miejsce to %<PRIu64> B."
 
-#: lib/luks2/luks2_keyslot_reenc.c:720
+#: lib/luks2/luks2_keyslot_reenc.c:724
 msgid "Failed to refresh reencryption verification digest."
 msgstr "Nie udało się odświeżyć skrótu weryfikacji ponownego szyfrowania."
 
-#: lib/luks2/luks2_luks1_convert.c:514
+#: lib/luks2/luks2_luks1_convert.c:512
 #, c-format
 msgid "Cannot check status of device with uuid: %s."
 msgstr "Nie można sprawdzić stanu urządzenia mającego UUID: %s."
 
-#: lib/luks2/luks2_luks1_convert.c:540
+#: lib/luks2/luks2_luks1_convert.c:538
 msgid "Unable to convert header with LUKSMETA additional metadata."
 msgstr "Nie można przekonwertować nagłówka z dodatkowymi metadanymi LUKSMETA."
 
-#: lib/luks2/luks2_luks1_convert.c:571
+#: lib/luks2/luks2_luks1_convert.c:569 lib/luks2/luks2_reencrypt.c:3715
 #, c-format
 msgid "Unable to use cipher specification %s-%s for LUKS2."
 msgstr "Nie można użyć określenia szyfru %s-%s dla LUKS2."
 
-#: lib/luks2/luks2_luks1_convert.c:586
+#: lib/luks2/luks2_luks1_convert.c:584
 msgid "Unable to move keyslot area. Not enough space."
 msgstr "Nie można przenieść obszaru kluczy. Brak miejsca."
 
-#: lib/luks2/luks2_luks1_convert.c:637
+#: lib/luks2/luks2_luks1_convert.c:619
+msgid "Cannot convert to LUKS2 format - invalid metadata."
+msgstr "Nie można przekonwertować do formatu LUKS1 - błędne metadane."
+
+#: lib/luks2/luks2_luks1_convert.c:636
 msgid "Unable to move keyslot area. LUKS2 keyslots area too small."
 msgstr "Nie można przenieść obszaru kluczy. Obszar kluczy LUKS2 zbyt mały."
 
-#: lib/luks2/luks2_luks1_convert.c:643 lib/luks2/luks2_luks1_convert.c:935
+#: lib/luks2/luks2_luks1_convert.c:642 lib/luks2/luks2_luks1_convert.c:936
 msgid "Unable to move keyslot area."
 msgstr "Nie można przenieść obszaru kluczy."
 
-#: lib/luks2/luks2_luks1_convert.c:735
+#: lib/luks2/luks2_luks1_convert.c:732
 msgid "Cannot convert to LUKS1 format - default segment encryption sector size is not 512 bytes."
 msgstr "Nie można przekonwertować do formatu LUKS1 - domyślny rozmiar sektora szyfrowania segmentu nie wynosi 512 bajtów."
 
-#: lib/luks2/luks2_luks1_convert.c:743
+#: lib/luks2/luks2_luks1_convert.c:740
 msgid "Cannot convert to LUKS1 format - key slot digests are not LUKS1 compatible."
 msgstr "Nie można przekonwertować formatu LUKS1 - skróty kluczy nie są zgodne z LUKS1."
 
-#: lib/luks2/luks2_luks1_convert.c:755
+#: lib/luks2/luks2_luks1_convert.c:752
 #, c-format
 msgid "Cannot convert to LUKS1 format - device uses wrapped key cipher %s."
 msgstr "Nie można przekonwertować formatu LUKS1 - urządzenie używa szyfru %s z obudowanym kluczem."
 
-#: lib/luks2/luks2_luks1_convert.c:763
+#: lib/luks2/luks2_luks1_convert.c:757
+msgid "Cannot convert to LUKS1 format - device uses more segments."
+msgstr "Nie można przekonwertować formatu LUKS1 - urządzenie używa większej liczby segmentów."
+
+#: lib/luks2/luks2_luks1_convert.c:765
 #, c-format
 msgid "Cannot convert to LUKS1 format - LUKS2 header contains %u token(s)."
 msgstr "Nie można przekonwertować do formatu LUKS1 - nagłówek LUKS2 zawiera %u token(ów)."
 
-#: lib/luks2/luks2_luks1_convert.c:777
+#: lib/luks2/luks2_luks1_convert.c:779
 #, c-format
 msgid "Cannot convert to LUKS1 format - keyslot %u is in invalid state."
 msgstr "Nie można przekonwertować do formatu LUKS1 - klucz %u jest w błędnym stanie."
 
-#: lib/luks2/luks2_luks1_convert.c:782
+#: lib/luks2/luks2_luks1_convert.c:784
 #, c-format
 msgid "Cannot convert to LUKS1 format - slot %u (over maximum slots) is still active."
 msgstr "Nie można przekonwertować do formatu LUKS1 - klucz %u (powyzej maksimum) jest nadal aktywny."
 
-#: lib/luks2/luks2_luks1_convert.c:787
+#: lib/luks2/luks2_luks1_convert.c:789
 #, c-format
 msgid "Cannot convert to LUKS1 format - keyslot %u is not LUKS1 compatible."
 msgstr "Nie można przekonwertować do formatu LUKS1 - klucz %u nie jest zgodny z LUKS1."
 
-#: lib/luks2/luks2_reencrypt.c:1110
+#: lib/luks2/luks2_reencrypt.c:1107
 #, c-format
 msgid "Hotzone size must be multiple of calculated zone alignment (%zu bytes)."
 msgstr "Rozmiar strefy hotzone musi być wielokrotnością wyliczonego wyrównania strefy (bajtów: %zu)."
 
-#: lib/luks2/luks2_reencrypt.c:1115
+#: lib/luks2/luks2_reencrypt.c:1112
 #, c-format
 msgid "Device size must be multiple of calculated zone alignment (%zu bytes)."
 msgstr "Rozmiar urządzenia musi być wielokrotnością wyliczonego wyrównania strefy (bajtów: %zu)."
 
-#: lib/luks2/luks2_reencrypt.c:1322 lib/luks2/luks2_reencrypt.c:1508
-#: lib/luks2/luks2_reencrypt.c:1591 lib/luks2/luks2_reencrypt.c:1633
-#: lib/luks2/luks2_reencrypt.c:3844
+#: lib/luks2/luks2_reencrypt.c:1319 lib/luks2/luks2_reencrypt.c:1505
+#: lib/luks2/luks2_reencrypt.c:1588 lib/luks2/luks2_reencrypt.c:1630
+#: lib/luks2/luks2_reencrypt.c:3852
 msgid "Failed to initialize old segment storage wrapper."
 msgstr "Nie udało się zainicjować obudowania przestrzeni starego segmentu."
 
-#: lib/luks2/luks2_reencrypt.c:1336 lib/luks2/luks2_reencrypt.c:1486
+#: lib/luks2/luks2_reencrypt.c:1333 lib/luks2/luks2_reencrypt.c:1483
 msgid "Failed to initialize new segment storage wrapper."
 msgstr "Nie udało się zainicjować obudowania przestrzeni nowego segmentu."
 
-#: lib/luks2/luks2_reencrypt.c:1463 lib/luks2/luks2_reencrypt.c:3856
+#: lib/luks2/luks2_reencrypt.c:1460 lib/luks2/luks2_reencrypt.c:3864
 msgid "Failed to initialize hotzone protection."
 msgstr "Nie udało się zainicjować ochrony strefy hotzone."
 
-#: lib/luks2/luks2_reencrypt.c:1535
+#: lib/luks2/luks2_reencrypt.c:1532
 msgid "Failed to read checksums for current hotzone."
 msgstr "Nie udało się odczytać sum kontrolnych dla aktualnej strefy hotzone."
 
-#: lib/luks2/luks2_reencrypt.c:1542 lib/luks2/luks2_reencrypt.c:3870
+#: lib/luks2/luks2_reencrypt.c:1539 lib/luks2/luks2_reencrypt.c:3878
 #, c-format
 msgid "Failed to read hotzone area starting at %<PRIu64>."
 msgstr "Nie udało się odczytać obszaru hotzone zaczynającego się od %<PRIu64>."
 
-#: lib/luks2/luks2_reencrypt.c:1561
+#: lib/luks2/luks2_reencrypt.c:1558
 #, c-format
 msgid "Failed to decrypt sector %zu."
 msgstr "Nie udało się odszyfrować sektora %zu."
 
-#: lib/luks2/luks2_reencrypt.c:1567
+#: lib/luks2/luks2_reencrypt.c:1564
 #, c-format
 msgid "Failed to recover sector %zu."
 msgstr "Nie udało się odtworzyć sektora %zu."
 
-#: lib/luks2/luks2_reencrypt.c:2131
+#: lib/luks2/luks2_reencrypt.c:2128
 #, c-format
 msgid "Source and target device sizes don't match. Source %<PRIu64>, target: %<PRIu64>."
 msgstr "Rozmiary urządzenia źródłowego i docelowego różnią się. Źródłowe %<PRIu64>, docelowe: %<PRIu64>."
 
-#: lib/luks2/luks2_reencrypt.c:2229
+#: lib/luks2/luks2_reencrypt.c:2226
 #, c-format
 msgid "Failed to activate hotzone device %s."
 msgstr "Nie udało się uaktywnić urządzenia hotzone %s."
 
-#: lib/luks2/luks2_reencrypt.c:2246
+#: lib/luks2/luks2_reencrypt.c:2243
 #, c-format
 msgid "Failed to activate overlay device %s with actual origin table."
 msgstr "Nie udało się uaktywnić urządzenia nakładkowego %s z aktualną tablicą źródła."
 
-#: lib/luks2/luks2_reencrypt.c:2253
+#: lib/luks2/luks2_reencrypt.c:2250
 #, c-format
 msgid "Failed to load new mapping for device %s."
 msgstr "Nie udało się załadować nowego odwzorowania dla urządzenia %s."
 
-#: lib/luks2/luks2_reencrypt.c:2324
+#: lib/luks2/luks2_reencrypt.c:2321
 msgid "Failed to refresh reencryption devices stack."
 msgstr "Nie udało się odświeżyć stosu urządzenia ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt.c:2496
+#: lib/luks2/luks2_reencrypt.c:2497
 msgid "Failed to set new keyslots area size."
 msgstr "Nie udało się ustawić nowego rozmiaru obszaru kluczy."
 
-#: lib/luks2/luks2_reencrypt.c:2632
+#: lib/luks2/luks2_reencrypt.c:2633
 #, c-format
 msgid "Data shift value is not aligned to encryption sector size (%<PRIu32> bytes)."
 msgstr "Wartość przesunięcia danych nie jest wyrównana do rozmiaru sektora szyfrowania (%<PRIu32> B)."
 
-#: lib/luks2/luks2_reencrypt.c:2663
+#: lib/luks2/luks2_reencrypt.c:2664
 #, c-format
 msgid "Unsupported resilience mode %s"
 msgstr "Nieobsługiwany tryb odporności %s"
 
-#: lib/luks2/luks2_reencrypt.c:2736
+#: lib/luks2/luks2_reencrypt.c:2741
 msgid "Moved segment size can not be greater than data shift value."
 msgstr "Rozmiar przenoszonego segmentu nie może być większy niż wartość przesunięcia danych."
 
-#: lib/luks2/luks2_reencrypt.c:2796
+#: lib/luks2/luks2_reencrypt.c:2799
 #, c-format
 msgid "Moved segment too large. Requested size %<PRIu64>, available space for: %<PRIu64>."
 msgstr "Przenoszony segment zbyt duży. Żądany rozmiar %<PRIu64>, dostępne miejsce: %<PRIu64>."
 
-#: lib/luks2/luks2_reencrypt.c:2880
+#: lib/luks2/luks2_reencrypt.c:2886
 msgid "Failed to clear table."
 msgstr "Nie udało się wyczyścić tablicy."
 
-#: lib/luks2/luks2_reencrypt.c:2966
+#: lib/luks2/luks2_reencrypt.c:2972
 msgid "Reduced data size is larger than real device size."
 msgstr "Zmniejszony rozmiar danych jest większy niż rzeczywisty rozmiar urządzenia."
 
-#: lib/luks2/luks2_reencrypt.c:2973
+#: lib/luks2/luks2_reencrypt.c:2979
 #, c-format
 msgid "Data device is not aligned to encryption sector size (%<PRIu32> bytes)."
 msgstr "Urzędzenie danych nie jest wyrównane do rozmiaru sektora szyfrowania (%<PRIu32> B)."
 
-#: lib/luks2/luks2_reencrypt.c:3007
+#: lib/luks2/luks2_reencrypt.c:3013
 #, c-format
 msgid "Data shift (%<PRIu64> sectors) is less than future data offset (%<PRIu64> sectors)."
 msgstr "Przesunięcie danych (sektorów: %<PRIu64>) jest mniejsze niż przyszły offset danych (sektorów: %<PRIu64>)."
 
-#: lib/luks2/luks2_reencrypt.c:3014 lib/luks2/luks2_reencrypt.c:3502
-#: lib/luks2/luks2_reencrypt.c:3523
+#: lib/luks2/luks2_reencrypt.c:3020 lib/luks2/luks2_reencrypt.c:3508
+#: lib/luks2/luks2_reencrypt.c:3529
 #, c-format
 msgid "Failed to open %s in exclusive mode (already mapped or mounted)."
 msgstr "Nie udało się otworzyć %s w trybie wyłączności (już odwzorowano lub zamontowano)."
 
-#: lib/luks2/luks2_reencrypt.c:3203
+#: lib/luks2/luks2_reencrypt.c:3209
 msgid "Device not marked for LUKS2 reencryption."
 msgstr "Urządzenie nie jest oznaczone do ponownego szyfrowania LUKS2."
 
-#: lib/luks2/luks2_reencrypt.c:3220 lib/luks2/luks2_reencrypt.c:4173
+#: lib/luks2/luks2_reencrypt.c:3226 lib/luks2/luks2_reencrypt.c:4181
 msgid "Failed to load LUKS2 reencryption context."
 msgstr "Nie udało się załadować kontekstu ponownego szyfrowania LUKS2."
 
-#: lib/luks2/luks2_reencrypt.c:3300
+#: lib/luks2/luks2_reencrypt.c:3306
 msgid "Failed to get reencryption state."
 msgstr "Nie udało się pobrać stanu ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt.c:3304 lib/luks2/luks2_reencrypt.c:3618
+#: lib/luks2/luks2_reencrypt.c:3310 lib/luks2/luks2_reencrypt.c:3624
 msgid "Device is not in reencryption."
 msgstr "Urządzenie nie jest w trakcie ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt.c:3311 lib/luks2/luks2_reencrypt.c:3625
+#: lib/luks2/luks2_reencrypt.c:3317 lib/luks2/luks2_reencrypt.c:3631
 msgid "Reencryption process is already running."
 msgstr "Proces ponownego szyfrowania już trwa."
 
-#: lib/luks2/luks2_reencrypt.c:3313 lib/luks2/luks2_reencrypt.c:3627
+#: lib/luks2/luks2_reencrypt.c:3319 lib/luks2/luks2_reencrypt.c:3633
 msgid "Failed to acquire reencryption lock."
 msgstr "Nie udało się uzyskać blokady dla ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt.c:3331
+#: lib/luks2/luks2_reencrypt.c:3337
 msgid "Cannot proceed with reencryption. Run reencryption recovery first."
 msgstr "Nie można kontynuować ponownego szyfrowania. Należy najpierw uruchomić odtworzenie ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt.c:3466
+#: lib/luks2/luks2_reencrypt.c:3472
 msgid "Active device size and requested reencryption size don't match."
 msgstr "Rozmiar urządzenia aktywnego oraz żądany rozmiar ponownego szyfrowania różnią się."
 
-#: lib/luks2/luks2_reencrypt.c:3480
+#: lib/luks2/luks2_reencrypt.c:3486
 msgid "Illegal device size requested in reencryption parameters."
 msgstr "W parametrach ponownego szyfrowania zażądano niedozwolonego rozmiaru urządzenia."
 
-#: lib/luks2/luks2_reencrypt.c:3557
+#: lib/luks2/luks2_reencrypt.c:3563
 msgid "Reencryption in-progress. Cannot perform recovery."
 msgstr "Ponowne szyfrowanie trwa. Nie można wykonać odzyskiwania."
 
-#: lib/luks2/luks2_reencrypt.c:3724
+#: lib/luks2/luks2_reencrypt.c:3732
 msgid "LUKS2 reencryption already initialized in metadata."
 msgstr "Ponowne szyfrowanie LUKS2 jest już zainicjowane w metadanych."
 
-#: lib/luks2/luks2_reencrypt.c:3731
+#: lib/luks2/luks2_reencrypt.c:3739
 msgid "Failed to initialize LUKS2 reencryption in metadata."
 msgstr "Nie udało się zainicjować ponownego szyfrowania LUKS2 w metadanych."
 
-#: lib/luks2/luks2_reencrypt.c:3826
+#: lib/luks2/luks2_reencrypt.c:3834
 msgid "Failed to set device segments for next reencryption hotzone."
 msgstr "Nie udało się ustawić segmentów urządzeń dla następnej strefy hotzone ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt.c:3878
+#: lib/luks2/luks2_reencrypt.c:3886
 msgid "Failed to write reencryption resilience metadata."
 msgstr "Nie udało się zapisać metadanych odporności ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt.c:3885
+#: lib/luks2/luks2_reencrypt.c:3893
 msgid "Decryption failed."
 msgstr "Odszyfrowanie nie powiodło się."
 
-#: lib/luks2/luks2_reencrypt.c:3890
+#: lib/luks2/luks2_reencrypt.c:3898
 #, c-format
 msgid "Failed to write hotzone area starting at %<PRIu64>."
 msgstr "Nie udało się zapisać obszaru hotzone zaczynającego się od %<PRIu64>."
 
-#: lib/luks2/luks2_reencrypt.c:3895
+#: lib/luks2/luks2_reencrypt.c:3903
 msgid "Failed to sync data."
 msgstr "Nie udało się zsynchronizować danych."
 
-#: lib/luks2/luks2_reencrypt.c:3903
+#: lib/luks2/luks2_reencrypt.c:3911
 msgid "Failed to update metadata after current reencryption hotzone completed."
 msgstr "Nie udało się uaktualnić metadanych po zakończeniu aktualnej strefy hotzone ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt.c:3992
+#: lib/luks2/luks2_reencrypt.c:4000
 msgid "Failed to write LUKS2 metadata."
 msgstr "Nie udało się zapisać metadanych LUKS2."
 
-#: lib/luks2/luks2_reencrypt.c:4015
+#: lib/luks2/luks2_reencrypt.c:4023
 msgid "Failed to wipe unused data device area."
 msgstr "Nie udało się wymazać nie używanego obszaru urządzenia danych."
 
-#: lib/luks2/luks2_reencrypt.c:4021
+#: lib/luks2/luks2_reencrypt.c:4029
 #, c-format
 msgid "Failed to remove unused (unbound) keyslot %d."
 msgstr "Nie udało się usunąć nie używanego (nie przypisanego) obszaru klucza %d."
 
-#: lib/luks2/luks2_reencrypt.c:4031
+#: lib/luks2/luks2_reencrypt.c:4039
 msgid "Failed to remove reencryption keyslot."
 msgstr "Nie udało się usunąć obszaru klucza ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt.c:4041
+#: lib/luks2/luks2_reencrypt.c:4049
 #, c-format
 msgid "Fatal error while reencrypting chunk starting at %<PRIu64>, %<PRIu64> sectors long."
 msgstr "Błąd krytyczny podczas ponownego szyfrowania fragmentu zaczynającego się od %<PRIu64> o długości w sektorach %<PRIu64>."
 
-#: lib/luks2/luks2_reencrypt.c:4045
+#: lib/luks2/luks2_reencrypt.c:4053
 msgid "Online reencryption failed."
 msgstr "Ponowne szyfrowanie online nie powiodło się."
 
-#: lib/luks2/luks2_reencrypt.c:4050
+#: lib/luks2/luks2_reencrypt.c:4058
 msgid "Do not resume the device unless replaced with error target manually."
 msgstr "Proszę nie wznawiać urządzenia dopóki nie zostanie zastąpione celem błędnym ręcznie."
 
-#: lib/luks2/luks2_reencrypt.c:4104
+#: lib/luks2/luks2_reencrypt.c:4112
 msgid "Cannot proceed with reencryption. Unexpected reencryption status."
 msgstr "Nie można kontynuować ponownego szyfrowania. Nieoczekiwany stan ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt.c:4110
+#: lib/luks2/luks2_reencrypt.c:4118
 msgid "Missing or invalid reencrypt context."
 msgstr "Brak lub błędny kontekst ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt.c:4117
+#: lib/luks2/luks2_reencrypt.c:4125
 msgid "Failed to initialize reencryption device stack."
 msgstr "Nie udało się zainicjować stosu urządzenia ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt.c:4139 lib/luks2/luks2_reencrypt.c:4186
+#: lib/luks2/luks2_reencrypt.c:4147 lib/luks2/luks2_reencrypt.c:4194
 msgid "Failed to update reencryption context."
 msgstr "Nie udało się uaktualnić kontekstu ponownego szyfrowania."
 
-#: lib/luks2/luks2_reencrypt_digest.c:396
+#: lib/luks2/luks2_reencrypt_digest.c:406
 msgid "Reencryption metadata is invalid."
 msgstr "Metadane ponownego szyfrowania są błędne."
 
@@ -1822,7 +1830,7 @@ msgid "Enter token %d PIN:"
 msgstr "Proszę wprowadzić PIN tokenu %d:"
 
 #: src/cryptsetup.c:159 src/cryptsetup.c:966 src/cryptsetup.c:1293
-#: src/utils_reencrypt.c:1040 src/utils_reencrypt_luks1.c:517
+#: src/utils_reencrypt.c:1048 src/utils_reencrypt_luks1.c:517
 #: src/utils_reencrypt_luks1.c:580
 msgid "No known cipher specification pattern detected."
 msgstr "Nie wykryto znanego wzorca określającego szyfr."
@@ -1843,7 +1851,7 @@ msgstr "Wykryto sygnatury urządzeń na %s. Dalsze operacje mogą uszkodzić ist
 #: src/cryptsetup.c:221 src/cryptsetup.c:1040 src/cryptsetup.c:1088
 #: src/cryptsetup.c:1154 src/cryptsetup.c:1270 src/cryptsetup.c:1343
 #: src/cryptsetup.c:1994 src/integritysetup.c:187 src/utils_reencrypt.c:138
-#: src/utils_reencrypt.c:271
+#: src/utils_reencrypt.c:275
 msgid "Operation aborted.\n"
 msgstr "Operacja przerwana.\n"
 
@@ -3207,41 +3215,41 @@ msgstr ""
 "Aby uruchomić ponowne szyfrowanie w trybie online, należy użyć parametru\n"
 "--active-name.\n"
 
-#: src/utils_reencrypt.c:171
+#: src/utils_reencrypt.c:175
 msgid "Device is not in LUKS2 encryption. Conflicting option --encrypt."
 msgstr "Urządzenie nie jest w trybie szyfrowania LUKS2. Konflikt opcji --encrypt."
 
-#: src/utils_reencrypt.c:176
+#: src/utils_reencrypt.c:180
 msgid "Device is not in LUKS2 decryption. Conflicting option --decrypt."
 msgstr "Urządzenie nie jest w trybie odszyfrowywania LUKS2. Konflikt opcji --decrypt."
 
-#: src/utils_reencrypt.c:183
+#: src/utils_reencrypt.c:187
 msgid "Device is in reencryption using datashift resilience. Requested --resilience option cannot be applied."
 msgstr "Urządzenie jest w trybie ponownego szyfrowania z użyciem odporności przesunięcia danych. Nie można użyć żądanej opcji --resilience."
 
-#: src/utils_reencrypt.c:189 src/utils_reencrypt.c:195
-#: src/utils_reencrypt.c:201 src/utils_reencrypt.c:673
+#: src/utils_reencrypt.c:193 src/utils_reencrypt.c:199
+#: src/utils_reencrypt.c:205 src/utils_reencrypt.c:681
 msgid "Requested --resilience option cannot be applied to current reencryption operation."
 msgstr "Nie można użyć żądanej opcji --resilience do obecnej operacji ponownego szyfrowania."
 
-#: src/utils_reencrypt.c:254
+#: src/utils_reencrypt.c:258
 msgid "Device requires reencryption recovery. Run repair first."
 msgstr "Urządzenie wymaga odtwarzania ponownego szyfrowania. Najpierw należy uruchomić naprawę."
 
-#: src/utils_reencrypt.c:264
+#: src/utils_reencrypt.c:268
 #, c-format
 msgid "Device %s is already in LUKS2 reencryption. Do you wish to resume previously initialised operation?"
 msgstr "Urządzenie %s jest już w trybie ponownego szyfrowania LUKS2. Czy wznowić uprzednio zainicjowaną operację?"
 
-#: src/utils_reencrypt.c:310
+#: src/utils_reencrypt.c:314
 msgid "Legacy LUKS2 reencryption is no longer supported."
 msgstr "Stara wersja ponownego szyfrowania LUKS2 nie jest już obsługiwana."
 
-#: src/utils_reencrypt.c:375
+#: src/utils_reencrypt.c:379
 msgid "Reencryption of device with integrity profile is not supported."
 msgstr "Ponowne szyfrowanie urządzenia z profilem integralności nie jest obsługiwane."
 
-#: src/utils_reencrypt.c:406
+#: src/utils_reencrypt.c:410
 #, c-format
 msgid ""
 "Requested --sector-size %<PRIu32> is incompatible with %s superblock\n"
@@ -3250,98 +3258,98 @@ msgstr ""
 "Żądany --sector-size %<PRIu32> jest niezgodny z superblokiem %s\n"
 "(rozmiar bloku: %<PRIu32> B), wykrytym na urządzeniu %s."
 
-#: src/utils_reencrypt.c:451
+#: src/utils_reencrypt.c:455
 msgid "Encryption without detached header (--header) is not possible without data device size reduction (--reduce-device-size)."
 msgstr "Szyfrowanie bez odłączonego nagłówka (--header) jest niemożliwe bez ograniczenia rozmiaru urządzenia danych (--reduce-device-size)."
 
-#: src/utils_reencrypt.c:457
+#: src/utils_reencrypt.c:461
 msgid "Requested data offset must be less than or equal to half of --reduce-device-size parameter."
 msgstr "Żądany offset danych musi być mniejszy lub równy połowie parametru --reduce-device-size."
 
-#: src/utils_reencrypt.c:467
+#: src/utils_reencrypt.c:471
 #, c-format
 msgid "Adjusting --reduce-device-size value to twice the --offset %<PRIu64> (sectors).\n"
 msgstr "Modyfikowanie wartości --reduce-device-size do dwukrotności parametru --offset %<PRIu64> (w sektorach).\n"
 
-#: src/utils_reencrypt.c:497
+#: src/utils_reencrypt.c:501
 #, c-format
 msgid "Temporary header file %s already exists. Aborting."
 msgstr "Plik nagłówka %s już istnieje. Przerwano."
 
-#: src/utils_reencrypt.c:499 src/utils_reencrypt.c:506
+#: src/utils_reencrypt.c:503 src/utils_reencrypt.c:510
 #, c-format
 msgid "Cannot create temporary header file %s."
 msgstr "Nie można utworzyć pliku tymczasowego nagłówka %s."
 
-#: src/utils_reencrypt.c:531
+#: src/utils_reencrypt.c:535
 msgid "LUKS2 metadata size is larger than data shift value."
 msgstr "Rozmiar metadanych LUKS2 jest większy niż wartość przesunięcia danych."
 
-#: src/utils_reencrypt.c:568
+#: src/utils_reencrypt.c:572
 #, c-format
 msgid "Failed to place new header at head of device %s."
 msgstr "Nie udało się umieścić nowego nagłówka na początku urządzenia %s."
 
-#: src/utils_reencrypt.c:578
+#: src/utils_reencrypt.c:582
 #, c-format
 msgid "%s/%s is now active and ready for online encryption.\n"
 msgstr "%s/%s jest teraz aktywne i gotowe do szyfrowania w locie.\n"
 
-#: src/utils_reencrypt.c:610
+#: src/utils_reencrypt.c:618
 #, c-format
 msgid "Active device %s is not LUKS2."
 msgstr "Aktywne urządzenie %s nie jest urządzeniem LUKS2."
 
-#: src/utils_reencrypt.c:638
+#: src/utils_reencrypt.c:646
 msgid "Restoring original LUKS2 header."
 msgstr "Odtwarzanie oryginalnego nagłówka LUKS2."
 
-#: src/utils_reencrypt.c:646
+#: src/utils_reencrypt.c:654
 msgid "Original LUKS2 header restore failed."
 msgstr "Odtwarzanie oryginalnego nagłówka LUKS2 nie powiodło się."
 
-#: src/utils_reencrypt.c:714
-msgid "Failed to add read/wrire permissions to exported header file."
+#: src/utils_reencrypt.c:722
+msgid "Failed to add read/write permissions to exported header file."
 msgstr "Nie udało się dodać uprawnień odczytu/zapisu do pliku wyeksportowanego nagłówka."
 
-#: src/utils_reencrypt.c:767
+#: src/utils_reencrypt.c:775
 #, c-format
 msgid "Reencryption initialization failed. Header backup is available in %s."
 msgstr "Inicjowanie ponownego szyfrowania nie powiodło się. Kopia zapasowa nagłówka jest dostępna w %s."
 
-#: src/utils_reencrypt.c:795
+#: src/utils_reencrypt.c:803
 msgid "LUKS2 decryption is supported with detached header device only (with data offset set to 0)."
 msgstr "Odszyfrowanie LUKS2 jest obsługiwane tylko z urządzeniem z odłączonym nagłówkiem (z offsetem danych ustawionym na 0)."
 
-#: src/utils_reencrypt.c:926 src/utils_reencrypt.c:935
+#: src/utils_reencrypt.c:934 src/utils_reencrypt.c:943
 msgid "Not enough free keyslots for reencryption."
 msgstr "Za mało wolnych kluczy do ponownego szyfrowania."
 
-#: src/utils_reencrypt.c:956 src/utils_reencrypt_luks1.c:1100
+#: src/utils_reencrypt.c:964 src/utils_reencrypt_luks1.c:1100
 msgid "Key file can be used only with --key-slot or with exactly one key slot active."
 msgstr "Rozmiaru klucza można użyć tylko z --key-slot albo przy dokładnie jednym aktywnym kluczu."
 
-#: src/utils_reencrypt.c:965 src/utils_reencrypt_luks1.c:1147
+#: src/utils_reencrypt.c:973 src/utils_reencrypt_luks1.c:1147
 #: src/utils_reencrypt_luks1.c:1158
 #, c-format
 msgid "Enter passphrase for key slot %d: "
 msgstr "Hasło dla klucza %d: "
 
-#: src/utils_reencrypt.c:977
+#: src/utils_reencrypt.c:985
 #, c-format
 msgid "Enter passphrase for key slot %u: "
 msgstr "Hasło dla klucza %u: "
 
-#: src/utils_reencrypt.c:1029
+#: src/utils_reencrypt.c:1037
 #, c-format
 msgid "Switching data encryption cipher to %s.\n"
 msgstr "Zmiana szyfru do szyfrowania danych na %s.\n"
 
-#: src/utils_reencrypt.c:1083
+#: src/utils_reencrypt.c:1091
 msgid "No data segment parameters changed. Reencryption aborted."
 msgstr "Nie zmieniono parametrów segmentu danych. Ponowne szyfrowanie przerwane."
 
-#: src/utils_reencrypt.c:1179
+#: src/utils_reencrypt.c:1187
 msgid ""
 "Encryption sector size increase on offline device is not supported.\n"
 "Activate the device first or use --force-offline-reencrypt option (dangerous!)."
@@ -3349,7 +3357,7 @@ msgstr ""
 "Zwiększanie rozmiaru sektora szyfrowania na urządzeniu offline nie jest obsługiwane.\n"
 "Należy najpierw uaktywnić urządzenie lub użyć opcji --force-offline-reencrypt (niebezpieczna!)."
 
-#: src/utils_reencrypt.c:1219 src/utils_reencrypt_luks1.c:726
+#: src/utils_reencrypt.c:1227 src/utils_reencrypt_luks1.c:726
 #: src/utils_reencrypt_luks1.c:798
 msgid ""
 "\n"
@@ -3358,58 +3366,58 @@ msgstr ""
 "\n"
 "Ponowne szyfrowanie przerwane."
 
-#: src/utils_reencrypt.c:1224
+#: src/utils_reencrypt.c:1232
 msgid "Resuming LUKS reencryption in forced offline mode.\n"
 msgstr "Wznawianie ponownego szyfrowania LUKS w wymuszonym trybie offline.\n"
 
-#: src/utils_reencrypt.c:1241
+#: src/utils_reencrypt.c:1249
 #, c-format
 msgid "Device %s contains broken LUKS metadata. Aborting operation."
 msgstr "Urządzenie %s zawiera uszkodzone metadane LUKS. Przerwano operację."
 
-#: src/utils_reencrypt.c:1257 src/utils_reencrypt.c:1279
+#: src/utils_reencrypt.c:1265 src/utils_reencrypt.c:1287
 #, c-format
 msgid "Device %s is already LUKS device. Aborting operation."
 msgstr "Urządzenie %s jest już urządzeniem LUKS. Przerwano operację."
 
-#: src/utils_reencrypt.c:1285
+#: src/utils_reencrypt.c:1293
 #, c-format
 msgid "Device %s is already in LUKS reencryption. Aborting operation."
 msgstr "Urządzenie %s jest już w trybie ponownego szyfrowania LUKS. Przerwano operację."
 
-#: src/utils_reencrypt.c:1347
+#: src/utils_reencrypt.c:1366
 msgid "LUKS2 decryption requires --header option."
 msgstr "Odszyfrowanie LUKS2 wymaga opcji --header."
 
-#: src/utils_reencrypt.c:1392
+#: src/utils_reencrypt.c:1414
 msgid "Command requires device as argument."
 msgstr "Polecenie wymaga urządzenia jako argumentu."
 
-#: src/utils_reencrypt.c:1405
+#: src/utils_reencrypt.c:1427
 #, c-format
 msgid "Conflicting versions. Device %s is LUKS1."
 msgstr "Konflikt wersji. Urządzenie %s jest urządzeniem LUKS1."
 
-#: src/utils_reencrypt.c:1411
+#: src/utils_reencrypt.c:1433
 #, c-format
 msgid "Conflicting versions. Device %s is in LUKS1 reencryption."
 msgstr "Konflikt wersji. Urządzenie %s jest w trybie ponownego szyfrowania LUKS1."
 
-#: src/utils_reencrypt.c:1417
+#: src/utils_reencrypt.c:1439
 #, c-format
 msgid "Conflicting versions. Device %s is LUKS2."
 msgstr "Konflikt wersji. Urządzenie %s jest urządzeniem LUKS2."
 
-#: src/utils_reencrypt.c:1423
+#: src/utils_reencrypt.c:1445
 #, c-format
 msgid "Conflicting versions. Device %s is in LUKS2 reencryption."
 msgstr "Konflikt wersji. Urządzenie %s jest w trybie ponownego szyfrowania LUKS2."
 
-#: src/utils_reencrypt.c:1429
+#: src/utils_reencrypt.c:1451
 msgid "LUKS2 reencryption already initialized. Aborting operation."
 msgstr "Ponowne szyfrowanie LUKS2 jest już zainicjowane. Przerywanie operacji."
 
-#: src/utils_reencrypt.c:1436
+#: src/utils_reencrypt.c:1458
 msgid "Device reencryption not in progress."
 msgstr "Ponowne szyfrowanie urządzenia nie jest w toku."
 
