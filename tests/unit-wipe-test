@@ -43,6 +43,7 @@ function add_device()
 		echo "This kernel seems to not support proper scsi_debug module, test skipped."
 		exit 77
 	fi
+	grep -q scsi_debug /sys/block/*/device/model || sleep 2
 	DEV=$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
 	DEV="/dev/$DEV"
 	[ -b $DEV ] || fail "Cannot find $DEV."
