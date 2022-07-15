@@ -1590,14 +1590,14 @@ echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey -S2 $DEV -q $FAST_PBKDF_ARGON ||
 # there is not enough space in binary area for keyslot id 4 (replacement for id 2)
 echo -e "$PWD1\n$PWD2\n$PWD2" | $CRYPTSETUP reencrypt $DEV --init-only -q 2>/dev/null && fail
 $CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt" && fail
-# check cli removed all unbound keyslots created in-before reencryption intialization
+# check cli removed all unbound keyslots created in-before reencryption initialization
 $CRYPTSETUP luksDump $DEV | grep -q "unbound" && fail
 
 echo $PWD1 | $CRYPTSETUP luksKillSlot $DEV 2 || fail
 # there is not enough space in binary area for reencryption keyslot
 echo -e "$PWD1\n$PWD2" | $CRYPTSETUP reencrypt $DEV --init-only -q 2>/dev/null && fail
 $CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt" && fail
-# check cli removed all unbound keyslots created in-before reencryption intialization
+# check cli removed all unbound keyslots created in-before reencryption initialization
 $CRYPTSETUP luksDump $DEV | grep -q "unbound" && fail
 
 echo "[23] Reencryption with specified new volume key"

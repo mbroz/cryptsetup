@@ -70,7 +70,7 @@ function init_hash_dd() # $1 dev, $dev orig
 
 function add_file()
 {
-	dd if=/dev/zero of=$FILE      bs=1M count=$DEVSIZEMB 2> /dev/null || fial
+	dd if=/dev/zero of=$FILE      bs=1M count=$DEVSIZEMB 2> /dev/null || fail
 	dd if=/dev/zero of=$FILE_RAND bs=1M count=$DEVSIZEMB 2> /dev/null || fail
 	check_hash $FILE $HASH_EMPTY || fail
 	check_hash $FILE_RAND $HASH_EMPTY || fail

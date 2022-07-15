@@ -350,7 +350,7 @@ endif::[]
 +
 ifndef::ACTION_OPEN[]
 The --offset option sets the data offset (payload) of data
-device and must be be aligned to 4096-byte sectors (must be multiple of
+device and must be aligned to 4096-byte sectors (must be multiple of
 8). This option cannot be combined with --align-payload option.
 endif::[]
 endif::[]
@@ -935,10 +935,9 @@ Creates new or dumps existing LUKS2 unbound keyslot.
 +
 endif::[]
 ifdef::ACTION_OPEN[]
-Allowed only only together with --test-passphrase parameter, it allows
-to test passphrase for unbound LUKS2 keyslot. Otherwise, unbound keyslot
-passphrase can be tested only when specific keyslot is selected via
---key-slot parameter.
+Allowed only together with --test-passphrase parameter, it allows one to test
+passphrase for unbound LUKS2 keyslot. Otherwise, unbound keyslot passphrase
+can be tested only when specific keyslot is selected via --key-slot parameter.
 endif::[]
 endif::[]
 

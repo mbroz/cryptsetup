@@ -2736,7 +2736,7 @@ static int _dm_query_device(struct crypt_device *cd, const char *name,
 		goto out;
 	}
 
-	/* Never allow to return empty key */
+	/* Never allow one to return empty key */
 	if ((get_flags & DM_ACTIVE_CRYPT_KEY) && dmi.suspended) {
 		log_dbg(cd, "Cannot read volume key while suspended.");
 		r = -EINVAL;

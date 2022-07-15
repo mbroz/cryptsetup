@@ -726,7 +726,7 @@ int LUKS2_token_unlock_volume_key(struct crypt_device *cd,
 		/*
 		 * return priorities (ordered form least to most significant):
 		 * ENOENT - unusable for activation (no token handler, invalid token metadata, not assigned to volume segment, etc)
-		 * EPERM  - usable but token provided passphrase did not not unlock any assigned keyslot
+		 * EPERM  - usable but token provided passphrase did not unlock any assigned keyslot
 		 * EAGAIN - usable but not ready (token HW is missing)
 		 * ENOANO - ready, but token pin is wrong or missing
 		 *
