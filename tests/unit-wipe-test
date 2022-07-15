@@ -120,8 +120,10 @@ add_file
 
 echo -n "[1] Wipe full file "
 for bs in 0 $MB_BYTES $((4*$MB_BYTES)); do
-	echo -n [$bs/DIO]
-	test_wipe_full $FILE $bs
+	if dd if=$FILE of=/dev/null iflag=direct >/dev/null 2>&1; then
+		echo -n [$bs/DIO]
+		test_wipe_full $FILE $bs
+	fi
 	echo -n [$bs]
 	test_wipe_full $FILE $bs no-dio
 done
@@ -129,8 +131,10 @@ echo "[OK]"
 
 echo -n "[2] Wipe blocks in file "
 for bs in 0 $MB_BYTES $((4*$MB_BYTES)); do
-	echo -n [$bs/DIO]
-	test_wipe_blocks $FILE $bs
+	if dd if=$FILE of=/dev/null iflag=direct >/dev/null 2>&1; then
+		echo -n [$bs/DIO]
+		test_wipe_blocks $FILE $bs
+	fi
 	echo -n [$bs]
 	test_wipe_blocks $FILE $bs no-dio
 done
