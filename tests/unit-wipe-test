@@ -75,6 +75,7 @@ function add_file()
 	dd if=/dev/zero of=$FILE_RAND bs=1M count=$DEVSIZEMB 2> /dev/null || fail
 	check_hash $FILE $HASH_EMPTY || fail
 	check_hash $FILE_RAND $HASH_EMPTY || fail
+	dd if=$FILE of=/dev/null bs=4096 count=1 iflag=direct >/dev/null 2>&1 || FILE_NODIO=1
 }
 
 function test_wipe_full() # $1 dev, $2 block size, [$3 flags]
@@ -120,8 +121,12 @@ add_file
 
 echo -n "[1] Wipe full file "
 for bs in 0 $MB_BYTES $((4*$MB_BYTES)); do
-	echo -n [$bs/DIO]
-	test_wipe_full $FILE $bs
+	if [ -n "$FILE_NODIO" ]; then
+		echo -n [$bs/DIO N/A]
+	else
+		echo -n [$bs/DIO]
+		test_wipe_full $FILE $bs
+	fi
 	echo -n [$bs]
 	test_wipe_full $FILE $bs no-dio
 done
@@ -129,8 +134,12 @@ echo "[OK]"
 
 echo -n "[2] Wipe blocks in file "
 for bs in 0 $MB_BYTES $((4*$MB_BYTES)); do
-	echo -n [$bs/DIO]
-	test_wipe_blocks $FILE $bs
+	if [ -n "$FILE_NODIO" ]; then
+		echo -n [$bs/DIO N/A]
+	else
+		echo -n [$bs/DIO]
+		test_wipe_blocks $FILE $bs
+	fi
 	echo -n [$bs]
 	test_wipe_blocks $FILE $bs no-dio
 done
