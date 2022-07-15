@@ -32,7 +32,7 @@ Changes since version 1.4.2
   Device-mapper now retry removal if device is busy.
 
 * Allow "private" activation (skip some udev global rules) flag.
-  Cryptsetup library API now allows to specify CRYPT_ACTIVATE_PRIVATE,
+  Cryptsetup library API now allows one to specify CRYPT_ACTIVATE_PRIVATE,
   which means that some udev rules are not processed.
   (Used for temporary devices, like internal keyslot mappings where
   it is not desirable to run any device scans.)

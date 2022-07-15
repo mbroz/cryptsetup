@@ -74,7 +74,7 @@
 2012-03-16  Milan Broz  <gmazyland@gmail.com>
 	* Add --keyfile-offset and --new-keyfile-offset parameters to API and CLI.
 	* Add repair command and crypt_repair() for known LUKS metadata problems repair.
-	* Allow to specify --align-payload only for luksFormat.
+	* Allow one to specify --align-payload only for luksFormat.
 
 2012-03-16  Milan Broz  <mbroz@redhat.com>
 	* Unify password verification option.
@@ -228,7 +228,7 @@
 	* Fix password callback call.
 	* Fix default plain password entry from terminal in activate_by_passphrase.
 	* Add --dump-master-key option for luksDump to allow volume key dump.
-	* Allow to activate by internally cached volume key
+	* Allow one to activate by internally cached volume key
 	  (format/activate without keyslots active - used for temporary devices).
 	* Initialize volume key from active device in crypt_init_by_name()
 	* Fix cryptsetup binary exitcodes.

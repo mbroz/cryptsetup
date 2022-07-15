@@ -1192,7 +1192,7 @@
 
   More references can be found at the end of this document.  Note that
   these are estimates from the defender side, so assuming something is
-  easier than it actually is is fine.  An attacker may still have
+  easier than it actually is fine.  An attacker may still have
   significantly higher cost than estimated here.
 
   LUKS1 used SHA1 (since version 1.7.0 it uses SHA256) for hashing per
@@ -1864,11 +1864,11 @@
 
   This basically means that if you already have a slot-key, and you have
   set the PBKDF2 iteration count to 1 (it is > 10'000 normally), you could
-  (maybe) derive a different passphrase that gives you the the same
-  slot-key.  But if you have the slot-key, you can already unlock the
-  key-slot and get the volume key, breaking everything.  So basically,
-  this SHA-1 vulnerability allows you to open a LUKS1 container with high
-  effort when you already have it open.
+  (maybe) derive a different passphrase that gives you the same slot-key.
+  But if you have the slot-key, you can already unlock the key-slot and
+  get the volume key, breaking everything.  So basically, this SHA-1
+  vulnerability allows you to open a LUKS1 container with high effort when
+  you already have it open.
 
   The real problem here is people that do not understand crypto and claim
   things are broken just because some mechanism is used that has been
@@ -3014,9 +3014,9 @@ offset  length  name                  data type  description
   currently associated with any data/crypt segment (encrypted area) in the 
   LUKS2 'Segments' section (displayed by luksDump).
 
-  This is a bit of a more general idea. It basically allows to use a keyslot
-  as a container for a key to be used in other things than decrypting a 
-  data segment.
+  This is a bit of a more general idea. It basically allows one to use a
+  keyslot as a container for a key to be used in other things than decrypting
+  a data segment.
 
   As of April 2020, the following uses are defined:
 

@@ -45,7 +45,7 @@ const char *help =
 "\n"
 "This tool checks all keyslots of a LUKS device for \n"
 "low entropy sections. If any are found, they are reported. \n"
-"This allows to find areas damaged by things like filesystem \n"
+"This allows one to find areas damaged by things like filesystem \n"
 "creation or RAID superblocks. \n"
 "\n"
 "Options: \n"

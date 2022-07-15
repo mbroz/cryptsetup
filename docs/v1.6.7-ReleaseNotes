@@ -35,14 +35,14 @@ Changes since version 1.6.6
 * Support permanent device decryption for cryptsetup-reencrypt.
   To remove LUKS encryption from a device, you can now use --decrypt option.
 
-* Allow to use --header option in all LUKS commands.
+* Allow one to use --header option in all LUKS commands.
   The --header always takes precedence over positional device argument.
 
 * Allow luksSuspend without need to specify a detached header.
 
 * Detect if O_DIRECT is usable on a device allocation.
   There are some strange storage stack configurations which wrongly allows
-  to open devices with direct-io but fails on all IO operations later.
+  one to open devices with direct-io but fails on all IO operations later.
 
   Cryptsetup now tries to read the device first sector to ensure it can use
   direct-io.

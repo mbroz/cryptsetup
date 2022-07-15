@@ -4606,7 +4606,7 @@ static void Luks2Reencryption(void)
 	OK_(crypt_init_data_device(&cd, DMDIR H_DEVICE, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Illegal data offset");
-	/* reencryption must not initalize */
+	/* reencryption must not initialize */
 	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
 	CRYPT_FREE(cd);
 	/* original data device must stay untouched */

@@ -991,7 +991,7 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2 (unbound)" || fail
 # unbound key size is required
 echo $PWD1 | $CRYPTSETUP -q luksAddKey --unbound $LOOPDEV 2>/dev/null && fail
 echo $PWD3 | $CRYPTSETUP -q luksAddKey --unbound --volume-key-file /dev/urandom $LOOPDEV 2> /dev/null && fail
-# do not allow to replace keyslot by unbound slot
+# do not allow one to replace keyslot by unbound slot
 echo $PWD1 | $CRYPTSETUP -q luksAddKey -S5 --unbound -s 32 $LOOPDEV 2>/dev/null && fail
 echo $PWD2 | $CRYPTSETUP -q open $LOOPDEV $DEV_NAME 2> /dev/null && fail
 echo $PWD2 | $CRYPTSETUP -q open -S2 $LOOPDEV $DEV_NAME 2> /dev/null && fail
