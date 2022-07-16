@@ -4,9 +4,9 @@
 #      (append TESTSUITE_NOSKIP=y to avoid treating skipped tests as success)
 #
 CPPFLAGS=-I../lib/ -I../lib/luks1 -DHAVE_DECL_DM_TASK_RETRY_REMOVE -DKERNEL_KEYRING -DHAVE_SYS_SYSMACROS_H -DNO_CRYPTSETUP_PATH
-CFLAGS=-O2 -g -Wall
+CFLAGS=-O2 -g -Wall -D_GNU_SOURCE
 LDLIBS=-lcryptsetup -ldevmapper
-TESTS=$(wildcard *-test *-test2) api-test api-test-2 all-symbols-test
+TESTS=$(wildcard *-test *-test2) api-test api-test-2 all-symbols-test blockwise-compat
 
 differ: differ.o
 	$(CC) -o $@ $^
@@ -20,16 +20,19 @@ api-test-2: api-test-2.o test_utils.o
 unit-wipe: unit-wipe.o
 	$(CC) -o $@ $^ $(LDLIBS)
 
+unit-utils-io: unit-utils-io.o ../lib/utils_io.o
+	$(CC) -o $@ $^
+
 test-symbols-list.h: generate-symbols-list
 	./generate-symbols-list ../lib/libcryptsetup.sym > test-symbols-list.h
 
 all-symbols-test.o: test-symbols-list.h
-	$(CC) -D_GNU_SOURCE -c $*.c
+	$(CC) -c $*.c
 
 all-symbols-test: all-symbols-test.o
 	$(CC) -o $@ $^ -ldl
 
-tests: differ unit-wipe $(TESTS)
+tests: differ unit-utils-io unit-wipe $(TESTS)
 	@for test in $(sort $(TESTS)); do \
 		echo [$$test]; \
 		./$$test; \
@@ -38,7 +41,7 @@ tests: differ unit-wipe $(TESTS)
 	done;
 
 clean:
-	rm -f *.o differ api-test api-test-2 unit-wipe \
+	rm -f *.o differ api-test api-test-2 unit-utils-io unit-wipe \
 		all-symbols-test test-symbols-list.h
 
 .PHONY: clean
