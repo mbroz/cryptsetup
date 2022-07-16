@@ -8,6 +8,7 @@ CRYPTSETUP_RAW=$CRYPTSETUP
 CRYPTSETUP_VALGRIND=../.libs/cryptsetup
 CRYPTSETUP_LIB_VALGRIND=../.libs
 
+DIFFER=./differ
 DEV_NAME=dummy
 DEV_NAME2=dummy2
 DEV_NAME3=dummy3
@@ -151,7 +152,7 @@ function check()
 {
 	sync
 	[ -z "$1" ] && return
-	./differ $ORIG_IMG $IMG $1 || fail
+	$DIFFER $ORIG_IMG $IMG $1 || fail
 }
 
 function check_exists()
@@ -303,6 +304,7 @@ $CRYPTSETUP -q luksUUID $IMG | grep -q $TEST_UUID || fail
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ -z "$LOOPDEV" ] && skip "WARNING: Cannot find free loop device, test skipped."
+[ ! -x "$DIFFER" ] && skip "Cannot find $DIFFER, test skipped."
 
 # LUKS root-tests
 prepare	"[1] open - compat image - acceptance check" new
