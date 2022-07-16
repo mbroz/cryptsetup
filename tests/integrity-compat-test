@@ -340,80 +340,80 @@ int_mode() # alg tag_size sector_size [keyfile keysize]
 
 check_device_size() # device_name expected_size error_message
 {
-    CURRENT_SIZE=$(dmsetup table | grep $1 | cut -d' ' -f 3)
-    [ $CURRENT_SIZE -eq $2 ] || fail "$3: expected $1 to be of size $2, but is $CURRENT_SIZE"
+	CURRENT_SIZE=$(dmsetup table | grep $1 | cut -d' ' -f 3)
+	[ $CURRENT_SIZE -eq $2 ] || fail "$3: expected $1 to be of size $2, but is $CURRENT_SIZE"
 }
 
 test_resize() # description detached_metadata wipe args
 {
-    echo -n "$1"
-    if [ -z "$DM_INTEGRITY_RESIZE_SUPPORTED" ] ; then
-        echo "[N/A]"
-        return
-    fi
+	echo -n "$1"
+	if [ -z "$DM_INTEGRITY_RESIZE_SUPPORTED" ] ; then
+		echo "[N/A]"
+		return
+	fi
 
-    args="$4"
-    if [ $2 -ne 0 ] ; then
-        echo -n "[DETACHED]"
-    else
-        echo -n "[INTERLEAVE]"
-    fi
-    if [ $3 -ne 0 ] ; then
-        wipe_flag="--wipe"
-        echo -n "[WIPE]"
-    else
-        wipe_flag=""
-        echo -n "[RECALCULATE]"
-    fi
+	args="$4"
+	if [ $2 -ne 0 ] ; then
+		echo -n "[DETACHED]"
+	else
+		echo -n "[INTERLEAVE]"
+	fi
+	if [ $3 -ne 0 ] ; then
+		wipe_flag="--wipe"
+		echo -n "[WIPE]"
+	else
+		wipe_flag=""
+		echo -n "[RECALCULATE]"
+	fi
 
-    add_device
-    if [ $2 -ne 0 ] ; then
-        echo -n "[FORMAT]"
-        $INTSETUP format -q $args $DEV2 --data-device $DEV  >/dev/null 2>&1 || fail "Cannot format device."
-        echo -n "[ACTIVATE]"
-        $INTSETUP open -q $args $DEV2 $DEV_NAME --data-device $DEV  >/dev/null 2>&1 || fail "Cannot activate device."
-    else
-        echo -n "[FORMAT]"
-        $INTSETUP format -q $args $DEV  >/dev/null 2>&1 || fail "Cannot format device."
-        echo -n "[ACTIVATE]"
-        $INTSETUP open -q $args $DEV $DEV_NAME  >/dev/null 2>&1 || fail "Cannot activate device."
-    fi
+	add_device
+	if [ $2 -ne 0 ] ; then
+		echo -n "[FORMAT]"
+		$INTSETUP format -q $args $DEV2 --data-device $DEV  >/dev/null 2>&1 || fail "Cannot format device."
+		echo -n "[ACTIVATE]"
+		$INTSETUP open -q $args $DEV2 $DEV_NAME --data-device $DEV  >/dev/null 2>&1 || fail "Cannot activate device."
+	else
+		echo -n "[FORMAT]"
+		$INTSETUP format -q $args $DEV  >/dev/null 2>&1 || fail "Cannot format device."
+		echo -n "[ACTIVATE]"
+		$INTSETUP open -q $args $DEV $DEV_NAME  >/dev/null 2>&1 || fail "Cannot activate device."
+	fi
 
-    if [ $2 -ne 0 ] ; then
-        # the whole device has 32MiB, if metadata is detached
-        WHOLE_DISK_SIZE=65536
-    else
-        WHOLE_DISK_SIZE=$(dmsetup table | grep $DEV_NAME | cut -d' ' -f 3)
-    fi
+	if [ $2 -ne 0 ] ; then
+		# the whole device has 32MiB, if metadata is detached
+		WHOLE_DISK_SIZE=65536
+	else
+		WHOLE_DISK_SIZE=$(dmsetup table | grep $DEV_NAME | cut -d' ' -f 3)
+	fi
 
-    echo -n "[SHRINK]"
-    $INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 1MiB || fail "Failed to resize the device to 1MiB."
-    dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after shrink."
-    check_device_size $DEV_NAME $(( 1024*1024 / 512 )) "Shrinking device failed"
+	echo -n "[SHRINK]"
+	$INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 1MiB || fail "Failed to resize the device to 1MiB."
+	dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after shrink."
+	check_device_size $DEV_NAME $(( 1024*1024 / 512 )) "Shrinking device failed"
 
-    echo -n "[FILL]"
-    $INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 0 || fail "Failed to resize the device to maximum size."
-    dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after resize to maximum size."
-    check_device_size $DEV_NAME $WHOLE_DISK_SIZE "Resizing disk to maximum size failed"
+	echo -n "[FILL]"
+	$INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 0 || fail "Failed to resize the device to maximum size."
+	dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after resize to maximum size."
+	check_device_size $DEV_NAME $WHOLE_DISK_SIZE "Resizing disk to maximum size failed"
 
-    echo -n "[EXPAND FIXED]"
-    fallocate $DEV --len 64M
-    $INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 40MiB || fail "Failed to expand the device to a fixed size."
-    dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after expanding to a fixed size."
-    check_device_size $DEV_NAME $(( 40*1024*1024 / 512 )) "Resizing disk after expanding to a fixed size failed"
+	echo -n "[EXPAND FIXED]"
+	fallocate $DEV --len 64M
+	$INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 40MiB || fail "Failed to expand the device to a fixed size."
+	dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after expanding to a fixed size."
+	check_device_size $DEV_NAME $(( 40*1024*1024 / 512 )) "Resizing disk after expanding to a fixed size failed"
 
-    echo -n "[FILL]"
-    $INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 0 >/dev/null 2>&1 || fail "Failed to resize the device to maximum size after increasing image size."
-    dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Error detection failed after increasing image size."
-    CURRENT_SIZE=$(dmsetup table | grep $DEV_NAME | cut -d' ' -f 3)
-    [ $CURRENT_SIZE -ge $(( 40*1024*1024 / 512 )) ] || fail "Growing integrity device failed $CURRENT_SIZE is not greater than 40MB ($(( 40*1024*1024 / 512 )) blocks)."
-    if [ $2 -ne 0 ] ; then
-        [ $CURRENT_SIZE -eq 131072 ] || fail "Growing integrity device failed $CURRENT_SIZE is not equal to 64MB (131072 blocks)."
-    fi
+	echo -n "[FILL]"
+	$INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 0 >/dev/null 2>&1 || fail "Failed to resize the device to maximum size after increasing image size."
+	dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Error detection failed after increasing image size."
+	CURRENT_SIZE=$(dmsetup table | grep $DEV_NAME | cut -d' ' -f 3)
+	[ $CURRENT_SIZE -ge $(( 40*1024*1024 / 512 )) ] || fail "Growing integrity device failed $CURRENT_SIZE is not greater than 40MB ($(( 40*1024*1024 / 512 )) blocks)."
+	if [ $2 -ne 0 ] ; then
+		[ $CURRENT_SIZE -eq 131072 ] || fail "Growing integrity device failed $CURRENT_SIZE is not equal to 64MB (131072 blocks)."
+	fi
 
-    echo -n "[REMOVE]"
-    $INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
-    echo "[OK]"
+	echo -n "[REMOVE]"
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+	echo "[OK]"
 }
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
