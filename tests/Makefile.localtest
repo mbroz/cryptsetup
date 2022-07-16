@@ -6,7 +6,7 @@
 CPPFLAGS=-I../lib/ -I../lib/luks1 -DHAVE_DECL_DM_TASK_RETRY_REMOVE -DKERNEL_KEYRING -DHAVE_SYS_SYSMACROS_H -DNO_CRYPTSETUP_PATH
 CFLAGS=-O2 -g -Wall -D_GNU_SOURCE
 LDLIBS=-lcryptsetup -ldevmapper
-TESTS=$(wildcard *-test *-test2) api-test api-test-2 all-symbols-test blockwise-compat
+TESTS=$(wildcard *-test *-test2) api-test api-test-2 all-symbols-test blockwise-compat compat-test-args
 
 differ: differ.o
 	$(CC) -o $@ $^
