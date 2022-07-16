@@ -278,11 +278,11 @@ function check_fec()
 	else
 		echo -n "[repaired in kernel]"
 		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 || fail "Userspace verify failed"
-                echo "[userspace verify][OK]"
-                RET=0
-       fi
+		echo "[userspace verify][OK]"
+		RET=0
+	fi
 	rm $1 $2 $3 $IMG_TMP > /dev/null 2>&1
-       return $RET
+	return $RET
 }
 
 function check_option() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, $6 CLI option, $7 status option
@@ -536,17 +536,17 @@ $VERITYSETUP close $DEV_NAME >/dev/null 2>&1 && fail
 $VERITYSETUP status $DEV_NAME >/dev/null 2>&1 || fail
 $VERITYSETUP close --deferred $DEV_NAME >/dev/null 2>&1
 if [ $? -eq 0 ] ; then
-  dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" || fail
-  $VERITYSETUP close --cancel-deferred $DEV_NAME >/dev/null 2>&1
-  dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" >/dev/null 2>&1 && fail
-  $VERITYSETUP close --deferred $DEV_NAME >/dev/null 2>&1
-  dmsetup remove $DEV_NAME2 || fail
-  $VERITYSETUP status $DEV_NAME >/dev/null 2>&1 && fail
-  echo "[OK]"
+	dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" || fail
+	$VERITYSETUP close --cancel-deferred $DEV_NAME >/dev/null 2>&1
+	dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" >/dev/null 2>&1 && fail
+	$VERITYSETUP close --deferred $DEV_NAME >/dev/null 2>&1
+	dmsetup remove $DEV_NAME2 || fail
+	$VERITYSETUP status $DEV_NAME >/dev/null 2>&1 && fail
+	echo "[OK]"
 else
-  dmsetup remove $DEV_NAME2 >/dev/null 2>&1
-  $VERITYSETUP close $DEV_NAME >/dev/null 2>&1
-  echo "[N/A]"
+	dmsetup remove $DEV_NAME2 >/dev/null 2>&1
+	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1
+	echo "[N/A]"
 fi
 
 remove_mapping

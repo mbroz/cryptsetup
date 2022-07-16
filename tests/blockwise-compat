@@ -56,20 +56,19 @@ skip()
 {
 	echo "TEST SKIPPED: $1"
 	cleanup
-	exit 0
+	exit 77
 }
 
 add_device() {
 	rmmod scsi_debug >/dev/null 2>&1
 	if [ -d /sys/module/scsi_debug ] ; then
-		echo "Cannot use scsi_debug module (in use or compiled-in), test skipped."
-		exit 77
+		skip "Cannot use scsi_debug module (in use or compiled-in)."
 	fi
 	modprobe scsi_debug $@ delay=0 >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
-		echo "This kernel seems to not support proper scsi_debug module, test skipped."
-		exit 77
+		skip "This kernel seems to not support proper scsi_debug module."
 	fi
+	grep -q scsi_debug /sys/block/*/device/model || sleep 2
 	DEV=$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
 	DEV="/dev/$DEV"
 	[ -b $DEV ] || fail "Cannot find $DEV."
@@ -81,24 +80,24 @@ falloc() {
 
 run_all_in_fs() {
 	for file in $(ls img_fs_*.img.xz) ; do
-	    echo "Run tests in $file put on top block device."
-	    xz -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"
-	    [ ! -d $MNT_DIR ] && mkdir $MNT_DIR
-	    mount $DEV $MNT_DIR
-	    if [ $? -ne 0 ]; then
-	        echo "Mounting image $file failed, skipped."
-	        continue;
-	    fi
-	    rm -rf $MNT_DIR/* 2>/dev/null
-	    local tfile=$MNT_DIR/bwunit_tstfile
-	    falloc $DEVSIZEMB $tfile || fail "enospc?"
-	    local iobsize=$(stat -c "%o" $tfile)
-	    test -n "$iobsize" -a $iobsize -gt 0 || fail
-	    local oldbsize=$BSIZE
-	    BSIZE=$iobsize
-	    run_all $tfile
-	    BSIZE=$oldbsize
-	    umount $MNT_DIR
+		echo "Run tests in $file put on top block device."
+		xz -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"
+		[ ! -d $MNT_DIR ] && mkdir $MNT_DIR
+		mount $DEV $MNT_DIR
+		if [ $? -ne 0 ]; then
+			echo "Mounting image $file failed, skipped."
+			continue;
+		fi
+		rm -rf $MNT_DIR/* 2>/dev/null
+		local tfile=$MNT_DIR/bwunit_tstfile
+		falloc $DEVSIZEMB $tfile || fail "enospc?"
+		local iobsize=$(stat -c "%o" $tfile)
+		test -n "$iobsize" -a $iobsize -gt 0 || fail
+		local oldbsize=$BSIZE
+		BSIZE=$iobsize
+		run_all $tfile
+		BSIZE=$oldbsize
+		umount $MNT_DIR
 	done
 }
 
@@ -308,8 +307,6 @@ run_all() {
 	RUN "$BD_FAIL" $1 write_lseek_blockwise $((BSIZE)) $BSIZE $((DEVSIZE-BSIZE+1))
 	RUN "$BD_FAIL" $1 write_lseek_blockwise $((BSIZE+1)) $BSIZE $((DEVSIZE-BSIZE))
 }
-
-[ -n "$CRYPTSETUP_PATH" ] && skip "Cannot run this test with CRYPTSETUP_PATH set."
 
 command -v $STRACE >/dev/null || unset STRACE
 test -x $BW_UNIT || skip "Run \"make `basename $BW_UNIT`\" first"

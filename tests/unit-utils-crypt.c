@@ -237,11 +237,12 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 {
 	setvbuf(stdout, NULL, _IONBF, 0);
 
+#ifndef NO_CRYPTSETUP_PATH
 	if (getenv("CRYPTSETUP_PATH")) {
 		printf("Cannot run this test with CRYPTSETUP_PATH set.\n");
 		exit(77);
 	}
-
+#endif
 	if (test_parse_mode())
 		exit_test("Parse mode test failed.", EXIT_FAILURE);
 
