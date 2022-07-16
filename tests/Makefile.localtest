@@ -17,6 +17,9 @@ api-test: api-test.o test_utils.o
 api-test-2: api-test-2.o test_utils.o
 	$(CC) -o $@ $^ $(LDLIBS)
 
+unit-wipe: unit-wipe.o
+	$(CC) -o $@ $^ $(LDLIBS)
+
 test-symbols-list.h: generate-symbols-list
 	./generate-symbols-list ../lib/libcryptsetup.sym > test-symbols-list.h
 
@@ -26,7 +29,7 @@ all-symbols-test.o: test-symbols-list.h
 all-symbols-test: all-symbols-test.o
 	$(CC) -o $@ $^ -ldl
 
-tests: differ $(TESTS)
+tests: differ unit-wipe $(TESTS)
 	@for test in $(sort $(TESTS)); do \
 		echo [$$test]; \
 		./$$test; \
@@ -35,6 +38,7 @@ tests: differ $(TESTS)
 	done;
 
 clean:
-	rm -f *.o differ api-test api-test-2 all-symbols-test test-symbols-list.h
+	rm -f *.o differ api-test api-test-2 unit-wipe \
+		all-symbols-test test-symbols-list.h
 
 .PHONY: clean

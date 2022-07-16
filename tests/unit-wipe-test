@@ -112,8 +112,6 @@ function test_wipe_blocks() # $1 dev $2 block sizem [$3 flags]
 	check_hash $1 $HASH_2 || fail
 }
 
-[ -n "$CRYPTSETUP_PATH" ] && skip "Cannot run this test with CRYPTSETUP_PATH set."
-
 test -x $WIPE_UNIT || skip "Run \"make `basename $WIPE_UNIT`\" first"
 
 cleanup
