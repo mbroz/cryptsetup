@@ -36,10 +36,10 @@ TESTS += integrity-compat-test
 endif
 
 if SSHPLUGIN_TOKEN
-TESTS += ssh-plugin-test
+TESTS += ssh-test-plugin
 endif
 
-ssh-plugin-test: fake_token_path.so
+ssh-test-plugin: fake_token_path.so
 
 fake_token_path.so:
 	$(CC) $(CFLAGS) $(LDFLAGS) -I $(top_srcdir)/lib -fPIC -shared \
@@ -88,7 +88,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	Makefile.localtest \
 	bitlk-compat-test \
 	bitlk-images.tar.xz \
-	ssh-plugin-test \
+	ssh-test-plugin \
 	generate-symbols-list \
 	run-all-symbols \
 	fake_token_path.c \
