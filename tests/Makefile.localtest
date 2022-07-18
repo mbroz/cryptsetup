@@ -11,6 +11,10 @@ TESTS=$(wildcard *-test *-test2) api-test api-test-2 all-symbols-test \
 	blockwise-compat compat-test-args unit-utils-crypt-test
 TESTS_UTILS=differ unit-utils-io unit-wipe
 
+ifneq ($(RUN_SSH_PLUGIN_TEST),)
+TESTS += ssh-test-plugin
+endif
+
 check-programs: $(TESTS_UTILS) $(TESTS)
 
 differ: differ.o
