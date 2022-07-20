@@ -680,13 +680,17 @@ $CRYPTSETUP -q status  $DEV_NAME | grep -q "(suspended)" || fail
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
 $CRYPTSETUP -q luksClose $DEV_NAME || fail
 
-prepare "[27] luksOpen with specified key slot number" wipe
+prepare "[27] luksOpen/Resume with specified key slot number" wipe
 # first, let's try passphrase option
 echo $PWD3 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT -S 5 --type luks2 $LOOPDEV || fail
 echo $PWD3 | $CRYPTSETUP luksOpen -S 4 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
 echo $PWD3 | $CRYPTSETUP luksOpen -S 5 $LOOPDEV $DEV_NAME || fail
 check_exists
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+echo $PWD3 | $CRYPTSETUP luksResume -S 4 $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP -q status $DEV_NAME | grep -q "(suspended)" || fail
+echo $PWD3 | $CRYPTSETUP luksResume -S 5 $DEV_NAME || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
 echo -e "$PWD3\n$PWD1" | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -S 0 $LOOPDEV || fail
 echo $PWD3 | $CRYPTSETUP luksOpen -S 0 $LOOPDEV $DEV_NAME 2>/dev/null && fail
@@ -698,6 +702,10 @@ $CRYPTSETUP -q luksFormat -q -S 5 $FAST_PBKDF_OPT -d $KEY5 --type luks2 $LOOPDEV
 $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT -S 1 -d $KEY5 $LOOPDEV $KEY1 || fail
 $CRYPTSETUP luksOpen -S 5 -d $KEY5 $LOOPDEV $DEV_NAME || fail
 check_exists
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+$CRYPTSETUP luksResume -S 1 -d $KEY5 $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP -q status $DEV_NAME | grep -q "(suspended)" || fail
+$CRYPTSETUP luksResume -S 5 -d $KEY5 $DEV_NAME || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
 $CRYPTSETUP luksOpen -S 1 -d $KEY5 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 [ -b /dev/mapper/$DEV_NAME ] && fail
