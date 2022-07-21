@@ -2231,7 +2231,7 @@ static int action_luksResume(void)
 		if (r < 0)
 			goto out;
 
-		r = crypt_resume_by_passphrase(cd, action_argv[0], CRYPT_ANY_SLOT,
+		r = crypt_resume_by_passphrase(cd, action_argv[0], ARG_INT32(OPT_KEY_SLOT_ID),
 					       password, passwordLen);
 		tools_passphrase_msg(r);
 		check_signal(&r);
