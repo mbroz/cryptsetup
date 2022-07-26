@@ -75,6 +75,7 @@ static inline uint32_t act2dmflags(uint32_t act_flags)
 #define DM_CRYPT_NO_WORKQUEUE_SUPPORTED (1 << 25) /* dm-crypt suppot for bypassing workqueues  */
 #define DM_INTEGRITY_FIX_HMAC_SUPPORTED (1 << 26) /* hmac covers also superblock */
 #define DM_INTEGRITY_RESET_RECALC_SUPPORTED (1 << 27) /* dm-integrity automatic recalculation supported */
+#define DM_VERITY_TASKLETS_SUPPORTED (1 << 28) /* dm-verity tasklets supported */
 
 typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_ZERO, DM_UNKNOWN } dm_target_type;
 enum tdirection { TARGET_EMPTY = 0, TARGET_SET, TARGET_QUERY };

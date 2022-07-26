@@ -63,6 +63,8 @@ ARG(OPT_ROOT_HASH_SIGNATURE, '\0', POPT_ARG_STRING, N_("Path to root hash signat
 
 ARG(OPT_SALT, 's', POPT_ARG_STRING, N_("Salt"), N_("hex string"), CRYPT_ARG_STRING, {}, {})
 
+ARG(OPT_USE_TASKLETS, '\0', POPT_ARG_NONE, N_("Use kernel tasklets for performance"), NULL, CRYPT_ARG_BOOL, {}, OPT_USE_TASKLETS_ACTIONS)
+
 ARG(OPT_UUID, '\0', POPT_ARG_STRING, N_("UUID for device to use"), NULL, CRYPT_ARG_STRING, {}, {})
 
 ARG(OPT_VERBOSE, 'v', POPT_ARG_NONE, N_("Shows more detailed error messages"), NULL, CRYPT_ARG_BOOL, {}, {})
