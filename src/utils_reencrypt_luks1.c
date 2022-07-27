@@ -1173,6 +1173,9 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 {
 	log_dbg("Initialising reencryption context.");
 
+	memset(rc, 0, sizeof(*rc));
+
+	rc->stained = 1;
 	rc->log_fd = -1;
 
 	if (!(rc->device = strndup(device, PATH_MAX)))
@@ -1272,9 +1275,11 @@ static void destroy_context(struct reenc_ctx *rc)
 int reencrypt_luks1(const char *device)
 {
 	int r = -EINVAL;
-	static struct reenc_ctx rc = {
-		.stained = 1
-	};
+	struct reenc_ctx *rc;
+
+	rc = malloc(sizeof(*rc));
+	if (!rc)
+		return -ENOMEM;
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID))
 		log_verbose(_("Reencryption will change: %s%s%s%s%s%s."),
@@ -1286,52 +1291,54 @@ int reencrypt_luks1(const char *device)
 
 	set_int_handler(0);
 
-	if (initialize_context(&rc, device))
+	if (initialize_context(rc, device))
 		goto out;
 
 	log_dbg("Running reencryption.");
 
-	if (!rc.in_progress) {
-		if ((r = initialize_passphrase(&rc, hdr_device(&rc))))
+	if (!rc->in_progress) {
+		if ((r = initialize_passphrase(rc, hdr_device(rc))))
 			goto out;
 
 		log_dbg("Storing backup of LUKS headers.");
-		if (rc.reencrypt_mode == ENCRYPT) {
+		if (rc->reencrypt_mode == ENCRYPT) {
 			/* Create fake header for existing device */
-			if ((r = backup_fake_header(&rc)))
+			if ((r = backup_fake_header(rc)))
 				goto out;
 		} else {
-			if ((r = backup_luks_headers(&rc)))
+			if ((r = backup_luks_headers(rc)))
 				goto out;
 			/* Create fake header for decrypted device */
-			if (rc.reencrypt_mode == DECRYPT &&
-			    (r = backup_fake_header(&rc)))
+			if (rc->reencrypt_mode == DECRYPT &&
+			    (r = backup_fake_header(rc)))
 				goto out;
-			if ((r = device_check(&rc, hdr_device(&rc), MAKE_UNUSABLE, true)))
+			if ((r = device_check(rc, hdr_device(rc), MAKE_UNUSABLE, true)))
 				goto out;
 		}
 	} else {
-		if ((r = initialize_passphrase(&rc, ARG_SET(OPT_DECRYPT_ID) ? rc.header_file_org : rc.header_file_new)))
+		if ((r = initialize_passphrase(rc, ARG_SET(OPT_DECRYPT_ID) ? rc->header_file_org : rc->header_file_new)))
 			goto out;
 	}
 
 	if (!ARG_SET(OPT_KEEP_KEY_ID)) {
 		log_dbg("Running data area reencryption.");
-		if ((r = activate_luks_headers(&rc)))
+		if ((r = activate_luks_headers(rc)))
 			goto out;
 
-		if ((r = copy_data(&rc)))
+		if ((r = copy_data(rc)))
 			goto out;
 	} else
 		log_dbg("Keeping existing key, skipping data area reencryption.");
 
 	// FIXME: fix error path above to not skip this
-	if (rc.reencrypt_mode != DECRYPT)
-		r = restore_luks_header(&rc);
+	if (rc->reencrypt_mode != DECRYPT)
+		r = restore_luks_header(rc);
 	else
-		rc.stained = 0;
+		rc->stained = 0;
 out:
-	destroy_context(&rc);
+	destroy_context(rc);
+	free(rc);
+
 	return r;
 }
 
