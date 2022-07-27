@@ -45,8 +45,8 @@ struct reenc_ctx {
 	uint64_t device_shift;
 	uint64_t data_offset;
 
-	unsigned int stained:1;
-	unsigned int in_progress:1;
+	bool stained;
+	bool in_progress;
 	enum { FORWARD = 0, BACKWARD = 1 } reencrypt_direction;
 	enum { REENCRYPT = 0, ENCRYPT = 1, DECRYPT = 2 } reencrypt_mode;
 
@@ -178,7 +178,7 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 			r = -EIO;
 		}
 		if (rc && s > 0 && set_magic == MAKE_UNUSABLE)
-			rc->stained = 1;
+			rc->stained = true;
 	}
 	if (r)
 		log_dbg("LUKS signature check failed for %s.", device);
@@ -319,7 +319,7 @@ static int open_log(struct reenc_ctx *rc)
 	} else if (errno == EEXIST) {
 		log_std(_("Log file %s exists, resuming reencryption.\n"), rc->log_file);
 		rc->log_fd = open(rc->log_file, O_RDWR|flags);
-		rc->in_progress = 1;
+		rc->in_progress = true;
 	}
 
 	if (rc->log_fd == -1)
@@ -685,7 +685,7 @@ out:
 		log_err(_("Cannot restore %s header on device %s."), "LUKS1", hdr_device(rc));
 	else {
 		log_verbose(_("%s header on device %s restored."), "LUKS1", hdr_device(rc));
-		rc->stained = 0;
+		rc->stained = false;
 	}
 	return r;
 }
@@ -816,7 +816,7 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		goto out;
 
 	/* dirty the device during ENCRYPT mode */
-	rc->stained = 1;
+	rc->stained = true;
 
 	while (!quit && rc->device_offset) {
 		if (rc->device_offset < block_size) {
@@ -1175,7 +1175,8 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 
 	memset(rc, 0, sizeof(*rc));
 
-	rc->stained = 1;
+	rc->in_progress = false;
+	rc->stained = true;
 	rc->log_fd = -1;
 
 	if (!(rc->device = strndup(device, PATH_MAX)))
@@ -1334,7 +1335,7 @@ int reencrypt_luks1(const char *device)
 	if (rc->reencrypt_mode != DECRYPT)
 		r = restore_luks_header(rc);
 	else
-		rc->stained = 0;
+		rc->stained = false;
 out:
 	destroy_context(rc);
 	free(rc);
