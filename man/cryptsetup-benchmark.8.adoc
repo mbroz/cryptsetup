@@ -20,7 +20,10 @@ Benchmarks ciphers and KDF (key derivation function). Without
 parameters, it tries to measure few common configurations.
 
 To benchmark other ciphers or modes, you need to specify *--cipher* and
-*--key-size* options or *--hash* for KDF test.
+*--key-size* options.
+
+To benchmark PBKDF you need to specify *--pbkdf* or *--hash* with optional
+cost parameters *--iter-time*, *--pbkdf-memory* or *--pbkdf-parallel*.
 
 *NOTE:* This benchmark uses memory only and is only informative. You
 cannot directly predict real storage encryption speed from it.
@@ -31,7 +34,8 @@ are configuring kernel yourself, enable "User-space interface for
 symmetric key cipher algorithms" in "Cryptographic API" section
 (CRYPTO_USER_API_SKCIPHER .config option).
 
-*<options>* can be [--cipher, --key-size, --hash].
+*<options>* can be [--cipher, --key-size, --hash, --pbkdf, --iter-time,
+--pbkdf-memory, --pbkdf-parallel].
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]

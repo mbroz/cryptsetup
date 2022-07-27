@@ -35,12 +35,12 @@ To dump unbound key (LUKS2 format only), --unbound parameter, specific
 interactively or via --key-file. Optional --volume-key-file parameter
 enables unbound keyslot dump to a file.
 
-To dump LUKS2 JSON metadata (without basic heade information like UUID)
+To dump LUKS2 JSON metadata (without basic header information like UUID)
 use --dump-json-metadata option.
 
 *<options>* can be [--dump-volume-key, --dump-json-metadata, --key-file,
 --keyfile-offset, --keyfile-size, --header, --disable-locks,
---volume-key-file, --type, --unbound, --key-slot].
+--volume-key-file, --type, --unbound, --key-slot, --timeout].
 
 *WARNING:* If --dump-volume-key is used with --key-file and the argument
 to --key-file is '-', no validation question will be asked and no

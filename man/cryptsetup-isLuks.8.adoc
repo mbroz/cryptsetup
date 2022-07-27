@@ -16,11 +16,14 @@ cryptsetup-isLuks - check if a device is a LUKS device
 
 == DESCRIPTION
 
-Returns true, if <device> is a LUKS device, false otherwise. Use option
--v to get human-readable feedback. 'Command successful.' means the
-device is a LUKS device.
+Returns true, if <device> is a LUKS device, false otherwise.
+
+Use option -v to get human-readable feedback.
+'Command successful.' means the device is a LUKS device.
 
 By specifying --type you may query for specific LUKS version.
+
+*<options>* can be [--header, --type, --disable-locks].
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]

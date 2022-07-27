@@ -30,6 +30,11 @@ a metadata digest that protects it against malicious changes.
 If LUKS2 reencryption was interrupted in the middle of writing
 reencryption segment the repair command can be used to perform
 reencryption recovery so that reencryption can continue later.
+Repairing reencryption requires verification of reencryption
+keyslot so passphrase or keyfile is needed.
+
+*<options>* can be [--timeout, --verify-passphrase, --disable-locks,
+--type, --header, --key-file, --keyfile-size, --keyfile-offset, --key-slot].
 
 *WARNING:* Always create a binary backup of the original header before
 calling this command.

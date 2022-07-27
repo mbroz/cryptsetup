@@ -20,11 +20,11 @@ Removes the existing mapping <name> and wipes the key from kernel
 memory.
 
 For backward compatibility, there are *close* command aliases: *remove*,
-*plainClose*, *luksClose*, *loopaesClose*, *tcryptClose* (all behave
-exactly the same, device type is determined automatically from the active
-device).
+*plainClose*, *luksClose*, *loopaesClose*, *tcryptClose*, *bitlkClose*
+(all behave exactly the same, device type is determined automatically
+from the active device).
 
-*<options>* can be [--deferred] or [--cancel-deferred]
+*<options>* can be [--deferred, --cancel-deferred, --header, --disable-locks].
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]

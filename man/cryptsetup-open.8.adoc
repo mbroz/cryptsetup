@@ -41,10 +41,10 @@ create <name> <device> (*OBSOLETE syntax*)
 
 Opens (creates a mapping with) <name> backed by device <device>.
 
-*<options>* can be [--hash, --cipher, --verify-passphrase,
---sector-size, --key-file, --keyfile-offset, --key-size, --offset,
+*<options>* can be [--hash, --cipher, --verify-passphrase, --sector-size,
+--key-file, --keyfile-size, --keyfile-offset, --key-size, --offset,
 --skip, --device-size, --size, --readonly, --shared, --allow-discards,
---refresh]
+--refresh, --timeout, --verify-passphrase, --iv-large-sectors].
 
 Example: 'cryptsetup open --type plain /dev/sda10 e1' maps the raw
 encrypted device /dev/sda10 to the mapped (decrypted) device
@@ -67,7 +67,8 @@ command prompts for it interactively.
 --readonly, --test-passphrase, --allow-discards, --header, --key-slot,
 --volume-key-file, --token-id, --token-only, --token-type,
 --disable-external-tokens, --disable-keyring, --disable-locks, --type,
---refresh, --serialize-memory-hard-pbkdf, --unbound].
+--refresh, --serialize-memory-hard-pbkdf, --unbound, --tries, --timeout,
+--verify-passphrase, --persistent].
 
 === loopAES
 *open --type loopaes <device> <name> --key-file <keyfile>* +
@@ -98,8 +99,8 @@ explicitly use *--skip 0* in addition to the offset parameter.
 Use *--hash* to override the default hash function for passphrase
 hashing (otherwise it is detected according to key size).
 
-*<options>* can be [--key-file, --key-size, --offset, --skip, --hash,
---readonly, --allow-discards, --refresh].
+*<options>* can be [--cipher, --key-file, --keyfile-size, --keyfile-offset,
+--key-size, --offset, --skip, --hash, --readonly, --allow-discards, --refresh].
 
 === TrueCrypt and VeraCrypt
 *open --type tcrypt <device> <name>* +
@@ -110,8 +111,9 @@ up a mapping <name>.
 
 *<options>* can be [--key-file, --tcrypt-hidden, --tcrypt-system,
 --tcrypt-backup, --readonly, --test-passphrase, --allow-discards,
---disable-veracrypt, --veracrypt-pim, --veracrypt-query-pim, --header,
---cipher, --hash].
+--veracrypt (ignored), --disable-veracrypt, --veracrypt-pim,
+--veracrypt-query-pim, --header,
+--cipher, --hash, --tries, --timeout, --verify-passphrase].
 
 The keyfile parameter allows a combination of file content with the
 passphrase and can be repeated. Note that using keyfiles is compatible
@@ -138,8 +140,9 @@ bitlkOpen <device> <name> (*old syntax*)
 Opens the BITLK (a BitLocker compatible) <device> and sets up a mapping
 <name>.
 
-*<options>* can be [--key-file, --readonly, --test-passphrase,
---allow-discards --volume-key-file].
+*<options>* can be [--key-file, --keyfile-offset, --keyfile-size, --key-size,
+--readonly, --test-passphrase, --allow-discards --volume-key-file, --tries,
+--timeout, --verify-passphrase].
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]
