@@ -45,8 +45,8 @@ struct reenc_ctx {
 	uint64_t device_shift;
 	uint64_t data_offset;
 
-	unsigned int stained:1;
-	unsigned int in_progress:1;
+	bool stained;
+	bool in_progress;
 	enum { FORWARD = 0, BACKWARD = 1 } reencrypt_direction;
 	enum { REENCRYPT = 0, ENCRYPT = 1, DECRYPT = 2 } reencrypt_mode;
 
@@ -163,7 +163,7 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 		r = 0;
 	} else if (set_magic == CHECK_UNUSABLE && version == 1) {
 		r = memcmp(buf, NOMAGIC, MAGIC_L) ? -EINVAL : 0;
-		if (!r)
+		if (rc && !r)
 			rc->device_uuid = strndup(&buf[0xa8], 40);
 		goto out;
 	} else
@@ -177,8 +177,8 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 			log_err(_("Cannot write device %s."), device);
 			r = -EIO;
 		}
-		if (s > 0 && set_magic == MAKE_UNUSABLE)
-			rc->stained = 1;
+		if (rc && s > 0 && set_magic == MAKE_UNUSABLE)
+			rc->stained = true;
 	}
 	if (r)
 		log_dbg("LUKS signature check failed for %s.", device);
@@ -319,7 +319,7 @@ static int open_log(struct reenc_ctx *rc)
 	} else if (errno == EEXIST) {
 		log_std(_("Log file %s exists, resuming reencryption.\n"), rc->log_file);
 		rc->log_fd = open(rc->log_file, O_RDWR|flags);
-		rc->in_progress = 1;
+		rc->in_progress = true;
 	}
 
 	if (rc->log_fd == -1)
@@ -685,7 +685,7 @@ out:
 		log_err(_("Cannot restore %s header on device %s."), "LUKS1", hdr_device(rc));
 	else {
 		log_verbose(_("%s header on device %s restored."), "LUKS1", hdr_device(rc));
-		rc->stained = 0;
+		rc->stained = false;
 	}
 	return r;
 }
@@ -816,7 +816,7 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		goto out;
 
 	/* dirty the device during ENCRYPT mode */
-	rc->stained = 1;
+	rc->stained = true;
 
 	while (!quit && rc->device_offset) {
 		if (rc->device_offset < block_size) {
@@ -1173,6 +1173,10 @@ static int initialize_context(struct reenc_ctx *rc, const char *device)
 {
 	log_dbg("Initialising reencryption context.");
 
+	memset(rc, 0, sizeof(*rc));
+
+	rc->in_progress = false;
+	rc->stained = true;
 	rc->log_fd = -1;
 
 	if (!(rc->device = strndup(device, PATH_MAX)))
@@ -1272,9 +1276,11 @@ static void destroy_context(struct reenc_ctx *rc)
 int reencrypt_luks1(const char *device)
 {
 	int r = -EINVAL;
-	static struct reenc_ctx rc = {
-		.stained = 1
-	};
+	struct reenc_ctx *rc;
+
+	rc = malloc(sizeof(*rc));
+	if (!rc)
+		return -ENOMEM;
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID))
 		log_verbose(_("Reencryption will change: %s%s%s%s%s%s."),
@@ -1286,67 +1292,63 @@ int reencrypt_luks1(const char *device)
 
 	set_int_handler(0);
 
-	if (initialize_context(&rc, device))
+	if (initialize_context(rc, device))
 		goto out;
 
 	log_dbg("Running reencryption.");
 
-	if (!rc.in_progress) {
-		if ((r = initialize_passphrase(&rc, hdr_device(&rc))))
+	if (!rc->in_progress) {
+		if ((r = initialize_passphrase(rc, hdr_device(rc))))
 			goto out;
 
 		log_dbg("Storing backup of LUKS headers.");
-		if (rc.reencrypt_mode == ENCRYPT) {
+		if (rc->reencrypt_mode == ENCRYPT) {
 			/* Create fake header for existing device */
-			if ((r = backup_fake_header(&rc)))
+			if ((r = backup_fake_header(rc)))
 				goto out;
 		} else {
-			if ((r = backup_luks_headers(&rc)))
+			if ((r = backup_luks_headers(rc)))
 				goto out;
 			/* Create fake header for decrypted device */
-			if (rc.reencrypt_mode == DECRYPT &&
-			    (r = backup_fake_header(&rc)))
+			if (rc->reencrypt_mode == DECRYPT &&
+			    (r = backup_fake_header(rc)))
 				goto out;
-			if ((r = device_check(&rc, hdr_device(&rc), MAKE_UNUSABLE, true)))
+			if ((r = device_check(rc, hdr_device(rc), MAKE_UNUSABLE, true)))
 				goto out;
 		}
 	} else {
-		if ((r = initialize_passphrase(&rc, ARG_SET(OPT_DECRYPT_ID) ? rc.header_file_org : rc.header_file_new)))
+		if ((r = initialize_passphrase(rc, ARG_SET(OPT_DECRYPT_ID) ? rc->header_file_org : rc->header_file_new)))
 			goto out;
 	}
 
 	if (!ARG_SET(OPT_KEEP_KEY_ID)) {
 		log_dbg("Running data area reencryption.");
-		if ((r = activate_luks_headers(&rc)))
+		if ((r = activate_luks_headers(rc)))
 			goto out;
 
-		if ((r = copy_data(&rc)))
+		if ((r = copy_data(rc)))
 			goto out;
 	} else
 		log_dbg("Keeping existing key, skipping data area reencryption.");
 
 	// FIXME: fix error path above to not skip this
-	if (rc.reencrypt_mode != DECRYPT)
-		r = restore_luks_header(&rc);
+	if (rc->reencrypt_mode != DECRYPT)
+		r = restore_luks_header(rc);
 	else
-		rc.stained = 0;
+		rc->stained = false;
 out:
-	destroy_context(&rc);
+	destroy_context(rc);
+	free(rc);
+
 	return r;
 }
 
 int reencrypt_luks1_in_progress(const char *device)
 {
-	int r;
 	struct stat st;
-	struct reenc_ctx dummy = {};
 
 	if (stat(device, &st) || (size_t)st.st_size < pagesize())
 		return -EINVAL;
 
-	r = device_check(&dummy, device, CHECK_UNUSABLE, false);
-
-	free(dummy.device_uuid);
-
-	return r;
+	return device_check(NULL, device, CHECK_UNUSABLE, false);
 }
