@@ -163,7 +163,7 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 		r = 0;
 	} else if (set_magic == CHECK_UNUSABLE && version == 1) {
 		r = memcmp(buf, NOMAGIC, MAGIC_L) ? -EINVAL : 0;
-		if (!r)
+		if (rc && !r)
 			rc->device_uuid = strndup(&buf[0xa8], 40);
 		goto out;
 	} else
@@ -177,7 +177,7 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 			log_err(_("Cannot write device %s."), device);
 			r = -EIO;
 		}
-		if (s > 0 && set_magic == MAKE_UNUSABLE)
+		if (rc && s > 0 && set_magic == MAKE_UNUSABLE)
 			rc->stained = 1;
 	}
 	if (r)
@@ -1337,16 +1337,10 @@ out:
 
 int reencrypt_luks1_in_progress(const char *device)
 {
-	int r;
 	struct stat st;
-	struct reenc_ctx dummy = {};
 
 	if (stat(device, &st) || (size_t)st.st_size < pagesize())
 		return -EINVAL;
 
-	r = device_check(&dummy, device, CHECK_UNUSABLE, false);
-
-	free(dummy.device_uuid);
-
-	return r;
+	return device_check(NULL, device, CHECK_UNUSABLE, false);
 }
