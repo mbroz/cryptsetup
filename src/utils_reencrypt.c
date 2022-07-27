@@ -138,9 +138,8 @@ static int get_active_device_name(struct crypt_device *cd,
 			r = noDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
 			free(msg);
 		} else {
-			/* FIXME: This is temporary message to be replaced in before final release. */
-			log_err("Unable to decide if device %s is activated or not.\n"
-				"Use --force-offline-reencrypt to bypass the check and run in offline mode (dangerous!).", data_device);
+			log_err(_("Device %s is not a block device. Can not auto-detect if it is active or not.\n"
+				"Use --force-offline-reencrypt to bypass the check and run in offline mode (dangerous!)."), data_device);
 		}
 	} else {
 		*r_active_name = NULL;
@@ -262,6 +261,24 @@ static int reencrypt_verify_and_update_params(struct crypt_params_reencrypt *par
 	return 0;
 }
 
+static int reencrypt_hint_force_offline_reencrypt(const char *data_device)
+{
+	struct stat st;
+
+	if (ARG_SET(OPT_ACTIVE_NAME_ID) ||
+	    !ARG_SET(OPT_BATCH_MODE_ID) ||
+	    ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID))
+		return 0;
+
+	if (stat(data_device, &st) == 0 && S_ISREG(st.st_mode)) {
+		log_err(_("Device %s is not a block device. Can not auto-detect if it is active or not.\n"
+			"Use --force-offline-reencrypt to bypass the check and run in offline mode (dangerous!)."), data_device);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device)
 {
 	char *msg;
@@ -281,6 +298,10 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	r = reencrypt_verify_and_update_params(&params, &hash);
 	if (r < 0)
 		return r;
+
+	r = reencrypt_hint_force_offline_reencrypt(data_device);
+	if (r < 0)
+		goto out;
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID) && !ARG_SET(OPT_RESUME_ONLY_ID)) {
 		r = asprintf(&msg, _("Device %s is already in LUKS2 reencryption. "
@@ -697,6 +718,10 @@ static int decrypt_luks2_datashift_init(struct crypt_device **cd,
 	if ((r = decrypt_verify_and_set_params(&params)))
 		return r;
 
+	r = reencrypt_hint_force_offline_reencrypt(data_device);
+	if (r < 0)
+		return r;
+
 	r = tools_get_key(NULL, &password, &passwordLen,
 			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID),
 			ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_TIMEOUT_ID),
@@ -811,6 +836,10 @@ static int decrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 		log_err(_("LUKS2 decryption is supported with detached header device only (with data offset set to 0)."));
 		return -ENOTSUP;
 	}
+
+	r = reencrypt_hint_force_offline_reencrypt(data_device);
+	if (r < 0)
+		return r;
 
 	_set_reencryption_flags(&params.flags);
 
@@ -1099,6 +1128,12 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 		log_err(_("No data segment parameters changed. Reencryption aborted."));
 		r = -EINVAL;
 		goto out;
+	}
+
+	if (!ARG_SET(OPT_INIT_ONLY_ID) || (tools_blkid_supported() && sector_size_increase)) {
+		r = reencrypt_hint_force_offline_reencrypt(data_device);
+		if (r < 0)
+			goto out;
 	}
 
 	r = _check_luks2_keyslots(cd, vk_change);
