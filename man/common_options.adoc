@@ -670,6 +670,9 @@ to a detached file. The passed future file must not exist at the time
 of initializing the decryption operation. This frees space in head of data
 device so that data can be moved at original LUKS2 header location. Later on
 decryption operation continues as if the ordinary detached header was passed.
++
+*WARNING:* Never put exported header file in a filesystem on top of device
+you are about to decrypt! It would cause a deadlock.
 endif::[]
 endif::[]
 
