@@ -703,7 +703,7 @@ static int decrypt_luks2_datashift_init(struct crypt_device **cd,
 	size_t passwordLen;
 	struct stat hdr_st;
 	bool remove_header = false;
-	char *active_name = NULL, *password = NULL;
+	char *msg, *active_name = NULL, *password = NULL;
 	struct crypt_params_reencrypt params = {
 		.mode = CRYPT_REENCRYPT_DECRYPT,
 		.direction = CRYPT_REENCRYPT_FORWARD,
@@ -714,6 +714,18 @@ static int decrypt_luks2_datashift_init(struct crypt_device **cd,
 		.max_hotzone_size = ARG_UINT64(OPT_HOTZONE_SIZE_ID) / SECTOR_SIZE,
 		.flags = CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT
 	};
+
+	if (!ARG_SET(OPT_BATCH_MODE_ID)) {
+		r = asprintf(&msg, _("Header file %s does not exist. Do you want to initialize LUKS2 "
+				     "decryption of device %s and export LUKS2 header to file %s?"),
+			     expheader, data_device, expheader);
+		if (r < 0)
+			return -ENOMEM;
+		r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
+		free(msg);
+		if (r < 0)
+			return r;
+	}
 
 	if ((r = decrypt_verify_and_set_params(&params)))
 		return r;
