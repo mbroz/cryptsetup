@@ -1,6 +1,6 @@
-Cryptsetup 2.5.0-rc1 Release Notes
-==================================
-Stable release candidate with new features and bug fixes.
+Cryptsetup 2.5.0 Release Notes
+==============================
+Stable release with new features and bug fixes.
 
 Changes since version 2.4.3
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,6 +124,11 @@ LUKS volume reencryption changes
   Reencryption runs in userspace, so the kernel does not need the key.
 
 * Support all options allowed with luksFormat with encrypt action.
+
+* Add prompt if LUKS2 decryption is run with a detached header.
+
+* Add warning for reencryption of file image and mention
+  the possible use of --force-offline-reencrypt option.
 
 Other changes
 ~~~~~~~~~~~~~
@@ -257,6 +262,11 @@ Other changes
 * Use custom UTF conversion and avoid linking to iconv as a dependency.
 
 * Reimplement BASE64 with simplified code instead of coreutils version.
+
+* Fix regression when warning messages were not displayed
+  if some kernel feature is not supported (2.4.2).
+
+* Add support for --key-slot option in luksResume action.
 
 Libcryptsetup API extensions and changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
