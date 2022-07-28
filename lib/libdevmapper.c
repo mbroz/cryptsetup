@@ -1670,16 +1670,88 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		return -ENOTSUP;
 
 	r = _dm_create_device(cd, name, type, dmd);
-
-	if (r < 0 && dm_flags(cd, dmd->segment.type, &dmt_flags))
+	if (!r || r == -EEXIST)
 		goto out;
 
-	if (r && (dmd->segment.type == DM_CRYPT || dmd->segment.type == DM_LINEAR || dmd->segment.type == DM_ZERO) &&
+	if (dm_flags(cd, dmd->segment.type, &dmt_flags))
+		goto out;
+
+	if ((dmd->segment.type == DM_CRYPT || dmd->segment.type == DM_LINEAR || dmd->segment.type == DM_ZERO) &&
 		check_retry(cd, &dmd->flags, dmt_flags)) {
 		log_dbg(cd, "Retrying open without incompatible options.");
 		r = _dm_create_device(cd, name, type, dmd);
+		if (!r || r == -EEXIST)
+			goto out;
 	}
 
+	if (dmd->flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT|CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) &&
+	    !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED|DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED))) {
+		log_err(cd, _("Requested dm-crypt performance options are not supported."));
+		r = -EINVAL;
+	}
+
+	if (dmd->flags & (CRYPT_ACTIVATE_NO_READ_WORKQUEUE | CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE) &&
+	    !(dmt_flags & DM_CRYPT_NO_WORKQUEUE_SUPPORTED)) {
+		log_err(cd, _("Requested dm-crypt performance options are not supported."));
+		r = -EINVAL;
+	}
+
+	if (dmd->flags & (CRYPT_ACTIVATE_IGNORE_CORRUPTION|
+			  CRYPT_ACTIVATE_RESTART_ON_CORRUPTION|
+			  CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS|
+			  CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) &&
+	    !(dmt_flags & DM_VERITY_ON_CORRUPTION_SUPPORTED)) {
+		log_err(cd, _("Requested dm-verity data corruption handling options are not supported."));
+		r = -EINVAL;
+	}
+
+	if (dmd->flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION &&
+	    !(dmt_flags & DM_VERITY_PANIC_CORRUPTION_SUPPORTED)) {
+		log_err(cd, _("Requested dm-verity data corruption handling options are not supported."));
+		r = -EINVAL;
+	}
+
+	if (dmd->segment.type == DM_VERITY &&
+	    dmd->segment.u.verity.fec_device && !(dmt_flags & DM_VERITY_FEC_SUPPORTED)) {
+		log_err(cd, _("Requested dm-verity FEC options are not supported."));
+		r = -EINVAL;
+	}
+
+	if (dmd->segment.type == DM_CRYPT) {
+		if (dmd->segment.u.crypt.integrity && !(dmt_flags & DM_INTEGRITY_SUPPORTED)) {
+			log_err(cd, _("Requested data integrity options are not supported."));
+			r = -EINVAL;
+		}
+		if (dmd->segment.u.crypt.sector_size != SECTOR_SIZE && !(dmt_flags & DM_SECTOR_SIZE_SUPPORTED)) {
+			log_err(cd, _("Requested sector_size option is not supported."));
+			r = -EINVAL;
+		}
+	}
+
+	if (dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_RECALCULATE) &&
+	    !(dmt_flags & DM_INTEGRITY_RECALC_SUPPORTED)) {
+		log_err(cd, _("Requested automatic recalculation of integrity tags is not supported."));
+		r = -EINVAL;
+	}
+
+	if (dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_RECALCULATE_RESET) &&
+	    !(dmt_flags & DM_INTEGRITY_RESET_RECALC_SUPPORTED)) {
+		log_err(cd, _("Requested automatic recalculation of integrity tags is not supported."));
+		r = -EINVAL;
+	}
+
+	if (dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
+	    !(dmt_flags & DM_INTEGRITY_DISCARDS_SUPPORTED)) {
+		log_err(cd, _("Discard/TRIM is not supported."));
+		r = -EINVAL;
+	}
+
+	if (dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) &&
+	    !(dmt_flags & DM_INTEGRITY_BITMAP_SUPPORTED)) {
+		log_err(cd, _("Requested dm-integrity bitmap mode is not supported."));
+		r = -EINVAL;
+	}
+out:
 	/*
 	 * Print warning if activating dm-crypt cipher_null device unless it's reencryption helper or
 	 * keyslot encryption helper device (LUKS1 cipher_null devices).
@@ -1688,54 +1760,6 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	    crypt_is_cipher_null(dmd->segment.u.crypt.cipher))
 		log_dbg(cd, "Activated dm-crypt device with cipher_null. Device is not encrypted.");
 
-	if (r == -EINVAL &&
-	    dmd->flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT|CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) &&
-	    !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED|DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED)))
-		log_err(cd, _("Requested dm-crypt performance options are not supported."));
-
-	if (r == -EINVAL &&
-	    dmd->flags & (CRYPT_ACTIVATE_NO_READ_WORKQUEUE | CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE) &&
-	    !(dmt_flags & DM_CRYPT_NO_WORKQUEUE_SUPPORTED))
-		log_err(cd, _("Requested dm-crypt performance options are not supported."));
-
-	if (r == -EINVAL && dmd->flags & (CRYPT_ACTIVATE_IGNORE_CORRUPTION|
-					  CRYPT_ACTIVATE_RESTART_ON_CORRUPTION|
-					  CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS|
-					  CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) &&
-	    !(dmt_flags & DM_VERITY_ON_CORRUPTION_SUPPORTED))
-		log_err(cd, _("Requested dm-verity data corruption handling options are not supported."));
-
-	if (r == -EINVAL && dmd->flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION &&
-	    !(dmt_flags & DM_VERITY_PANIC_CORRUPTION_SUPPORTED))
-		log_err(cd, _("Requested dm-verity data corruption handling options are not supported."));
-
-	if (r == -EINVAL && dmd->segment.type == DM_VERITY &&
-	    dmd->segment.u.verity.fec_device && !(dmt_flags & DM_VERITY_FEC_SUPPORTED))
-		log_err(cd, _("Requested dm-verity FEC options are not supported."));
-
-	if (r == -EINVAL && dmd->segment.type == DM_CRYPT) {
-		if (dmd->segment.u.crypt.integrity && !(dmt_flags & DM_INTEGRITY_SUPPORTED))
-			log_err(cd, _("Requested data integrity options are not supported."));
-		if (dmd->segment.u.crypt.sector_size != SECTOR_SIZE && !(dmt_flags & DM_SECTOR_SIZE_SUPPORTED))
-			log_err(cd, _("Requested sector_size option is not supported."));
-	}
-
-	if (r == -EINVAL && dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_RECALCULATE) &&
-	    !(dmt_flags & DM_INTEGRITY_RECALC_SUPPORTED))
-		log_err(cd, _("Requested automatic recalculation of integrity tags is not supported."));
-
-	if (r == -EINVAL && dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_RECALCULATE_RESET) &&
-	    !(dmt_flags & DM_INTEGRITY_RESET_RECALC_SUPPORTED))
-		log_err(cd, _("Requested automatic recalculation of integrity tags is not supported."));
-
-	if (r == -EINVAL && dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
-	    !(dmt_flags & DM_INTEGRITY_DISCARDS_SUPPORTED))
-		log_err(cd, _("Discard/TRIM is not supported."));
-
-	if (r == -EINVAL && dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) &&
-	    !(dmt_flags & DM_INTEGRITY_BITMAP_SUPPORTED))
-		log_err(cd, _("Requested dm-integrity bitmap mode is not supported."));
-out:
 	dm_exit_context();
 	return r;
 }
