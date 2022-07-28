@@ -33,7 +33,7 @@ ifdef::ACTION_ISLUKS[]
 Print more information on command execution.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_ISLUKS,ACTION_LUKSDUMP,ACTION_CONVERT,ACTION_REPAIR,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSKILLSLOT,ACTION_ISLUKS,ACTION_LUKSDUMP,ACTION_LUKSUUID,ACTION_CONVERT,ACTION_REPAIR,ACTION_REENCRYPT[]
 *--type <device-type>*::
 ifndef::ACTION_REENCRYPT[]
 Specifies required device type, for more info read _BASIC ACTIONS_ section in *cryptsetup*(8).
@@ -45,7 +45,7 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_TCRYPTDUMP,ACTION_BENCHMARK,ACTION_REENCRYPT[]
 *--hash, -h* _<hash-spec>_::
-ifdef::ACTION_OPEN[]
+ifdef::ACTION_OPEN,ACTION_TCRYPTDUMP[]
 Specifies the passphrase hash. Applies to _plain_ and _loopaes_ device types only.
 +
 For _tcrypt_ device type, it restricts checked PBKDF2 variants when looking for header.
@@ -54,7 +54,7 @@ ifdef::ACTION_LUKSFORMAT[]
 Specifies the hash used in the LUKS key setup scheme and volume key
 digest.
 endif::[]
-ifndef::ACTION_REENCRYPT,ACTION_OPEN[]
+ifndef::ACTION_REENCRYPT,ACTION_OPEN,ACTION_TCRYPTDUMP[]
 The specified hash is used for PBKDF2 and AF splitter.
 endif::[]
 ifdef::ACTION_REENCRYPT[]
@@ -67,25 +67,21 @@ for new LUKS1 device header.
 *LUKS2:* Ignored unless new keyslot pbkdf algorithm is set to PBKDF2 (see --pbkdf).
 endif::[]
 +
-The specified hash name is passed to the compiled-in crypto backend.
-Different backends may support different hashes.
 ifdef::ACTION_LUKSFORMAT[]
 The hash algorithm must provide at least 160 bits of output.
-endif::[]
-Do not use a non-crypto hash like *xxhash* as this breaks
-security.
-+
+Do not use a non-crypto hash like *xxhash* as this breaks security.
 Use _cryptsetup --help_ to show the defaults.
+endif::[]
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT,ACTION_TCRYPTDUMP,ACTION_BENCHMARK[]
 *--cipher, -c* _<cipher-spec>_::
-ifdef::ACTION_OPEN[]
+ifdef::ACTION_OPEN,ACTION_TCRYPTDUMP[]
 Set the cipher specification string for _plain_ device type.
 +
 For _tcrypt_ device type it restricts checked cipher chains when looking for header.
 endif::[]
-ifndef::ACTION_REENCRYPT,ACTION_OPEN[]
+ifndef::ACTION_REENCRYPT,ACTION_OPEN,ACTION_TCRYPTDUMP[]
 Set the cipher specification string.
 endif::[]
 ifdef::ACTION_REENCRYPT[]
@@ -100,6 +96,7 @@ In reencrypt mode, if no new cipher specification is requested, the existing cip
 in use. Unless the existing cipher was "cipher_null". In that case default cipher would
 be applied as in encrypt mode.
 endif::[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
 +
 _cryptsetup --help_ shows the compiled-in defaults.
 +
@@ -110,12 +107,10 @@ of the IV generation. For example, ESSIV needs a hash function, while
 For XTS mode you can optionally set a key size of 512 bits with the -s
 option. Key size for XTS mode is twice that for other modes for the same
 security level.
-+
-XTS mode requires kernel 2.6.24 or later and plain64 requires kernel
-2.6.33 or later. More information can be found in the FAQ.
+endif::[]
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_REPAIR,ACTION_TCRYPTDUMP,ACTION_REENCRYPT[]
 *--verify-passphrase, -y*::
 When interactively asking for a passphrase, ask for it twice and
 complain if both inputs do not match.
@@ -125,7 +120,7 @@ endif::[]
 Ignored on input from file or stdin.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TCRYPTDUMP,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TCRYPTDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_BITLKDUMP[]
 *--key-file, -d* _name_::
 Read the passphrase from file.
 +
@@ -138,7 +133,7 @@ passed directly in dm-crypt. Unlike the interactive mode (stdin)
 where digest (--hash option) of the passphrase is passed in dm-crypt instead.
 +
 endif::[]
-ifndef::ACTION_REENCRYPT,ACTION_OPEN[]
+ifndef::ACTION_REENCRYPT,ACTION_OPEN,ACTION_BITLKDUMP[]
 With LUKS, the passphrase supplied via --key-file is always the existing
 passphrase requested by a command, except in the case of _luksFormat_
 where --key-file is equivalent to the positional key file argument.
@@ -160,12 +155,12 @@ passphrases.
 endif::[]
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_BITLKDUMP[]
 *--keyfile-offset* _value_::
 Skip _value_ bytes at the beginning of the key file.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_BITLKDUMP[]
 *--keyfile-size, -l* _value_::
 Read a maximum of _value_ bytes from the key file. The default is to
 read the whole file up to the compiled-in maximum that can be queried
@@ -263,8 +258,8 @@ See *NOTES ON RANDOM NUMBER GENERATORS* in *cryptsetup*(8) for more
 information. Use _cryptsetup --help_ to show the compiled-in default random
 number generator.
 +
-*WARNING:* In a low-entropy situation (e.g. in an embedded system), both
-selections are problematic. Using /dev/urandom can lead to weak keys.
+*WARNING:* In a low-entropy situation (e.g. in an embedded system) and older
+kernels, both selections are problematic. Using /dev/urandom can lead to weak keys.
 Using /dev/random can block a long time, potentially forever, if not
 enough entropy can be harvested by the kernel.
 endif::[]
@@ -280,7 +275,7 @@ it is requested.
 Reencrypt only the LUKS1 header and keyslots. Skips data in-place reencryption.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONFIG,ACTION_TOKEN,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSDUMP,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_CONFIG,ACTION_TOKEN,ACTION_REPAIR,ACTION_REENCRYPT[]
 *--key-slot, -S <0-N>*::
 ifndef::ACTION_OPEN[]
 For LUKS operations that add key material, this option allows you to
@@ -465,7 +460,7 @@ new LUKS header.
 endif::[]
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_BENCHMARK[]
 *--pbkdf-memory <number>*::
 Set the memory cost for PBKDF (for Argon2i/id the number represents
 kilobytes). Note that it is maximal value, PBKDF benchmark or
@@ -473,7 +468,7 @@ available physical memory can decrease it. This option is not
 available for PBKDF2.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_BENCHMARK[]
 *--pbkdf-parallel <number>*::
 Set the parallel cost for PBKDF (number of threads, up to 4). Note
 that it is maximal value, it is decreased automatically if CPU online
@@ -520,18 +515,18 @@ numbers are represented in a string format due to need of full 64bit
 unsigned integers.
 endif::[]
 
-ifdef::ACTION_RESIZE[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_LUKSRESUME,ACTION_RESIZE,ACTION_TCRYPTDUMP,ACTION_BITLKDUMP[]
 *--timeout, -t <number of seconds>*::
 The number of seconds to wait before timeout on passphrase input via
-terminal. It is relevant every time a passphrase is asked, for example
-for _open_, _luksFormat_ or _luksAddKey_. It has no effect if used in
-conjunction with --key-file. +
+terminal. It is relevant every time a passphrase is asked.
+It has no effect if used in conjunction with --key-file.
++
 This option is useful when the system should not stall if the user
 does not input a passphrase, e.g. during boot. The default is a value
 of 0 seconds, which means to wait forever.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_LUKSRESUME,ACTION_REENCRYPT[]
 *--tries, -T*::
 How often the input of the passphrase shall be retried. The default is 3 tries.
 endif::[]
@@ -629,7 +624,7 @@ Do not activate the device, just verify passphrase. The device mapping name is
 not mandatory if this option is used.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_STATUS,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSSUSPEND,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_CONVERT,ACTION_CONFIG,ACTION_REENCRYPT,ACTION_CLOSE[]
+ifndef::ACTION_BENCHMARK,ACTION_BITLKDUMP[]
 *--header <device or file storing the LUKS header>*::
 ifndef::ACTION_OPEN[]
 Use a detached (separated) metadata device or file where the LUKS
@@ -723,7 +718,7 @@ ifdef::ACTION_OPEN,ACTION_LUKSRESUME,ACTION_RESIZE,ACTION_TOKEN[]
 Disable loading of plugins for external LUKS2 tokens.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSSUSPEND,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TOKEN,ACTION_REENCRYPT[]
+ifndef::ACTION_BENCHMARK,ACTION_BITLKDUMP,ACTION_TCRYPTDUMP[]
 *--disable-locks*::
 Disable lock protection for metadata on disk. This option is valid
 only for LUKS2 and ignored for other formats.
@@ -742,8 +737,7 @@ endif::[]
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_REFRESH,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_REENCRYPT[]
 *--disable-keyring*::
 Do not load volume key in kernel keyring and store it directly in the
-dm-crypt target instead. This option is supported only for the LUKS2
-format.
+dm-crypt target instead. This option is supported only for the LUKS2 type.
 endif::[]
 
 ifdef::ACTION_TOKEN[]
@@ -837,7 +831,7 @@ use it only for accessing incompatible existing disk images from other
 systems that require this option.
 endif::[]
 
-ifdef::ACTION_REFRESH[]
+ifdef::ACTION_OPEN,ACTION_REFRESH[]
 *--persistent*::
 If used with LUKS2 devices and activation commands like _open_ or
 _refresh_, the specified activation flags are persistently written
@@ -881,6 +875,14 @@ modes, also enable "User-space interface for AEAD cipher algorithms" in
 option).
 +
 For more info, see _AUTHENTICATED DISK ENCRYPTION_ section in *cryptsetup*(8).
+endif::[]
+
+ifdef::ACTION_LUKSFORMAT[]
+*--integrity-legacy-padding*::
+Use inefficient legacy padding.
++
+*WARNING*: Do not use this option until you need compatibility with specific
+old kernel.
 endif::[]
 
 ifdef::ACTION_LUKSFORMAT,ACTION_REENCRYPT[]

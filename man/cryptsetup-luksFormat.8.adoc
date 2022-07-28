@@ -28,19 +28,20 @@ You cannot call luksFormat on a device or filesystem that is mapped or
 in use, e.g., mounted filesystem, used in LVM, active RAID member, etc. The
 device or filesystem has to be un-mounted in order to call luksFormat.
 
-To use LUKS2, specify _--type luks2_.
+To use specific version of LUKS format, use _--type luks1_ or _type luks2_.
 
 *<options>* can be [--hash, --cipher, --verify-passphrase, --key-size,
 --key-slot, --key-file (takes precedence over optional second argument),
---keyfile-offset, --keyfile-size, --use-random | --use-urandom, --uuid,
+--keyfile-offset, --keyfile-size, --use-random, --use-urandom, --uuid,
 --volume-key-file, --iter-time, --header, --pbkdf-force-iterations,
---force-password, --disable-locks].
+--force-password, --disable-locks, --timeout, --type, --offset,
+--align-payload (deprecated)].
 
 For LUKS2, additional *<options>* can be [--integrity,
 --integrity-no-wipe, --sector-size, --label, --subsystem, --pbkdf,
 --pbkdf-memory, --pbkdf-parallel, --disable-locks, --disable-keyring,
 --luks2-metadata-size, --luks2-keyslots-size, --keyslot-cipher,
---keyslot-key-size].
+--keyslot-key-size, --integrity-legacy-padding].
 
 *WARNING:* Doing a luksFormat on an existing LUKS container will make
 all data in the old container permanently irretrievable unless you have a

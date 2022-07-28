@@ -18,7 +18,17 @@ cryptsetup-bitlkDump - dump the header information of a BITLK (BitLocker compati
 
 Dump the header information of a BITLK (BitLocker compatible) device.
 
-*<options>* can be [--dump-volume-key --volume-key-file].
+If the --dump-volume-key option is used, the BITLK device volume key
+is dumped instead of header information. You have to provide password
+or keyfile to dump volume key.
+
+Beware that the volume key can be used to decrypt the data stored in
+the container without a passphrase.
+This means that if the volume key is compromised, the whole device has
+to be erased to prevent further access. Use this option carefully.
+
+*<options>* can be [--dump-volume-key, --volume-key-file, --key-file,
+--keyfile-offset, --keyfile-size, --timeout].
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]

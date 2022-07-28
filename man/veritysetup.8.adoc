@@ -41,7 +41,7 @@ hash device path doesn't exist, it will be created as file.
 
 *<options>* can be [--hash, --no-superblock, --format,
 --data-block-size, --hash-block-size, --data-blocks, --hash-offset,
---salt, --uuid, --root-hash-file]
+--salt, --uuid, --root-hash-file].
 
 If option --root-hash-file is used, the root hash is stored in
 hex-encoded text format in <path>.
@@ -58,7 +58,7 @@ The <root_hash> is a hexadecimal string.
 
 *<options>* can be [--hash-offset, --no-superblock, --ignore-corruption
 or --restart-on-corruption, --panic-on-corruption, --ignore-zero-blocks,
---check-at-most-once, --root-hash-signature, --root-hash-file]
+--check-at-most-once, --root-hash-signature, --root-hash-file].
 
 If option --root-hash-file is used, the root hash is read from <path>
 instead of from the command line parameter. Expects hex-encoded text,
@@ -83,7 +83,7 @@ If option --root-hash-file is used, the root hash is read from <path>
 instead of from the command line parameter. Expects hex-encoded text,
 without terminating newline.
 
-*<options>* can be [--hash-offset, --no-superblock, --root-hash-file]
+*<options>* can be [--hash-offset, --no-superblock, --root-hash-file].
 
 If option --no-superblock is used, you have to use as the same options
 as in initial format operation.
@@ -94,7 +94,7 @@ remove <name> (*OBSOLETE syntax*)
 
 Removes existing mapping <name>.
 
-*<options>* can be [--deferred] or [--cancel-deferred]
+*<options>* can be [--deferred] or [--cancel-deferred].
 
 === STATUS
 *status <name>*
@@ -106,7 +106,7 @@ Reports status for the active verity mapping <name>.
 
 Reports parameters of verity device from on-disk stored superblock.
 
-*<options>* can be [--hash-offset]
+*<options>* can be [--hash-offset].
 
 == OPTIONS
 

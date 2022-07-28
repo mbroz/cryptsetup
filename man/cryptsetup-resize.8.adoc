@@ -33,10 +33,10 @@ a token. Only if it failed, it'd ask for a passphrase to unlock a
 keyslot (LUKS) or to derive a volume key again (plain mode). The kernel
 keyring is used by default for LUKS2 devices.
 
-With LUKS2 device additional *<options>* can be [--token-id,
---token-only, --token-type, --key-slot, --key-file, --keyfile-size,
---keyfile-offset, --timeout, --disable-external-tokens, --disable-locks,
---disable-keyring].
+*<options>* can be [--size, --device-size, --token-id, --token-only,
+--token-type, --key-slot, --key-file, --keyfile-size, --keyfile-offset,
+--timeout, --disable-external-tokens, --disable-locks, --disable-keyring,
+--verify-passphrase, --timeout].
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]
