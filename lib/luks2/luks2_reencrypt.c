@@ -2640,26 +2640,32 @@ static int reencrypt_verify_datashift_params(struct crypt_device *cd,
 
 static int reencrypt_verify_resilience_params(struct crypt_device *cd,
 		const struct crypt_params_reencrypt *params,
-		uint32_t sector_size)
+		uint32_t sector_size, bool move_first_segment)
 {
-	int r;
-
+	/* no change requested */
 	if (!params || !params->resilience)
 		return 0;
 
 	if (!strcmp(params->resilience, "journal"))
-		return 0;
+		return (params->data_shift || move_first_segment) ? -EINVAL : 0;
 	else if (!strcmp(params->resilience, "none"))
-		return 0;
+		return (params->data_shift || move_first_segment) ? -EINVAL : 0;
 	else if (!strcmp(params->resilience, "datashift"))
 		return reencrypt_verify_datashift_params(cd, params, sector_size);
-	else if (!strcmp(params->resilience, "checksum"))
+	else if (!strcmp(params->resilience, "checksum")) {
+		if (params->data_shift || move_first_segment)
+			return -EINVAL;
 		return reencrypt_verify_checksum_params(cd, params);
-	else if (!strcmp(params->resilience, "datashift-checksum")) {
-		r = reencrypt_verify_datashift_params(cd, params, sector_size);
-		return r ?: reencrypt_verify_checksum_params(cd, params);
-	} else if (!strcmp(params->resilience, "datashift-journal"))
+	} else if (!strcmp(params->resilience, "datashift-checksum")) {
+		if (!move_first_segment ||
+		     reencrypt_verify_datashift_params(cd, params, sector_size))
+			return -EINVAL;
+		return reencrypt_verify_checksum_params(cd, params);
+	} else if (!strcmp(params->resilience, "datashift-journal")) {
+		if (!move_first_segment)
+			return -EINVAL;
 		return reencrypt_verify_datashift_params(cd, params, sector_size);
+	}
 
 	log_err(cd, _("Unsupported resilience mode %s"), params->resilience);
 	return -EINVAL;
@@ -2742,6 +2748,8 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	log_dbg(cd, "Initializing decryption with datashift.");
+
 	data_shift = params->data_shift << SECTOR_SHIFT;
 
 	/*
@@ -2774,9 +2782,11 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = reencrypt_verify_resilience_params(cd, params, sector_size);
-	if (r < 0)
+	r = reencrypt_verify_resilience_params(cd, params, sector_size, true);
+	if (r < 0) {
+		log_err(cd, _("Invalid reencryption resilience parameters."));
 		goto out;
+	}
 
 	r = LUKS2_keyslot_reencrypt_allocate(cd, hdr, reencrypt_keyslot,
 					   params, reencrypt_get_alignment(cd, hdr));
@@ -3039,7 +3049,7 @@ static int reencrypt_init(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = reencrypt_verify_resilience_params(cd, params, check_sector_size);
+	r = reencrypt_verify_resilience_params(cd, params, check_sector_size, move_first_segment);
 	if (r < 0)
 		goto out;
 
@@ -3371,12 +3381,12 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 
 	log_dbg(cd, "Loading LUKS2 reencryption context.");
 
-
 	old_sector_size = reencrypt_get_sector_size_old(hdr);
 	new_sector_size = reencrypt_get_sector_size_new(hdr);
 	sector_size = new_sector_size > old_sector_size ? new_sector_size : old_sector_size;
 
-	r = reencrypt_verify_resilience_params(cd, params, sector_size);
+	r = reencrypt_verify_resilience_params(cd, params, sector_size,
+					       LUKS2_get_segment_id_by_flag(hdr, "backup-moved-segment") >= 0);
 	if (r < 0)
 		return r;
 
