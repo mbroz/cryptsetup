@@ -1912,7 +1912,6 @@ static int reencrypt_set_encrypt_segments(struct crypt_device *cd, struct luks2_
 static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	uint64_t dev_size,
-	uint64_t data_shift,
 	uint64_t moved_segment_length,
 	crypt_reencrypt_direction_info di)
 {
@@ -1922,7 +1921,7 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 		 data_offset = LUKS2_get_data_offset(hdr) << SECTOR_SHIFT;
 	json_object *jobj_segment_first = NULL, *jobj_segment_second = NULL, *jobj_segments;
 
-	if (!data_shift || di == CRYPT_REENCRYPT_BACKWARD)
+	if (di == CRYPT_REENCRYPT_BACKWARD)
 		return -ENOTSUP;
 
 	/*
@@ -1930,12 +1929,11 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 	 * [encrypted first segment (max data shift size)][gap (data shift size)][second encrypted data segment]
 	 */
 	first_segment_offset = 0;
-	if (dev_size > data_shift) {
-		first_segment_length = moved_segment_length;
+	first_segment_length = moved_segment_length;
+	if (dev_size > moved_segment_length) {
 		second_segment_offset = data_offset + first_segment_length;
 		second_segment_length = 0;
-	} else
-		first_segment_length = dev_size;
+	}
 
 	jobj_segments = json_object_new_object();
 	if (!jobj_segments)
@@ -1951,7 +1949,7 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 		return r;
 	}
 
-	if (dev_size > data_shift) {
+	if (dev_size > moved_segment_length) {
 		jobj_segment_second = json_segment_create_crypt(second_segment_offset,
 								crypt_get_iv_offset(cd) + (first_segment_length >> SECTOR_SHIFT),
 								second_segment_length ? &second_segment_length : NULL,
@@ -2769,10 +2767,12 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 		moved_segment_length = data_shift < LUKS2_DEFAULT_NONE_REENCRYPTION_LENGTH ?
 				       data_shift : LUKS2_DEFAULT_NONE_REENCRYPTION_LENGTH;
 
-	r = reencrypt_set_decrypt_shift_segments(cd, hdr,
-			data_size, data_shift,
-			moved_segment_length,
-			params->direction);
+	if (moved_segment_length > data_size)
+		moved_segment_length = data_size;
+
+	r = reencrypt_set_decrypt_shift_segments(cd, hdr, data_size,
+						 moved_segment_length,
+						 params->direction);
 	if (r)
 		goto out;
 

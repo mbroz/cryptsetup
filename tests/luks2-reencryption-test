@@ -1827,15 +1827,12 @@ test -f $IMG_HDR && fail
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --init-only $FAST_PBKDF_ARGON --resilience none 2> /dev/null && fail
 test -f $IMG_HDR && fail
 $CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt" && fail
-# FIXME: There's a bug in --hotzone-size parameter when initializing decryption with datashift
-#echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --init-only $FAST_PBKDF_ARGON --resilience checksum --hotzone-size 4m || fail
-echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --init-only $FAST_PBKDF_ARGON --resilience checksum || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --init-only $FAST_PBKDF_ARGON --resilience checksum --hotzone-size 4m || fail
 $CRYPTSETUP isLuks $DEV -q && fail
 # $CRYPTSETUP luksDump $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --resilience datashift 2> /dev/null && fail
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --resilience none 2> /dev/null && fail
-# FIXME: (see above)
-#echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --resilience journal || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $IMG_HDR -q --resilience journal || fail
 rm -f $IMG_HDR
 
 check_blkid
@@ -1987,6 +1984,17 @@ check_hash_dev /dev/mapper/$DEV_NAME $HASH10
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR || fail
 check_hash_dev_head $DEV 32768 $HASH10
 # FIXME: Should not reencryption remove it automatically?
+rm -f $IMG_HDR
+
+# 1MiB data size
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --offset 63488 || fail
+echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
+wipe_dev /dev/mapper/$DEV_NAME
+# --hotzone-size larger than data expected to get auto corrected by library
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR --init-only --hotzone-size 4M || fail
+check_hash_dev /dev/mapper/$DEV_NAME $HASH2
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR --debug || fail
+check_hash_dev_head $DEV 2048 $HASH2
 rm -f $IMG_HDR
 
 # small device (less than header size)
