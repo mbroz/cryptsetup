@@ -74,7 +74,7 @@ autopoint --force $AP_OPTS
 libtoolize --force --copy
 aclocal -I m4 $AL_OPTS
 autoheader $AH_OPTS
-automake --add-missing --copy --gnu $AM_OPTS
+automake --force-missing --add-missing --copy --gnu $AM_OPTS
 autoconf $AC_OPTS
 
 echo
