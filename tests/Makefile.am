@@ -172,6 +172,6 @@ valgrind-check: api-test api-test-2 differ
 	@VALG=1 ./luks2-reencryption-mangle-test
 	@VALG=1 ./bitlk-compat-test
 	@VALG=1 ./tcrypt-compat-test
-	@grep -l "ERROR SUMMARY: [^0] errors" valglog* || echo "No leaks detected."
+	@grep -l "ERROR SUMMARY: [^0][0-9]* errors" valglog* || echo "No leaks detected."
 
 .PHONY: valgrind-check
