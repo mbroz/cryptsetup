@@ -19,6 +19,10 @@ SSH_KEY_PATH="$HOME/sshtest-key"
 
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
+CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+CRYPTSETUP_SSH_VALGRIND=../.libs/cryptsetup-ssh
+CRYPTSETUP_LIB_VALGRIND=../.libs
+
 [ -z "$srcdir" ] && srcdir="."
 
 function remove_mapping()
@@ -93,6 +97,24 @@ function skip()
 	exit 77
 }
 
+function valgrind_setup()
+{
+	command -v valgrind >/dev/null || fail "Cannot find valgrind."
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	[ ! -f $CRYPTSETUP_SSH_VALGRIND ] && fail "Unable to get location of cryptsetup-ssh executable."
+	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
+}
+
+function valgrind_run_ssh()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_SSH_VALGRIND} "$@"
+}
+
 format()
 {
 	dd if=/dev/zero of=$IMG bs=1M count=32 >/dev/null 2>&1
@@ -129,6 +151,7 @@ check_dump()
 }
 
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run && CRYPTSETUP_SSH=valgrind_run_ssh
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 
 # Prevent running dangerous useradd operation by default

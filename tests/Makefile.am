@@ -172,6 +172,22 @@ valgrind-check: api-test api-test-2 differ
 	@VALG=1 ./luks2-reencryption-mangle-test
 	@VALG=1 ./bitlk-compat-test
 	@VALG=1 ./tcrypt-compat-test
+	@VALG=1 ./align-test
+	@VALG=1 ./align-test2
+	@VALG=1 ./device-test
+	@VALG=1 ./discards-test
+	@VALG=1 ./keyring-compat-test
+	@VALG=1 ./loopaes-test
+	@VALG=1 ./luks1-compat-test
+	@VALG=1 ./luks2-integrity-test
+	@VALG=1 ./mode-test
+	@VALG=1 ./password-hash-test
+	@VALG=1 ./reencryption-compat-test
+	@VALG=1 [ -z "$RUN_SSH_PLUGIN_TEST" ] || ./ssh-test-plugin
+	@INFOSTRING="unit-utils-crypt-test" ./valg-api.sh ./unit-utils-crypt-test
+	@INFOSTRING="vectors-test" ./valg-api.sh ./vectors-test
+	@INFOSTRING="api-test" ./valg-api.sh ./api-test
+	@INFOSTRING="api-test-2" ./valg-api.sh ./api-test-2
 	@grep -l "ERROR SUMMARY: [^0][0-9]* errors" valglog* || echo "No leaks detected."
 
 .PHONY: valgrind-check
