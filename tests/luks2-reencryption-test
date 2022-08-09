@@ -1993,7 +1993,7 @@ wipe_dev /dev/mapper/$DEV_NAME
 # --hotzone-size larger than data expected to get auto corrected by library
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR --init-only --hotzone-size 4M || fail
 check_hash_dev /dev/mapper/$DEV_NAME $HASH2
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR --debug || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR || fail
 check_hash_dev_head $DEV 2048 $HASH2
 rm -f $IMG_HDR
 
