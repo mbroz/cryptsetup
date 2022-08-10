@@ -12,6 +12,9 @@ TST_DIR=luks1-images
 MAP=luks1tst
 KEYFILE=keyfile1
 
+CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+CRYPTSETUP_LIB_VALGRIND=../.libs
+
 [ -z "$srcdir" ] && srcdir="."
 
 function remove_mapping()
@@ -35,6 +38,18 @@ function skip()
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
 	exit 77
+}
+
+function valgrind_setup()
+{
+	command -v valgrind >/dev/null || fail "Cannot find valgrind."
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
 function test_one()
@@ -61,6 +76,7 @@ function test_required()
 
 export LANG=C
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 test_required
 [ ! -d $TST_DIR ] && tar xJf $srcdir/luks1-images.tar.xz --no-same-owner
 

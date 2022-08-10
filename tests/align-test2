@@ -11,6 +11,9 @@ PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
 FAST_PBKDF="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
+CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+CRYPTSETUP_LIB_VALGRIND=../.libs
+
 cleanup() {
 	udevadm settle >/dev/null 2>&1
 	if [ -d "$MNT_DIR" ] ; then
@@ -40,6 +43,18 @@ skip()
 	echo "TEST SKIPPED: $1"
 	cleanup
 	exit 77
+}
+
+function valgrind_setup()
+{
+	command -v valgrind >/dev/null || fail "Cannot find valgrind."
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
 function dm_crypt_features()
@@ -193,6 +208,7 @@ auto_sector() # expected device header
 }
 
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run this test, test skipped."
 	exit 77

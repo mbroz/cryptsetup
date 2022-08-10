@@ -6,6 +6,9 @@ REENC_BIN=$CRYPTSETUP
 REENC="$REENC_BIN reencrypt"
 FAST_PBKDF="--pbkdf-force-iterations 1000 --pbkdf pbkdf2"
 
+CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+CRYPTSETUP_LIB_VALGRIND=../.libs
+
 DEV_NAME=reenc9768
 DEV_NAME2=reenc1273
 IMG=reenc-data
@@ -52,6 +55,18 @@ function skip()
 {
 	[ -n "$1" ] && echo "$1"
 	exit 77
+}
+
+function valgrind_setup()
+{
+	command -v valgrind >/dev/null || fail "Cannot find valgrind."
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
 function add_scsi_device() {
@@ -230,6 +245,7 @@ function check_blkid() {
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$REENC_BIN" ] && skip "Cannot find $REENC_BIN, test skipped."
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 command -v wipefs >/dev/null ||  skip "Cannot find wipefs, test skipped."
 
 # REENCRYPTION tests
