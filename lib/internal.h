@@ -38,7 +38,6 @@
 #include "utils_crypt.h"
 #include "utils_loop.h"
 #include "utils_dm.h"
-#include "utils_fips.h"
 #include "utils_keyring.h"
 #include "utils_io.h"
 #include "crypto_backend/crypto_backend.h"

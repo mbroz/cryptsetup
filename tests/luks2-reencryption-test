@@ -27,7 +27,7 @@ PWD2="1cND4319812f"
 PWD3="1-9Qu5Ejfnqv"
 DEV_LINK="reenc-test-link"
 
-[ -f /etc/system-fips ] && FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
+FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
 function dm_crypt_features()
 {

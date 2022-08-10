@@ -453,3 +453,8 @@ int crypt_backend_memeq(const void *m1, const void *m2, size_t n)
 	/* The logic is inverse to memcmp... */
 	return !memeql_sec(m1, m2, n);
 }
+
+bool crypt_fips_mode(void)
+{
+	return false;
+}

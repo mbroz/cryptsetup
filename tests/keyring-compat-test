@@ -29,7 +29,7 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 CRYPTSETUP_VALGRIND=../.libs/cryptsetup
 CRYPTSETUP_LIB_VALGRIND=../.libs
 
-[ -f /etc/system-fips ] && FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
+FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
 function remove_mapping()
 {
