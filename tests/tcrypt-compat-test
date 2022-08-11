@@ -75,7 +75,7 @@ function get_HASH_CIPHER() # filename
 
 function test_required()
 {
-	command -v lsblk >/dev/null || skip "lsblk tool required, test skipped."
+	command -v blkid >/dev/null || skip "blkid tool required, test skipped."
 
 	echo "REQUIRED KDF TEST"
 	test_kdf sha256
@@ -198,7 +198,7 @@ for file in $(ls $TST_DIR/[tv]c_* $TST_DIR/vcpim_* $TST_DIR/sys_[tv]c_*) ; do
 	[ $ret -ne 0 ] && fail
 	$CRYPTSETUP status $MAP >/dev/null || fail
 	$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
-	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)
+	UUID=$(blkid -p -o value -s UUID /dev/mapper/$MAP)
 	$CRYPTSETUP remove $MAP || fail
 	[ "$UUID" != "DEAD-BABE" ] && fail "UUID check failed."
 	echo " [OK]"
@@ -213,7 +213,7 @@ for file in $(ls $TST_DIR/[tv]c_*-hidden) ; do
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT legacy mode" ) && echo " [N/A]" && continue
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT compatible mapping" ) && echo " [N/A]" && continue
 	[ $ret -ne 0 ] && fail
-	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)
+	UUID=$(blkid -p -o value -s UUID /dev/mapper/$MAP)
 	$CRYPTSETUP remove $MAP || fail
 	[ "$UUID" != "CAFE-BABE" ] && fail "UUID check failed."
 	echo " [OK]"

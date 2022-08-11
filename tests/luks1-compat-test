@@ -59,7 +59,7 @@ function test_one()
 
 function test_required()
 {
-	command -v lsblk >/dev/null || skip "lsblk tool required, test skipped."
+	command -v blkid >/dev/null || skip "blkid tool required, test skipped."
 
 	echo "REQUIRED KDF TEST"
 	$CRYPTSETUP benchmark -h whirlpool | grep "N/A" && skip
@@ -115,7 +115,7 @@ for file in $(ls $TST_DIR/luks1_*) ; do
 	[ $ret -ne 0 ] && fail
 	$CRYPTSETUP status $MAP >/dev/null || fail
 	$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
-	UUID=$(lsblk -n -o UUID /dev/mapper/$MAP)
+	UUID=$(blkid -p -o value -s UUID /dev/mapper/$MAP)
 	$CRYPTSETUP remove $MAP || fail
 	[ "$UUID" != "DEAD-BABE" ] && fail "UUID check failed."
 	echo " [OK]"

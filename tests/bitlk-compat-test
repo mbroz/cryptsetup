@@ -142,7 +142,7 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 		[ $ret -eq 0 ] || fail " failed to open $file ($ret)"
 		$CRYPTSETUP status $MAP >/dev/null || fail
 		$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
-		uuid=$(lsblk -n -o UUID /dev/mapper/$MAP)
+		uuid=$(blkid -p -o value -s UUID /dev/mapper/$MAP)
 		sha256sum=$(sha256sum /dev/mapper/$MAP | cut -d" " -f1)
 		$CRYPTSETUP remove $MAP || fail
 		[ "$uuid" = "$UUID" ] || fail " UUID check failed."
@@ -166,7 +166,7 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 	[ $ret -eq 0 ] || fail " failed to open $file using volume key ($ret)"
 	$CRYPTSETUP status $MAP >/dev/null || fail
 	$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
-	uuid=$(lsblk -n -o UUID /dev/mapper/$MAP)
+	uuid=$(blkid -p -o value -s UUID /dev/mapper/$MAP)
 	sha256sum=$(sha256sum /dev/mapper/$MAP | cut -d" " -f1)
 	$CRYPTSETUP remove $MAP || fail
 	[ "$uuid" = "$UUID" ] || fail " UUID check failed."
@@ -186,7 +186,7 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 		[ $ret -eq 0 ] || fail " failed to open $file ($ret)"
 		$CRYPTSETUP status $MAP >/dev/null || fail
 		$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
-		uuid=$(lsblk -n -o UUID /dev/mapper/$MAP)
+		uuid=$(blkid -p -o value -s UUID /dev/mapper/$MAP)
 		sha256sum=$(sha256sum /dev/mapper/$MAP | cut -d" " -f1)
 		$CRYPTSETUP remove $MAP || fail
 		[ "$uuid" = "$UUID" ] || fail " UUID check failed."
