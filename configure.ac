@@ -267,6 +267,9 @@ AC_DEFUN([CONFIGURE_GCRYPT], [
 		GCRYPT_REQ_VERSION=1.1.42
 	fi
 
+	use_internal_pbkdf2=0
+	use_internal_argon2=1
+
 	dnl libgcrypt rejects to use pkgconfig, use AM_PATH_LIBGCRYPT from gcrypt-devel here.
 	dnl Do not require gcrypt-devel if other crypto backend is used.
 	m4_ifdef([AM_PATH_LIBGCRYPT],[
@@ -290,7 +293,24 @@ AC_DEFUN([CONFIGURE_GCRYPT], [
 		NO_FIPS([])
 	fi
 
+	m4_ifdef([AM_PATH_LIBGCRYPT],[
+	AC_ARG_ENABLE([gcrypt-argon2],
+		dnl Check if we can use gcrypt Argon2 (1.11.0 supports empty password)
+		AS_HELP_STRING([--disable-gcrypt-argon2], [force disable internal gcrypt Argon2]),
+		[],
+		[AM_PATH_LIBGCRYPT([1.11.0], [use_internal_argon2=0], [use_internal_argon2=1])])
+	AM_PATH_LIBGCRYPT($GCRYPT_REQ_VERSION,,[AC_MSG_ERROR([You need the gcrypt library.])])],
+	AC_MSG_ERROR([Missing support for gcrypt: install gcrypt and regenerate configure.]))
+
+	AC_MSG_CHECKING([if internal cryptsetup Argon2 is compiled-in])
+	if test $use_internal_argon2 = 0; then
+		AC_MSG_RESULT([no])
+	else
+		AC_MSG_RESULT([yes])
+	fi
+
 	AC_CHECK_DECLS([GCRY_CIPHER_MODE_XTS], [], [], [#include <gcrypt.h>])
+	AC_CHECK_DECLS([GCRY_KDF_ARGON2], [], [], [#include <gcrypt.h>])
 
 	if test "x$enable_static_cryptsetup" = "xyes"; then
 		saved_LIBS=$LIBS
@@ -315,6 +335,7 @@ AC_DEFUN([CONFIGURE_OPENSSL], [
 	CRYPTO_CFLAGS=$LIBCRYPTO_CFLAGS
 	CRYPTO_LIBS=$LIBCRYPTO_LIBS
 	use_internal_pbkdf2=0
+	use_internal_argon2=1
 
 	if test "x$enable_static_cryptsetup" = "xyes"; then
 		saved_PKG_CONFIG=$PKG_CONFIG
@@ -343,6 +364,7 @@ AC_DEFUN([CONFIGURE_NSS], [
 	CRYPTO_CFLAGS=$NSS_CFLAGS
 	CRYPTO_LIBS=$NSS_LIBS
 	use_internal_pbkdf2=1
+	use_internal_argon2=1
 	NO_FIPS([])
 ])
 
@@ -353,6 +375,7 @@ AC_DEFUN([CONFIGURE_KERNEL], [
 #		[AC_MSG_ERROR([You need Linux kernel with userspace crypto interface.])],
 #		[#include <sys/socket.h>])
 	use_internal_pbkdf2=1
+	use_internal_argon2=1
 	NO_FIPS([])
 ])
 
@@ -369,6 +392,7 @@ AC_DEFUN([CONFIGURE_NETTLE], [
 
 	CRYPTO_STATIC_LIBS=$CRYPTO_LIBS
 	use_internal_pbkdf2=0
+	use_internal_argon2=1
 	NO_FIPS([])
 ])
 
@@ -493,7 +517,15 @@ AC_ARG_ENABLE([internal-argon2],
 AC_ARG_ENABLE([libargon2],
 	AS_HELP_STRING([--enable-libargon2], [enable external libargon2 (PHC) library (disables internal bundled version)]))
 
-if test "x$enable_libargon2" = "xyes" ; then
+if test $use_internal_argon2 = 0 -o "x$enable_internal_argon2" = "xno" ; then
+	if test "x$enable_internal_argon2" = "xyes" -o "x$enable_libargon" = "xyes"; then
+		AC_MSG_WARN([Argon2 in $with_crypto_backend lib is used; internal Argon2 options are ignored.])
+	fi
+	enable_internal_argon2=no
+	enable_internal_sse_argon2=no
+	enable_libargon2=no
+	use_internal_argon2=0
+elif test "x$enable_libargon2" = "xyes" ; then
 	AC_CHECK_HEADERS(argon2.h,,
 		[AC_MSG_ERROR([You need libargon2 development library installed.])])
 	AC_CHECK_DECL(Argon2_id,,[AC_MSG_ERROR([You need more recent Argon2 library with support for Argon2id.])], [#include <argon2.h>])
@@ -517,11 +549,10 @@ else
 	fi
 fi
 
-if test "x$enable_internal_argon2" = "xyes"; then
-	AC_DEFINE(USE_INTERNAL_ARGON2, 1, [Use internal Argon2])
-fi
 AM_CONDITIONAL(CRYPTO_INTERNAL_ARGON2, test "x$enable_internal_argon2" = "xyes")
 AM_CONDITIONAL(CRYPTO_INTERNAL_SSE_ARGON2, test "x$enable_internal_sse_argon2" = "xyes")
+dnl If libargon is in use, we have defined HAVE_ARGON2_H
+AC_DEFINE_UNQUOTED(USE_INTERNAL_ARGON2, [$use_internal_argon2], [Use internal Argon2])
 
 dnl Link with blkid to check for other device types
 AC_ARG_ENABLE([blkid],

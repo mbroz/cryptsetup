@@ -444,6 +444,7 @@ endif
 
 crypto_backend_library = []
 use_internal_pbkdf2 = false
+use_internal_argon2 = true
 
 if get_option('crypto-backend') == 'gcrypt'
     req_version = '1.1.42'
@@ -471,16 +472,36 @@ if get_option('crypto-backend') == 'gcrypt'
         error('Using internal cryptsetup PBKDF2 is not compatible with FIPS.')
     endif
 
+    if get_option('gcrypt-argon2').auto()
+        # Check if we can use gcrypt Argon2 (1.11.0 supports empty password)
+        gcrypt_with_empty_password = dependency('libgcrypt',
+            version: '>=1.11.0',
+            required: false,
+            static: enable_static)
+        if gcrypt_with_empty_password.found()
+            req_version = '1.11.0'
+            use_internal_argon2 = false
+        else
+            use_internal_argon2 = true
+        endif
+    else
+        use_internal_argon2 = get_option('gcrypt-argon2').disabled()
+    endif
+
     crypto_backend_library = dependency('libgcrypt',
         version: '>=@0@'.format(req_version),
         static: enable_static)
     conf.set10('HAVE_DECL_GCRY_CIPHER_MODE_XTS',
         cc.has_header_symbol('gcrypt.h', 'GCRY_CIPHER_MODE_XTS',
             dependencies: crypto_backend_library))
+    conf.set10('HAVE_DECL_GCRY_KDF_ARGON2',
+        cc.has_header_symbol('gcrypt.h', 'GCRY_KDF_ARGON2',
+            dependencies: crypto_backend_library))
     conf.set_quoted('GCRYPT_REQ_VERSION', req_version,
         description: 'Requested gcrypt version')
 elif get_option('crypto-backend') == 'openssl'
     use_internal_pbkdf2 = false
+    use_internal_argon2 = true
     crypto_backend_library = dependency('libcrypto',
         version: '>=0.9.8',
         static: enable_static)
@@ -494,6 +515,7 @@ elif get_option('crypto-backend') == 'nss'
 
     warning('NSS backend does NOT provide backward compatibility (missing ripemd160 hash).')
     use_internal_pbkdf2 = true
+    use_internal_argon2 = true
 
     crypto_backend_library = dependency('nss',
         static: enable_static)
@@ -505,6 +527,7 @@ elif get_option('crypto-backend') == 'kernel'
         error('kernel crypto backend is not supported with FIPS enabled')
     endif
     use_internal_pbkdf2 = true
+    use_internal_argon2 = true
     assert(cc.has_header('linux/if_alg.h'),
         'You need Linux kernel headers with userspace crypto interface.')
 elif get_option('crypto-backend') == 'nettle'
@@ -518,6 +541,7 @@ elif get_option('crypto-backend') == 'nettle'
     crypto_backend_library = dependency('nettle',
         static: enable_static)
     use_internal_pbkdf2 = false
+    use_internal_argon2 = true
     assert(cc.has_function('nettle_pbkdf2_hmac_sha256',
             dependencies: crypto_backend_library),
         'You need Nettle library version 2.6 or more recent.')
@@ -527,7 +551,13 @@ conf.set10('USE_INTERNAL_PBKDF2', use_internal_pbkdf2)
 libargon2_external = []
 threads = []
 use_internal_sse_argon2 = false
-if get_option('argon-implementation') == 'internal'
+if not use_internal_argon2 or get_option('argon-implementation') == 'none'
+    if get_option('argon-implementation') == 'internal' or get_option('argon-implementation') == 'libargon2'
+        warning('Argon2 in crypto library is used; internal Argon2 options are ignored.')
+    endif
+    conf.set10('USE_INTERNAL_ARGON2', false,
+        description: 'Use internal Argon2.')
+elif get_option('argon-implementation') == 'internal'
     warning('Argon2 bundled (slow) reference implementation will be used, please consider using system library with -Dargon-implementation=libargon2')
 
     if get_option('internal-sse-argon2')

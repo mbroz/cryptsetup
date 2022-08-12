@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <gcrypt.h>
+#include <pthread.h>
 #include "crypto_backend_internal.h"
 
 static int crypto_backend_initialised = 0;
@@ -386,6 +387,130 @@ static int pbkdf2(const char *hash,
 #endif /* USE_INTERNAL_PBKDF2 */
 }
 
+#if HAVE_DECL_GCRY_KDF_ARGON2 && !USE_INTERNAL_ARGON2
+struct gcrypt_thread_job
+{
+	pthread_t thread;
+	struct job_thread_param {
+		gcry_kdf_job_fn_t job;
+		void *p;
+	} work;
+};
+
+struct gcrypt_threads
+{
+	pthread_attr_t attr;
+	unsigned int num_threads;
+	unsigned int max_threads;
+	struct gcrypt_thread_job *jobs_ctx;
+};
+
+static void *gcrypt_job_thread(void *p)
+{
+	struct job_thread_param *param = p;
+	param->job(param->p);
+	pthread_exit(NULL);
+}
+
+static int gcrypt_wait_all_jobs(void *ctx)
+{
+	int i;
+	struct gcrypt_threads *threads = ctx;
+
+	for (i = 0; i < threads->num_threads; i++) {
+		pthread_join(threads->jobs_ctx[i].thread, NULL);
+		threads->jobs_ctx[i].thread = 0;
+	}
+
+	threads->num_threads = 0;
+	return 0;
+}
+
+static int gcrypt_dispatch_job(void *ctx, gcry_kdf_job_fn_t job, void *p)
+{
+	struct gcrypt_threads *threads = ctx;
+
+	if (threads->num_threads >= threads->max_threads)
+		return -1;
+
+	threads->jobs_ctx[threads->num_threads].work.job = job;
+	threads->jobs_ctx[threads->num_threads].work.p = p;
+
+	if (pthread_create(&threads->jobs_ctx[threads->num_threads].thread, &threads->attr,
+			   gcrypt_job_thread, &threads->jobs_ctx[threads->num_threads].work))
+		return -1;
+
+	threads->num_threads++;
+	return 0;
+}
+
+static int gcrypt_argon2(const char *type,
+	const char *password, size_t password_length,
+	const char *salt, size_t salt_length,
+	char *key, size_t key_length,
+	uint32_t iterations, uint32_t memory, uint32_t parallel)
+{
+	gcry_kdf_hd_t hd;
+	int atype, r = -EINVAL;
+	unsigned long param[4];
+	struct gcrypt_threads threads = {
+		.max_threads = parallel,
+		.num_threads = 0
+	};
+	const gcry_kdf_thread_ops_t ops = {
+		.jobs_context = &threads,
+		.dispatch_job = gcrypt_dispatch_job,
+		.wait_all_jobs = gcrypt_wait_all_jobs
+	};
+
+	if (!strcmp(type, "argon2i"))
+		atype = GCRY_KDF_ARGON2I;
+	else if (!strcmp(type, "argon2id"))
+		atype = GCRY_KDF_ARGON2ID;
+	else
+		return -EINVAL;
+
+	param[0] = key_length;
+	param[1] = iterations;
+	param[2] = memory;
+	param[3] = parallel;
+
+	if (gcry_kdf_open(&hd, GCRY_KDF_ARGON2, atype, param, 4,
+			password, password_length, salt, salt_length,
+			NULL, 0, NULL, 0)) {
+		free(threads.jobs_ctx);
+		return -EINVAL;
+	}
+
+	if (parallel == 1) {
+		/* Do not use threads here */
+		if (gcry_kdf_compute(hd, NULL))
+			goto out;
+	} else {
+		threads.jobs_ctx = calloc(threads.max_threads,
+				      sizeof(struct gcrypt_thread_job));
+		if (!threads.jobs_ctx)
+			goto out;
+
+		if (pthread_attr_init(&threads.attr))
+			goto out;
+
+		if (gcry_kdf_compute(hd, &ops))
+			goto out;
+	}
+
+	if (gcry_kdf_final(hd, key_length, key))
+		goto out;
+	r = 0;
+out:
+	gcry_kdf_close(hd);
+	pthread_attr_destroy(&threads.attr);
+	free(threads.jobs_ctx);
+
+	return r;
+}
+#endif
+
 /* PBKDF */
 int crypt_pbkdf(const char *kdf, const char *hash,
 		const char *password, size_t password_length,
@@ -400,8 +525,13 @@ int crypt_pbkdf(const char *kdf, const char *hash,
 		return pbkdf2(hash, password, password_length, salt, salt_length,
 			      key, key_length, iterations);
 	else if (!strncmp(kdf, "argon2", 6))
+#if HAVE_DECL_GCRY_KDF_ARGON2 && !USE_INTERNAL_ARGON2
+		return gcrypt_argon2(kdf, password, password_length, salt, salt_length,
+				     key, key_length, iterations, memory, parallel);
+#else
 		return argon2(kdf, password, password_length, salt, salt_length,
 			      key, key_length, iterations, memory, parallel);
+#endif
 	return -EINVAL;
 }
 

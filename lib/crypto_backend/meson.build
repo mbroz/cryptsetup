@@ -1,4 +1,6 @@
-subdir('argon2')
+if use_internal_argon2
+    subdir('argon2')
+endif
 
 libcrypto_backend_dependencies = [
     crypto_backend_library,
@@ -25,7 +27,7 @@ if use_internal_pbkdf2
     libcrypto_backend_sources += files('pbkdf2_generic.c')
 endif
 
-if get_option('argon-implementation') == 'internal'
+if use_internal_argon2 and get_option('argon-implementation') == 'internal'
     libcrypto_backend_link_with += libargon2
 elif get_option('argon-implementation') == 'libargon2'
     libcrypto_backend_dependencies += libargon2_external

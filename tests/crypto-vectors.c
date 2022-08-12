@@ -1029,7 +1029,10 @@ static int pbkdf_test_vectors(void)
 	for (i = 0; i < ARRAY_SIZE(kdf_test_vectors); i++) {
 		crypt_backend_memzero(result, sizeof(result));
 		vec = &kdf_test_vectors[i];
-		printf("PBKDF vector %02d %s ", i, vec->type);
+		if (vec->hash)
+			printf("PBKDF vector %02d %s-%s ", i, vec->type, vec->hash);
+		else
+			printf("PBKDF vector %02d %s ", i, vec->type);
 		if (vec->hash && crypt_hmac_size(vec->hash) < 0) {
 			printf("[%s N/A]\n", vec->hash);
 			continue;
@@ -1039,8 +1042,8 @@ static int pbkdf_test_vectors(void)
 		    vec->salt, vec->salt_length,
 		    result, vec->output_length,
 		    vec->iterations, vec->memory, vec->parallelism) < 0) {
-			printf("[%s-%s N/A]\n", vec->type, vec->hash);
-			continue;
+			printf("[API FAILED]\n");
+			return EXIT_FAILURE;
 		}
 		if (memcmp(result, vec->output, vec->output_length)) {
 			printf("[FAILED]\n");

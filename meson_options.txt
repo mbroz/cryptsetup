@@ -39,6 +39,7 @@ option('fips', type : 'boolean', description : 'enable FIPS mode restrictions', 
 option('fuzzing-engine', type : 'string', description : 'specify LDFLAGS for linking with fuzzing engine (in OSS-Fuzz, LIB_FUZZING_ENGINE variable should be passed via this argument)')
 option('fuzz-targets', type : 'boolean', description : 'enable building fuzz targets', value : false)
 option('gcrypt-pbkdf2', type : 'feature', description : 'enable internal gcrypt PBKDF2', value : 'auto')
+option('gcrypt-argon2', type : 'feature', description : 'enable internal gcrypt Argon2', value : 'auto')
 option('integritysetup', type : 'boolean', description : 'integritysetup Support', value : true)
 option('internal-sse-argon2', type : 'boolean', description : 'use internal SSE implementation of Argon2 PBKDF', value : false)
 option('kernel_crypto', type : 'boolean', description : 'kernel userspace crypto (no benchmark and tcrypt)', value : true)
