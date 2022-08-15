@@ -1110,6 +1110,33 @@ int LUKS2_hdr_validate(struct crypt_device *cd, json_object *hdr_jobj, uint64_t 
 	return 0;
 }
 
+static bool hdr_json_free(json_object **jobj)
+{
+	assert(jobj);
+
+	if (json_object_put(*jobj))
+		*jobj = NULL;
+
+	return (*jobj == NULL);
+}
+
+static int hdr_update_copy_for_rollback(struct crypt_device *cd, struct luks2_hdr *hdr)
+{
+	json_object **jobj_copy;
+
+	assert(hdr);
+	assert(hdr->jobj);
+
+	jobj_copy = (json_object **)&hdr->jobj_rollback;
+
+	if (!hdr_json_free(jobj_copy)) {
+		log_dbg(cd, "LUKS2 rollback metadata copy still in use");
+		return -EINVAL;
+	}
+
+	return json_object_copy(hdr->jobj, jobj_copy) ? -ENOMEM : 0;
+}
+
 /* FIXME: should we expose do_recovery parameter explicitly? */
 int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr, int repair)
 {
@@ -1141,6 +1168,9 @@ int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr, int repair)
 	} else
 		device_read_unlock(cd, crypt_metadata_device(cd));
 
+	if (!r && (r = hdr_update_copy_for_rollback(cd, hdr)))
+		log_dbg(cd, "Failed to update rollback LUKS2 metadata.");
+
 	return r;
 }
 
@@ -1153,18 +1183,50 @@ static int hdr_cleanup_and_validate(struct crypt_device *cd, struct luks2_hdr *h
 
 int LUKS2_hdr_write_force(struct crypt_device *cd, struct luks2_hdr *hdr)
 {
+	int r;
+
 	if (hdr_cleanup_and_validate(cd, hdr))
 		return -EINVAL;
 
-	return LUKS2_disk_hdr_write(cd, hdr, crypt_metadata_device(cd), false);
+	r = LUKS2_disk_hdr_write(cd, hdr, crypt_metadata_device(cd), false);
+
+	if (!r && (r = hdr_update_copy_for_rollback(cd, hdr)))
+		log_dbg(cd, "Failed to update rollback LUKS2 metadata.");
+
+	return r;
 }
 
 int LUKS2_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr)
 {
+	int r;
+
 	if (hdr_cleanup_and_validate(cd, hdr))
 		return -EINVAL;
 
-	return LUKS2_disk_hdr_write(cd, hdr, crypt_metadata_device(cd), true);
+	r = LUKS2_disk_hdr_write(cd, hdr, crypt_metadata_device(cd), true);
+
+	if (!r && (r = hdr_update_copy_for_rollback(cd, hdr)))
+		log_dbg(cd, "Failed to update rollback LUKS2 metadata.");
+
+	return r;
+}
+
+int LUKS2_hdr_rollback(struct crypt_device *cd, struct luks2_hdr *hdr)
+{
+	json_object **jobj_copy;
+
+	assert(hdr->jobj_rollback);
+
+	log_dbg(cd, "Rolling back in-memory LUKS2 json metadata.");
+
+	jobj_copy = (json_object **)&hdr->jobj;
+
+	if (!hdr_json_free(jobj_copy)) {
+		log_dbg(cd, "LUKS2 header still in use");
+		return -EINVAL;
+	}
+
+	return json_object_copy(hdr->jobj_rollback, jobj_copy) ? -ENOMEM : 0;
 }
 
 int LUKS2_hdr_uuid(struct crypt_device *cd, struct luks2_hdr *hdr, const char *uuid)
@@ -1201,10 +1263,19 @@ int LUKS2_hdr_labels(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 void LUKS2_hdr_free(struct crypt_device *cd, struct luks2_hdr *hdr)
 {
-	if (json_object_put(hdr->jobj))
-		hdr->jobj = NULL;
-	else if (hdr->jobj)
+	json_object **jobj;
+
+	assert(hdr);
+
+	jobj = (json_object **)&hdr->jobj;
+
+	if (!hdr_json_free(jobj))
 		log_dbg(cd, "LUKS2 header still in use");
+
+	jobj = (json_object **)&hdr->jobj_rollback;
+
+	if (!hdr_json_free(jobj))
+		log_dbg(cd, "LUKS2 rollback metadata copy still in use");
 }
 
 static uint64_t LUKS2_keyslots_size_jobj(json_object *jobj)
@@ -1306,8 +1377,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	int r, fd, devfd = -1, diff_uuid = 0;
 	ssize_t ret, buffer_size = 0;
 	char *buffer = NULL, msg[1024];
-	struct luks2_hdr hdr_file;
-	struct luks2_hdr tmp_hdr = {};
+	struct luks2_hdr hdr_file = {}, tmp_hdr = {};
 	uint32_t reqs = 0;
 
 	r = device_alloc(cd, &backup_device, backup_file);

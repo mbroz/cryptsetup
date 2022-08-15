@@ -743,12 +743,18 @@ out:
 	return r;
 }
 
-static void _luks2_reload(struct crypt_device *cd)
+static void _luks2_rollback(struct crypt_device *cd)
 {
 	if (!cd || !isLUKS2(cd->type))
 		return;
 
-	(void) _crypt_load_luks2(cd, 1, 0);
+	if (LUKS2_hdr_rollback(cd, &cd->u.luks2.hdr)) {
+		log_err(cd, _("Failed to rollback LUKS2 metadata in memory."));
+		return;
+	}
+
+	free(cd->u.luks2.keyslot_cipher);
+	cd->u.luks2.keyslot_cipher = NULL;
 }
 
 static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
@@ -3127,7 +3133,7 @@ int crypt_header_restore(struct crypt_device *cd,
 	} else if (isLUKS2(cd->type) && (!requested_type || isLUKS2(requested_type))) {
 		r = LUKS2_hdr_restore(cd, &cd->u.luks2.hdr, backup_file);
 		if (r)
-			_luks2_reload(cd);
+			(void) _crypt_load_luks2(cd, 1, 0);
 	} else if (isLUKS1(cd->type) && (!requested_type || isLUKS1(requested_type)))
 		r = LUKS_hdr_restore(backup_file, &cd->u.luks1.hdr, cd);
 	else
@@ -3581,7 +3587,7 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 out:
 	crypt_free_volume_key(vk);
 	if (r < 0) {
-		_luks2_reload(cd);
+		_luks2_rollback(cd);
 		return r;
 	}
 	return keyslot;
@@ -3698,7 +3704,7 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 out:
 	crypt_free_volume_key(vk);
 	if (r < 0) {
-		_luks2_reload(cd);
+		_luks2_rollback(cd);
 		return r;
 	}
 	return keyslot_new;
@@ -3790,7 +3796,7 @@ out:
 	crypt_safe_free(new_password);
 	crypt_free_volume_key(vk);
 	if (r < 0) {
-		_luks2_reload(cd);
+		_luks2_rollback(cd);
 		return r;
 	}
 	return keyslot;
@@ -5751,7 +5757,7 @@ int crypt_convert(struct crypt_device *cd,
 
 	if (r < 0) {
 		/* in-memory header may be invalid after failed conversion */
-		_luks2_reload(cd);
+		_luks2_rollback(cd);
 		if (r == -EBUSY)
 			log_err(cd, _("Cannot convert device %s which is still in use."), mdata_device_path(cd));
 		return r;
@@ -6163,7 +6169,7 @@ int crypt_keyslot_add_by_key(struct crypt_device *cd,
 out:
 	crypt_free_volume_key(vk);
 	if (r < 0) {
-		_luks2_reload(cd);
+		_luks2_rollback(cd);
 		return r;
 	}
 	return keyslot;

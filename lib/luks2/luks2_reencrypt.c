@@ -2898,8 +2898,8 @@ out:
 		log_err(cd, _("Failed to resume device %s."), name);
 
 	device_release_excl(cd, crypt_data_device(cd));
-	if (r < 0 && crypt_load(cd, CRYPT_LUKS2, NULL) < 0)
-		log_dbg(cd, "Cannot reload context after failure.");
+	if (r < 0 && LUKS2_hdr_rollback(cd, hdr) < 0)
+		log_dbg(cd, "Failed to rollback LUKS2 metadata after failure.");
 
 	return r;
 }
@@ -3106,8 +3106,8 @@ static int reencrypt_init(struct crypt_device *cd,
 		r = reencrypt_keyslot;
 out:
 	device_release_excl(cd, crypt_data_device(cd));
-	if (r < 0 && crypt_load(cd, CRYPT_LUKS2, NULL) < 0)
-		log_dbg(cd, "Cannot reload context after failure.");
+	if (r < 0 && LUKS2_hdr_rollback(cd, hdr) < 0)
+		log_dbg(cd, "Failed to rollback LUKS2 metadata after failure.");
 
 	return r;
 }

@@ -121,6 +121,7 @@ struct luks2_hdr {
 	uint8_t		salt2[LUKS2_SALT_L];
 	char		uuid[LUKS2_UUID_L];
 	void		*jobj;
+	void		*jobj_rollback;
 };
 
 struct luks2_keyslot_params {
@@ -167,6 +168,7 @@ int LUKS2_hdr_version_unlocked(struct crypt_device *cd,
 int LUKS2_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr, int repair);
 int LUKS2_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr);
 int LUKS2_hdr_write_force(struct crypt_device *cd, struct luks2_hdr *hdr);
+int LUKS2_hdr_rollback(struct crypt_device *cd, struct luks2_hdr *hdr);
 int LUKS2_hdr_dump(struct crypt_device *cd, struct luks2_hdr *hdr);
 int LUKS2_hdr_dump_json(struct crypt_device *cd, struct luks2_hdr *hdr,	const char **json);
 
