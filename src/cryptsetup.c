@@ -2833,36 +2833,35 @@ static struct action_type {
 	int (*handler)(void);
 	const char *(*verify)(void);
 	int required_action_argc;
-	int required_memlock;
 	const char *arg_desc;
 	const char *desc;
 } action_types[] = {
-	{ OPEN_ACTION,		action_open,		verify_open,		1, 1, N_("<device> [--type <type>] [<name>]"),N_("open device as <name>") },
-	{ CLOSE_ACTION,		action_close,		verify_close,		1, 1, N_("<name>"), N_("close device (remove mapping)") },
-	{ RESIZE_ACTION,	action_resize,		verify_resize,		1, 1, N_("<name>"), N_("resize active device") },
-	{ STATUS_ACTION,	action_status,		NULL,			1, 0, N_("<name>"), N_("show device status") },
-	{ BENCHMARK_ACTION,	action_benchmark,	NULL,			0, 0, N_("[--cipher <cipher>]"), N_("benchmark cipher") },
-	{ REPAIR_ACTION,	action_luksRepair,	NULL,			1, 1, N_("<device>"), N_("try to repair on-disk metadata") },
-	{ REENCRYPT_ACTION,	action_reencrypt,	verify_reencrypt,	0, 0, N_("<device>"), N_("reencrypt LUKS2 device") },
-	{ ERASE_ACTION,		action_luksErase,	NULL,			1, 1, N_("<device>"), N_("erase all keyslots (remove encryption key)") },
-	{ CONVERT_ACTION,	action_luksConvert,	NULL,			1, 1, N_("<device>"), N_("convert LUKS from/to LUKS2 format") },
-	{ CONFIG_ACTION,	action_luksConfig,	verify_config,		1, 1, N_("<device>"), N_("set permanent configuration options for LUKS2") },
-	{ FORMAT_ACTION,	action_luksFormat,	verify_format,		1, 1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
-	{ ADDKEY_ACTION,	action_luksAddKey,	verify_addkey,		1, 1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
-	{ REMOVEKEY_ACTION,	action_luksRemoveKey,	NULL,			1, 1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
-	{ CHANGEKEY_ACTION,	action_luksChangeKey,	NULL,			1, 1, N_("<device> [<key file>]"), N_("changes supplied key or key file of LUKS device") },
-	{ CONVERTKEY_ACTION,	action_luksConvertKey,	NULL,			1, 1, N_("<device> [<key file>]"), N_("converts a key to new pbkdf parameters") },
-	{ KILLKEY_ACTION,	action_luksKillSlot,	NULL,			2, 1, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
-	{ UUID_ACTION,		action_luksUUID,	NULL,			1, 0, N_("<device>"), N_("print UUID of LUKS device") },
-	{ ISLUKS_ACTION,	action_isLuks,		NULL,			1, 0, N_("<device>"), N_("tests <device> for LUKS partition header") },
-	{ LUKSDUMP_ACTION,	action_luksDump,	verify_luksDump,	1, 1, N_("<device>"), N_("dump LUKS partition information") },
-	{ TCRYPTDUMP_ACTION,	action_tcryptDump,	verify_tcryptdump,	1, 1, N_("<device>"), N_("dump TCRYPT device information") },
-	{ BITLKDUMP_ACTION,	action_bitlkDump,	NULL,			1, 1, N_("<device>"), N_("dump BITLK device information") },
-	{ SUSPEND_ACTION,	action_luksSuspend,	NULL,			1, 1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen)") },
-	{ RESUME_ACTION,	action_luksResume,	NULL,			1, 1, N_("<device>"), N_("Resume suspended LUKS device") },
-	{ HEADERBACKUP_ACTION,	action_luksBackup,	NULL,			1, 1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
-	{ HEADERRESTORE_ACTION,	action_luksRestore,	NULL,			1, 1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
-	{ TOKEN_ACTION,		action_token,		verify_token,		2, 0, N_("<add|remove|import|export> <device>"), N_("Manipulate LUKS2 tokens") },
+	{ OPEN_ACTION,		action_open,		verify_open,		1, N_("<device> [--type <type>] [<name>]"),N_("open device as <name>") },
+	{ CLOSE_ACTION,		action_close,		verify_close,		1, N_("<name>"), N_("close device (remove mapping)") },
+	{ RESIZE_ACTION,	action_resize,		verify_resize,		1, N_("<name>"), N_("resize active device") },
+	{ STATUS_ACTION,	action_status,		NULL,			1, N_("<name>"), N_("show device status") },
+	{ BENCHMARK_ACTION,	action_benchmark,	NULL,			0, N_("[--cipher <cipher>]"), N_("benchmark cipher") },
+	{ REPAIR_ACTION,	action_luksRepair,	NULL,			1, N_("<device>"), N_("try to repair on-disk metadata") },
+	{ REENCRYPT_ACTION,	action_reencrypt,	verify_reencrypt,	0, N_("<device>"), N_("reencrypt LUKS2 device") },
+	{ ERASE_ACTION,		action_luksErase,	NULL,			1, N_("<device>"), N_("erase all keyslots (remove encryption key)") },
+	{ CONVERT_ACTION,	action_luksConvert,	NULL,			1, N_("<device>"), N_("convert LUKS from/to LUKS2 format") },
+	{ CONFIG_ACTION,	action_luksConfig,	verify_config,		1, N_("<device>"), N_("set permanent configuration options for LUKS2") },
+	{ FORMAT_ACTION,	action_luksFormat,	verify_format,		1, N_("<device> [<new key file>]"), N_("formats a LUKS device") },
+	{ ADDKEY_ACTION,	action_luksAddKey,	verify_addkey,		1, N_("<device> [<new key file>]"), N_("add key to LUKS device") },
+	{ REMOVEKEY_ACTION,	action_luksRemoveKey,	NULL,			1, N_("<device> [<key file>]"), N_("removes supplied key or key file from LUKS device") },
+	{ CHANGEKEY_ACTION,	action_luksChangeKey,	NULL,			1, N_("<device> [<key file>]"), N_("changes supplied key or key file of LUKS device") },
+	{ CONVERTKEY_ACTION,	action_luksConvertKey,	NULL,			1, N_("<device> [<key file>]"), N_("converts a key to new pbkdf parameters") },
+	{ KILLKEY_ACTION,	action_luksKillSlot,	NULL,			2, N_("<device> <key slot>"), N_("wipes key with number <key slot> from LUKS device") },
+	{ UUID_ACTION,		action_luksUUID,	NULL,			1, N_("<device>"), N_("print UUID of LUKS device") },
+	{ ISLUKS_ACTION,	action_isLuks,		NULL,			1, N_("<device>"), N_("tests <device> for LUKS partition header") },
+	{ LUKSDUMP_ACTION,	action_luksDump,	verify_luksDump,	1, N_("<device>"), N_("dump LUKS partition information") },
+	{ TCRYPTDUMP_ACTION,	action_tcryptDump,	verify_tcryptdump,	1, N_("<device>"), N_("dump TCRYPT device information") },
+	{ BITLKDUMP_ACTION,	action_bitlkDump,	NULL,			1, N_("<device>"), N_("dump BITLK device information") },
+	{ SUSPEND_ACTION,	action_luksSuspend,	NULL,			1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen)") },
+	{ RESUME_ACTION,	action_luksResume,	NULL,			1, N_("<device>"), N_("Resume suspended LUKS device") },
+	{ HEADERBACKUP_ACTION,	action_luksBackup,	NULL,			1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
+	{ HEADERRESTORE_ACTION,	action_luksRestore,	NULL,			1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
+	{ TOKEN_ACTION,		action_token,		verify_token,		2, N_("<add|remove|import|export> <device>"), N_("Manipulate LUKS2 tokens") },
 	{}
 };
 
@@ -2959,14 +2958,8 @@ static int run_action(struct action_type *action)
 
 	log_dbg("Running command %s.", action->type);
 
-	if (action->required_memlock)
-		crypt_memory_lock(NULL, 1);
-
 	set_int_handler(0);
 	r = action->handler();
-
-	if (action->required_memlock)
-		crypt_memory_lock(NULL, 0);
 
 	/* Some functions returns keyslot # */
 	if (r > 0)
