@@ -344,6 +344,7 @@ void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_m
 
 /**
  * Helper to lock/unlock memory to avoid swap sensitive data to disk.
+ * \b Deprecated, only for backward compatibility. Memory with keys are locked automatically.
  *
  * @param cd crypt device handle, can be @e NULL
  * @param lock 0 to unlock otherwise lock memory
@@ -353,7 +354,7 @@ void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_m
  * @note Only root can do this.
  * @note It locks/unlocks all process memory, not only crypt context.
  */
-int crypt_memory_lock(struct crypt_device *cd, int lock);
+int crypt_memory_lock(struct crypt_device *cd, int lock) __attribute__((deprecated));
 
 /**
  * Set global lock protection for on-disk metadata (file-based locking).
