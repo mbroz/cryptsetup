@@ -20,13 +20,17 @@
  */
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
+#include <sys/mman.h>
 #include "libcryptsetup.h"
 
 struct safe_allocation {
-	size_t	size;
-	char	data[0];
+	size_t size;
+	bool locked;
+	char data[0] __attribute__((aligned(8)));
 };
+#define OVERHEAD offsetof(struct safe_allocation, data)
 
 /*
  * Replacement for memset(s, 0, n) on stack that can be optimized out
@@ -34,6 +38,9 @@ struct safe_allocation {
  */
 void crypt_safe_memzero(void *data, size_t size)
 {
+	if (!data)
+		return;
+
 #ifdef HAVE_EXPLICIT_BZERO
 	explicit_bzero(data, size);
 #else
@@ -49,15 +56,19 @@ void *crypt_safe_alloc(size_t size)
 {
 	struct safe_allocation *alloc;
 
-	if (!size || size > (SIZE_MAX - offsetof(struct safe_allocation, data)))
+	if (!size || size > (SIZE_MAX - OVERHEAD))
 		return NULL;
 
-	alloc = malloc(size + offsetof(struct safe_allocation, data));
+	alloc = malloc(size + OVERHEAD);
 	if (!alloc)
 		return NULL;
 
+	crypt_safe_memzero(alloc, size + OVERHEAD);
 	alloc->size = size;
-	crypt_safe_memzero(&alloc->data, size);
+
+	/* Ignore failure if it is over limit. */
+	if (!mlock(alloc, size + OVERHEAD))
+		alloc->locked = true;
 
 	/* coverity[leaked_storage] */
 	return &alloc->data;
@@ -72,10 +83,15 @@ void crypt_safe_free(void *data)
 	if (!data)
 		return;
 
-	p = (char *)data - offsetof(struct safe_allocation, data);
+	p = (char *)data - OVERHEAD;
 	alloc = (struct safe_allocation *)p;
 
 	crypt_safe_memzero(data, alloc->size);
+
+	if (alloc->locked) {
+		munlock(alloc, alloc->size + OVERHEAD);
+		alloc->locked = false;
+	}
 
 	s = (volatile size_t *)&alloc->size;
 	*s = 0x55aa55aa;
@@ -92,7 +108,7 @@ void *crypt_safe_realloc(void *data, size_t size)
 
 	if (new_data && data) {
 
-		p = (char *)data - offsetof(struct safe_allocation, data);
+		p = (char *)data - OVERHEAD;
 		alloc = (struct safe_allocation *)p;
 
 		if (size > alloc->size)

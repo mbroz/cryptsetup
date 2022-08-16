@@ -5016,7 +5016,7 @@ int crypt_get_rng_type(struct crypt_device *cd)
 
 int crypt_memory_lock(struct crypt_device *cd, int lock)
 {
-	return lock ? crypt_memlock_inc(cd) : crypt_memlock_dec(cd);
+	return 0;
 }
 
 void crypt_set_compatibility(struct crypt_device *cd, uint32_t flags)

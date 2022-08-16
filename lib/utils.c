@@ -59,43 +59,33 @@ uint64_t crypt_getphysmemory_kb(void)
 	return phys_memory_kb;
 }
 
-/* MEMLOCK */
-#define DEFAULT_PROCESS_PRIORITY -18
-
-static int _priority;
-static int _memlock_count = 0;
-
-// return 1 if memory is locked
-int crypt_memlock_inc(struct crypt_device *ctx)
+void crypt_process_priority(struct crypt_device *cd, int *priority, bool raise)
 {
-	if (!_memlock_count++) {
-		log_dbg(ctx, "Locking memory.");
-		if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
-			log_dbg(ctx, "Cannot lock memory with mlockall.");
-			_memlock_count--;
-			return 0;
-		}
-		errno = 0;
-		if (((_priority = getpriority(PRIO_PROCESS, 0)) == -1) && errno)
-			log_err(ctx, _("Cannot get process priority."));
+	int _priority, new_priority;
+
+	if (raise) {
+		_priority = getpriority(PRIO_PROCESS, 0);
+		if (_priority < 0)
+			_priority = 0;
+		if (priority)
+			*priority = _priority;
+
+		/*
+		 * Do not bother checking CAP_SYS_NICE as device activation
+		 * requires CAP_SYSADMIN later anyway.
+		 */
+		if (getuid() || geteuid())
+			new_priority = 0;
 		else
-			if (setpriority(PRIO_PROCESS, 0, DEFAULT_PROCESS_PRIORITY))
-				log_dbg(ctx, "setpriority %d failed: %s",
-					DEFAULT_PROCESS_PRIORITY, strerror(errno));
-	}
-	return _memlock_count ? 1 : 0;
-}
+			new_priority = -18;
 
-int crypt_memlock_dec(struct crypt_device *ctx)
-{
-	if (_memlock_count && (!--_memlock_count)) {
-		log_dbg(ctx, "Unlocking memory.");
-		if (munlockall() == -1)
-			log_err(ctx, _("Cannot unlock memory."));
+		if (setpriority(PRIO_PROCESS, 0, new_priority))
+			log_dbg(cd, "Cannot raise process priority.");
+	} else {
+		_priority = priority ? *priority : 0;
 		if (setpriority(PRIO_PROCESS, 0, _priority))
-			log_dbg(ctx, "setpriority %d failed: %s", _priority, strerror(errno));
+			log_dbg(cd, "Cannot reset process priority.");
 	}
-	return _memlock_count ? 1 : 0;
 }
 
 /* Keyfile processing */
@@ -179,7 +169,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 		key_size = DEFAULT_KEYFILE_SIZE_MAXKB * 1024 + 1;
 		unlimited_read = 1;
 		/* use 4k for buffer (page divisor but avoid huge pages) */
-		buflen = 4096 - sizeof(size_t); // sizeof(struct safe_allocation);
+		buflen = 4096 - 16; /* sizeof(struct safe_allocation); */
 	} else
 		buflen = key_size;
 

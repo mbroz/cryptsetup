@@ -232,7 +232,7 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 	hdr_size = LUKS_device_sectors(&hdr) << SECTOR_SHIFT;
 	buffer_size = size_round_up(hdr_size, crypt_getpagesize());
 
-	buffer = crypt_safe_alloc(buffer_size);
+	buffer = malloc(buffer_size);
 	if (!buffer || hdr_size < LUKS_ALIGN_KEYSLOTS || hdr_size > buffer_size) {
 		r = -ENOMEM;
 		goto out;
@@ -280,7 +280,8 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 	r = 0;
 out:
 	crypt_safe_memzero(&hdr, sizeof(hdr));
-	crypt_safe_free(buffer);
+	crypt_safe_memzero(buffer, buffer_size);
+	free(buffer);
 	return r;
 }
 
@@ -308,7 +309,7 @@ int LUKS_hdr_restore(
 		goto out;
 	}
 
-	buffer = crypt_safe_alloc(buffer_size);
+	buffer = malloc(buffer_size);
 	if (!buffer) {
 		r = -ENOMEM;
 		goto out;
@@ -379,7 +380,8 @@ int LUKS_hdr_restore(
 	r = LUKS_read_phdr(hdr, 1, 0, ctx);
 out:
 	device_sync(ctx, device);
-	crypt_safe_free(buffer);
+	crypt_safe_memzero(buffer, buffer_size);
+	free(buffer);
 	return r;
 }
 

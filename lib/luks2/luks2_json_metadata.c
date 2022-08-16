@@ -1246,7 +1246,7 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 	hdr_size = LUKS2_hdr_and_areas_size(hdr);
 	buffer_size = size_round_up(hdr_size, crypt_getpagesize());
 
-	buffer = crypt_safe_alloc(buffer_size);
+	buffer = malloc(buffer_size);
 	if (!buffer)
 		return -ENOMEM;
 
@@ -1257,23 +1257,22 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (r) {
 		log_err(cd, _("Failed to acquire read lock on device %s."),
 			device_path(crypt_metadata_device(cd)));
-		crypt_safe_free(buffer);
-		return r;
+		goto out;
 	}
 
 	devfd = device_open_locked(cd, device, O_RDONLY);
 	if (devfd < 0) {
 		device_read_unlock(cd, device);
 		log_err(cd, _("Device %s is not a valid LUKS device."), device_path(device));
-		crypt_safe_free(buffer);
-		return devfd == -1 ? -EINVAL : devfd;
+		r = (devfd == -1) ? -EINVAL : devfd;
+		goto out;
 	}
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 			   device_alignment(device), buffer, hdr_size, 0) < hdr_size) {
 		device_read_unlock(cd, device);
-		crypt_safe_free(buffer);
-		return -EIO;
+		r = -EIO;
+		goto out;
 	}
 
 	device_read_unlock(cd, device);
@@ -1284,8 +1283,8 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 			log_err(cd, _("Requested header backup file %s already exists."), backup_file);
 		else
 			log_err(cd, _("Cannot create header backup file %s."), backup_file);
-		crypt_safe_free(buffer);
-		return -EINVAL;
+		r = -EINVAL;
+		goto out;
 	}
 	ret = write_buffer(fd, buffer, buffer_size);
 	close(fd);
@@ -1294,8 +1293,9 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 		r = -EIO;
 	} else
 		r = 0;
-
-	crypt_safe_free(buffer);
+out:
+	crypt_safe_memzero(buffer, buffer_size);
+	free(buffer);
 	return r;
 }
 
@@ -1340,7 +1340,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	}
 
 	buffer_size = LUKS2_hdr_and_areas_size(&hdr_file);
-	buffer = crypt_safe_alloc(buffer_size);
+	buffer = malloc(buffer_size);
 	if (!buffer) {
 		r = -ENOMEM;
 		goto out;
@@ -1440,10 +1440,9 @@ out:
 	LUKS2_hdr_free(cd, &tmp_hdr);
 	crypt_safe_memzero(&hdr_file, sizeof(hdr_file));
 	crypt_safe_memzero(&tmp_hdr, sizeof(tmp_hdr));
-	crypt_safe_free(buffer);
-
+	crypt_safe_memzero(buffer, buffer_size);
+	free(buffer);
 	device_sync(cd, device);
-
 	return r;
 }
 
