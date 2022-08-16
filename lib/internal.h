@@ -179,6 +179,7 @@ int crypt_get_debug_level(void);
 
 int crypt_memlock_inc(struct crypt_device *ctx);
 int crypt_memlock_dec(struct crypt_device *ctx);
+void crypt_process_priority(struct crypt_device *cd, int *priority, bool raise);
 
 int crypt_metadata_locking_enabled(void);
 

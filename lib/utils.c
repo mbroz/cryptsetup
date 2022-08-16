@@ -59,6 +59,35 @@ uint64_t crypt_getphysmemory_kb(void)
 	return phys_memory_kb;
 }
 
+void crypt_process_priority(struct crypt_device *cd, int *priority, bool raise)
+{
+	int _priority, new_priority;
+
+	if (raise) {
+		_priority = getpriority(PRIO_PROCESS, 0);
+		if (_priority < 0)
+			_priority = 0;
+		if (priority)
+			*priority = _priority;
+
+		/*
+		 * Do not bother checking CAP_SYS_NICE as device activation
+		 * requires CAP_SYSADMIN later anyway.
+		 */
+		if (getuid() || geteuid())
+			new_priority = 0;
+		else
+			new_priority = -18;
+
+		if (setpriority(PRIO_PROCESS, 0, new_priority))
+			log_dbg(cd, "Cannot raise process priority.");
+	} else {
+		_priority = priority ? *priority : 0;
+		if (setpriority(PRIO_PROCESS, 0, _priority))
+			log_dbg(cd, "Cannot reset process priority.");
+	}
+}
+
 /* MEMLOCK */
 #define DEFAULT_PROCESS_PRIORITY -18
 

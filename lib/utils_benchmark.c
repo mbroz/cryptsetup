@@ -98,7 +98,7 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 	int (*progress)(uint32_t time_ms, void *usrptr),
 	void *usrptr)
 {
-	int r;
+	int r, priority;
 	const char *kdf_opt;
 
 	if (!pbkdf || (!password && password_size))
@@ -112,10 +112,12 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 
 	log_dbg(cd, "Running %s(%s) benchmark.", pbkdf->type, kdf_opt);
 
+	crypt_process_priority(cd, &priority, true);
 	r = crypt_pbkdf_perf(pbkdf->type, pbkdf->hash, password, password_size,
 			     salt, salt_size, volume_key_size, pbkdf->time_ms,
 			     pbkdf->max_memory_kb, pbkdf->parallel_threads,
 			     &pbkdf->iterations, &pbkdf->max_memory_kb, progress, usrptr);
+	crypt_process_priority(cd, &priority, false);
 
 	if (!r)
 		log_dbg(cd, "Benchmark returns %s(%s) %u iterations, %u memory, %u threads (for %zu-bits key).",
