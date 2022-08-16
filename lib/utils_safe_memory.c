@@ -38,6 +38,9 @@ struct safe_allocation {
  */
 void crypt_safe_memzero(void *data, size_t size)
 {
+	if (!data)
+		return;
+
 #ifdef HAVE_EXPLICIT_BZERO
 	explicit_bzero(data, size);
 #else
