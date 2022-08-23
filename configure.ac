@@ -617,6 +617,22 @@ AC_SUBST([LIBSSH_LIBS])
 AC_SUBST([LIBCRYPTSETUP_VERSION])
 AC_SUBST([LIBCRYPTSETUP_VERSION_INFO])
 
+dnl Set Requires.private for libcryptsetup.pc
+dnl pwquality is used only by tools
+PKGMODULES="uuid devmapper json-c"
+case $with_crypto_backend in
+	gcrypt)  PKGMODULES+=" libgcrypt" ;;
+	openssl) PKGMODULES+=" openssl" ;;
+	nss)     PKGMODULES+=" nss" ;;
+	nettle)  PKGMODULES+=" nettle" ;;
+esac
+if test "x$enable_libargon2" = "xyes"; then
+	PKGMODULES+=" libargon2"
+fi
+if test "x$enable_blkid" = "xyes"; then
+	PKGMODULES+=" blkid"
+fi
+AC_SUBST([PKGMODULES])
 dnl ==========================================================================
 AC_ARG_ENABLE([dev-random],
 	AS_HELP_STRING([--enable-dev-random], [use /dev/random by default for key generation (otherwise use /dev/urandom)]))
