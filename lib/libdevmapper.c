@@ -205,6 +205,9 @@ static void _dm_set_verity_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 7, 0, verity_maj, verity_min, verity_patch))
 		_dm_flags |= DM_VERITY_PANIC_CORRUPTION_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 9, 0, verity_maj, verity_min, verity_patch))
+		_dm_flags |= DM_VERITY_TASKLETS_SUPPORTED;
+
 	_dm_verity_checked = true;
 }
 
@@ -734,6 +737,8 @@ static char *get_dm_verity_params(const struct dm_target *tgt, uint32_t flags)
 		num_options++;
 	if (flags & CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE)
 		num_options++;
+	if (flags & CRYPT_ACTIVATE_TASKLETS)
+		num_options++;
 
 	max_fec_size = (tgt->u.verity.fec_device ? strlen(device_block_path(tgt->u.verity.fec_device)) : 0) + 256;
 	fec_features = crypt_safe_alloc(max_fec_size);
@@ -764,13 +769,14 @@ static char *get_dm_verity_params(const struct dm_target *tgt, uint32_t flags)
 	} else
 		*verity_verify_args = '\0';
 
-	if (num_options) {  /* MAX length int32 + 18 + 22 + 20 + 19 + 19 */
-		r = snprintf(features, sizeof(features), " %d%s%s%s%s%s", num_options,
+	if (num_options) {  /* MAX length int32 + 18 + 22 + 20 + 19 + 19 + 22 */
+		r = snprintf(features, sizeof(features), " %d%s%s%s%s%s%s", num_options,
 		(flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION) ? " ignore_corruption" : "",
 		(flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION) ? " restart_on_corruption" : "",
 		(flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION) ? " panic_on_corruption" : "",
 		(flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) ? " ignore_zero_blocks" : "",
-		(flags & CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) ? " check_at_most_once" : "");
+		(flags & CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) ? " check_at_most_once" : "",
+		(flags & CRYPT_ACTIVATE_TASKLETS) ? " try_verify_in_tasklet" : "");
 		if (r < 0 || (size_t)r >= sizeof(features))
 			goto out;
 	} else
@@ -1705,6 +1711,12 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		r = -EINVAL;
 	}
 
+	if (dmd->flags & CRYPT_ACTIVATE_TASKLETS &&
+	    !(dmt_flags & DM_VERITY_TASKLETS_SUPPORTED)) {
+		log_err(cd, _("Requested dm-verity tasklets option is not supported."));
+		r = -EINVAL;
+	}
+
 	if (dmd->flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION &&
 	    !(dmt_flags & DM_VERITY_PANIC_CORRUPTION_SUPPORTED)) {
 		log_err(cd, _("Requested dm-verity data corruption handling options are not supported."));
@@ -2289,6 +2301,8 @@ static int _dm_target_query_verity(struct crypt_device *cd,
 				*act_flags |= CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS;
 			else if (!strcasecmp(arg, "check_at_most_once"))
 				*act_flags |= CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE;
+			else if (!strcasecmp(arg, "try_verify_in_tasklet"))
+				*act_flags |= CRYPT_ACTIVATE_TASKLETS;
 			else if (!strcasecmp(arg, "use_fec_from_device")) {
 				str = strsep(&params, " ");
 				str2 = crypt_lookup_dev(str);

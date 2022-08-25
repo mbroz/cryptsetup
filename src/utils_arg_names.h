@@ -158,6 +158,7 @@
 #define OPT_USE_FSYNC			"use-fsync"
 #define OPT_USE_RANDOM			"use-random"
 #define OPT_USE_URANDOM			"use-urandom"
+#define OPT_USE_TASKLETS		"use-tasklets"
 #define OPT_UUID			"uuid"
 #define OPT_VERACRYPT			"veracrypt"
 #define OPT_VERACRYPT_PIM		"veracrypt-pim"

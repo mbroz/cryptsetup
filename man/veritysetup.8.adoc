@@ -58,7 +58,7 @@ The <root_hash> is a hexadecimal string.
 
 *<options>* can be [--hash-offset, --no-superblock, --ignore-corruption
 or --restart-on-corruption, --panic-on-corruption, --ignore-zero-blocks,
---check-at-most-once, --root-hash-signature, --root-hash-file].
+--check-at-most-once, --root-hash-signature, --root-hash-file, --use-tasklets].
 
 If option --root-hash-file is used, the root hash is read from <path>
 instead of from the command line parameter. Expects hex-encoded text,
@@ -212,6 +212,10 @@ Path to file with stored root hash in hex-encoded text.
 Path to root hash signature file used to verify the root hash (in
 kernel). This feature requires Linux kernel version 5.4 or more
 recent.
+
+*--use-tasklets*::
+Try to use kernel tasklets in dm-verity driver for performance reasons.
+This option is available since Linux kernel version 6.0.
 
 *--deferred*::
 Defers device removal in *close* command until the last user closes

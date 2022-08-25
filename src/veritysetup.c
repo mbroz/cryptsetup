@@ -184,6 +184,8 @@ static int _activate(const char *dm_device,
 		activate_flags |= CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS;
 	if (ARG_SET(OPT_CHECK_AT_MOST_ONCE_ID))
 		activate_flags |= CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE;
+	if (ARG_SET(OPT_USE_TASKLETS_ID))
+		activate_flags |= CRYPT_ACTIVATE_TASKLETS;
 
 	if (!ARG_SET(OPT_NO_SUPERBLOCK_ID)) {
 		params.flags = flags;
@@ -436,13 +438,15 @@ static int action_status(void)
 				 CRYPT_ACTIVATE_RESTART_ON_CORRUPTION|
 				 CRYPT_ACTIVATE_PANIC_ON_CORRUPTION|
 				 CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS|
-				 CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE))
-			log_std("  flags:       %s%s%s%s%s\n",
+				 CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE|
+				 CRYPT_ACTIVATE_TASKLETS))
+			log_std("  flags:       %s%s%s%s%s%s\n",
 				(cad.flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION) ? "ignore_corruption " : "",
 				(cad.flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION) ? "restart_on_corruption " : "",
 				(cad.flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION) ? "panic_on_corruption " : "",
 				(cad.flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) ? "ignore_zero_blocks " : "",
-				(cad.flags & CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) ? "check_at_most_once" : "");
+				(cad.flags & CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) ? "check_at_most_once" : "",
+				(cad.flags & CRYPT_ACTIVATE_TASKLETS) ? "try_verify_in_tasklet" : "");
 	}
 out:
 	crypt_free(cd);
