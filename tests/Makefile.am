@@ -183,7 +183,7 @@ valgrind-check: api-test api-test-2 differ
 	@VALG=1 ./mode-test
 	@VALG=1 ./password-hash-test
 	@VALG=1 ./reencryption-compat-test
-	@VALG=1 [ -z "$RUN_SSH_PLUGIN_TEST" ] || ./ssh-test-plugin
+	@[ -z "$RUN_SSH_PLUGIN_TEST" ] || VALG=1 ./ssh-test-plugin
 	@INFOSTRING="unit-utils-crypt-test" ./valg-api.sh ./unit-utils-crypt-test
 	@INFOSTRING="vectors-test" ./valg-api.sh ./vectors-test
 	@INFOSTRING="api-test" ./valg-api.sh ./api-test
