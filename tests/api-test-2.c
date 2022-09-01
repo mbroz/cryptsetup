@@ -1744,7 +1744,7 @@ static void TokenActivationByKeyring(void)
 		.key_description = KEY_DESC_TEST0
 	}, params2 = {
 		.key_description = KEY_DESC_TEST1
-	};
+	}, params_invalid = {};
 	uint64_t r_payload_offset;
 
 	if (!t_dm_crypt_keyring_support()) {
@@ -1763,6 +1763,7 @@ static void TokenActivationByKeyring(void)
 	OK_(set_fast_pbkdf(cd));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, NULL));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
+	FAIL_(crypt_token_luks2_keyring_set(cd, CRYPT_ANY_TOKEN, &params_invalid), "Invalid key description property.");
 	EQ_(crypt_token_luks2_keyring_set(cd, 3, &params), 3);
 	EQ_(crypt_token_assign_keyslot(cd, 3, 0), 3);
 	CRYPT_FREE(cd);
