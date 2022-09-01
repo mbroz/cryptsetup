@@ -5931,7 +5931,7 @@ int crypt_token_luks2_keyring_set(struct crypt_device *cd,
 	int r;
 	char json[4096];
 
-	if (!params)
+	if (!params || !params->key_description)
 		return -EINVAL;
 
 	log_dbg(cd, "Creating new LUKS2 keyring token (%d).", token);
