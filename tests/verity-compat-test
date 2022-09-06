@@ -422,6 +422,7 @@ function check_concurrent() # $1 hash
 	echo "[OK]"
 }
 
+export LANG=C
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$VERITYSETUP" ] && skip "Cannot find $VERITYSETUP, test skipped."
 
