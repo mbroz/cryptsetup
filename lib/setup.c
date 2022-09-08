@@ -3517,82 +3517,21 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	const char *new_passphrase,
 	size_t new_passphrase_size)
 {
-	int digest, r, active_slots;
-	struct luks2_keyslot_params params;
-	struct volume_key *vk = NULL;
-
-	log_dbg(cd, "Adding new keyslot, existing passphrase %sprovided,"
-		"new passphrase %sprovided.",
-		passphrase ? "" : "not ", new_passphrase  ? "" : "not ");
-
-	if ((r = onlyLUKS(cd)))
-		return r;
+	int r;
+	struct crypt_keyslot_context kc, new_kc;
 
 	if (!passphrase || !new_passphrase)
 		return -EINVAL;
 
-	r = keyslot_verify_or_find_empty(cd, &keyslot);
-	if (r)
-		return r;
+	crypt_keyslot_unlock_by_passphrase_init_internal(&kc, passphrase, passphrase_size);
+	crypt_keyslot_unlock_by_passphrase_init_internal(&new_kc, new_passphrase, new_passphrase_size);
 
-	if (isLUKS1(cd->type))
-		active_slots = LUKS_keyslot_active_count(&cd->u.luks1.hdr);
-	else
-		active_slots = LUKS2_keyslot_active_count(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
-	if (active_slots == 0) {
-		/* No slots used, try to use pre-generated key in header */
-		if (cd->volume_key) {
-			vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
-			r = vk ? 0 : -ENOMEM;
-		} else {
-			log_err(cd, _("Cannot add key slot, all slots disabled and no volume key provided."));
-			return -EINVAL;
-		}
-	} else if (active_slots < 0)
-		return -EINVAL;
-	else {
-		/* Passphrase provided, use it to unlock existing keyslot */
-		if (isLUKS1(cd->type))
-			r = LUKS_open_key_with_hdr(CRYPT_ANY_SLOT, passphrase,
-						   passphrase_size, &cd->u.luks1.hdr, &vk, cd);
-		else
-			r = LUKS2_keyslot_open(cd, CRYPT_ANY_SLOT, CRYPT_DEFAULT_SEGMENT, passphrase,
-						passphrase_size, &vk);
-	}
+	r = crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, &kc, keyslot, &new_kc, 0);
 
-	if (r < 0)
-		goto out;
+	crypt_keyslot_context_destroy_internal(&kc);
+	crypt_keyslot_context_destroy_internal(&new_kc);
 
-	if (isLUKS1(cd->type))
-		r = LUKS_set_key(keyslot, CONST_CAST(char*)new_passphrase,
-				 new_passphrase_size, &cd->u.luks1.hdr, vk, cd);
-	else {
-		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
-		digest = r;
-
-		if (r >= 0)
-			r = LUKS2_keyslot_params_default(cd, &cd->u.luks2.hdr, &params);
-
-		if (r >= 0)
-			r = LUKS2_digest_assign(cd, &cd->u.luks2.hdr, keyslot, digest, 1, 0);
-
-		if (r >= 0)
-			r = LUKS2_keyslot_store(cd,  &cd->u.luks2.hdr, keyslot,
-						CONST_CAST(char*)new_passphrase,
-						new_passphrase_size, vk, &params);
-	}
-
-	if (r < 0)
-		goto out;
-
-	r = 0;
-out:
-	crypt_free_volume_key(vk);
-	if (r < 0) {
-		_luks2_rollback(cd);
-		return r;
-	}
-	return keyslot;
+	return r;
 }
 
 int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
@@ -3721,87 +3660,21 @@ int crypt_keyslot_add_by_keyfile_device_offset(struct crypt_device *cd,
 	size_t new_keyfile_size,
 	uint64_t new_keyfile_offset)
 {
-	int digest, r, active_slots;
-	size_t passwordLen, new_passwordLen;
-	struct luks2_keyslot_params params;
-	char *password = NULL, *new_password = NULL;
-	struct volume_key *vk = NULL;
+	int r;
+	struct crypt_keyslot_context kc, new_kc;
 
 	if (!keyfile || !new_keyfile)
 		return -EINVAL;
 
-	log_dbg(cd, "Adding new keyslot, existing keyfile %s, new keyfile %s.",
-		keyfile, new_keyfile);
+	crypt_keyslot_unlock_by_keyfile_init_internal(&kc, keyfile, keyfile_size, keyfile_offset);
+	crypt_keyslot_unlock_by_keyfile_init_internal(&new_kc, new_keyfile, new_keyfile_size, new_keyfile_offset);
 
-	if ((r = onlyLUKS(cd)))
-		return r;
+	r = crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, &kc, keyslot, &new_kc, 0);
 
-	r = keyslot_verify_or_find_empty(cd, &keyslot);
-	if (r)
-		return r;
+	crypt_keyslot_context_destroy_internal(&kc);
+	crypt_keyslot_context_destroy_internal(&new_kc);
 
-	if (isLUKS1(cd->type))
-		active_slots = LUKS_keyslot_active_count(&cd->u.luks1.hdr);
-	else
-		active_slots = LUKS2_keyslot_active_count(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
-	if (active_slots == 0) {
-		/* No slots used, try to use pre-generated key in header */
-		if (cd->volume_key) {
-			vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
-			r = vk ? 0 : -ENOMEM;
-		} else {
-			log_err(cd, _("Cannot add key slot, all slots disabled and no volume key provided."));
-			return -EINVAL;
-		}
-	} else {
-		r = crypt_keyfile_device_read(cd, keyfile,
-				       &password, &passwordLen,
-				       keyfile_offset, keyfile_size, 0);
-		if (r < 0)
-			goto out;
-
-		if (isLUKS1(cd->type))
-			r = LUKS_open_key_with_hdr(CRYPT_ANY_SLOT, password, passwordLen,
-						   &cd->u.luks1.hdr, &vk, cd);
-		else
-			r = LUKS2_keyslot_open(cd, CRYPT_ANY_SLOT, CRYPT_DEFAULT_SEGMENT, password, passwordLen, &vk);
-	}
-
-	if (r < 0)
-		goto out;
-
-	r = crypt_keyfile_device_read(cd, new_keyfile,
-			       &new_password, &new_passwordLen,
-			       new_keyfile_offset, new_keyfile_size, 0);
-	if (r < 0)
-		goto out;
-
-	if (isLUKS1(cd->type))
-		r = LUKS_set_key(keyslot, new_password, new_passwordLen,
-				 &cd->u.luks1.hdr, vk, cd);
-	else {
-		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
-		digest = r;
-
-		if (r >= 0)
-			r = LUKS2_keyslot_params_default(cd, &cd->u.luks2.hdr, &params);
-
-		if (r >= 0)
-			r = LUKS2_digest_assign(cd, &cd->u.luks2.hdr, keyslot, digest, 1, 0);
-
-		if (r >= 0)
-			r = LUKS2_keyslot_store(cd,  &cd->u.luks2.hdr, keyslot,
-						new_password, new_passwordLen, vk, &params);
-	}
-out:
-	crypt_safe_free(password);
-	crypt_safe_free(new_password);
-	crypt_free_volume_key(vk);
-	if (r < 0) {
-		_luks2_rollback(cd);
-		return r;
-	}
-	return keyslot;
+	return r;
 }
 
 int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
@@ -3837,43 +3710,21 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 	const char *passphrase,
 	size_t passphrase_size)
 {
-	struct volume_key *vk = NULL;
 	int r;
+	struct crypt_keyslot_context kc, new_kc;
 
 	if (!passphrase)
 		return -EINVAL;
 
-	log_dbg(cd, "Adding new keyslot %d using volume key.", keyslot);
+	crypt_keyslot_unlock_by_key_init_internal(&kc, volume_key, volume_key_size);
+	crypt_keyslot_unlock_by_passphrase_init_internal(&new_kc, passphrase, passphrase_size);
 
-	if ((r = onlyLUKS(cd)))
-		return r;
+	r = crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, &kc, keyslot, &new_kc, 0);
 
-	if (isLUKS2(cd->type))
-		return crypt_keyslot_add_by_key(cd, keyslot,
-				volume_key, volume_key_size, passphrase,
-				passphrase_size, 0);
+	crypt_keyslot_context_destroy_internal(&kc);
+	crypt_keyslot_context_destroy_internal(&new_kc);
 
-	r = keyslot_verify_or_find_empty(cd, &keyslot);
-	if (r < 0)
-		return r;
-
-	if (volume_key)
-		vk = crypt_alloc_volume_key(volume_key_size, volume_key);
-	else if (cd->volume_key)
-		vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
-
-	if (!vk)
-		return -ENOMEM;
-
-	r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
-	if (r < 0)
-		log_err(cd, _("Volume key does not match the volume."));
-	else
-		r = LUKS_set_key(keyslot, passphrase, passphrase_size,
-			&cd->u.luks1.hdr, vk, cd);
-
-	crypt_free_volume_key(vk);
-	return (r < 0) ? r : keyslot;
+	return r;
 }
 
 int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
@@ -6042,51 +5893,6 @@ static int update_volume_key_segment_digest(struct crypt_device *cd, struct luks
 }
 
 static int verify_and_update_segment_digest(struct crypt_device *cd,
-		struct luks2_hdr *hdr, int keyslot,
-		const char *volume_key, size_t volume_key_size,
-		const char *password, size_t password_size)
-{
-	int digest, r;
-	struct volume_key *vk = NULL;
-
-	if (keyslot < 0 || (volume_key && !volume_key_size))
-		return -EINVAL;
-
-	if (volume_key)
-		vk = crypt_alloc_volume_key(volume_key_size, volume_key);
-	else {
-		r = LUKS2_keyslot_open(cd, keyslot, CRYPT_ANY_SEGMENT, password, password_size, &vk);
-		if (r != keyslot) {
-			r = -EINVAL;
-			goto out;
-		}
-	}
-
-	if (!vk)
-		return -ENOMEM;
-
-	/* check volume_key (param) digest matches keyslot digest */
-	r = LUKS2_digest_verify(cd, hdr, vk, keyslot);
-	if (r < 0)
-		goto out;
-	digest = r;
-
-	/* nothing to do, volume key in keyslot is already assigned to default segment */
-	r = LUKS2_digest_verify_by_segment(cd, hdr, CRYPT_DEFAULT_SEGMENT, vk);
-	if (r >= 0)
-		goto out;
-
-	/* FIXME: check new volume key is usable with current default segment */
-
-	r = update_volume_key_segment_digest(cd, &cd->u.luks2.hdr, digest, 1);
-	if (r)
-		log_err(cd, _("Failed to assign keyslot %u as the new volume key."), keyslot);
-out:
-	crypt_free_volume_key(vk);
-	return r < 0 ? r : keyslot;
-}
-
-static int verify_and_update_segment_digest_new(struct crypt_device *cd,
 		struct luks2_hdr *hdr, int keyslot, struct crypt_keyslot_context *kc)
 {
 	int digest, r;
@@ -6269,86 +6075,39 @@ int crypt_keyslot_add_by_key(struct crypt_device *cd,
 	size_t passphrase_size,
 	uint32_t flags)
 {
-	int digest, r;
-	struct luks2_keyslot_params params;
-	struct volume_key *vk = NULL;
+	int r;
+	struct crypt_keyslot_context kc, new_kc;
 
 	if (!passphrase || ((flags & CRYPT_VOLUME_KEY_NO_SEGMENT) &&
 			    (flags & CRYPT_VOLUME_KEY_SET)))
 		return -EINVAL;
 
-	log_dbg(cd, "Adding new keyslot %d with volume key %sassigned to a crypt segment.",
-		keyslot, flags & CRYPT_VOLUME_KEY_NO_SEGMENT ? "un" : "");
-
-	if ((r = onlyLUKS2(cd)))
+	if ((r = onlyLUKS(cd)) < 0)
 		return r;
 
-	/* new volume key assignment */
-	if ((flags & CRYPT_VOLUME_KEY_SET) && crypt_keyslot_status(cd, keyslot) > CRYPT_SLOT_INACTIVE)
-		return verify_and_update_segment_digest(cd, &cd->u.luks2.hdr,
-			keyslot, volume_key, volume_key_size, passphrase, passphrase_size);
+	if ((flags & CRYPT_VOLUME_KEY_SET) && crypt_keyslot_status(cd, keyslot) > CRYPT_SLOT_INACTIVE &&
+	    isLUKS2(cd->type)) {
+		if (volume_key)
+			crypt_keyslot_unlock_by_key_init_internal(&kc, volume_key, volume_key_size);
+		else
+			crypt_keyslot_unlock_by_passphrase_init_internal(&kc, passphrase, passphrase_size);
 
-	r = keyslot_verify_or_find_empty(cd, &keyslot);
-	if (r < 0)
-		return r;
+		r = verify_and_update_segment_digest(cd, &cd->u.luks2.hdr, keyslot, &kc);
 
-	if (volume_key)
-		vk = crypt_alloc_volume_key(volume_key_size, volume_key);
-	else if (flags & CRYPT_VOLUME_KEY_NO_SEGMENT)
-		vk = crypt_generate_volume_key(cd, volume_key_size);
-	else if (cd->volume_key)
-		vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
-	else
-		return -EINVAL;
+		crypt_keyslot_context_destroy_internal(&kc);
 
-	if (!vk)
-		return -ENOMEM;
-
-	/* if key matches volume key digest tear down new vk flag */
-	digest = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
-	if (digest >= 0)
-		flags &= ~CRYPT_VOLUME_KEY_SET;
-
-	/* if key matches any existing digest, do not create new digest */
-	if (digest < 0 && (flags & CRYPT_VOLUME_KEY_DIGEST_REUSE))
-		digest = LUKS2_digest_any_matching(cd, &cd->u.luks2.hdr, vk);
-
-	/* no segment flag or new vk flag requires new key digest */
-	if (flags & (CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_SET)) {
-		if (digest < 0 || !(flags & CRYPT_VOLUME_KEY_DIGEST_REUSE))
-			digest = LUKS2_digest_create(cd, "pbkdf2", &cd->u.luks2.hdr, vk);
-	}
-
-	r = digest;
-	if (r < 0) {
-		log_err(cd, _("Volume key does not match the volume."));
-		goto out;
-	}
-
-	r = LUKS2_keyslot_params_default(cd, &cd->u.luks2.hdr, &params);
-	if (r < 0) {
-		log_err(cd, _("Failed to initialize default LUKS2 keyslot parameters."));
-		goto out;
-	}
-
-	r = LUKS2_digest_assign(cd, &cd->u.luks2.hdr, keyslot, digest, 1, 0);
-	if (r < 0) {
-		log_err(cd, _("Failed to assign keyslot %d to digest."), keyslot);
-		goto out;
-	}
-
-	r = LUKS2_keyslot_store(cd, &cd->u.luks2.hdr, keyslot,
-				passphrase, passphrase_size, vk, &params);
-
-	if (r >= 0 && (flags & CRYPT_VOLUME_KEY_SET))
-		r = update_volume_key_segment_digest(cd, &cd->u.luks2.hdr, digest, 1);
-out:
-	crypt_free_volume_key(vk);
-	if (r < 0) {
-		_luks2_rollback(cd);
 		return r;
 	}
-	return keyslot;
+
+	crypt_keyslot_unlock_by_key_init_internal(&kc, volume_key, volume_key_size);
+	crypt_keyslot_unlock_by_passphrase_init_internal(&new_kc, passphrase, passphrase_size);
+
+	r = crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, &kc, keyslot, &new_kc, flags);
+
+	crypt_keyslot_context_destroy_internal(&kc);
+	crypt_keyslot_context_destroy_internal(&new_kc);
+
+	return r;
 }
 
 int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
@@ -6373,7 +6132,7 @@ int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
 		return r;
 
 	if ((flags & CRYPT_VOLUME_KEY_SET) && crypt_keyslot_status(cd, keyslot_existing) > CRYPT_SLOT_INACTIVE)
-		return verify_and_update_segment_digest_new(cd, &cd->u.luks2.hdr, keyslot_existing, kc);
+		return verify_and_update_segment_digest(cd, &cd->u.luks2.hdr, keyslot_existing, kc);
 
 	if (!new_kc || !new_kc->get_passphrase)
 		return -EINVAL;
