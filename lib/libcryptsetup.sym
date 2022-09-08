@@ -151,3 +151,16 @@ CRYPTSETUP_2.5 {
 		crypt_get_subsystem;
 		crypt_resume_by_token_pin;
 } CRYPTSETUP_2.4;
+
+CRYPTSETUP_2.6 {
+	global:
+		crypt_keyslot_context_free;
+		crypt_keyslot_context_init_by_passphrase;
+		crypt_keyslot_context_init_by_keyfile;
+		crypt_keyslot_context_init_by_token;
+		crypt_keyslot_context_init_by_volume_key;
+		crypt_keyslot_context_get_error;
+		crypt_keyslot_context_set_pin;
+		crypt_keyslot_context_get_type;
+		crypt_keyslot_add_by_keyslot_context;
+} CRYPTSETUP_2.5;

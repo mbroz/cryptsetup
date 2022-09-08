@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <assert.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,6 +39,7 @@
 #include "bitlk/bitlk.h"
 #include "utils_device_locking.h"
 #include "internal.h"
+#include "keyslot_context.h"
 
 #define CRYPT_CD_UNRESTRICTED	(1 << 0)
 #define CRYPT_CD_QUIET		(1 << 1)
@@ -3496,7 +3498,7 @@ int crypt_resume_by_token_pin(struct crypt_device *cd, const char *name,
 		return -EINVAL;
 	}
 
-	r = LUKS2_token_unlock_volume_key(cd, &cd->u.luks2.hdr, token, type, pin, pin_size, 0, usrptr, &vk);
+	r = LUKS2_token_unlock_key(cd, &cd->u.luks2.hdr, token, type, pin, pin_size, CRYPT_DEFAULT_SEGMENT, usrptr, &vk);
 	keyslot = r;
 	if (r >= 0)
 		r = resume_by_volume_key(cd, vk, name);
@@ -6084,6 +6086,180 @@ out:
 	return r < 0 ? r : keyslot;
 }
 
+static int verify_and_update_segment_digest_new(struct crypt_device *cd,
+		struct luks2_hdr *hdr, int keyslot, struct crypt_keyslot_context *kc)
+{
+	int digest, r;
+	struct volume_key *p_vk = NULL;
+
+	assert(kc);
+	assert(kc->get_luks2_key);
+	assert(keyslot >= 0);
+
+	r = kc->get_luks2_key(cd, kc, keyslot, CRYPT_ANY_SEGMENT, &p_vk);
+	if (r < 0)
+		return r;
+
+	/* check volume_key (param) digest matches keyslot digest */
+	r = LUKS2_digest_verify(cd, hdr, p_vk, keyslot);
+	if (r < 0)
+		goto out;
+	digest = r;
+
+	/* nothing to do, volume key in keyslot is already assigned to default segment */
+	r = LUKS2_digest_verify_by_segment(cd, hdr, CRYPT_DEFAULT_SEGMENT, p_vk);
+	if (r >= 0)
+		goto out;
+
+	/* FIXME: check new volume key is usable with current default segment */
+
+	r = update_volume_key_segment_digest(cd, &cd->u.luks2.hdr, digest, 1);
+	if (r)
+		log_err(cd, _("Failed to assign keyslot %u as the new volume key."), keyslot);
+out:
+	return r < 0 ? r : keyslot;
+}
+
+static int luks2_keyslot_add_by_verified_volume_key(struct crypt_device *cd,
+	int keyslot_new,
+	const char *new_passphrase,
+	size_t new_passphrase_size,
+	struct volume_key *vk)
+{
+	int r;
+	struct luks2_keyslot_params params;
+
+	assert(cd);
+	assert(keyslot_new >= 0);
+	assert(new_passphrase);
+	assert(vk);
+	assert(crypt_volume_key_get_id(vk) >= 0);
+
+	r = LUKS2_keyslot_params_default(cd, &cd->u.luks2.hdr, &params);
+	if (r < 0) {
+		log_err(cd, _("Failed to initialize default LUKS2 keyslot parameters."));
+		return r;
+	}
+
+	r = LUKS2_digest_assign(cd, &cd->u.luks2.hdr, keyslot_new, crypt_volume_key_get_id(vk), 1, 0);
+	if (r < 0) {
+		log_err(cd, _("Failed to assign keyslot %d to digest."), keyslot_new);
+		return r;
+	}
+
+	r = LUKS2_keyslot_store(cd,  &cd->u.luks2.hdr, keyslot_new,
+				CONST_CAST(char*)new_passphrase,
+				new_passphrase_size, vk, &params);
+
+	return r < 0 ? r : keyslot_new;
+}
+
+static int luks2_keyslot_add_by_volume_key(struct crypt_device *cd,
+	int keyslot_new,
+	const char *new_passphrase,
+	size_t new_passphrase_size,
+	struct volume_key *vk)
+{
+	int r;
+
+	assert(cd);
+	assert(keyslot_new >= 0);
+	assert(new_passphrase);
+	assert(vk);
+
+	r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
+	if (r >= 0)
+		crypt_volume_key_set_id(vk, r);
+
+	if (r < 0) {
+		log_err(cd, _("Volume key does not match the volume."));
+		return r;
+	}
+
+	return luks2_keyslot_add_by_verified_volume_key(cd, keyslot_new, new_passphrase, new_passphrase_size, vk);
+}
+
+static int luks1_keyslot_add_by_volume_key(struct crypt_device *cd,
+	int keyslot_new,
+	const char *new_passphrase,
+	size_t new_passphrase_size,
+	struct volume_key *vk)
+{
+	int r;
+
+	assert(cd);
+	assert(keyslot_new >= 0);
+	assert(new_passphrase);
+	assert(vk);
+
+	r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
+	if (r < 0) {
+		log_err(cd, _("Volume key does not match the volume."));
+		return r;
+	}
+
+	r = LUKS_set_key(keyslot_new, CONST_CAST(char*)new_passphrase,
+			 new_passphrase_size, &cd->u.luks1.hdr, vk, cd);
+
+	return r < 0 ? r : keyslot_new;
+}
+
+static int keyslot_add_by_key(struct crypt_device *cd,
+	bool is_luks1,
+	int keyslot_new,
+	const char *new_passphrase,
+	size_t new_passphrase_size,
+	struct volume_key *vk,
+	uint32_t flags)
+{
+	int r, digest;
+
+	assert(cd);
+	assert(keyslot_new >= 0);
+	assert(new_passphrase);
+	assert(vk);
+
+	if (!flags)
+		return is_luks1 ? luks1_keyslot_add_by_volume_key(cd, keyslot_new, new_passphrase, new_passphrase_size, vk) :
+				  luks2_keyslot_add_by_volume_key(cd, keyslot_new, new_passphrase, new_passphrase_size, vk);
+
+	if (is_luks1)
+		return -EINVAL;
+
+	digest = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
+	if (digest >= 0) /* if key matches volume key digest tear down new vk flag */
+		flags &= ~CRYPT_VOLUME_KEY_SET;
+	else {
+		/* if key matches any existing digest, do not create new digest */
+		if ((flags & CRYPT_VOLUME_KEY_DIGEST_REUSE))
+			digest = LUKS2_digest_any_matching(cd, &cd->u.luks2.hdr, vk);
+
+		/* no segment flag or new vk flag requires new key digest */
+		if (flags & (CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_SET)) {
+			if (digest < 0 || !(flags & CRYPT_VOLUME_KEY_DIGEST_REUSE))
+				digest = LUKS2_digest_create(cd, "pbkdf2", &cd->u.luks2.hdr, vk);
+		}
+	}
+
+	r = digest;
+	if (r < 0) {
+		log_err(cd, _("Volume key does not match the volume."));
+		return r;
+	}
+
+	crypt_volume_key_set_id(vk, digest);
+
+	if (flags & CRYPT_VOLUME_KEY_SET) {
+		r = update_volume_key_segment_digest(cd, &cd->u.luks2.hdr, digest, 0);
+		if (r < 0)
+			log_err(cd, _("Failed to assign keyslot %u as the new volume key."), keyslot_new);
+	}
+
+	if (r >= 0)
+		r = luks2_keyslot_add_by_verified_volume_key(cd, keyslot_new, new_passphrase, new_passphrase_size, vk);
+
+	return r < 0 ? r : keyslot_new;
+}
 
 int crypt_keyslot_add_by_key(struct crypt_device *cd,
 	int keyslot,
@@ -6175,10 +6351,99 @@ out:
 	return keyslot;
 }
 
+int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
+	int keyslot_existing,
+	struct crypt_keyslot_context *kc,
+	int keyslot_new,
+	struct crypt_keyslot_context *new_kc,
+	uint32_t flags)
+{
+	bool is_luks1;
+	int active_slots, r;
+	const char *new_passphrase;
+	size_t new_passphrase_size;
+	struct volume_key *p_vk = NULL, *vk = NULL;
+
+	if (!kc || ((flags & CRYPT_VOLUME_KEY_NO_SEGMENT) &&
+		    (flags & CRYPT_VOLUME_KEY_SET)))
+		return -EINVAL;
+
+	r = flags ? onlyLUKS2(cd) : onlyLUKS(cd);
+	if (r)
+		return r;
+
+	if ((flags & CRYPT_VOLUME_KEY_SET) && crypt_keyslot_status(cd, keyslot_existing) > CRYPT_SLOT_INACTIVE)
+		return verify_and_update_segment_digest_new(cd, &cd->u.luks2.hdr, keyslot_existing, kc);
+
+	if (!new_kc || !new_kc->get_passphrase)
+		return -EINVAL;
+
+	log_dbg(cd, "Adding new keyslot %d by %s%s, volume key provided by %s (%d).",
+		keyslot_new, keyslot_context_type_string(new_kc),
+		(flags & CRYPT_VOLUME_KEY_NO_SEGMENT) ? " unassigned to a crypt segment" : "",
+		keyslot_context_type_string(kc), keyslot_existing);
+
+	r = keyslot_verify_or_find_empty(cd, &keyslot_new);
+	if (r < 0)
+		return r;
+
+	is_luks1 = isLUKS1(cd->type);
+	if (is_luks1)
+		active_slots = LUKS_keyslot_active_count(&cd->u.luks1.hdr);
+	else
+		active_slots = LUKS2_keyslot_active_count(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
+
+	if (active_slots < 0)
+		return -EINVAL;
+
+	if (active_slots == 0 && kc->type != CRYPT_KC_TYPE_KEY)
+		r = -ENOENT;
+	else if (is_luks1 && kc->get_luks1_volume_key)
+		r = kc->get_luks1_volume_key(cd, kc, keyslot_existing, &p_vk);
+	else if (!is_luks1 && kc->get_luks2_volume_key)
+		r = kc->get_luks2_volume_key(cd, kc, keyslot_existing, &p_vk);
+	else
+		return -EINVAL;
+
+	if (r == -ENOENT) {
+		if ((flags & CRYPT_VOLUME_KEY_NO_SEGMENT) && kc->type == CRYPT_KC_TYPE_KEY) {
+			vk = crypt_generate_volume_key(cd, kc->u.k.volume_key_size);
+			if (!vk)
+				return -ENOMEM;
+			p_vk = vk;
+			r = 0;
+		} else if (cd->volume_key) {
+			p_vk = cd->volume_key;
+			r = 0;
+		} else if (active_slots == 0) {
+			log_err(cd, _("Cannot add key slot, all slots disabled and no volume key provided."));
+			r = -EINVAL;
+		}
+	}
+
+	if (r < 0)
+		return r;
+
+	r = new_kc->get_passphrase(cd, new_kc, &new_passphrase, &new_passphrase_size);
+	/* If new keyslot context is token just assign it to new keyslot */
+	if (r >= 0 && new_kc->type == CRYPT_KC_TYPE_TOKEN && !is_luks1)
+		r = LUKS2_token_assign(cd, &cd->u.luks2.hdr, keyslot_new, new_kc->u.t.id, 1, 0);
+	if (r >= 0)
+		r = keyslot_add_by_key(cd, is_luks1, keyslot_new, new_passphrase, new_passphrase_size, p_vk, flags);
+
+	crypt_free_volume_key(vk);
+
+	if (r < 0) {
+		_luks2_rollback(cd);
+		return r;
+	}
+
+	return keyslot_new;
+}
+
 /*
  * Keyring handling
  */
-
 int crypt_use_keyring_for_vk(struct crypt_device *cd)
 {
 	uint32_t dmc_flags;

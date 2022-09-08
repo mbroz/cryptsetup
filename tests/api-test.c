@@ -2061,6 +2061,115 @@ static void WipeTest(void)
 	CRYPT_FREE(cd);
 }
 
+static void LuksKeyslotAdd(void)
+{
+	enum { OFFSET_1M = 2048 , OFFSET_2M = 4096, OFFSET_4M = 8192, OFFSET_8M = 16384 };
+	struct crypt_params_luks1 params = {
+		.hash = "sha512",
+		.data_alignment = OFFSET_1M, // 4M, data offset will be 4096
+	};
+	struct crypt_pbkdf_type min_pbkdf2 = {
+		.type = "pbkdf2",
+		.hash = "sha256",
+		.iterations = 1000,
+		.flags = CRYPT_PBKDF_NO_BENCHMARK
+	};
+	char key[128], key3[128];
+
+	const char *passphrase = "blabla", *passphrase2 = "nsdkFI&Y#.sd";
+	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *vk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
+	size_t key_size = strlen(vk_hex) / 2;
+	const char *cipher = "aes";
+	const char *cipher_mode = "cbc-essiv:sha256";
+	uint64_t r_payload_offset;
+	struct crypt_keyslot_context *um1, *um2;
+
+	crypt_decode_key(key, vk_hex, key_size);
+	crypt_decode_key(key3, vk_hex2, key_size);
+
+	// init test devices
+	OK_(get_luks_offsets(0, key_size, params.data_alignment, 0, NULL, &r_payload_offset));
+	OK_(create_dmdevice_over_loop(H_DEVICE, r_payload_offset + 1));
+
+	// test support for embedded key (after crypt_format)
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
+	OK_(crypt_format(cd, CRYPT_LUKS1, cipher, cipher_mode, NULL, key, key_size, &params));
+	OK_(crypt_keyslot_context_init_by_volume_key(cd, NULL, key_size, &um1));
+	OK_(crypt_keyslot_context_init_by_passphrase(cd, passphrase, strlen(passphrase), &um2));
+	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, um1, 3, um2, 0), 3);
+	crypt_keyslot_context_free(um1);
+	crypt_keyslot_context_free(um2);
+	CRYPT_FREE(cd);
+
+	// test add by volume key
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
+	OK_(crypt_keyslot_context_init_by_volume_key(cd, key, key_size, &um1));
+	OK_(crypt_keyslot_context_init_by_passphrase(cd, passphrase2, strlen(passphrase2), &um2));
+	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, um1, CRYPT_ANY_SLOT, um2, 0), 0);
+	crypt_keyslot_context_free(um1);
+	crypt_keyslot_context_free(um2);
+
+	// Add by same passphrase
+	OK_(crypt_keyslot_context_init_by_passphrase(cd, passphrase, strlen(passphrase), &um1));
+	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, um1, 1, um1, 0), 1);
+	crypt_keyslot_context_free(um1);
+
+	// new passphrase can't be provided by key method
+	OK_(crypt_keyslot_context_init_by_passphrase(cd, passphrase, strlen(passphrase), &um1));
+	OK_(crypt_keyslot_context_init_by_volume_key(cd, key, key_size, &um2));
+	FAIL_(crypt_keyslot_add_by_keyslot_context(cd, 1, um1, CRYPT_ANY_SLOT, um2, 0), "Can't get passphrase via selected unlock method");
+	crypt_keyslot_context_free(um1);
+	crypt_keyslot_context_free(um2);
+
+	// add by keyfile
+	OK_(prepare_keyfile(KEYFILE1, passphrase2, strlen(passphrase2)));
+	OK_(prepare_keyfile(KEYFILE2, KEY1, strlen(KEY1)));
+	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE1, 0, 0, &um1));
+	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE2, 0, 0, &um2));
+	EQ_(crypt_keyslot_add_by_keyslot_context(cd, 0, um1, 2, um2, 0), 2);
+	crypt_keyslot_context_free(um1);
+	crypt_keyslot_context_free(um2);
+
+	// add by same keyfile
+	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE2, 0, 0, &um1));
+	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, um1, 4, um1, 0), 4);
+	crypt_keyslot_context_free(um1);
+
+	// keyslot already exists
+	OK_(crypt_keyslot_context_init_by_passphrase(cd, passphrase2, strlen(passphrase2), &um1));
+	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE1, 0, 0, &um2));
+	FAIL_(crypt_keyslot_add_by_keyslot_context(cd, 3, um1, 0, um2, 0), "Keyslot already exists.");
+	crypt_keyslot_context_free(um2);
+
+	// flags not supported with LUKS1
+	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE1, 0, 0, &um2));
+	FAIL_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, um1, CRYPT_ANY_SLOT, um2, CRYPT_VOLUME_KEY_NO_SEGMENT), "Not supported with LUKS1.");
+	crypt_keyslot_context_free(um1);
+	crypt_keyslot_context_free(um2);
+
+	// LUKS2 token not supported
+	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE2, 0, 0, &um1));
+	OK_(crypt_keyslot_context_init_by_token(cd, CRYPT_ANY_TOKEN, NULL, NULL, 0, NULL, &um2));
+	FAIL_(crypt_keyslot_add_by_keyslot_context(cd, 2, um1, CRYPT_ANY_SLOT, um2, 0), "Not supported with LUKS1.");
+	EQ_(crypt_keyslot_context_get_error(um2), -EINVAL);
+	crypt_keyslot_context_free(um1);
+	crypt_keyslot_context_free(um2);
+
+	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE2, 0, 0, &um1));
+	OK_(crypt_keyslot_context_init_by_token(cd, CRYPT_ANY_TOKEN, NULL, NULL, 0, NULL, &um2));
+	FAIL_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, um2, CRYPT_ANY_SLOT, um1, 0), "Not supported with LUKS1.");
+	crypt_keyslot_context_free(um1);
+	crypt_keyslot_context_free(um2);
+
+	CRYPT_FREE(cd);
+
+	_cleanup_dmdevices();
+}
+
 // Check that gcrypt is properly initialised in format
 static void NonFIPSAlg(void)
 {
@@ -2155,6 +2264,7 @@ int main(int argc, char *argv[])
 	RUN_(ResizeIntegrity, "Integrity raw resize");
 	RUN_(ResizeIntegrityWithKey, "Integrity raw resize with key");
 	RUN_(WipeTest, "Wipe device");
+	RUN_(LuksKeyslotAdd, "Adding keyslot via new API");
 
 	_cleanup();
 	return 0;
