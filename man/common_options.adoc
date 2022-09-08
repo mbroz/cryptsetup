@@ -127,27 +127,18 @@ Read the passphrase from file.
 If the name given is "-", then the passphrase will be read from stdin.
 In this case, reading will not stop at newline characters.
 +
-ifdef::ACTION_LUKSADDKEY[]
+ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY[]
 The passphrase supplied via --key-file is always the passphrase for existing
 keyslot requested by the command.
 +
 If you want to set a new passphrase via key file, you have to use a
-positional argument.
+positional argument or parameter --new-keyfile.
 +
 endif::[]
 ifdef::ACTION_OPEN[]
 *NOTE:* With _plain_ device type, the passphrase obtained via --key-file option is
 passed directly in dm-crypt. Unlike the interactive mode (stdin)
 where digest (--hash option) of the passphrase is passed in dm-crypt instead.
-+
-endif::[]
-ifndef::ACTION_REENCRYPT,ACTION_OPEN,ACTION_BITLKDUMP,ACTION_LUKSADDKEY[]
-With LUKS, the passphrase supplied via --key-file is always the existing
-passphrase requested by a command, except in the case of _luksFormat_
-where --key-file is equivalent to the positional key file argument.
-+
-If you want to set a new passphrase via key file, you have to use a
-positional argument to _luksAddKey_.
 +
 endif::[]
 ifndef::ACTION_REENCRYPT[]
@@ -177,6 +168,17 @@ the operation.
 +
 This option is useful to cut trailing newlines, for example. If
 --keyfile-offset is also given, the size count starts after the offset.
+endif::[]
+
+ifdef::ACTION_LUKSADDKEY[]
+*--new-keyfile* _name_::
+Read the passphrase for a new keyslot from file.
++
+If the name given is "-", then the passphrase will be read from stdin.
+In this case, reading will not stop at newline characters.
++
+This is alternative method to positional argument when adding new
+passphrase via kefile.
 endif::[]
 
 ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY[]
@@ -287,7 +289,15 @@ endif::[]
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSDUMP,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_CONFIG,ACTION_TOKEN,ACTION_REPAIR,ACTION_REENCRYPT[]
 *--key-slot, -S <0-N>*::
 ifdef::ACTION_LUKSADDKEY[]
-This option allows you to specify which key slot is selected for the new key.
+When used together with parameter --new-key-slot this option allows you to specify which
+key slot is selected for unlocking volume key.
++
+*NOTE:* This option is ignored if existing volume key gets unlocked
+via LUSK2 token (--token-id, --token-type or --token-only parameters) or
+when volume key is provided directly via --volume-key-file parameter.
++
+*NOTE:* To maintain backward compatibility, without --new-key-slot parameter,
+this option allows you to specify which key slot is selected for the new key.
 endif::[]
 ifndef::ACTION_OPEN,ACTION_LUKSADDKEY[]
 For LUKS operations that add key material, this option allows you to
@@ -304,6 +314,19 @@ For reencryption mode it selects specific keyslot (and passphrase) that can be u
 If used all other keyslots get removed after reencryption operation is finished.
 +
 endif::[]
+The maximum number of key slots depends on the LUKS version. LUKS1 can have up
+to 8 key slots. LUKS2 can have up to 32 key slots based on key slot area
+size and key size, but a valid key slot ID can always be between 0 and
+31 for LUKS2.
+endif::[]
+
+ifdef::ACTION_LUKSADDKEY[]
+*--new-key-slot <0-N>*::
+This option allows you to specify which key slot is selected for
+the new key.
++
+*NOTE:* When used this option affects --key-slot option.
++
 The maximum number of key slots depends on the LUKS version. LUKS1 can have up
 to 8 key slots. LUKS2 can have up to 32 key slots based on key slot area
 size and key size, but a valid key slot ID can always be between 0 and
@@ -774,11 +797,14 @@ slot is never used, if not explicitly requested by _--key-slot_
 option.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_TOKEN[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_LUKSADDKEY[]
 *--token-id*::
-ifndef::ACTION_TOKEN[]
+ifndef::ACTION_TOKEN,ACTION_LUKSADDKEY[]
 Specify what token to use. If omitted, all available tokens will be checked
-before proceeding further with passphrase prompt.
+before proceeding further with passphrase prompt.a
+endif::[]
+ifdef::ACTION_LUKSADDKEY[]
+Specify what token to use when unlocking existing keyslot to get volume key.
 endif::[]
 ifdef::ACTION_TOKEN[]
 Specify token number. If omitted, first unused token id is used when adding or importing
@@ -786,16 +812,33 @@ new token.
 endif::[]
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME[]
+ifdef::ACTION_LUKSADDKEY[]
+*--new-token-id*::
+Specify what token to use to get the passphrase for a new keyslot.
+endif::[]
+
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY[]
 *--token-only*::
+ifndef::ACTION_LUKSADDKEY[]
 Do not proceed further with action if token based keyslot unlock failed. Without the
 option, action asks for passphrase to proceed further.
 endif::[]
+ifdef::ACTION_LUKSADDKEY[]
+Use only LUKS2 tokens to unlock existing volume key.
++
+*NOTE*: To create a new keyslot using passphrase provided by a token use --new-token-id parameter.
+endif::[]
+endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME[]
-*--token-type*::
-Restrict tokens eligible for operation to specific token type (name).
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY[]
+*--token-type* _type_::
+ifndef::ACTION_LUKSADDKEY[]
+Restrict tokens eligible for operation to specific token _type_.
 Mostly useful when no --token-id is specified.
+endif::[]
+ifdef::ACTION_LUKSADDKEY[]
+Specify what token type (all _type_ tokens) to use when unlocking existing keyslot to get volume key.
+endif::[]
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT[]

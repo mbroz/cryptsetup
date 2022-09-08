@@ -17,9 +17,11 @@ cryptsetup-luksAddKey - add a new passphrase
 == DESCRIPTION
 
 Adds a keyslot protected by a new passphrase. An existing passphrase
-must be supplied interactively or via --key-file. The new passphrase to
-be added can be specified interactively or read from the file given
-as the positional argument.
+must be supplied interactively, via --key-file or LUKS2 token (plugin).
+Alternatively to existing passphrase user may pass directly volume key
+(via --volume-key-file). The new passphrase to be added can be specified
+interactively, read from the file given as the positional argument (also
+via --new-keyfile parameter) or via LUKS2 token.
 
 *NOTE:* with --unbound option the action creates new unbound LUKS2
 keyslot. The keyslot cannot be used for device activation. If you don't
@@ -31,11 +33,39 @@ that supports per-keyslot parameters. For LUKS1, PBKDF type and hash
 algorithm is always the same for all keyslots.
 
 *<options>* can be [--key-file, --keyfile-offset, --keyfile-size,
---new-keyfile-offset, --new-keyfile-size, --key-slot, --volume-key-file,
---force-password, --hash, --header, --disable-locks, --iter-time,
---pbkdf, --pbkdf-force-iterations, --pbkdf-memory, --pbkdf-parallel,
---unbound, --type, --keyslot-cipher, --keyslot-key-size, --key-size,
---timeout, --verify-passphrase].
+--new-keyfile, --new-keyfile-offset, --new-keyfile-size, --key-slot,
+--new-key-slot, --volume-key-file, --force-password, --hash, --header,
+--disable-locks, --iter-time, --pbkdf, --pbkdf-force-iterations,
+--pbkdf-memory, --pbkdf-parallel, --unbound, --type, --keyslot-cipher,
+--keyslot-key-size, --key-size, --timeout, --token-id, --token-type,
+--token-only, --new-token-id, --verify-passphrase].
 
 include::man/common_options.adoc[]
+
+== EXAMPLES
+
+*NOTE*: When not specified otherwise interactive passphrase prompt is always default method.
+
+Add new keyslot using interactive passphrase promtp for both existing and new passphrase:
+
+*cryptsetup luksAddKey /dev/device*
+
+Add new keyslot using LUKS2 tokens to unlock existing keyslot with interactive passphrase promtp for new passphrase:
+
+*cryptsetup luksAddKey --token-only /dev/device*
+
+Add new keyslot using LUKS2 systemd-tpm2 tokens to unlock existing keyslot with interactive passphrase promtp for new passphrase (systemd-tpm2 token plugin must be available):
+
+*cryptsetup luksAddKey --token-type systemd-tpm2 /dev/device*
+
+Add new keyslot using interactive passphrase promtp for existing keyslot, reading new passphrase from key_file:
+
+*cryptsetup luksAddKey --new-keyfile key_file /dev/device* or
+*cryptsetup luksAddKey /dev/device key_file*
+
+Add new keyslot using volume stored in volume_key_file and LUKS2 token in slot 5 to get new keyslot passphrase (token in slot 5 must exist
+and respective token plugin must be available):
+
+*cryptsetup luksAddKey --volume-key-file volume_key_file --new-token-id 5 /dev/device*
+
 include::man/common_footer.adoc[]
