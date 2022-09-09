@@ -221,6 +221,9 @@ AC_ARG_ENABLE([fuzz-targets],
 AM_CONDITIONAL(ENABLE_FUZZ_TARGETS, test "x$enable_fuzz_targets" = "xyes")
 
 if test "x$enable_fuzz_targets" = "xyes"; then
+	if test "x$CC" != "xclang" || test "x$CXX" != "xclang++"; then
+		AC_MSG_ERROR([Building fuzz targets is only supported using clang. Please set CC=clang CXX=clang++])
+	fi
 	PKG_CHECK_MODULES([PROTOBUF], [protobuf],,
 		AC_MSG_ERROR([You need protobuf library to build fuzz targets.]))
 	AC_SUBST([PROTOBUF_LIBS])

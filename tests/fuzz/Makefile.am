@@ -8,7 +8,7 @@ TESTS = crypt2_load_fuzz crypt_load_fuzz
 LIB_FUZZING_ENGINE := $(if $(LIB_FUZZING_ENGINE),$(LIB_FUZZING_ENGINE),"-fsanitize=fuzzer")
 
 crypt2_load_fuzz_SOURCES = crypt2_load_fuzz.cc common.c
-crypt2_load_fuzz_LDADD  = $(LDADD) ../../libcryptsetup.la
+crypt2_load_fuzz_LDADD  = ../../libcryptsetup.la ../../libcrypto_backend.la
 crypt2_load_fuzz_LDFLAGS = $(AM_LDFLAGS) $(LIB_FUZZING_ENGINE) -static
 crypt2_load_fuzz_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz -fsanitize=fuzzer-no-link
 crypt2_load_fuzz_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz -fsanitize=fuzzer-no-link
@@ -37,10 +37,14 @@ crypt2_load_proto_fuzz_CXXFLAGS = \
 
 proto_to_luks2_SOURCES = proto_to_luks2.cc common.c LUKS2.pb.cc proto_to_luks2_converter.cc
 proto_to_luks2_LDADD = ../../libcryptsetup.la ../../libcrypto_backend.la @PROTOBUF_LIBS@
-proto_to_luks2_LDFLAGS = $(AM_LDFLAGS) -fsanitize=fuzzer-no-link
-proto_to_luks2_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz -fsanitize=fuzzer-no-link
-proto_to_luks2_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz -fsanitize=fuzzer-no-link
+proto_to_luks2_LDFLAGS = $(AM_LDFLAGS) -fsanitize=fuzzer-no-link -static
+proto_to_luks2_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz
+proto_to_luks2_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz
 
 check_PROGRAMS = crypt2_load_fuzz crypt2_load_proto_fuzz proto_to_luks2
 
-fuzz-targets: $(check_PROGRAMS)
+clang-only:
+	@test "$(CC)" == "clang" || (echo "Building fuzz targets is only supported using clang. Please set CC=clang CXX=clang++" && exit 1)
+	@test "$(CXX)" == "clang++" || (echo "Building fuzz targets is only supported using clang. Please set CC=clang CXX=clang++" && exit 1)
+
+fuzz-targets: clang-only $(check_PROGRAMS)
