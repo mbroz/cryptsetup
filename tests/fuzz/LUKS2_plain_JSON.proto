@@ -1,0 +1,190 @@
+/*
+ * cryptsetup LUKS2 custom mutator
+ *
+ * Copyright (C) 2022 Daniel Zatovic <daniel.zatovic@gmail.com>
+ * Copyright (C) 2022 Red Hat, Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+syntax = "proto2";
+
+package json_proto;
+
+// ---------------------------------------------------------------------------
+// ----------------------------- GENERIC OBJECTS -----------------------------
+// ---------------------------------------------------------------------------
+
+message object_id {
+  oneof id {
+    // int_id will be mapped to range -16 to 16 (mod 33)
+    // this way iy should be easier to generate valid
+    // object cross-references
+    uint32 int_id = 1;
+    string string_id = 2;
+  }
+}
+
+message string_uint64 {
+  required bool negative = 1;
+  oneof number {
+    uint32 uint_num = 2;
+    string string_num = 3;
+  }
+}
+
+enum hash_algorithm {
+  HASH_ALG_SHA1 = 1;
+  HASH_ALG_SHA256 = 2;
+}
+
+
+// ---------------------------------------------------------------------------
+// ----------------------------- BINARY HEADER -------------------------------
+// ---------------------------------------------------------------------------
+
+enum luks2_magic {
+  INVALID = 0;
+  FIRST = 1;
+  SECOND = 2;
+}
+
+enum luks_version {
+  ONE = 1;
+  TWO = 2;
+  THREE = 3;
+}
+
+// we limit the size to 64KiB to make the fuzzing faster
+// because the checksum needs to be calculated for the whole image
+enum hdr_size {
+  size_16_KB  = 16384;
+  size_32_KB  = 32768;
+  size_64_KB  = 65536;
+//  size_128_KB = 131072;
+//  size_256_KB = 262144;
+//  size_512_KB = 524288;
+//  size_1_MB   = 1048576;
+//  size_2_MB   = 2097152;
+//  size_4_MB   = 4194304;
+}
+
+enum seqid_description {
+  PRIMARY_GREATER = 0;
+  SECONDARY_GREATER = 1;
+  EQUAL = 2;
+}
+
+// message luks2_hdr_disk {
+// char		magic[LUKS2_MAGIC_L];
+// //uint16_t	version;	/* Version 2 */
+// uint64_t	hdr_size;	/* in bytes, including JSON area */
+// uint64_t	seqid;		/* increased on every update */
+// char		label[LUKS2_LABEL_L];
+// char		checksum_alg[LUKS2_CHECKSUM_ALG_L];
+// uint8_t		salt[LUKS2_SALT_L]; /* unique for every header/offset */
+// char		uuid[LUKS2_UUID_L];
+// char		subsystem[LUKS2_LABEL_L]; /* owner subsystem label */
+// uint64_t	hdr_offset;	/* offset from device start in bytes */
+// char		_padding[184];
+// uint8_t		csum[LUKS2_CHECKSUM_L];
+// }
+message LUKS2_header {
+  required luks_version version = 1;
+  required luks2_magic magic = 2;
+  required hdr_size hdr_size = 3;
+  required bool use_correct_checksum = 4;
+
+  optional uint64 selected_offset = 5;
+}
+
+message LUKS2_both_headers {
+  required LUKS2_header primary_header = 1;
+  required LUKS2_header secondary_header = 2;
+
+  required seqid_description seqid = 3;
+  required JsonObject json_area = 4;
+}
+
+message JsonObject {
+  required string name = 1;
+  required JsonValue value = 2;
+}
+
+message JsonValue {
+  oneof value {
+    // Json value types:
+
+    // null: null, will be used when 'oneof' contains nothing
+
+    // object: another json object of any type
+    JsonObject object_value = 1;
+
+    // array: an array of values
+    ArrayValue array_value = 2;
+
+    // number: can be an integer, a float, an exponent
+    NumberValue number_value = 3;
+
+    // string: unicode string
+    StringValue string_value = 4;
+
+    // boolean: true or talse
+    BooleanValue boolean_value = 5;
+  }
+}
+
+message ArrayValue {
+  repeated JsonValue value = 1;
+}
+
+message NumberInteger {
+  required int64 value = 1;
+}
+
+message NumberFloat {
+  required double value = 1;
+}
+
+message NumberExponent {
+  required int32 base = 1;
+  required int32 exponent = 2;
+  required bool use_uppercase = 3;
+}
+
+message NumberExponentFrac {
+  required float base = 1;
+  required int32 exponent = 2;
+  required bool use_uppercase = 3;
+}
+
+message NumberValue {
+  required NumberInteger integer_value = 1;
+
+  // integer_value is used when oneof field below has nothing.
+  oneof value {
+    NumberFloat float_value = 2;
+    NumberExponent exponent_value = 3;
+    NumberExponentFrac exponent_frac_value = 4;
+  }
+}
+
+message StringValue {
+  required string value = 1;
+}
+
+message BooleanValue {
+  required bool value = 1;
+}
