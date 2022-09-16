@@ -908,6 +908,18 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 	# test we can add unassigned token
 	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN0 --unbound --token-id 0 || fail
 	$CRYPTSETUP open --token-only --token-id 0 --test-passphrase $LOOPDEV && fail
+	$CRYPTSETUP token remove --token-id 0 $LOOPDEV || fail
+
+	# test token unassign works
+	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN0 -S0 --token-id 0 || fail
+	$CRYPTSETUP open --token-only --token-id 0 --test-passphrase $LOOPDEV || fail
+	$CRYPTSETUP token unassign --token-id 0 $LOOPDEV 2>/dev/null && fail
+	$CRYPTSETUP token unassign -S0 $LOOPDEV 2>/dev/null && fail
+	$CRYPTSETUP token unassign --token-id 0 -S0 $LOOPDEV || fail
+	$CRYPTSETUP open --token-only --token-id 0 --test-passphrase $LOOPDEV && fail
+	$CRYPTSETUP token unassign --token-id 0 -S0 $LOOPDEV 2>/dev/null && fail
+	$CRYPTSETUP token unassign --token-id 0 -S44 $LOOPDEV 2>/dev/null && fail
+	$CRYPTSETUP token unassign --token-id 44 -S0 $LOOPDEV 2>/dev/null && fail
 fi
 echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 10 || fail
 echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 11 --json-file - || fail

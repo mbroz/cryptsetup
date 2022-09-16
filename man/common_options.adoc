@@ -755,8 +755,14 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_TOKEN[]
 *--token-id*::
+ifndef::ACTION_TOKEN[]
 Specify what token to use. If omitted, all available tokens will be checked
 before proceeding further with passphrase prompt.
+endif::[]
+ifdef::ACTION_TOKEN[]
+Specify token number. If omitted, first unused token id is used when adding or importing
+new token.
+endif::[]
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME[]
