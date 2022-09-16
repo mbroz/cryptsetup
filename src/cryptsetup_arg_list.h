@@ -189,7 +189,7 @@ ARG(OPT_TRIES, 'T', POPT_ARG_STRING, N_("How often the input of the passphrase c
 
 ARG(OPT_TYPE, 'M', POPT_ARG_STRING, N_("Type of device metadata: luks, luks1, luks2, plain, loopaes, tcrypt, bitlk"), NULL, CRYPT_ARG_STRING, {}, {})
 
-ARG(OPT_UNBOUND, '\0', POPT_ARG_NONE, N_("Create or dump unbound (no assigned data segment) LUKS2 keyslot"), NULL, CRYPT_ARG_BOOL, {}, OPT_UNBOUND_ACTIONS)
+ARG(OPT_UNBOUND, '\0', POPT_ARG_NONE, N_("Create or dump unbound LUKS2 keyslot (unassigned to data segment) or LUKS2 token (unassigned to keyslot)"), NULL, CRYPT_ARG_BOOL, {}, OPT_UNBOUND_ACTIONS)
 
 ARG(OPT_USE_RANDOM, '\0', POPT_ARG_NONE, N_("Use /dev/random for generating volume key"), NULL, CRYPT_ARG_BOOL, {}, OPT_USE_RANDOM_ACTIONS)
 

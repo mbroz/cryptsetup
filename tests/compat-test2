@@ -901,8 +901,13 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 
 	# test we can remove keyslot with token
 	echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey -S4 $FAST_PBKDF_OPT $LOOPDEV || fail
-	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN1 --key-slot 4 || fail
+	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN1 --key-slot 4 --token-id 0 || fail
 	$CRYPTSETUP -q luksKillSlot $LOOPDEV 4 || fail
+	$CRYPTSETUP token remove --token-id 0 $LOOPDEV || fail
+
+	# test we can add unassigned token
+	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN0 --unbound --token-id 0 || fail
+	$CRYPTSETUP open --token-only --token-id 0 --test-passphrase $LOOPDEV && fail
 fi
 echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 10 || fail
 echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 11 --json-file - || fail

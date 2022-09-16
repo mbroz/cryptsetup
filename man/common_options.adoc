@@ -933,7 +933,7 @@ aligned to page size and page-cache initiates read of a sector with
 invalid integrity tag.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSADDKEY,ACTION_LUKSDUMP[]
+ifdef::ACTION_OPEN,ACTION_LUKSADDKEY,ACTION_LUKSDUMP,ACTION_TOKEN[]
 *--unbound*::
 ifdef::ACTION_LUKSADDKEY[]
 Creates new LUKS2 unbound keyslot.
@@ -945,6 +945,9 @@ ifdef::ACTION_OPEN[]
 Allowed only together with --test-passphrase parameter, it allows one to test
 passphrase for unbound LUKS2 keyslot. Otherwise, unbound keyslot passphrase
 can be tested only when specific keyslot is selected via --key-slot parameter.
+endif::[]
+ifdef::ACTION_TOKEN[]
+Creates new LUKS2 keyring token assigned to no keyslot. Usable only with _add_ action.
 endif::[]
 endif::[]
 

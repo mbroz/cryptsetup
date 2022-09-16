@@ -2549,6 +2549,9 @@ static int _token_add(struct crypt_device *cd)
 
 	token = r;
 
+	if (ARG_SET(OPT_UNBOUND_ID))
+		return token;
+
 	r = crypt_token_assign_keyslot(cd, token, ARG_INT32(OPT_KEY_SLOT_ID));
 	if (r < 0) {
 		log_err(_("Failed to assign token %d to keyslot %d."), token, ARG_INT32(OPT_KEY_SLOT_ID));
@@ -2824,6 +2827,13 @@ static const char *verify_token(void)
 	if (ARG_INT32(OPT_TOKEN_ID_ID) == CRYPT_ANY_TOKEN &&
 	    (!strcmp(action_argv[0], "remove") || !strcmp(action_argv[0], "export")))
 		return _("Action requires specific token. Use --token-id parameter.");
+
+	if (ARG_SET(OPT_UNBOUND_ID)) {
+		if (strcmp(action_argv[0], "add"))
+			return _("Option --unbound is valid only with token add action.");
+		if (ARG_SET(OPT_KEY_SLOT_ID))
+			return _("Options --key-slot and --unbound cannot be combined.");
+	}
 
 	return NULL;
 }
