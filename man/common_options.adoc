@@ -935,9 +935,11 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSADDKEY,ACTION_LUKSDUMP[]
 *--unbound*::
-ifndef::ACTION_OPEN[]
-Creates new or dumps existing LUKS2 unbound keyslot.
-+
+ifdef::ACTION_LUKSADDKEY[]
+Creates new LUKS2 unbound keyslot.
+endif::[]
+ifdef::ACTION_LUKSDUMP[]
+Dumps existing LUKS2 unbound keyslot.
 endif::[]
 ifdef::ACTION_OPEN[]
 Allowed only together with --test-passphrase parameter, it allows one to test
