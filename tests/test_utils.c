@@ -225,7 +225,7 @@ int create_dmdevice_over_loop(const char *dm_name, const uint64_t size)
 __attribute__((format(printf, 3, 4)))
 static int _snprintf(char **r_ptr, size_t *r_remains, const char *format, ...)
 {
-	int len;
+	int len, r = 0;
 	va_list argp;
 
 	assert(r_remains);
@@ -234,15 +234,16 @@ static int _snprintf(char **r_ptr, size_t *r_remains, const char *format, ...)
 	va_start(argp, format);
 
 	len = vsnprintf(*r_ptr, *r_remains, format, argp);
-	if (len < 0 || (size_t)len >= *r_remains)
-		return -EINVAL;
-
-	*r_ptr += len;
-	*r_remains -= len;
+	if (len < 0 || (size_t)len >= *r_remains) {
+		r = -EINVAL;
+	} else {
+		*r_ptr += len;
+		*r_remains -= len;
+	}
 
 	va_end(argp);
 
-	return 0;
+	return r;
 }
 
 int dmdevice_error_io(const char *dm_name,
