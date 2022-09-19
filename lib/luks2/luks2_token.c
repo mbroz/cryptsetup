@@ -871,6 +871,10 @@ int LUKS2_token_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 	json_object *jobj_tokens;
 	int r = 0;
 
+	if ((keyslot < 0 && keyslot != CRYPT_ANY_SLOT) || keyslot >= LUKS2_KEYSLOTS_MAX ||
+	    (token < 0 && token != CRYPT_ANY_TOKEN) || token >= LUKS2_TOKENS_MAX)
+		return -EINVAL;
+
 	if (token == CRYPT_ANY_TOKEN) {
 		json_object_object_get_ex(hdr->jobj, "tokens", &jobj_tokens);
 

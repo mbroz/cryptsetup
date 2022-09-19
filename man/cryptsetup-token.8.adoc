@@ -12,7 +12,7 @@ cryptsetup-token - manage LUKS2 tokens
 
 == SYNOPSIS
 
-*cryptsetup _token_ <add|remove|import|export> [<options>] <device>*
+*cryptsetup _token_ <add|remove|import|export|unassign> [<options>] <device>*
 
 == DESCRIPTION
 
@@ -40,13 +40,16 @@ also assigned to the key slot.
 Action _export_ writes requested token JSON to a file passed with
 --json-file or to standard output.
 
+Action _unassign_ removes token binding to specified keyslot. Both token
+and keyslot must be specified by --token-id and --key-slot parameters.
+
 If --token-id is used with action _add_ or action _import_ and a token
 with that ID already exists, option --token-replace can be used to
 replace the existing token.
 
 *<options>* can be [--header, --token-id, --key-slot, --key-description,
 --disable-external-tokens, --disable-locks, --disable-keyring,
---json-file, --token-replace].
+--json-file, --token-replace, --unbound].
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]

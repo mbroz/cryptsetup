@@ -2549,6 +2549,9 @@ static int _token_add(struct crypt_device *cd)
 
 	token = r;
 
+	if (ARG_SET(OPT_UNBOUND_ID))
+		return token;
+
 	r = crypt_token_assign_keyslot(cd, token, ARG_INT32(OPT_KEY_SLOT_ID));
 	if (r < 0) {
 		log_err(_("Failed to assign token %d to keyslot %d."), token, ARG_INT32(OPT_KEY_SLOT_ID));
@@ -2637,6 +2640,26 @@ static int _token_export(struct crypt_device *cd)
 	return tools_write_json_file(ARG_STR(OPT_JSON_FILE_ID), json);
 }
 
+static int _token_unassign(struct crypt_device *cd)
+{
+	int r = crypt_token_is_assigned(cd, ARG_INT32(OPT_TOKEN_ID_ID), ARG_INT32(OPT_KEY_SLOT_ID));
+
+	if (r < 0) {
+		if (r == -ENOENT)
+			log_err(_("Token %d is not assigned to keyslot %d."), ARG_INT32(OPT_TOKEN_ID_ID), ARG_INT32(OPT_KEY_SLOT_ID));
+		else
+			log_err(_("Failed to unassign token %d from keyslot %d."), ARG_INT32(OPT_TOKEN_ID_ID), ARG_INT32(OPT_KEY_SLOT_ID));
+
+		return r;
+	}
+
+	r = crypt_token_unassign_keyslot(cd, ARG_INT32(OPT_TOKEN_ID_ID), ARG_INT32(OPT_KEY_SLOT_ID));
+	if (r < 0)
+		log_err(_("Failed to unassign token %d from keyslot %d."), ARG_INT32(OPT_TOKEN_ID_ID), ARG_INT32(OPT_KEY_SLOT_ID));
+
+	return r;
+}
+
 static int action_token(void)
 {
 	int r;
@@ -2665,6 +2688,8 @@ static int action_token(void)
 		tools_token_msg(r, CREATED);
 	} else if (!strcmp(action_argv[0], "export"))
 		r = _token_export(cd);
+	else if (!strcmp(action_argv[0], "unassign"))
+		r = _token_unassign(cd);
 
 	crypt_free(cd);
 
@@ -2815,7 +2840,8 @@ static const char *verify_token(void)
 	if (strcmp(action_argv[0], "add") &&
 	    strcmp(action_argv[0], "remove") &&
 	    strcmp(action_argv[0], "import") &&
-	    strcmp(action_argv[0], "export"))
+	    strcmp(action_argv[0], "export") &&
+	    strcmp(action_argv[0], "unassign"))
 		return _("Invalid token action.");
 
 	if (!ARG_SET(OPT_KEY_DESCRIPTION_ID) && !strcmp(action_argv[0], "add"))
@@ -2824,6 +2850,20 @@ static const char *verify_token(void)
 	if (ARG_INT32(OPT_TOKEN_ID_ID) == CRYPT_ANY_TOKEN &&
 	    (!strcmp(action_argv[0], "remove") || !strcmp(action_argv[0], "export")))
 		return _("Action requires specific token. Use --token-id parameter.");
+
+	if (ARG_SET(OPT_UNBOUND_ID)) {
+		if (strcmp(action_argv[0], "add"))
+			return _("Option --unbound is valid only with token add action.");
+		if (ARG_SET(OPT_KEY_SLOT_ID))
+			return _("Options --key-slot and --unbound cannot be combined.");
+	}
+
+	if (!strcmp(action_argv[0], "unassign")) {
+		if (!ARG_SET(OPT_KEY_SLOT_ID))
+			return _("Action requires specific keyslot. Use --key-slot parameter.");
+		if (!ARG_SET(OPT_TOKEN_ID_ID))
+			return _("Action requires specific token. Use --token-id parameter.");
+	}
 
 	return NULL;
 }
