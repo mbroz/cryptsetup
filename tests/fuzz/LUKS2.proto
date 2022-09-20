@@ -1,0 +1,379 @@
+/*
+ * cryptsetup LUKS2 custom mutator
+ *
+ * Copyright (C) 2022 Daniel Zatovic <daniel.zatovic@gmail.com>
+ * Copyright (C) 2022 Red Hat, Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+syntax = "proto2";
+
+package LUKS2_proto;
+
+// ---------------------------------------------------------------------------
+// ----------------------------- GENERIC OBJECTS -----------------------------
+// ---------------------------------------------------------------------------
+
+message object_id {
+  oneof id {
+    // int_id will be mapped to range -16 to 16 (mod 33)
+    // this way iy should be easier to generate valid
+    // object cross-references
+    uint32 int_id = 1;
+    string string_id = 2;
+  }
+}
+
+message string_uint64 {
+  required bool negative = 1;
+  oneof number {
+    uint32 uint_num = 2;
+    string string_num = 3;
+  }
+}
+
+enum hash_algorithm {
+  HASH_ALG_SHA1 = 1;
+  HASH_ALG_SHA256 = 2;
+}
+
+
+// ---------------------------------------------------------------------------
+// ----------------------------- BINARY HEADER -------------------------------
+// ---------------------------------------------------------------------------
+
+enum luks2_magic {
+  INVALID = 0;
+  FIRST = 1;
+  SECOND = 2;
+}
+
+enum luks_version {
+  ONE = 1;
+  TWO = 2;
+  THREE = 3;
+}
+
+// we limit the size to 64KiB to make the fuzzing faster
+// because the checksum needs to be calculated for the whole image
+enum hdr_size {
+  size_16_KB  = 16384;
+  size_32_KB  = 32768;
+  size_64_KB  = 65536;
+//  size_128_KB = 131072;
+//  size_256_KB = 262144;
+//  size_512_KB = 524288;
+//  size_1_MB   = 1048576;
+//  size_2_MB   = 2097152;
+//  size_4_MB   = 4194304;
+}
+
+enum seqid_description {
+  PRIMARY_GREATER = 0;
+  SECONDARY_GREATER = 1;
+  EQUAL = 2;
+}
+
+// message luks2_hdr_disk {
+// char		magic[LUKS2_MAGIC_L];
+// //uint16_t	version;	/* Version 2 */
+// uint64_t	hdr_size;	/* in bytes, including JSON area */
+// uint64_t	seqid;		/* increased on every update */
+// char		label[LUKS2_LABEL_L];
+// char		checksum_alg[LUKS2_CHECKSUM_ALG_L];
+// uint8_t		salt[LUKS2_SALT_L]; /* unique for every header/offset */
+// char		uuid[LUKS2_UUID_L];
+// char		subsystem[LUKS2_LABEL_L]; /* owner subsystem label */
+// uint64_t	hdr_offset;	/* offset from device start in bytes */
+// char		_padding[184];
+// uint8_t		csum[LUKS2_CHECKSUM_L];
+// }
+message LUKS2_header {
+  required luks_version version = 1;
+  required luks2_magic magic = 2;
+  required hdr_size hdr_size = 3;
+  required bool use_correct_checksum = 4;
+
+  optional uint64 selected_offset = 5;
+}
+
+message LUKS2_both_headers {
+  required LUKS2_header primary_header = 1;
+  required LUKS2_header secondary_header = 2;
+
+  required seqid_description seqid = 3;
+  required json_area_description json_area = 4;
+}
+
+message json_area_description {
+  optional config_description config = 1;
+  repeated keyslot_description keyslots = 2;
+  repeated digest_description digests = 3;
+  repeated segment_description segments = 4;
+  repeated token_description tokens = 5;
+}
+
+// ---------------------------------------------------------------------------
+// ----------------------------- KEYSLOT OBJECT ------------------------------
+// ---------------------------------------------------------------------------
+
+enum keyslot_type {
+  KEYSLOT_TYPE_LUKS2 = 1;
+  KEYSLOT_TYPE_REENCRYPT = 2;
+  KEYSLOT_TYPE_PLACEHOLDER = 3;
+}
+
+enum reencrypt_keyslot_mode {
+  MODE_REENCRYPT = 1;
+  MODE_ENCRYPT = 2;
+  MODE_DECRYPT = 3;
+}
+
+enum reencrypt_keyslot_direction {
+  DIRECTION_FORWARD = 1;
+  DIRECTION_BACKWARD = 2;
+}
+
+// The area object contains these mandatory fields:
+// - type [string] the area type.
+// - offset [string-uint64] the offset from the device start to the beginning of the binary area (in bytes).
+// - size [string-uint64] the area size (in bytes).
+//
+// Area type raw contains these additional fields:
+// - encryption [string] the area encryption algorithm, in dm-crypt notation (for example aes-xts-plain64).
+// - key_size [integer] the area encryption key size.
+//
+// Area type none and journal (used only for reencryption optional extension) contain only mandatory fields.
+//
+// Area type checksum (used only for reencryption optional extension) contains these additional fields:
+// - hash [string] The hash algorithm for the checksum resilience mode.
+// - sector_size [integer] The data unit size for digest checksum calculated with the hash algorithm.
+//
+// Area type datashift (used only for reencryption optional extension) contains this additional field:
+// - shift_size [string-uint64] The data shift (in bytes) performed during reencryption (shift direction is according to direction field).
+
+enum keyslot_area_type {
+  KEYSLOT_AREA_TYPE_RAW = 1;
+  KEYSLOT_AREA_TYPE_NONE = 2;
+  KEYSLOT_AREA_TYPE_JOURNAL = 3;
+  KEYSLOT_AREA_TYPE_CHECKSUM = 4;
+  KEYSLOT_AREA_TYPE_DATASHIFT = 5;
+}
+
+message keyslot_area_description {
+  // mandatory fields
+  optional keyslot_area_type type = 1;
+  optional string_uint64 offset = 2;
+  optional string_uint64 size = 3;
+
+  // raw type fields
+  optional string encryption = 4;
+  optional int32 key_size = 5;
+
+  // checksum type field
+  optional hash_algorithm hash = 6;
+  optional int32 sector_size = 7;
+
+  // datashift type fields
+  optional string_uint64 shift_size = 8;
+}
+
+// The object describes PBKDF attributes used for the keyslot.
+// The kdf object mandatory fields are:
+// - type [string] the PBKDF type.
+// - salt [base64] the salt for PBKDF (binary data).
+//
+// The pbkdf2 type (compatible with LUKS1) contains these additional fields:
+// - hash [string] the hash algorithm for the PBKDF2 (SHA-256).
+// - iterations [integer] the PBKDF2 iterations count.
+//
+// The argon2i and argon2id type contains these additional fields:
+// - time [integer] the time cost (in fact the iterations count for Argon2).
+// - memory [integer] the memory cost, in kilobytes. If not available, the keyslot cannot be unlocked.
+// - cpus [integer] the required number of threads (CPU cores number cost). If not available, unlocking will be slower.
+
+enum keyslot_kdf_type {
+  KEYSLOT_KDF_TYPE_PBKDF2 = 1;
+  KEYSLOT_KDF_TYPE_ARGON2I = 2;
+  KEYSLOT_KDF_TYPE_ARGON2ID = 3;
+}
+
+message keyslot_kdf_description {
+  optional keyslot_kdf_type type = 1;
+  optional string salt = 2;
+
+  // pbkdf2 type
+  optional hash_algorithm hash = 3;
+  optional int32 iterations = 4;
+
+  // argon2i and argon2id types
+  optional int32 time = 5;
+  optional int32 memory = 6;
+  optional int32 cpus = 7;
+}
+
+enum keyslot_af_type {
+  KEYSLOT_AF_TYPE_LUKS1 = 1;
+}
+
+// The af (anti-forensic splitter) object contains this madatory field:
+// - type [string] the anti-forensic function type.
+// AF type luks1 (compatible with LUKS1 [1]) contains these additional fields:
+// - stripes [integer] the number of stripes, for historical reasons only the 4000 value is supported.
+// - hash [string] the hash algorithm used.
+
+message keyslot_af_description {
+  optional keyslot_af_type type = 1;
+  optional int32 stripes = 2;
+  optional hash_algorithm hash = 3;
+}
+
+// - type [string] the keyslot type.
+// - key_size [integer] the key size (in bytes) stored in keyslot.
+// - priority [integer,optional] the keyslot priority. Here 0 means ignore (the slot should be used only if explicitly stated), 1 means normal priority and 2 means high priority (tried before normal priority).
+
+// REENCRYPT
+// The key size field must be set to 1. The area type must be none, checksum,
+// journal or datashift.
+// The reencrypt object must contain these additional fields:
+// - mode [string] the reencryption mode. reencrypt, encrypt and decrypt
+// - direction [string] the reencryption direction. forward backward
+
+// - area [object] the allocated area in the binary keyslots area.
+// LUKS2 object must contain these additional fields:
+// - kdf [object] the PBKDF type and parameters used.
+// - af [object] the anti-forensic splitter [1] (only the luks1 type is currently
+// used).
+
+message keyslot_description {
+  // type
+  required object_id oid = 1;
+
+  optional keyslot_type type = 2;
+  optional int32 key_size = 3;
+  optional int32 priority = 4;
+
+  // reencrypt extension
+  optional reencrypt_keyslot_mode mode = 5;
+  optional reencrypt_keyslot_direction direction = 6;
+
+  // objects
+  optional keyslot_area_description area = 7;
+  optional keyslot_kdf_description kdf = 8;
+  optional keyslot_af_description af = 9;
+}
+
+// ---------------------------------------------------------------------------
+// ------------------------------ DIGEST OBJECT ------------------------------
+// ---------------------------------------------------------------------------
+
+message digest_description {
+  required object_id oid = 1;
+
+  optional keyslot_kdf_type type = 2;
+  repeated object_id keyslots = 3;
+  repeated object_id segments = 4;
+  optional string salt = 5;
+  optional string digest = 6;
+
+  // pbkdf2 digest fields
+  optional hash_algorithm hash = 7;
+  optional int32 iterations = 8;
+}
+
+// ---------------------------------------------------------------------------
+// ----------------------------- SEGMENT OBJECT ------------------------------
+// ---------------------------------------------------------------------------
+
+enum segment_type {
+  SEGMENT_TYPE_LINEAR = 1;
+  SEGMENT_TYPE_CRYPT = 2;
+}
+
+enum segment_flag {
+  IN_REENCRYPTION = 1;
+  BACKUP_FINAL = 2;
+  BACKUP_PREVIOUS = 3;
+  BACKUP_MOVED_SEGMENT = 4;
+}
+
+message segment_integrity_description {
+  optional string type = 1;
+  optional string journal_encryption = 2;
+  optional string journal_integrity  = 3;
+}
+
+message segment_description {
+  required object_id oid = 1;
+  optional segment_type type = 2;
+  optional string_uint64 offset = 3;
+  optional string_uint64 size = 4;
+  repeated segment_flag flags = 5;
+
+  // segment type crypt
+  optional string_uint64 iv_tweak = 6;
+  optional string encryption = 7;
+  optional int32 sector_size = 8;
+  optional segment_integrity_description integrity = 9;
+}
+
+// ---------------------------------------------------------------------------
+// ------------------------------ TOKEN OBJECT -------------------------------
+// ---------------------------------------------------------------------------
+
+message token_description {
+  required object_id oid = 1;
+
+  optional string type = 2;
+  repeated object_id keyslots = 3;
+  optional string key_description = 4;
+}
+
+// ---------------------------------------------------------------------------
+// ------------------------------ CONFIG OBJECT ------------------------------
+// ---------------------------------------------------------------------------
+
+// - allow-discards allows TRIM (discards) on the active device.
+// - same-cpu-crypt compatibility performance flag for dm-crypt [3] to per- form encryption using the same CPU that originated the request.
+// - submit-from-crypt-cpus compatibility performance flag for dm-crypt [3] to disable offloading write requests to a separate thread after encryption.
+// - no-journal disable data journalling for dm-integrity [10].
+// - no-read-workqueue compatibility performance flag for dm-crypt [3] to bypass dm-crypt read workqueue and process read requests synchronously.
+// - no-write-workqueue compatibility performance flag for dm-crypt [3] to bypass dm-crypt write workqueue and process write requests synchronously.
+enum config_flag {
+  CONFIG_FLAG_ALLOW_DISCARDS = 1;
+  CONFIG_FLAG_SAME_CPU_CRYPT = 2;
+  CONFIG_FLAG_SUBMIT_FROM_CRYPT_CPUS = 3;
+  CONFIG_FLAG_NO_JOURNAL = 4;
+  CONFIG_FLAG_NO_READ_WORKQUEUE = 5;
+  CONFIG_FLAG_NO_WRITE_WORKQUEUE = 6;
+}
+
+enum config_requirement {
+  CONFIG_REQUIREMENT_OFFLINE_REENCRYPT = 1;
+  CONFIG_REQUIREMENT_ONLINE_REENCRYPT_V2 = 2;
+}
+
+// - json_size [string-uint64] the JSON area size (in bytes). Must match the binary header.
+// - keyslots_size [string-uint64] the binary keyslot area size (in bytes). Must be aligned to 4096 bytes.
+// - flags [array, optional] the array of string objects with persistent flags for the device.
+// - requirements [array, optional] the array of string objects with additional required features for the LUKS device.
+
+message config_description {
+  required bool use_primary_hdr_size = 2;
+
+  repeated config_flag config_flags = 3;
+  repeated config_requirement requirements = 4;
+}
