@@ -16,10 +16,10 @@ cryptsetup-luksAddKey - add a new passphrase
 
 == DESCRIPTION
 
-Adds a new passphrase. An existing passphrase must be supplied
-interactively or via --key-file. The new passphrase to be added can be
-specified interactively or read from the file given as the positional
-argument.
+Adds a keyslot protected by a new passphrase. An existing passphrase
+must be supplied interactively or via --key-file. The new passphrase to
+be added can be specified interactively or read from the file given
+as the positional argument.
 
 *NOTE:* with --unbound option the action creates new unbound LUKS2
 keyslot. The keyslot cannot be used for device activation. If you don't

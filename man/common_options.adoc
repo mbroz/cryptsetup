@@ -127,13 +127,21 @@ Read the passphrase from file.
 If the name given is "-", then the passphrase will be read from stdin.
 In this case, reading will not stop at newline characters.
 +
+ifdef::ACTION_LUKSADDKEY[]
+The passphrase supplied via --key-file is always the passphrase for existing
+keyslot requested by the command.
++
+If you want to set a new passphrase via key file, you have to use a
+positional argument.
++
+endif::[]
 ifdef::ACTION_OPEN[]
 *NOTE:* With _plain_ device type, the passphrase obtained via --key-file option is
 passed directly in dm-crypt. Unlike the interactive mode (stdin)
 where digest (--hash option) of the passphrase is passed in dm-crypt instead.
 +
 endif::[]
-ifndef::ACTION_REENCRYPT,ACTION_OPEN,ACTION_BITLKDUMP[]
+ifndef::ACTION_REENCRYPT,ACTION_OPEN,ACTION_BITLKDUMP,ACTION_LUKSADDKEY[]
 With LUKS, the passphrase supplied via --key-file is always the existing
 passphrase requested by a command, except in the case of _luksFormat_
 where --key-file is equivalent to the positional key file argument.
@@ -174,13 +182,13 @@ endif::[]
 ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY[]
 *--new-keyfile-offset* _value_::
 Skip _value_ bytes at the start when adding a new passphrase from key
-file with _luksAddKey_.
+file.
 endif::[]
 
 ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY[]
 *--new-keyfile-size* _value_::
 Read a maximum of _value_ bytes when adding a new passphrase from key
-file with _luksAddKey_. The default is to read the whole file up to
+file. The default is to read the whole file up to
 the compiled-in maximum length that can be queried with --help.
 Supplying more than the compiled in maximum aborts the operation. When
 --new-keyfile-offset is also given, reading starts after the offset.
@@ -193,7 +201,7 @@ Use a volume key stored in a file.
 endif::[]
 ifdef::ACTION_FORMAT[]
 +
-For _luksFormat_ this allows creating a LUKS header with this specific
+This allows creating a LUKS header with this specific
 volume key. If the volume key was taken from an existing LUKS header and
 all other parameters are the same, then the new header decrypts the data
 encrypted with the header the volume key was taken from. +
@@ -202,8 +210,9 @@ ifdef::ACTION_LUKSDUMP,ACTION_BITLKDUMP[]
 The volume key is stored in a file instead of being printed out to standard output. +
 endif::[]
 ifdef::ACTION_LUKSADDKEY[]
-For _luksAddKey_ this allows adding a new passphrase without having to
-know an existing one. +
+This allows adding a new keyslot without having to know passphrase to existing one.
+It may be also used when no keyslot is active.
++
 endif::[]
 ifdef::ACTION_OPEN[]
 This allows one to open _luks_ and _bitlk_ device types without giving a passphrase. +
@@ -277,7 +286,10 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSDUMP,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_CONFIG,ACTION_TOKEN,ACTION_REPAIR,ACTION_REENCRYPT[]
 *--key-slot, -S <0-N>*::
-ifndef::ACTION_OPEN[]
+ifdef::ACTION_LUKSADDKEY[]
+This option allows you to specify which key slot is selected for the new key.
+endif::[]
+ifndef::ACTION_OPEN,ACTION_LUKSADDKEY[]
 For LUKS operations that add key material, this option allows you to
 specify which key slot is selected for the new key.
 endif::[]
@@ -300,16 +312,25 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT,ACTION_BENCHMARK,ACTION_LUKSADDKEY[]
 *--key-size, -s* _bits_::
+ifndef::ACTION_LUKSADDKEY[]
 Sets key size in _bits_. The argument has to be a multiple of 8. The
 possible key-sizes are limited by the cipher and mode used.
 +
 See /proc/crypto for more information. Note that key-size in
 /proc/crypto is stated in bytes.
 +
+endif::[]
+ifdef::ACTION_LUKSADDKEY[]
+Provide volume key size in _bits_. The argument has to be a multiple of 8.
++
+This option is required when parameter --volume-key-file is used to provide
+current volume key. Also, it is used when new unbound keyslot is created by
+specifying --unbound parameter.
+endif::[]
 ifdef::ACTION_OPEN[]
 This option can be used for _plain_ device type only.
 endif::[]
-ifndef::ACTION_REENCRYPT,ACTION_OPEN[]
+ifndef::ACTION_REENCRYPT,ACTION_OPEN,ACTION_LUKSADDKEY[]
 This option can be used for _open --type plain_ or _luksFormat_. All
 other LUKS actions will use the key-size specified in the LUKS header.
 Use _cryptsetup --help_ to show the compiled-in defaults.
