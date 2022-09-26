@@ -33,8 +33,6 @@ extern "C" {
 #include <err.h>
 #include <fcntl.h>
 #include <unistd.h>
-
-#include "common.h"
 }
 
 DEFINE_PROTO_FUZZER(const LUKS2_proto::LUKS2_both_headers &headers) {

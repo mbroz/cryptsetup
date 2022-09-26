@@ -1,5 +1,5 @@
 EXTRA_DIST = README.md COPYING.LGPL FAQ.md docs misc autogen.sh
-SUBDIRS = po tests
+SUBDIRS = po tests tests/fuzz
 CLEANFILES =
 DISTCLEAN_TARGETS =
 
@@ -18,11 +18,8 @@ AM_CXXFLAGS = -Wall
 AM_LDFLAGS =
 
 if ENABLE_FUZZ_TARGETS
-SUBDIRS += tests/fuzz
-
 AM_CFLAGS += -fsanitize=fuzzer-no-link
 AM_CXXFLAGS += -fsanitize=fuzzer-no-link
-AM_LDFLAGS += -fsanitize=fuzzer-no-link
 endif
 
 LDADD = $(LTLIBINTL)

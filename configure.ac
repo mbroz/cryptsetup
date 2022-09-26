@@ -215,26 +215,15 @@ if test "x$enable_pwquality" = "xyes"; then
 fi
 
 dnl ==========================================================================
-dnl libprotobuf-fuzzer library
+dnl fuzzers, it requires own static library compilation later
 AC_ARG_ENABLE([fuzz-targets],
 	AS_HELP_STRING([--enable-fuzz-targets], [enable building fuzz targets]))
 AM_CONDITIONAL(ENABLE_FUZZ_TARGETS, test "x$enable_fuzz_targets" = "xyes")
 
 if test "x$enable_fuzz_targets" = "xyes"; then
-	if test "x$CC" != "xclang" || test "x$CXX" != "xclang++"; then
-		AC_MSG_ERROR([Building fuzz targets is only supported using clang. Please set CC=clang CXX=clang++])
-	fi
-	PKG_CHECK_MODULES([PROTOBUF], [protobuf],,
-		AC_MSG_ERROR([You need protobuf library to build fuzz targets.]))
-	AC_SUBST([PROTOBUF_LIBS])
-
-	PKG_CHECK_MODULES([LIBPROTOBUF_MUTATOR], [ libprotobuf-mutator ],,
-		AC_MSG_ERROR([You need libprotobuf-mutator library to build fuzz targets.]))
-	AC_SUBST([LIBPROTOBUF_MUTATOR_LIBS])
-	AC_SUBST([LIBPROTOBUF_MUTATOR_CFLAGS])
-	AC_CONFIG_FILES([tests/fuzz/Makefile])
+	AX_CHECK_COMPILE_FLAG([-fsanitize=fuzzer-no-link],,
+		AC_MSG_ERROR([Required compiler options not supported; use clang.]), [-Werror])
 fi
-
 
 dnl ==========================================================================
 dnl passwdqc library (cryptsetup CLI only)
@@ -778,5 +767,6 @@ lib/libcryptsetup.pc
 po/Makefile.in
 scripts/cryptsetup.conf
 tests/Makefile
+tests/fuzz/Makefile
 ])
 AC_OUTPUT

@@ -1,74 +1,80 @@
-CLEANFILES = LUKS2.pb.h LUKS2.pb.cc
+EXTRA_DIST = README.md
+dist_noinst_DATA = LUKS2.proto LUKS2_plain_JSON.proto
+CLEANFILES = LUKS2.pb.h LUKS2.pb.cc LUKS2_plain_JSON.pb.h LUKS2_plain_JSON.pb.cc
 
-clean-local:
-	-rm -rf LUKS2.pb.h LUKS2.pb.cc
-
-TESTS = crypt2_load_fuzz crypt_load_fuzz
+distclean-local:
+	-rm -rf out build
 
 LIB_FUZZING_ENGINE := $(if $(LIB_FUZZING_ENGINE),$(LIB_FUZZING_ENGINE),"-fsanitize=fuzzer")
+SANITIZER := $(if $(SANITIZER),,"-fsanitize=address")
 
-crypt2_load_fuzz_SOURCES = crypt2_load_fuzz.cc common.c
-crypt2_load_fuzz_LDADD  = ../../libcryptsetup.la ../../libcrypto_backend.la
-crypt2_load_fuzz_LDFLAGS = $(AM_LDFLAGS) $(LIB_FUZZING_ENGINE) -static
-crypt2_load_fuzz_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz -fsanitize=fuzzer-no-link
-crypt2_load_fuzz_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz -fsanitize=fuzzer-no-link
+DEPS_PATH := $(top_srcdir)/tests/fuzz/build/static_lib_deps
 
-generate_proto: LUKS2.proto
-	@protoc LUKS2.proto --cpp_out=.
-	@protoc LUKS2_plain_JSON.proto --cpp_out=.
-LUKS2.pb.h: generate_proto
-LUKS2.pb.cc: generate_proto
-LUKS2_plain_JSON.pb.cc: generate_proto
-LUKS2_plain_JSON.pb.h: generate_proto
+crypt2_load_fuzz_SOURCES = crypt2_load_fuzz.cc
+crypt2_load_fuzz_LDADD  = ../../libcryptsetup.la ../../libcrypto_backend.la -L$(DEPS_PATH)/lib
+crypt2_load_fuzz_LDFLAGS = $(AM_LDFLAGS) $(LIB_FUZZING_ENGINE) $(SANITIZER)
+crypt2_load_fuzz_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz
 
-BUILT_SOURCES = LUKS2.pb.h LUKS2.pb.cc LUKS2_plain_JSON.pb.h LUKS2_plain_JSON.pb.cc
+test-environment-m:
+	@ if test ! -d $(DEPS_PATH); then \
+		echo "You need to build static libraries first; use oss-fuzz-build.sh script."; \
+		exit 1; \
+	fi
+test-environment: | test-environment-m $(DEPS_PATH)
 
-crypt2_load_proto_fuzz_SOURCES = crypt2_load_proto_fuzz.cc common.c LUKS2.pb.cc proto_to_luks2_converter.cc
+LUKS2.pb.h: LUKS2.proto
+	 $(DEPS_PATH)/bin/protoc LUKS2.proto --cpp_out=.
+LUKS2.pb.cc: LUKS2.pb.h
+
+LUKS2_plain_JSON.pb.h: LUKS2_plain_JSON.proto
+	 $(DEPS_PATH)/bin/protoc LUKS2_plain_JSON.proto --cpp_out=.
+LUKS2_plain_JSON.pb.cc: LUKS2_plain_JSON.pb.h
+
+generate-proto: | LUKS2.pb.h LUKS2_plain_JSON.pb.h
+
+nodist_crypt2_load_proto_fuzz_SOURCES = LUKS2.pb.h LUKS2.pb.cc
+crypt2_load_proto_fuzz_SOURCES = crypt2_load_proto_fuzz.cc proto_to_luks2_converter.cc
 crypt2_load_proto_fuzz_LDADD = \
 	../../libcryptsetup.la		\
 	../../libcrypto_backend.la	\
-	@LIBPROTOBUF_MUTATOR_LIBS@	\
-	@PROTOBUF_LIBS@
-crypt2_load_proto_fuzz_LDFLAGS = $(AM_LDFLAGS) $(LIB_FUZZING_ENGINE) -static
-crypt2_load_proto_fuzz_CFLAGS = -fsanitize=fuzzer-no-link
+	-L$(DEPS_PATH)/lib -lprotobuf-mutator-libfuzzer -lprotobuf-mutator -lprotobuf
+crypt2_load_proto_fuzz_LDFLAGS = $(AM_LDFLAGS) $(LIB_FUZZING_ENGINE) $(SANITIZER)
 crypt2_load_proto_fuzz_CXXFLAGS = \
 	$(AM_CXXFLAGS)			\
 	-I$(top_srcdir)/lib		\
 	-I$(top_srcdir)/tests/fuzz	\
-	-fsanitize=fuzzer-no-link	\
-	@LIBPROTOBUF_MUTATOR_CFLAGS@
+	-I$(DEPS_PATH)/include		\
+	-I$(DEPS_PATH)/include/libprotobuf-mutator -I$(DEPS_PATH)/include/libprotobuf-mutator/src
 
-crypt2_load_proto_plain_json_fuzz_SOURCES = crypt2_load_proto_plain_json_fuzz.cc common.c LUKS2_plain_JSON.pb.cc json_proto_converter.cc plain_json_proto_to_luks2_converter.cc
+nodist_crypt2_load_proto_plain_json_fuzz_SOURCES = LUKS2_plain_JSON.pb.h LUKS2_plain_JSON.pb.cc
+crypt2_load_proto_plain_json_fuzz_SOURCES = crypt2_load_proto_plain_json_fuzz.cc json_proto_converter.cc plain_json_proto_to_luks2_converter.cc
 crypt2_load_proto_plain_json_fuzz_LDADD = \
 	../../libcryptsetup.la		\
 	../../libcrypto_backend.la	\
-	@LIBPROTOBUF_MUTATOR_LIBS@	\
-	@PROTOBUF_LIBS@
-crypt2_load_proto_plain_json_fuzz_LDFLAGS = $(AM_LDFLAGS) $(LIB_FUZZING_ENGINE) -static
-crypt2_load_proto_plain_json_fuzz_CFLAGS = -fsanitize=fuzzer-no-link
+	-L$(DEPS_PATH)/lib -lprotobuf-mutator-libfuzzer -lprotobuf-mutator -lprotobuf
+crypt2_load_proto_plain_json_fuzz_LDFLAGS = $(AM_LDFLAGS) $(LIB_FUZZING_ENGINE) $(SANITIZER)
 crypt2_load_proto_plain_json_fuzz_CXXFLAGS = \
 	$(AM_CXXFLAGS)			\
 	-I$(top_srcdir)/lib		\
 	-I$(top_srcdir)/tests/fuzz	\
-	-fsanitize=fuzzer-no-link	\
-	@LIBPROTOBUF_MUTATOR_CFLAGS@
+	-I$(DEPS_PATH)/include		\
+	-I$(DEPS_PATH)/include/libprotobuf-mutator -I$(DEPS_PATH)/include/libprotobuf-mutator/src
 
-proto_to_luks2_SOURCES = proto_to_luks2.cc common.c LUKS2.pb.cc proto_to_luks2_converter.cc
-proto_to_luks2_LDADD = ../../libcryptsetup.la ../../libcrypto_backend.la @PROTOBUF_LIBS@
-proto_to_luks2_LDFLAGS = $(AM_LDFLAGS) -fsanitize=fuzzer-no-link -static
-proto_to_luks2_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz
-proto_to_luks2_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz
+nodist_proto_to_luks2_SOURCES = LUKS2.pb.h LUKS2.pb.cc
+proto_to_luks2_SOURCES = proto_to_luks2.cc proto_to_luks2_converter.cc
+proto_to_luks2_LDADD = ../../libcryptsetup.la ../../libcrypto_backend.la -L$(DEPS_PATH)/lib -lprotobuf
+proto_to_luks2_LDFLAGS = $(AM_LDFLAGS) -fsanitize=fuzzer-no-link $(SANITIZER)
+proto_to_luks2_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz -I$(DEPS_PATH)/include
 
-plain_json_proto_to_luks2_SOURCES = plain_json_proto_to_luks2.cc common.c LUKS2_plain_JSON.pb.cc plain_json_proto_to_luks2_converter.cc json_proto_converter.cc
-plain_json_proto_to_luks2_LDADD = ../../libcryptsetup.la ../../libcrypto_backend.la @PROTOBUF_LIBS@
-plain_json_proto_to_luks2_LDFLAGS = $(AM_LDFLAGS) -fsanitize=fuzzer-no-link -static
-plain_json_proto_to_luks2_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz
-plain_json_proto_to_luks2_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz
+nodist_plain_json_proto_to_luks2_SOURCES = LUKS2_plain_JSON.pb.h LUKS2_plain_JSON.pb.cc
+plain_json_proto_to_luks2_SOURCES = plain_json_proto_to_luks2.cc plain_json_proto_to_luks2_converter.cc json_proto_converter.cc
+plain_json_proto_to_luks2_LDADD = ../../libcryptsetup.la ../../libcrypto_backend.la -L$(DEPS_PATH)/lib -lprotobuf
+plain_json_proto_to_luks2_LDFLAGS = $(AM_LDFLAGS) -fsanitize=fuzzer-no-link $(SANITIZER)
+plain_json_proto_to_luks2_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz -I$(DEPS_PATH)/include
 
-check_PROGRAMS = crypt2_load_fuzz crypt2_load_proto_fuzz crypt2_load_proto_plain_json_fuzz proto_to_luks2 plain_json_proto_to_luks2
+if ENABLE_FUZZ_TARGETS
+noinst_PROGRAMS = crypt2_load_fuzz crypt2_load_proto_fuzz crypt2_load_proto_plain_json_fuzz proto_to_luks2 plain_json_proto_to_luks2
 
-clang-only:
-	@test "$(CC)" == "clang" || (echo "Building fuzz targets is only supported using clang. Please set CC=clang CXX=clang++" && exit 1)
-	@test "$(CXX)" == "clang++" || (echo "Building fuzz targets is only supported using clang. Please set CC=clang CXX=clang++" && exit 1)
-
-fuzz-targets: clang-only $(check_PROGRAMS)
+fuzz-targets: test-environment generate-proto $(noinst_PROGRAMS)
+.PHONY: fuzz-targets
+endif

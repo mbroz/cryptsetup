@@ -38,8 +38,6 @@ extern "C" {
 #include <libcryptsetup.h>
 #include <src/cryptsetup.h>
 
-#include "common.h"
-
 int calculate_checksum(const uint8_t* data, size_t size) {
 	struct crypt_hash *hd = NULL;
 	struct luks2_hdr_disk *hdr = NULL;
@@ -127,7 +125,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 		goto out;
 	}
 
-	if (write_all(fd, data, size) != 0) {
+	if (write_buffer(fd, data, size) != (ssize_t)size) {
 		r = 1;
 		goto out;
 	}

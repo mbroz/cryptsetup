@@ -31,8 +31,6 @@ extern "C" {
 #include <luks2/luks2.h>
 #include <libcryptsetup.h>
 #include <err.h>
-
-#include "common.h"
 }
 
 #define OFFSET_OF(strct, field) (((char*)&((struct strct*)0)->field) - (char*)0)
@@ -79,8 +77,8 @@ void LUKS2ProtoConverter::emit_luks2_binary_header(const LUKS2_header &header_pr
   else
     hdr.hdr_offset  = cpu_to_be64(offset);
 
-  if (write_all(fd, &hdr, LUKS2_HDR_BIN_LEN) != 0)
-    err(EXIT_FAILURE, "write_all failed");
+  if (write_buffer(fd, &hdr, LUKS2_HDR_BIN_LEN) != LUKS2_HDR_BIN_LEN)
+    err(EXIT_FAILURE, "write_buffer failed");
   if (crypt_hash_write(hd, (char*)&hdr, LUKS2_HDR_BIN_LEN))
     err(EXIT_FAILURE, "crypt_hash_write failed");
 
@@ -88,8 +86,8 @@ void LUKS2ProtoConverter::emit_luks2_binary_header(const LUKS2_header &header_pr
   uint8_t csum[LUKS2_CHECKSUM_L];
 
   size_t write_size = json_text.length() > hdr_json_area_len - 1 ? hdr_json_area_len - 1 : json_text.length();
-  if (write_all(fd, json_text.c_str(), write_size) != 0)
-    err(EXIT_FAILURE, "write_all failed");
+  if (write_buffer(fd, json_text.c_str(), write_size) != (ssize_t)write_size)
+    err(EXIT_FAILURE, "write_buffer failed");
   if (crypt_hash_write(hd, json_text.c_str(), write_size))
     err(EXIT_FAILURE, "crypt_hash_write failed");
 
@@ -108,8 +106,8 @@ void LUKS2ProtoConverter::emit_luks2_binary_header(const LUKS2_header &header_pr
 
     if (crypt_hash_final(hd, (char*)csum, (size_t)hash_size))
       err(EXIT_FAILURE, "crypt_hash_final failed");
-    if (write_all(fd, csum, hash_size) != 0)
-      err(EXIT_FAILURE, "write_all failed");
+    if (write_buffer(fd, csum, hash_size) != hash_size)
+      err(EXIT_FAILURE, "write_buffer failed");
   }
 }
 
