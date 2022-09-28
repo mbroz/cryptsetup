@@ -706,8 +706,10 @@ static int action_fvault2Dump(void)
 		goto out;
 
 	r = crypt_load(cd, CRYPT_FVAULT2, NULL);
-	if (r < 0)
+	if (r < 0) {
+		log_err(_("Device %s is not a valid FVAULT2 device."), action_argv[0]);
 		goto out;
+	}
 
 	if (ARG_SET(OPT_DUMP_VOLUME_KEY_ID))
 		r = fvault2Dump_with_volume_key(cd);
