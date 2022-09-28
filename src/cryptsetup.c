@@ -3199,8 +3199,8 @@ static void help(poptContext popt_context,
 
 		log_std(_("\n"
 			  "You can also use old <action> syntax aliases:\n"
-			  "\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen, bitlkOpen\n"
-			  "\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose, bitlkClose\n"));
+			  "\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen, bitlkOpen, fvault2Open\n"
+			  "\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose, bitlkClose, fvault2Close\n"));
 		log_std(_("\n"
 			 "<name> is the device to create under %s\n"
 			 "<device> is the encrypted device\n"
@@ -3480,16 +3480,22 @@ int main(int argc, const char **argv)
 	} else if (!strcmp(aname, "bitlkOpen")) {
 		aname = OPEN_ACTION;
 		device_type = "bitlk";
+	} else if (!strcmp(aname, "fvault2Open")) {
+		aname = OPEN_ACTION;
+		device_type = "fvault2";
 	} else if (!strcmp(aname, "tcryptDump")) {
 		device_type = "tcrypt";
 	} else if (!strcmp(aname, "bitlkDump")) {
 		device_type = "bitlk";
+	} else if (!strcmp(aname, "fvault2Dump")) {
+		device_type = "fvault2";
 	} else if (!strcmp(aname, "remove") ||
 		   !strcmp(aname, "plainClose") ||
 		   !strcmp(aname, "luksClose") ||
 		   !strcmp(aname, "loopaesClose") ||
 		   !strcmp(aname, "tcryptClose") ||
-		   !strcmp(aname, "bitlkClose")) {
+		   !strcmp(aname, "bitlkClose") ||
+		   !strcmp(aname, "fvault2Close")) {
 		aname = CLOSE_ACTION;
 	} else if (!strcmp(aname, "luksErase")) {
 		aname = ERASE_ACTION;
