@@ -1736,18 +1736,93 @@ out:
 	return r;
 }
 
+static int _ask_for_pin(struct crypt_device *cd,
+	int token_id, char **r_pin, size_t *r_pin_size,
+	struct crypt_keyslot_context *kc)
+{
+	int r;
+	char msg[64];
+
+	assert(r_pin);
+	assert(r_pin_size);
+	assert(kc);
+	assert(token_id >= 0 || token_id == CRYPT_ANY_TOKEN);
+
+	if (crypt_keyslot_context_get_type(kc) != CRYPT_KC_TYPE_TOKEN)
+		return -EINVAL;
+
+	if (token_id == CRYPT_ANY_TOKEN)
+		r = snprintf(msg, sizeof(msg), _("Enter token PIN:"));
+	else
+		r = snprintf(msg, sizeof(msg), _("Enter token %d PIN:"), token_id);
+	if (r < 0 || (size_t)r >= sizeof(msg))
+		return -EINVAL;
+
+	r = tools_get_key(msg, r_pin, r_pin_size, 0, 0, NULL,
+			ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
+	if (r < 0)
+		return r;
+
+	r = crypt_keyslot_context_set_pin(cd, *r_pin, *r_pin_size, kc);
+	if (r < 0) {
+		crypt_safe_free(*r_pin);
+		*r_pin = NULL;
+		*r_pin_size = 0;
+	}
+
+	return r;
+}
+
+static int try_keyslot_add(struct crypt_device *cd,
+	int keyslot_existing,
+	int keyslot_new,
+	struct crypt_keyslot_context *kc,
+	struct crypt_keyslot_context *kc_new,
+	bool pin_provided,
+	bool new_pin_provided)
+{
+	int r;
+
+	r = crypt_keyslot_add_by_keyslot_context(cd, keyslot_existing, kc, keyslot_new, kc_new, 0);
+	if (crypt_keyslot_context_get_type(kc) == CRYPT_KC_TYPE_TOKEN)
+		tools_token_error_msg(crypt_keyslot_context_get_error(kc), ARG_STR(OPT_TOKEN_TYPE_ID),
+				      ARG_INT32(OPT_TOKEN_ID_ID), pin_provided);
+	if (crypt_keyslot_context_get_type(kc_new) == CRYPT_KC_TYPE_TOKEN)
+		tools_token_error_msg(crypt_keyslot_context_get_error(kc_new), NULL,
+				      ARG_INT32(OPT_NEW_TOKEN_ID_ID), new_pin_provided);
+	return r;
+}
+
 static int action_luksAddKey(void)
 {
-	int r = -EINVAL, keysize = 0;
-	char *key = NULL;
+	int keyslot_old, keyslot_new, keysize = 0, r = -EINVAL;
 	const char *new_key_file = (action_argc > 1 ? action_argv[1] : NULL);
-	char *password = NULL, *password_new = NULL;
-	size_t password_size = 0, password_new_size = 0;
+	char *key = NULL, *password = NULL, *password_new = NULL, *pin = NULL, *pin_new = NULL;
+	size_t pin_size, pin_size_new, password_size = 0, password_new_size = 0;
 	struct crypt_device *cd = NULL;
+	struct crypt_keyslot_context *p_kc_new = NULL, *kc = NULL, *kc_new = NULL;
 
 	/* Unbound keyslot (no assigned data segment) is special case */
 	if (ARG_SET(OPT_UNBOUND_ID))
 		return luksAddUnboundKey();
+
+	/* maintain backward compatibility of luksAddKey action positional parameter */
+	if (!new_key_file)
+		new_key_file = ARG_STR(OPT_NEW_KEYFILE_ID);
+
+	keyslot_old = ARG_INT32(OPT_KEY_SLOT_ID);
+	keyslot_new = ARG_INT32(OPT_NEW_KEY_SLOT_ID);
+
+	/*
+	 * maintain backward compatibility of --key-slot/-S as 'new keyslot number'
+	 * unless --new-key-slot is used.
+	 */
+	if (!ARG_SET(OPT_NEW_KEY_SLOT_ID) && ARG_SET(OPT_KEY_SLOT_ID)) {
+		if (!ARG_SET(OPT_BATCH_MODE_ID))
+			log_std(_("WARNING: The --key-slot parameter is used for new keyslot number.\n"));
+		keyslot_old = CRYPT_ANY_SLOT;
+		keyslot_new = ARG_INT32(OPT_KEY_SLOT_ID);
+	}
 
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
@@ -1791,23 +1866,18 @@ static int action_luksAddKey(void)
 		check_signal(&r);
 		if (r < 0)
 			goto out;
-
-		r = tools_get_key(_("Enter new passphrase for key slot: "),
-				  &password_new, &password_new_size,
-				  ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID),
-				  new_key_file, ARG_UINT32(OPT_TIMEOUT_ID),
-				  verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
-		if (r < 0)
-			goto out;
-
-		r = crypt_keyslot_add_by_volume_key(cd, ARG_INT32(OPT_KEY_SLOT_ID), key, keysize,
-						    password_new, password_new_size);
-	} else if (ARG_SET(OPT_KEY_FILE_ID) && !tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) &&
-		   new_key_file && !tools_is_stdin(new_key_file)) {
-		r = crypt_keyslot_add_by_keyfile_device_offset(cd, ARG_INT32(OPT_KEY_SLOT_ID),
-			ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
-			new_key_file, ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID), ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID));
-		tools_passphrase_msg(r);
+		r = crypt_keyslot_context_init_by_volume_key(cd, key, keysize, &kc);
+	} else if (ARG_SET(OPT_KEY_FILE_ID) && !tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)))
+		r = crypt_keyslot_context_init_by_keyfile(cd,
+				ARG_STR(OPT_KEY_FILE_ID),
+				ARG_UINT32(OPT_KEYFILE_SIZE_ID),
+				ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
+				&kc);
+	else if (ARG_SET(OPT_TOKEN_ID_ID) || ARG_SET(OPT_TOKEN_TYPE_ID) || ARG_SET(OPT_TOKEN_ONLY_ID)) {
+		r = crypt_keyslot_context_init_by_token(cd,
+				ARG_INT32(OPT_TOKEN_ID_ID),
+				ARG_STR(OPT_TOKEN_TYPE_ID),
+				NULL, 0, NULL, &kc);
 	} else {
 		r = tools_get_key(_("Enter any existing passphrase: "),
 			      &password, &password_size,
@@ -1826,21 +1896,77 @@ static int action_luksAddKey(void)
 			goto out;
 		tools_keyslot_msg(r, UNLOCKED);
 
-		r = tools_get_key(_("Enter new passphrase for key slot: "),
-				  &password_new, &password_new_size,
-				  ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID), new_key_file,
-				  ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
+		r = crypt_keyslot_context_init_by_passphrase(cd, password, password_size, &kc);
+	}
+
+	if (r < 0)
+		goto out;
+
+	if (new_key_file && !tools_is_stdin(new_key_file)) {
+		if (ARG_SET(OPT_KEY_FILE_ID) && !strcmp(ARG_STR(OPT_KEY_FILE_ID), new_key_file))
+			p_kc_new = kc;
+		else {
+			r = crypt_keyslot_context_init_by_keyfile(cd,
+					new_key_file,
+					ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID),
+					ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID),
+					&kc_new);
+			p_kc_new = kc_new;
+		}
+	} else if (ARG_SET(OPT_NEW_TOKEN_ID_ID)) {
+		if (ARG_INT32(OPT_NEW_TOKEN_ID_ID) == ARG_INT32(OPT_TOKEN_ID_ID))
+			p_kc_new = kc;
+		else {
+			r = crypt_keyslot_context_init_by_token(cd,
+					ARG_INT32(OPT_NEW_TOKEN_ID_ID),
+					NULL, NULL, 0, NULL, &kc_new);
+			p_kc_new = kc_new;
+		}
+	} else {
+		r = tools_get_key(_("Enter new passphrase for key slot:"),
+			      &password_new, &password_new_size,
+			      ARG_UINT64(OPT_NEW_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_NEW_KEYFILE_SIZE_ID), new_key_file,
+			      ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
+
+		if (r < 0)
+			goto out;
+		r = crypt_keyslot_context_init_by_passphrase(cd, password_new, password_new_size, &kc_new);
+	}
+
+	if (r < 0)
+		goto out;
+
+	if (!p_kc_new)
+		p_kc_new = kc_new;
+
+	r = try_keyslot_add(cd, keyslot_old, keyslot_new, kc, p_kc_new, pin, pin_new);
+	if (r >= 0 || r != -ENOANO)
+		goto out;
+
+	if (crypt_keyslot_context_get_error(kc) == -ENOANO) {
+		r = _ask_for_pin(cd, ARG_INT32(OPT_TOKEN_ID_ID), &pin, &pin_size, kc);
 		if (r < 0)
 			goto out;
 
-		r = crypt_keyslot_add_by_passphrase(cd, ARG_INT32(OPT_KEY_SLOT_ID),
-						    password, password_size,
-						    password_new, password_new_size);
+		r = try_keyslot_add(cd, keyslot_old, keyslot_new, kc, p_kc_new, pin, pin_new);
+		if (r >= 0 || r != -ENOANO)
+			goto out;
+	}
+
+	if (crypt_keyslot_context_get_error(p_kc_new) == -ENOANO) {
+		r = _ask_for_pin(cd, ARG_INT32(OPT_NEW_TOKEN_ID_ID), &pin_new, &pin_size_new, p_kc_new);
+		if (r < 0)
+			goto out;
+		r = try_keyslot_add(cd, keyslot_old, keyslot_new, kc, p_kc_new, pin, pin_new);
 	}
 out:
 	tools_keyslot_msg(r, CREATED);
+	crypt_keyslot_context_free(kc);
+	crypt_keyslot_context_free(kc_new);
 	crypt_safe_free(password);
 	crypt_safe_free(password_new);
+	crypt_safe_free(pin);
+	crypt_safe_free(pin_new);
 	crypt_safe_free(key);
 	crypt_free(cd);
 	return r;
