@@ -36,9 +36,7 @@ extern "C" {
 }
 
 DEFINE_PROTO_FUZZER(const LUKS2_proto::LUKS2_both_headers &headers) {
-  int result;
   struct crypt_device *cd;
-  uint8_t *map;
   int r = 0;
 
   char name[] = "/tmp/test-proto-fuzz.XXXXXX";

@@ -76,7 +76,7 @@ class LUKS2ProtoConverter {
     void set_write_headers_only(bool headers_only);
 
     const uint8_t *get_out_buffer();
-    const size_t get_out_size();
+    size_t get_out_size();
 
     static const uint64_t KEYSLOTS_SIZE = 3 * 1024 * 1024;
     static const uint64_t DATA_SIZE = 16 * 1024 * 1024;

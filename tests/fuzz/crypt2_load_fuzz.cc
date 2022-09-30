@@ -38,7 +38,9 @@ extern "C" {
 #include <libcryptsetup.h>
 #include <src/cryptsetup.h>
 
-int calculate_checksum(const uint8_t* data, size_t size) {
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
+
+static int calculate_checksum(const uint8_t* data, size_t size) {
 	struct crypt_hash *hd = NULL;
 	struct luks2_hdr_disk *hdr = NULL;
 	int hash_size;
@@ -48,7 +50,7 @@ int calculate_checksum(const uint8_t* data, size_t size) {
 	// primary header
 	if (sizeof(struct luks2_hdr_disk) > size)
 		return 0;
-	hdr = (struct luks2_hdr_disk *) data;
+	hdr = CONST_CAST(struct luks2_hdr_disk *) data;
 
 	hdr_size1 = be64_to_cpu(hdr->hdr_size);
 	if (hdr_size1 > size)
@@ -56,7 +58,7 @@ int calculate_checksum(const uint8_t* data, size_t size) {
 	memset(&hdr->csum, 0, LUKS2_CHECKSUM_L);
 	if ((r = crypt_hash_init(&hd, "sha256")))
 		goto out;
-	if ((r = crypt_hash_write(hd, (char*) data, hdr_size1)))
+	if ((r = crypt_hash_write(hd, CONST_CAST(char*) data, hdr_size1)))
 		goto out;
 	hash_size = crypt_hash_size("sha256");
 	if (hash_size <= 0) {
@@ -73,7 +75,7 @@ int calculate_checksum(const uint8_t* data, size_t size) {
 
 	if (hdr_size1 + sizeof(struct luks2_hdr_disk) > size)
 		return 0;
-	hdr = (struct luks2_hdr_disk *) (data + hdr_size1);
+	hdr = CONST_CAST(struct luks2_hdr_disk *) (data + hdr_size1);
 
 	hdr_size2 = be64_to_cpu(hdr->hdr_size);
 	if (hdr_size1 + hdr_size2 > size)
@@ -97,7 +99,6 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 	int fd;
 	struct crypt_device *cd;
 	int result;
-	uint8_t *map;
 	int r = 0;
 
 	char name[] = "/tmp/test-script-fuzz.XXXXXX";

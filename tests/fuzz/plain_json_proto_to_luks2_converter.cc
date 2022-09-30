@@ -33,13 +33,12 @@ extern "C" {
 #include <err.h>
 }
 
-#define OFFSET_OF(strct, field) (((char*)&((struct strct*)0)->field) - (char*)0)
+//#define OFFSET_OF(strct, field) (((char*)&((struct strct*)0)->field) - (char*)0)
 
 namespace json_proto {
 
 void LUKS2ProtoConverter::emit_luks2_binary_header(const LUKS2_header &header_proto, int fd, uint64_t offset, uint64_t seqid, const std::string &json_text) {
   struct luks2_hdr_disk hdr = {};
-  char *json_area = NULL;
   int r;
 
   if (hd)
@@ -97,7 +96,7 @@ void LUKS2ProtoConverter::emit_luks2_binary_header(const LUKS2_header &header_pr
   }
 
   if (header_proto.use_correct_checksum()) {
-    if (lseek(fd, offset + OFFSET_OF(luks2_hdr_disk, csum), SEEK_SET) == -1)
+    if (lseek(fd, offset + offsetof(luks2_hdr_disk, csum), SEEK_SET) == -1)
       err(EXIT_FAILURE, "lseek failed");
 
     int hash_size = crypt_hash_size("sha256");
@@ -117,7 +116,6 @@ void LUKS2ProtoConverter::set_write_headers_only(bool headers_only) {
 
 void LUKS2ProtoConverter::convert(const LUKS2_both_headers &headers, int fd) {
   uint64_t primary_seqid, secondary_seqid;
-  const char name_pattern[] = "/tmp/test-proto-fuzz.XXXXXX";
   int result;
 
   size_t out_size = headers.primary_header().hdr_size() + headers.secondary_header().hdr_size();
