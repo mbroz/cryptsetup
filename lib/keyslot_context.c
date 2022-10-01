@@ -241,7 +241,8 @@ static int get_luks2_key_by_token(struct crypt_device *cd,
 		return 0;
 	}
 
-	r = LUKS2_token_unlock_key(cd, crypt_get_hdr(cd, CRYPT_LUKS2), kc->u.t.id, kc->u.t.type, kc->u.t.pin, kc->u.t.pin_size, segment, kc->u.t.usrptr, &kc->i_vk);
+	r = LUKS2_token_unlock_key(cd, crypt_get_hdr(cd, CRYPT_LUKS2), kc->u.t.id, kc->u.t.type,
+				   kc->u.t.pin, kc->u.t.pin_size, segment, kc->u.t.usrptr, &kc->i_vk);
 	if (r < 0) {
 		kc->error = r;
 		return r;

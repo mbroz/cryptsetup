@@ -2856,7 +2856,8 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 	return r;
 }
 
-static int _process_deps(struct crypt_device *cd, const char *prefix, struct dm_deps *deps, char **names, size_t names_offset, size_t names_length)
+static int _process_deps(struct crypt_device *cd, const char *prefix, struct dm_deps *deps,
+			 char **names, size_t names_offset, size_t names_length)
 {
 #if HAVE_DECL_DM_DEVICE_GET_NAME
 	struct crypt_dm_active_device dmd;
@@ -2902,7 +2903,8 @@ static int _process_deps(struct crypt_device *cd, const char *prefix, struct dm_
 #endif
 }
 
-int dm_device_deps(struct crypt_device *cd, const char *name, const char *prefix, char **names, size_t names_length)
+int dm_device_deps(struct crypt_device *cd, const char *name, const char *prefix,
+		   char **names, size_t names_length)
 {
 	struct dm_task *dmt;
 	struct dm_info dmi;

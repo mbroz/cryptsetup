@@ -1163,7 +1163,8 @@ static void crypt_free_type(struct crypt_device *cd)
 static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 {
 	bool found = false;
-	char **dep, *cipher_spec = NULL, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN], deps_uuid_prefix[40], *deps[MAX_DM_DEPS+1] = {};
+	char **dep, *cipher_spec = NULL, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+	char deps_uuid_prefix[40], *deps[MAX_DM_DEPS+1] = {};
 	const char *dev, *namei;
 	int key_nums, r;
 	struct crypt_dm_active_device dmd, dmdi = {}, dmdep = {};
@@ -2400,7 +2401,8 @@ int crypt_repair(struct crypt_device *cd,
 }
 
 /* compare volume keys */
-static int _compare_volume_keys(struct volume_key *svk, unsigned skeyring_only, struct volume_key *tvk, unsigned tkeyring_only)
+static int _compare_volume_keys(struct volume_key *svk, unsigned skeyring_only,
+				struct volume_key *tvk, unsigned tkeyring_only)
 {
 	if (!svk && !tvk)
 		return 0;
@@ -2605,13 +2607,16 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 
 	r = dm_query_device(cd, name, DM_ACTIVE_DEVICE | DM_ACTIVE_CRYPT_CIPHER |
 				  DM_ACTIVE_UUID | DM_ACTIVE_CRYPT_KEYSIZE |
-				  DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_INTEGRITY_PARAMS | DM_ACTIVE_JOURNAL_CRYPT_KEY | DM_ACTIVE_JOURNAL_MAC_KEY, &tdmd);
+				  DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_INTEGRITY_PARAMS |
+				  DM_ACTIVE_JOURNAL_CRYPT_KEY | DM_ACTIVE_JOURNAL_MAC_KEY, &tdmd);
 	if (r < 0) {
 		log_err(cd, _("Device %s is not active."), name);
 		return -EINVAL;
 	}
 
-	if (!single_segment(&tdmd) || (tgt->type != DM_CRYPT && tgt->type != DM_INTEGRITY) || (tgt->type == DM_CRYPT && tgt->u.crypt.tag_size)) {
+	if (!single_segment(&tdmd) ||
+	    (tgt->type != DM_CRYPT && tgt->type != DM_INTEGRITY) ||
+	    (tgt->type == DM_CRYPT && tgt->u.crypt.tag_size)) {
 		r = -ENOTSUP;
 		log_err(cd, _("Unsupported parameters on device %s."), name);
 		goto out;
@@ -2862,7 +2867,9 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 
 	log_dbg(cd, "Resizing device %s to %" PRIu64 " sectors.", name, new_size);
 
-	r = dm_query_device(cd, name, DM_ACTIVE_CRYPT_KEYSIZE | DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_INTEGRITY_PARAMS | DM_ACTIVE_JOURNAL_CRYPT_KEY | DM_ACTIVE_JOURNAL_MAC_KEY, &dmdq);
+	r = dm_query_device(cd, name, DM_ACTIVE_CRYPT_KEYSIZE | DM_ACTIVE_CRYPT_KEY |
+			    DM_ACTIVE_INTEGRITY_PARAMS | DM_ACTIVE_JOURNAL_CRYPT_KEY |
+			    DM_ACTIVE_JOURNAL_MAC_KEY, &dmdq);
 	if (r < 0) {
 		log_err(cd, _("Device %s is not active."), name);
 		return -EINVAL;
@@ -2922,7 +2929,8 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		r = dm_integrity_target_set(cd, &dmd.segment, 0, dmdq.segment.size,
 				crypt_metadata_device(cd), crypt_data_device(cd),
 				crypt_get_integrity_tag_size(cd), crypt_get_data_offset(cd),
-				crypt_get_sector_size(cd), tgt->u.integrity.vk, tgt->u.integrity.journal_crypt_key, tgt->u.integrity.journal_integrity_key, &params);
+				crypt_get_sector_size(cd), tgt->u.integrity.vk, tgt->u.integrity.journal_crypt_key,
+				tgt->u.integrity.journal_integrity_key, &params);
 		if (r)
 			goto out;
 		r = _reload_device(cd, name, &dmd);
@@ -2935,7 +2943,9 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 			return r;
 		log_dbg(cd, "Maximum integrity device size from kernel %" PRIu64, new_size);
 
-		if (old_size == new_size && new_size == dmdq.size && !dm_flags(cd, tgt->type, &supported_flags) && !(supported_flags & DM_INTEGRITY_RESIZE_SUPPORTED))
+		if (old_size == new_size && new_size == dmdq.size &&
+		    !dm_flags(cd, tgt->type, &supported_flags) &&
+		    !(supported_flags & DM_INTEGRITY_RESIZE_SUPPORTED))
 			log_std(cd, _("WARNING: Maximum size already set or kernel doesn't support resize.\n"));
 	}
 
@@ -2976,7 +2986,8 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		r = dm_integrity_target_set(cd, &dmd.segment, 0, new_size,
 				crypt_metadata_device(cd), crypt_data_device(cd),
 				crypt_get_integrity_tag_size(cd), crypt_get_data_offset(cd),
-				crypt_get_sector_size(cd), tgt->u.integrity.vk, tgt->u.integrity.journal_crypt_key, tgt->u.integrity.journal_integrity_key, &params);
+				crypt_get_sector_size(cd), tgt->u.integrity.vk, tgt->u.integrity.journal_crypt_key,
+				tgt->u.integrity.journal_integrity_key, &params);
 		if (r)
 			goto out;
 	}
@@ -2993,7 +3004,9 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		if (!r)
 			r = _reload_device(cd, name, &dmd);
 
-		if (r && tgt->type == DM_INTEGRITY && !dm_flags(cd, tgt->type, &supported_flags) && !(supported_flags & DM_INTEGRITY_RESIZE_SUPPORTED))
+		if (r && tgt->type == DM_INTEGRITY &&
+		    !dm_flags(cd, tgt->type, &supported_flags) &&
+		    !(supported_flags & DM_INTEGRITY_RESIZE_SUPPORTED))
 			log_err(cd, _("Resize failed, the kernel doesn't support it."));
 	}
 out:
@@ -3393,7 +3406,8 @@ int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
 		r = LUKS_open_key_with_hdr(keyslot, passphrase_read, passphrase_size_read,
 					   &cd->u.luks1.hdr, &vk, cd);
 	else
-		r = LUKS2_keyslot_open(cd, keyslot, CRYPT_DEFAULT_SEGMENT, passphrase_read, passphrase_size_read, &vk);
+		r = LUKS2_keyslot_open(cd, keyslot, CRYPT_DEFAULT_SEGMENT,
+				       passphrase_read, passphrase_size_read, &vk);
 
 	crypt_safe_free(passphrase_read);
 	if (r < 0)
@@ -3498,7 +3512,8 @@ int crypt_resume_by_token_pin(struct crypt_device *cd, const char *name,
 		return -EINVAL;
 	}
 
-	r = LUKS2_token_unlock_key(cd, &cd->u.luks2.hdr, token, type, pin, pin_size, CRYPT_DEFAULT_SEGMENT, usrptr, &vk);
+	r = LUKS2_token_unlock_key(cd, &cd->u.luks2.hdr, token, type,
+				   pin, pin_size, CRYPT_DEFAULT_SEGMENT, usrptr, &vk);
 	keyslot = r;
 	if (r >= 0)
 		r = resume_by_volume_key(cd, vk, name);
@@ -4481,7 +4496,8 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		if (!crypt_use_keyring_for_vk(cd))
 			use_keyring = false;
 		else
-			use_keyring = (name && !crypt_is_cipher_null(crypt_get_cipher(cd))) || (flags & CRYPT_ACTIVATE_KEYRING_KEY);
+			use_keyring = (name && !crypt_is_cipher_null(crypt_get_cipher(cd))) ||
+				      (flags & CRYPT_ACTIVATE_KEYRING_KEY);
 
 		if (!r && use_keyring) {
 			r = LUKS2_key_description_by_segment(cd,
@@ -5687,7 +5703,8 @@ int crypt_activate_by_token_pin(struct crypt_device *cd, const char *name,
 	if (r < 0)
 		return r;
 
-	return LUKS2_token_open_and_activate(cd, &cd->u.luks2.hdr, token, name, type, pin, pin_size, flags, usrptr);
+	return LUKS2_token_open_and_activate(cd, &cd->u.luks2.hdr, token, name, type,
+					     pin, pin_size, flags, usrptr);
 }
 
 int crypt_activate_by_token(struct crypt_device *cd,

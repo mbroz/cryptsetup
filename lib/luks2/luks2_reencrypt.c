@@ -513,7 +513,8 @@ static json_object *reencrypt_make_hot_segments_forward(struct crypt_device *cd,
 
 	if (tmp < device_size) {
 		fixed_length = device_size - tmp;
-		jobj_old_seg = reencrypt_make_segment_old(cd, hdr, rh, data_offset + data_shift_value(&rh->rp), rh->offset + rh->length, rh->fixed_length ? &fixed_length : NULL);
+		jobj_old_seg = reencrypt_make_segment_old(cd, hdr, rh, data_offset + data_shift_value(&rh->rp),
+							  rh->offset + rh->length, rh->fixed_length ? &fixed_length : NULL);
 		if (!jobj_old_seg)
 			goto err;
 		json_object_object_add_by_uint(jobj_segs_hot, sg, jobj_old_seg);
@@ -668,7 +669,8 @@ static json_object *reencrypt_make_hot_segments_backward(struct crypt_device *cd
 
 	if (tmp < device_size) {
 		fixed_length = device_size - tmp;
-		jobj_new_seg = reencrypt_make_segment_new(cd, hdr, rh, data_offset, rh->offset + rh->length, rh->offset + rh->length, rh->fixed_length ? &fixed_length : NULL);
+		jobj_new_seg = reencrypt_make_segment_new(cd, hdr, rh, data_offset, rh->offset + rh->length,
+							  rh->offset + rh->length, rh->fixed_length ? &fixed_length : NULL);
 		if (!jobj_new_seg)
 			goto err;
 		json_object_object_add_by_uint(jobj_segs_hot, sg, jobj_new_seg);
@@ -892,7 +894,8 @@ static void _load_backup_segments(struct luks2_hdr *hdr,
 		rh->jobj_segment_moved = NULL;
 }
 
-static int reencrypt_offset_backward_moved(struct luks2_hdr *hdr, json_object *jobj_segments, uint64_t *reencrypt_length, uint64_t data_shift, uint64_t *offset)
+static int reencrypt_offset_backward_moved(struct luks2_hdr *hdr, json_object *jobj_segments,
+					   uint64_t *reencrypt_length, uint64_t data_shift, uint64_t *offset)
 {
 	uint64_t tmp, linear_length = 0;
 	int sg, segs = json_segments_count(jobj_segments);
@@ -1474,7 +1477,8 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 	else
 		crash_iv_offset = json_segment_get_iv_offset(json_segments_get_segment(rh->jobj_segs_hot, rseg));
 
-	log_dbg(cd, "crash_offset: %" PRIu64 ", crash_length: %" PRIu64 ",  crash_iv_offset: %" PRIu64, data_offset + rh->offset, rh->length, crash_iv_offset);
+	log_dbg(cd, "crash_offset: %" PRIu64 ", crash_length: %" PRIu64 ",  crash_iv_offset: %" PRIu64,
+		data_offset + rh->offset, rh->length, crash_iv_offset);
 
 	r = crypt_storage_wrapper_init(cd, &cw2, crypt_data_device(cd),
 			data_offset + rh->offset, crash_iv_offset, new_sector_size,
@@ -1842,7 +1846,9 @@ static int reencrypt_assign_segments(struct crypt_device *cd,
 	return commit ? LUKS2_hdr_write(cd, hdr) : 0;
 }
 
-static int reencrypt_set_encrypt_segments(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t dev_size, uint64_t data_shift, bool move_first_segment, crypt_reencrypt_direction_info di)
+static int reencrypt_set_encrypt_segments(struct crypt_device *cd, struct luks2_hdr *hdr,
+					  uint64_t dev_size, uint64_t data_shift, bool move_first_segment,
+					  crypt_reencrypt_direction_info di)
 {
 	int r;
 	uint64_t first_segment_offset, first_segment_length,

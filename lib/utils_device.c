@@ -623,7 +623,10 @@ size_t device_optimal_encryption_sector_size(struct crypt_device *cd, struct dev
 	phys_block_size = device_block_phys_size_fd(fd);
 	close(fd);
 
-	if (device->block_size >= phys_block_size || phys_block_size <= SECTOR_SIZE || phys_block_size > MAX_SECTOR_SIZE || MISALIGNED(phys_block_size, device->block_size))
+	if (device->block_size >= phys_block_size ||
+	    phys_block_size <= SECTOR_SIZE ||
+	    phys_block_size > MAX_SECTOR_SIZE ||
+	    MISALIGNED(phys_block_size, device->block_size))
 		return device->block_size;
 
 	return phys_block_size;
