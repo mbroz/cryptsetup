@@ -46,19 +46,19 @@ include::man/common_options.adoc[]
 
 *NOTE*: When not specified otherwise interactive passphrase prompt is always default method.
 
-Add new keyslot using interactive passphrase promtp for both existing and new passphrase:
+Add new keyslot using interactive passphrase prompt for both existing and new passphrase:
 
 *cryptsetup luksAddKey /dev/device*
 
-Add new keyslot using LUKS2 tokens to unlock existing keyslot with interactive passphrase promtp for new passphrase:
+Add new keyslot using LUKS2 tokens to unlock existing keyslot with interactive passphrase prompt for new passphrase:
 
 *cryptsetup luksAddKey --token-only /dev/device*
 
-Add new keyslot using LUKS2 systemd-tpm2 tokens to unlock existing keyslot with interactive passphrase promtp for new passphrase (systemd-tpm2 token plugin must be available):
+Add new keyslot using LUKS2 systemd-tpm2 tokens to unlock existing keyslot with interactive passphrase prompt for new passphrase (systemd-tpm2 token plugin must be available):
 
 *cryptsetup luksAddKey --token-type systemd-tpm2 /dev/device*
 
-Add new keyslot using interactive passphrase promtp for existing keyslot, reading new passphrase from key_file:
+Add new keyslot using interactive passphrase prompt for existing keyslot, reading new passphrase from key_file:
 
 *cryptsetup luksAddKey --new-keyfile key_file /dev/device* or
 *cryptsetup luksAddKey /dev/device key_file*

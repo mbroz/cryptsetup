@@ -293,7 +293,7 @@ When used together with parameter --new-key-slot this option allows you to speci
 key slot is selected for unlocking volume key.
 +
 *NOTE:* This option is ignored if existing volume key gets unlocked
-via LUSK2 token (--token-id, --token-type or --token-only parameters) or
+via LUKS2 token (--token-id, --token-type or --token-only parameters) or
 when volume key is provided directly via --volume-key-file parameter.
 +
 *NOTE:* To maintain backward compatibility, without --new-key-slot parameter,
@@ -801,7 +801,7 @@ ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_LUKSADDKE
 *--token-id*::
 ifndef::ACTION_TOKEN,ACTION_LUKSADDKEY[]
 Specify what token to use. If omitted, all available tokens will be checked
-before proceeding further with passphrase prompt.a
+before proceeding further with passphrase prompt.
 endif::[]
 ifdef::ACTION_LUKSADDKEY[]
 Specify what token to use when unlocking existing keyslot to get volume key.
