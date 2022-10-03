@@ -37,8 +37,7 @@ extern "C" {
 #include <luks2/luks2.h>
 #include <libcryptsetup.h>
 #include <src/cryptsetup.h>
-
-int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
+#include "FuzzerInterface.h"
 
 static int calculate_checksum(const uint8_t* data, size_t size) {
 	struct crypt_hash *hd = NULL;

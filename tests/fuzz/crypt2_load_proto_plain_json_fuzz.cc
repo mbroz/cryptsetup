@@ -27,6 +27,7 @@
 #include "LUKS2_plain_JSON.pb.h"
 #include "plain_json_proto_to_luks2_converter.h"
 #include "libfuzzer/libfuzzer_macro.h"
+#include "FuzzerInterface.h"
 
 extern "C" {
 #include <libcryptsetup.h>

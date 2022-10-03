@@ -27,6 +27,7 @@
 #include "LUKS2.pb.h"
 #include "proto_to_luks2_converter.h"
 #include "libfuzzer/libfuzzer_macro.h"
+#include "FuzzerInterface.h"
 
 extern "C" {
 #include <libcryptsetup.h>
