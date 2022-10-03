@@ -28,19 +28,39 @@ to prepare fuzzers:
 sudo python3 infra/helper.py build_image cryptsetup
 sudo python3 infra/helper.py build_fuzzers cryptsetup
 ```
-On SELinux systems also add:
+On SELinux systems also add (https://github.com/google/oss-fuzz/issues/30):
 ```
 sudo chcon -Rt svirt_sandbox_file_t build/
 ```
+
 # Run LUKS2 fuzzer
+`FUZZER_NAME` can be one of: `crypt2_load_fuzz`, `crypt2_load_proto_fuzz`, `crypt2_load_proto_plain_json_fuzz`
 ```
-sudo python infra/helper.py run_fuzzer --corpus-dir build/corpus/cryptsetup/crypt2_load_fuzz/ --sanitizer address cryptsetup crypt2_load_fuzz -jobs=8 -workers=8
+FUZZER_NAME="crypt2_load_proto_plain_json_fuzz"
+sudo mkdir -p build/corpus/cryptsetup/$FUZZER_NAME
+sudo python infra/helper.py run_fuzzer --corpus-dir build/corpus/cryptsetup/$FUZZER_NAME/ --sanitizer address cryptsetup $FUZZER_NAME '-jobs=8 -workers=8'
 ```
+
+The output of the parallel threads will be written to `fuzz-<N>.log` (where `<N>` is the number of the process).
+You can watch it using e.g.:
+```
+tail -f build/out/cryptsetup/fuzz-*
+```
+
+Optionally, you can use experimental `fork` mode for parallelization and the output will be displayed directly on the terminal:
+```
+sudo python infra/helper.py run_fuzzer --corpus-dir build/corpus/cryptsetup/$FUZZER_NAME/ --sanitizer address cryptsetup $FUZZER_NAME '-fork=8 '
+```
+
 # Rebuild fuzz targets for coverage
 ```
 sudo python infra/helper.py build_fuzzers --sanitizer coverage cryptsetup
 ```
+
 # Generate coverage report
 ```
-sudo python infra/helper.py coverage cryptsetup --no-corpus-download --fuzz-target crypt2_load_fuzz
+sudo python infra/helper.py coverage cryptsetup --no-corpus-download --fuzz-target $FUZZER_NAME
 ```
+
+# Further information
+For more details, you can look into the [Using fuzzing for Linux disk encryption tools](https://is.muni.cz/th/bum03/?lang=en) thesis.
