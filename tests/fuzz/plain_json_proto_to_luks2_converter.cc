@@ -90,7 +90,7 @@ void LUKS2ProtoConverter::emit_luks2_binary_header(const LUKS2_header &header_pr
   if (crypt_hash_write(hd, json_text.c_str(), write_size))
     err(EXIT_FAILURE, "crypt_hash_write failed");
 
-  for (size_t i = 0; i < (hdr_json_area_len - json_text.length()); i++) {
+  for (size_t i = 0; i < (hdr_json_area_len - write_size); i++) {
     if (crypt_hash_write(hd, "\0", 1))
       err(EXIT_FAILURE, "crypt_hash_write failed");
   }
