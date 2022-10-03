@@ -29,6 +29,8 @@ export CFLAGS="${CFLAGS:-$flags} -I$DEPS_PATH/include"
 export CXXFLAGS="${CXXFLAGS:-$flags} -I$DEPS_PATH/include"
 export LDFLAGS="$LDFLAGS -L$DEPS_PATH/lib"
 
+ENABLED_FUZZERS="crypt2_load_fuzz crypt2_load_proto_plain_json_fuzz"
+
 mkdir -p $SRC
 mkdir -p $OUT
 mkdir -p $DEPS_PATH
@@ -130,10 +132,14 @@ fi
 make clean
 make -j fuzz-targets
 
-cp $SRC/cryptsetup_fuzzing/*_fuzz_seed_corpus.zip $OUT
-cp tests/fuzz/*_fuzz $OUT
-cp tests/fuzz/*_fuzz.dict $OUT
-cp tests/fuzz/proto_to_luks2 $OUT
-cp tests/fuzz/plain_json_proto_to_luks2 $OUT
+for fuzzer in $ENABLED_FUZZERS; do
+    cp tests/fuzz/$fuzzer $OUT
+    cp $SRC/cryptsetup_fuzzing/${fuzzer}_seed_corpus.zip $OUT
+
+    # optionally copy the dictionary if it exists
+    if [ -e tests/fuzz/${fuzzer}.dict ]; then
+        cp tests/fuzz/${fuzzer}.dict $OUT
+    fi
+done
 
 cd $PWD
