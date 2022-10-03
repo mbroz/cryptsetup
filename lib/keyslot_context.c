@@ -334,7 +334,7 @@ void crypt_keyslot_unlock_by_passphrase_init_internal(struct crypt_keyslot_conte
 
 void crypt_keyslot_unlock_by_keyfile_init_internal(struct crypt_keyslot_context *kc,
 	const char *keyfile,
-	uint64_t keyfile_size,
+	size_t keyfile_size,
 	uint64_t keyfile_offset)
 {
 	assert(kc);
