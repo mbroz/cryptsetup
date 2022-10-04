@@ -28,6 +28,7 @@ AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CPP
+AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 AC_PROG_MKDIR_P
@@ -211,6 +212,17 @@ if test "x$enable_pwquality" = "xyes"; then
 
 	dnl FIXME: this is really hack for now
 	PWQUALITY_STATIC_LIBS="$PWQUALITY_LIBS -lcrack -lz"
+fi
+
+dnl ==========================================================================
+dnl fuzzers, it requires own static library compilation later
+AC_ARG_ENABLE([fuzz-targets],
+	AS_HELP_STRING([--enable-fuzz-targets], [enable building fuzz targets]))
+AM_CONDITIONAL(ENABLE_FUZZ_TARGETS, test "x$enable_fuzz_targets" = "xyes")
+
+if test "x$enable_fuzz_targets" = "xyes"; then
+	AX_CHECK_COMPILE_FLAG([-fsanitize=fuzzer-no-link],,
+		AC_MSG_ERROR([Required compiler options not supported; use clang.]), [-Werror])
 fi
 
 dnl ==========================================================================
@@ -755,5 +767,6 @@ lib/libcryptsetup.pc
 po/Makefile.in
 scripts/cryptsetup.conf
 tests/Makefile
+tests/fuzz/Makefile
 ])
 AC_OUTPUT
