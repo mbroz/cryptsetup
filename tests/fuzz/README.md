@@ -5,7 +5,7 @@ It can be run in the OSS-Fuzz project but also compiled separately.
 
 # Requirements
 
-Fuzzers us address sanitizer. To properly detect problems, all
+Fuzzers use address sanitizer. To properly detect problems, all
 important libraries must be compiled statically with sanitizer enabled.
 
 Compilation requires *clang* and *clang++* compilers (gcc is not
@@ -20,7 +20,7 @@ installed versions. The best is to use only basic system installation
 without development packages (script will use custom include, libs,
 and pkg-config paths).
 
-# Buid Docker image and fuzzers
+# Build Docker image and fuzzers
 
 You can also run OSS-Fuzz in a Docker image, use these commands
 to prepare fuzzers:
