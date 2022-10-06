@@ -52,7 +52,7 @@ in_oss_fuzz && apt-get update && apt-get install -y \
 [ ! -d cryptsetup_fuzzing ] && git clone --depth 1 https://gitlab.com/cryptsetup/cryptsetup_fuzzing.git
 
 cd openssl
-./Configure -static --prefix="$DEPS_PATH" --libdir=lib
+./Configure -static --prefix="$DEPS_PATH" --libdir=lib no-asm
 make build_generated
 make -j libcrypto.a
 make install_dev
