@@ -77,7 +77,7 @@ static int calculate_checksum(const uint8_t* data, size_t size) {
 	hdr = CONST_CAST(struct luks2_hdr_disk *) (data + hdr_size1);
 
 	hdr_size2 = be64_to_cpu(hdr->hdr_size);
-	if (hdr_size1 + hdr_size2 > size)
+	if (hdr_size2 > size || (hdr_size1 + hdr_size2) > size)
 		return 0;
 
 	memset(&hdr->csum, 0, LUKS2_CHECKSUM_L);
