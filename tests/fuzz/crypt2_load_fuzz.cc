@@ -96,58 +96,33 @@ out:
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 	int fd;
-	struct crypt_device *cd;
-	int result;
-	int r = 0;
-
+	struct crypt_device *cd = NULL;
 	char name[] = "/tmp/test-script-fuzz.XXXXXX";
 
-	if ((r = calculate_checksum(data, size)))
-		return r;
+	if (calculate_checksum(data, size))
+		return 0;
 
 	fd = mkostemp(name, O_RDWR|O_CREAT|O_EXCL|O_CLOEXEC);
-	if (fd < 0)
+	if (fd == -1)
 		err(EXIT_FAILURE, "mkostemp() failed");
 
-	result = lseek(fd, FILESIZE-1, SEEK_SET);
-	if (result == -1) {
-		r = 1;
+	/* enlarge header */
+	if (lseek(fd, FILESIZE-1, SEEK_SET) == -1 ||
+	    write(fd, "\0", 1) < 1 ||
+	    lseek(fd, 0, SEEK_SET) == -1)
 		goto out;
-	}
-	result = write(fd, "\0", 1);
-	if (result != 1) {
-		r = 1;
-		goto out;
-	}
-	result = lseek(fd, 0, SEEK_SET);
-	if (result == -1) {
-		r = 1;
-		goto out;
-	}
 
-	if (write_buffer(fd, data, size) != (ssize_t)size) {
-		r = 1;
+	if (write_buffer(fd, data, size) != (ssize_t)size)
 		goto out;
-	}
 
 //	crypt_set_debug_level(CRYPT_DEBUG_ALL);
 
-	r = crypt_init(&cd, name);
-	if (r < 0 ) {
-		r = 0;
-		goto out;
-	}
-
-	r = crypt_load(cd, CRYPT_LUKS2, NULL);
+	if (crypt_init(&cd, name) == 0)
+		(void)crypt_load(cd, CRYPT_LUKS2, NULL);
 	crypt_free(cd);
-	if (r < 0) {
-		r = 0;
-		goto out;
-	}
-
 out:
 	close(fd);
 	unlink(name);
-	return r;
+	return 0;
 }
 }
