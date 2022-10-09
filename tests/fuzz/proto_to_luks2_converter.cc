@@ -511,13 +511,9 @@ void LUKS2ProtoConverter::convert(const LUKS2_both_headers &headers, int fd) {
   if (!write_headers_only)
     out_size += KEYSLOTS_SIZE + DATA_SIZE;
 
-  result = lseek(fd, out_size - 1, SEEK_SET);
+  result = ftruncate(fd, out_size);
   if (result == -1)
-    err(EXIT_FAILURE, "lseek failed");
-
-  result = write(fd, "\0", 1);
-  if (result != 1)
-    err(EXIT_FAILURE, "write failed");
+    err(EXIT_FAILURE, "truncate failed");
 
   result = lseek(fd, 0, SEEK_SET);
   if (result == -1)

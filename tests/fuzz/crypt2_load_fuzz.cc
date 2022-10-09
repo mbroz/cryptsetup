@@ -107,9 +107,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 		err(EXIT_FAILURE, "mkostemp() failed");
 
 	/* enlarge header */
-	if (lseek(fd, FILESIZE-1, SEEK_SET) == -1 ||
-	    write(fd, "\0", 1) < 1 ||
-	    lseek(fd, 0, SEEK_SET) == -1)
+	if (ftruncate(fd, FILESIZE) == -1)
 		goto out;
 
 	if (write_buffer(fd, data, size) != (ssize_t)size)
