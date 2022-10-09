@@ -33,8 +33,6 @@ extern "C" {
 #include <err.h>
 }
 
-//#define OFFSET_OF(strct, field) (((char*)&((struct strct*)0)->field) - (char*)0)
-
 namespace json_proto {
 
 void LUKS2ProtoConverter::emit_luks2_binary_header(const LUKS2_header &header_proto, int fd, uint64_t offset, uint64_t seqid, const std::string &json_text) {

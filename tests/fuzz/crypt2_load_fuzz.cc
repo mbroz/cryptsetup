@@ -46,7 +46,7 @@ static int calculate_checksum(const uint8_t* data, size_t size) {
 	uint64_t hdr_size1, hdr_size2;
 	int r = 0;
 
-	// primary header
+	/* primary header */
 	if (sizeof(struct luks2_hdr_disk) > size)
 		return 0;
 	hdr = CONST_CAST(struct luks2_hdr_disk *) data;
@@ -68,7 +68,7 @@ static int calculate_checksum(const uint8_t* data, size_t size) {
 		goto out;
 	crypt_hash_destroy(hd);
 
-	// secondary header
+	/* secondary header */
 	if (hdr_size1 < sizeof(struct luks2_hdr_disk))
 		hdr_size1 = sizeof(struct luks2_hdr_disk);
 
@@ -112,8 +112,6 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
 	if (write_buffer(fd, data, size) != (ssize_t)size)
 		goto out;
-
-//	crypt_set_debug_level(CRYPT_DEBUG_ALL);
 
 	if (crypt_init(&cd, name) == 0)
 		(void)crypt_load(cd, CRYPT_LUKS2, NULL);

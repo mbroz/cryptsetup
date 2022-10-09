@@ -31,8 +31,6 @@ extern "C" {
 #include <err.h>
 }
 
-//#define OFFSET_OF(strct, field) (((char*)&((struct strct*)0)->field) - (char*)0)
-
 namespace LUKS2_proto {
 
 std::string LUKS2ProtoConverter::string_uint64_to_string(const string_uint64 &str_u64) {
