@@ -37,25 +37,27 @@ using namespace LUKS2_proto;
 int main(int argc, char *argv[]) {
   LUKS2_both_headers headers;
   LUKS2ProtoConverter converter;
+  int fd;
 
   std::string out_img_name;
 
   if (argc != 2) {
     std::cerr << "Usage: " << argv[0] << " <LUKS2 proto>\n";
-    return 1;
+    return EXIT_FAILURE;
   }
 
-  int fd = open(argv[1], O_RDONLY);
+  fd = open(argv[1], O_RDONLY);
   if (fd < 0) {
     std::cerr << "Failed to open " << argv[1] << std::endl;
-    return 1;
+    return EXIT_FAILURE;
   }
 
   google::protobuf::io::FileInputStream fileInput(fd);
 
   if (!google::protobuf::TextFormat::Parse(&fileInput, &headers)) {
     std::cerr << "Failed to parse protobuf " << argv[1] << std::endl;
-    goto out;
+    close(fd);
+    return EXIT_FAILURE;
   }
   close(fd);
 
@@ -65,13 +67,11 @@ int main(int argc, char *argv[]) {
   fd = open(out_img_name.c_str(), O_RDWR|O_CREAT|O_EXCL|O_CLOEXEC|O_TRUNC, 0644);
   if (fd < 0) {
     std::cerr << "Failed to open output file " << out_img_name << std::endl;
-    goto out;
+    return EXIT_FAILURE;
   }
   converter.set_write_headers_only(false);
   converter.convert(headers, fd);
 
-out:
-  if (fd >= 0)
-    close(fd);
-  return 0;
+  close(fd);
+  return EXIT_SUCCESS;
 }
