@@ -37,32 +37,20 @@ extern "C" {
 }
 
 DEFINE_PROTO_FUZZER(const json_proto::LUKS2_both_headers &headers) {
-  struct crypt_device *cd;
-  int r = 0;
-
+  struct crypt_device *cd = NULL;
   char name[] = "/tmp/test-proto-fuzz.XXXXXX";
   int fd = mkostemp(name, O_RDWR|O_CREAT|O_EXCL|O_CLOEXEC);
+
   if (fd < 0)
     err(EXIT_FAILURE, "mkostemp() failed");
 
   json_proto::LUKS2ProtoConverter converter;
   converter.convert(headers, fd);
 
-  r = crypt_init(&cd, name);
-  if (r < 0 ) {
-    r = 0;
-    goto out;
-  }
-
-  r = crypt_load(cd, CRYPT_LUKS2, NULL);
+  if (crypt_init(&cd, name) == 0)
+    (void)crypt_load(cd, CRYPT_LUKS2, NULL);
   crypt_free(cd);
-  if (r < 0) {
-    r = 0;
-    goto out;
-  }
 
-out:
-  if (fd >= 0)
-    close(fd);
+  close(fd);
   unlink(name);
 }
