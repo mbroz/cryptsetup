@@ -21,22 +21,10 @@
 
 extern "C" {
 #define FILESIZE (16777216)
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/mman.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <inttypes.h>
-#include <sys/types.h>
+#include "src/cryptsetup.h"
 #include <err.h>
-
+#include "luks2/luks2.h"
 #include "crypto_backend/crypto_backend.h"
-#include <luks2/luks2.h>
-#include <libcryptsetup.h>
-#include <src/cryptsetup.h>
 #include "FuzzerInterface.h"
 
 static int calculate_checksum(const uint8_t* data, size_t size) {

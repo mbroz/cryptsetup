@@ -21,9 +21,7 @@
 
 #include <iostream>
 #include <string>
-#include <type_traits>
 
-#include <err.h>
 #include <fcntl.h>
 #include <unistd.h>
 

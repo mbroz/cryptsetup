@@ -19,11 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <iostream>
-
 #include "LUKS2.pb.h"
 #include "proto_to_luks2_converter.h"
 #include "libfuzzer/libfuzzer_macro.h"

@@ -20,14 +20,11 @@
  */
 
 #include "proto_to_luks2_converter.h"
-#include <exception>
 #include <iostream>
 
 extern "C" {
-#include <json-c/json.h>
-#include <src/cryptsetup.h>
-#include <luks2/luks2.h>
-#include <libcryptsetup.h>
+#include "src/cryptsetup.h"
+#include "luks2/luks2.h"
 #include <err.h>
 }
 
