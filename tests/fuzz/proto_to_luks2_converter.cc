@@ -20,18 +20,13 @@
  */
 
 #include "proto_to_luks2_converter.h"
-#include <exception>
 #include <iostream>
 
 extern "C" {
-#include <json-c/json.h>
-#include <src/cryptsetup.h>
-#include <luks2/luks2.h>
-#include <libcryptsetup.h>
+#include "src/cryptsetup.h"
+#include "luks2/luks2.h"
 #include <err.h>
 }
-
-//#define OFFSET_OF(strct, field) (((char*)&((struct strct*)0)->field) - (char*)0)
 
 namespace LUKS2_proto {
 
@@ -511,13 +506,9 @@ void LUKS2ProtoConverter::convert(const LUKS2_both_headers &headers, int fd) {
   if (!write_headers_only)
     out_size += KEYSLOTS_SIZE + DATA_SIZE;
 
-  result = lseek(fd, out_size - 1, SEEK_SET);
+  result = ftruncate(fd, out_size);
   if (result == -1)
-    err(EXIT_FAILURE, "lseek failed");
-
-  result = write(fd, "\0", 1);
-  if (result != 1)
-    err(EXIT_FAILURE, "write failed");
+    err(EXIT_FAILURE, "truncate failed");
 
   result = lseek(fd, 0, SEEK_SET);
   if (result == -1)
