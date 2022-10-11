@@ -27,9 +27,9 @@ flags="-O1 -fno-omit-frame-pointer -gline-tables-only -DFUZZING_BUILD_MODE_UNSAF
 
 export CFLAGS="${CFLAGS:-$flags} -I$DEPS_PATH/include"
 export CXXFLAGS="${CXXFLAGS:-$flags} -I$DEPS_PATH/include"
-export LDFLAGS="$LDFLAGS -L$DEPS_PATH/lib"
+export LDFLAGS="${LDFLAGS-} -L$DEPS_PATH/lib"
 
-ENABLED_FUZZERS="crypt2_load_fuzz crypt2_load_proto_plain_json_fuzz"
+ENABLED_FUZZERS=${ENABLED_FUZZERS:-crypt2_load_fuzz crypt2_load_proto_plain_json_fuzz}
 
 mkdir -p $SRC
 mkdir -p $OUT
