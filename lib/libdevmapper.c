@@ -476,27 +476,22 @@ static size_t int_log10(uint64_t x)
 	return r;
 }
 
-#define CLEN    64   /* 2*MAX_CIPHER_LEN */
-#define CLENS  "63"  /* for sscanf length + '\0' */
-#define CAPIL  144   /* should be enough to fit whole capi string */
-#define CAPIS "143"  /* for sscanf of crypto API string + 16  + \0 */
-
 static int cipher_dm2c(const char *org_c, const char *org_i, unsigned tag_size,
 		       char *c_dm, int c_dm_size,
 		       char *i_dm, int i_dm_size)
 {
 	int c_size = 0, i_size = 0, i;
-	char cipher[CLEN], mode[CLEN], iv[CLEN+1], tmp[CLEN];
-	char capi[CAPIL];
+	char cipher[MAX_CAPI_ONE_LEN], mode[MAX_CAPI_ONE_LEN], iv[MAX_CAPI_ONE_LEN+1],
+	     tmp[MAX_CAPI_ONE_LEN], capi[MAX_CAPI_LEN];
 
 	if (!c_dm || !c_dm_size || !i_dm || !i_dm_size)
 		return -EINVAL;
 
-	i = sscanf(org_c, "%" CLENS "[^-]-%" CLENS "s", cipher, tmp);
+	i = sscanf(org_c, "%" MAX_CAPI_ONE_LEN_STR "[^-]-%" MAX_CAPI_ONE_LEN_STR "s", cipher, tmp);
 	if (i != 2)
 		return -EINVAL;
 
-	i = sscanf(tmp, "%" CLENS "[^-]-%" CLENS "s", mode, iv);
+	i = sscanf(tmp, "%" MAX_CAPI_ONE_LEN_STR "[^-]-%" MAX_CAPI_ONE_LEN_STR "s", mode, iv);
 	if (i == 1) {
 		memset(iv, 0, sizeof(iv));
 		strncpy(iv, mode, sizeof(iv)-1);
@@ -539,75 +534,6 @@ static int cipher_dm2c(const char *org_c, const char *org_i, unsigned tag_size,
 		return -EINVAL;
 	if (i_size < 0 || i_size == i_dm_size)
 		return -EINVAL;
-
-	return 0;
-}
-
-static int cipher_c2dm(char **org_c, char **org_i, const char *c_dm, const char *i_dm)
-{
-	char cipher[CLEN], mode[CLEN], iv[CLEN], auth[CLEN];
-	char tmp[CAPIL], dmcrypt_tmp[CAPIL*2], capi[CAPIL+1];
-	size_t len;
-	int i;
-
-	if (!c_dm)
-		return -EINVAL;
-
-	/* legacy mode */
-	if (strncmp(c_dm, "capi:", 4)) {
-		if (!(*org_c = strdup(c_dm)))
-			return -ENOMEM;
-		*org_i = NULL;
-		return 0;
-	}
-
-	/* modes with capi: prefix */
-	i = sscanf(c_dm, "capi:%" CAPIS "[^-]-%" CLENS "s", tmp, iv);
-	if (i != 2)
-		return -EINVAL;
-
-	len = strlen(tmp);
-	if (len < 2)
-		return -EINVAL;
-
-	if (tmp[len-1] == ')')
-		tmp[len-1] = '\0';
-
-	if (sscanf(tmp, "rfc4309(%" CAPIS "s", capi) == 1) {
-		if (!(*org_i = strdup("aead")))
-			return -ENOMEM;
-	} else if (sscanf(tmp, "rfc7539(%" CAPIS "[^,],%" CLENS "s", capi, auth) == 2) {
-		if (!(*org_i = strdup(auth)))
-			return -ENOMEM;
-	} else if (sscanf(tmp, "authenc(%" CLENS "[^,],%" CAPIS "s", auth, capi) == 2) {
-		if (!(*org_i = strdup(auth)))
-			return -ENOMEM;
-	} else {
-		if (i_dm) {
-			if (!(*org_i = strdup(i_dm)))
-				return -ENOMEM;
-		} else
-			*org_i = NULL;
-		memset(capi, 0, sizeof(capi));
-		strncpy(capi, tmp, sizeof(capi)-1);
-	}
-
-	i = sscanf(capi, "%" CLENS "[^(](%" CLENS "[^)])", mode, cipher);
-	if (i == 2)
-		i = snprintf(dmcrypt_tmp, sizeof(dmcrypt_tmp), "%s-%s-%s", cipher, mode, iv);
-	else
-		i = snprintf(dmcrypt_tmp, sizeof(dmcrypt_tmp), "%s-%s", capi, iv);
-	if (i < 0 || (size_t)i >= sizeof(dmcrypt_tmp)) {
-		free(*org_i);
-		*org_i = NULL;
-		return -EINVAL;
-	}
-
-	if (!(*org_c = strdup(dmcrypt_tmp))) {
-		free(*org_i);
-		*org_i = NULL;
-		return -ENOMEM;
-	}
 
 	return 0;
 }
@@ -2066,7 +1992,7 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 
 	/* cipher */
 	if (get_flags & DM_ACTIVE_CRYPT_CIPHER) {
-		r = cipher_c2dm(CONST_CAST(char**)&cipher,
+		r = crypt_capi_to_cipher(CONST_CAST(char**)&cipher,
 				CONST_CAST(char**)&integrity,
 				rcipher, rintegrity);
 		if (r < 0)
