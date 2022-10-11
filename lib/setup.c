@@ -2458,6 +2458,9 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 			       const struct dm_target *src,
 			       const struct dm_target *tgt)
 {
+	char *src_cipher = NULL, *src_integrity = NULL;
+	int r = -EINVAL;
+
 	/* for crypt devices keys are mandatory */
 	if (!src->u.crypt.vk || !tgt->u.crypt.vk)
 		return -EINVAL;
@@ -2465,21 +2468,30 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 	/* CIPHER checks */
 	if (!src->u.crypt.cipher || !tgt->u.crypt.cipher)
 		return -EINVAL;
-	if (strcmp(src->u.crypt.cipher, tgt->u.crypt.cipher)) {
-		log_dbg(cd, "Cipher specs do not match.");
+
+	/*
+	 * dm_query_target converts capi cipher specification to dm-crypt format.
+	 * We need to do same for cipher specification requested in source
+	 * device.
+	 */
+	if (crypt_capi_to_cipher(&src_cipher, &src_integrity, src->u.crypt.cipher, src->u.crypt.integrity))
 		return -EINVAL;
+
+	if (strcmp(src_cipher, tgt->u.crypt.cipher)) {
+		log_dbg(cd, "Cipher specs do not match.");
+		goto out;
 	}
 
 	if (tgt->u.crypt.vk->keylength == 0 && crypt_is_cipher_null(tgt->u.crypt.cipher))
 		log_dbg(cd, "Existing device uses cipher null. Skipping key comparison.");
 	else if (_compare_volume_keys(src->u.crypt.vk, 0, tgt->u.crypt.vk, tgt->u.crypt.vk->key_description != NULL)) {
 		log_dbg(cd, "Keys in context and target device do not match.");
-		return -EINVAL;
+		goto out;
 	}
 
-	if (crypt_strcmp(src->u.crypt.integrity, tgt->u.crypt.integrity)) {
+	if (crypt_strcmp(src_integrity, tgt->u.crypt.integrity)) {
 		log_dbg(cd, "Integrity parameters do not match.");
-		return -EINVAL;
+		goto out;
 	}
 
 	if (src->u.crypt.offset      != tgt->u.crypt.offset ||
@@ -2487,15 +2499,19 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 	    src->u.crypt.iv_offset   != tgt->u.crypt.iv_offset ||
 	    src->u.crypt.tag_size    != tgt->u.crypt.tag_size) {
 		log_dbg(cd, "Integer parameters do not match.");
-		return -EINVAL;
+		goto out;
 	}
 
-	if (device_is_identical(src->data_device, tgt->data_device) <= 0) {
+	if (device_is_identical(src->data_device, tgt->data_device) <= 0)
 		log_dbg(cd, "Data devices do not match.");
-		return -EINVAL;
-	}
+	else
+		r = 0;
 
-	return 0;
+out:
+	free(src_cipher);
+	free(src_integrity);
+
+	return r;
 }
 
 static int _compare_integrity_devices(struct crypt_device *cd,

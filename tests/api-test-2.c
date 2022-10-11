@@ -1585,8 +1585,8 @@ static void ResizeDeviceLuks2(void)
 
 	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	size_t key_size = strlen(vk_hex) / 2;
-	const char *cipher = "aes";
-	const char *cipher_mode = "cbc-essiv:sha256";
+	const char *cipher = "aes", *capi_cipher = "capi:cbc(aes)";
+	const char *cipher_mode = "cbc-essiv:sha256", *capi_cipher_mode = "essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, r_size;
 
 	/* Cannot use Argon2 in FIPS */
@@ -1725,6 +1725,16 @@ static void ResizeDeviceLuks2(void)
 	OK_(crypt_deactivate(cd2, CDEVICE_2));
 	CRYPT_FREE(cd2);
 
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	CRYPT_FREE(cd);
+
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
+	OK_(crypt_format(cd, CRYPT_LUKS2, capi_cipher, capi_cipher_mode, NULL, key, key_size, NULL));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+	OK_(crypt_resize(cd, CDEVICE_1, 8));
+	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
+		EQ_(8, r_size >> TST_SECTOR_SHIFT);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
