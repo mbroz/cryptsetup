@@ -284,7 +284,14 @@ int crypt_capi_to_cipher(char **org_c, char **org_i, const char *c_dm, const cha
 	if (strncmp(c_dm, "capi:", 4)) {
 		if (!(*org_c = strdup(c_dm)))
 			return -ENOMEM;
-		*org_i = NULL;
+		if (i_dm) {
+			if (!(*org_i = strdup(i_dm))) {
+				free(*org_c);
+				*org_c = NULL;
+				return -ENOMEM;
+			}
+		} else
+			*org_i = NULL;
 		return 0;
 	}
 
