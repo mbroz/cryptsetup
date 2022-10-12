@@ -1992,9 +1992,7 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 
 	/* cipher */
 	if (get_flags & DM_ACTIVE_CRYPT_CIPHER) {
-		r = crypt_capi_to_cipher(CONST_CAST(char**)&cipher,
-				CONST_CAST(char**)&integrity,
-				rcipher, rintegrity);
+		r = crypt_capi_to_cipher(&cipher, &integrity, rcipher, rintegrity);
 		if (r < 0)
 			goto err;
 	}
