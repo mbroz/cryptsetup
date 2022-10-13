@@ -38,6 +38,8 @@ int t_dm_check_versions(void);
 int t_dm_crypt_keyring_support(void);
 int t_dm_crypt_cpu_switch_support(void);
 int t_dm_crypt_discard_support(void);
+int t_dm_integrity_resize_support(void);
+int t_dm_integrity_recalculate_support(void);
 int t_set_readahead(const char *device, unsigned value);
 
 int fips_mode(void);
@@ -122,7 +124,23 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 #define T_DM_VERITY_FEC_SUPPORTED (1 << 10) /* Forward Error Correction (FEC) */
 #define T_DM_KERNEL_KEYRING_SUPPORTED (1 << 11) /* dm-crypt allows loading kernel keyring keys */
 #define T_DM_INTEGRITY_SUPPORTED (1 << 12) /* dm-integrity target supported */
-//FIXME add T_DM_SECTOR_SIZE once we have version
+#define T_DM_SECTOR_SIZE_SUPPORTED (1 << 13) /* support for sector size setting in dm-crypt/dm-integrity */
+#define T_DM_CAPI_STRING_SUPPORTED (1 << 14) /* support for cryptoapi format cipher definition */
+#define T_DM_DEFERRED_SUPPORTED (1 << 15) /* deferred removal of device */
+#define T_DM_INTEGRITY_RECALC_SUPPORTED (1 << 16) /* dm-integrity automatic recalculation supported */
+#define T_DM_INTEGRITY_BITMAP_SUPPORTED (1 << 17) /* dm-integrity bitmap mode supported */
+#define T_DM_GET_TARGET_VERSION_SUPPORTED (1 << 18) /* dm DM_GET_TARGET version ioctl supported */
+#define T_DM_INTEGRITY_FIX_PADDING_SUPPORTED (1 << 19) /* supports the parameter fix_padding that fixes a bug that caused excessive padding */
+#define T_DM_BITLK_EBOIV_SUPPORTED (1 << 20) /* EBOIV for BITLK supported */
+#define T_DM_BITLK_ELEPHANT_SUPPORTED (1 << 21) /* Elephant diffuser for BITLK supported */
+#define T_DM_VERITY_SIGNATURE_SUPPORTED (1 << 22) /* Verity option root_hash_sig_key_desc supported */
+#define T_DM_INTEGRITY_DISCARDS_SUPPORTED (1 << 23) /* dm-integrity discards/TRIM option is supported */
+#define T_DM_INTEGRITY_RESIZE_SUPPORTED (1 << 23) /* dm-integrity resize of the integrity device supported (introduced in the same version as discards)*/
+#define T_DM_VERITY_PANIC_CORRUPTION_SUPPORTED (1 << 24) /* dm-verity panic on corruption  */
+#define T_DM_CRYPT_NO_WORKQUEUE_SUPPORTED (1 << 25) /* dm-crypt suppot for bypassing workqueues  */
+#define T_DM_INTEGRITY_FIX_HMAC_SUPPORTED (1 << 26) /* hmac covers also superblock */
+#define T_DM_INTEGRITY_RESET_RECALC_SUPPORTED (1 << 27) /* dm-integrity automatic recalculation supported */
+#define T_DM_VERITY_TASKLETS_SUPPORTED (1 << 28) /* dm-verity tasklets supported */
 
 /* loop helpers */
 int loop_device(const char *loop);
