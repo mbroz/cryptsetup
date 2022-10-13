@@ -540,6 +540,20 @@ static void t_dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 
 	if (t_dm_satisfies_version(1, 18, 1, crypt_maj, crypt_min, crypt_patch) && _keyring_check())
 		t_dm_crypt_flags |= T_DM_KERNEL_KEYRING_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 17, 0, crypt_maj, crypt_min, crypt_patch)) {
+		t_dm_crypt_flags |= T_DM_SECTOR_SIZE_SUPPORTED;
+		t_dm_crypt_flags |= T_DM_CAPI_STRING_SUPPORTED;
+	}
+
+	if (t_dm_satisfies_version(1, 19, 0, crypt_maj, crypt_min, crypt_patch))
+		t_dm_crypt_flags |= T_DM_BITLK_EBOIV_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 20, 0, crypt_maj, crypt_min, crypt_patch))
+		t_dm_crypt_flags |= T_DM_BITLK_ELEPHANT_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 22, 0, crypt_maj, crypt_min, crypt_patch))
+		t_dm_crypt_flags |= T_DM_CRYPT_NO_WORKQUEUE_SUPPORTED;
 }
 
 static void t_dm_set_verity_compat(const char *dm_version __attribute__((unused)),
@@ -561,6 +575,15 @@ static void t_dm_set_verity_compat(const char *dm_version __attribute__((unused)
 		t_dm_crypt_flags |= T_DM_VERITY_ON_CORRUPTION_SUPPORTED;
 		t_dm_crypt_flags |= T_DM_VERITY_FEC_SUPPORTED;
 	}
+
+	if (t_dm_satisfies_version(1, 5, 0, verity_maj, verity_min, verity_patch))
+		t_dm_crypt_flags |= T_DM_VERITY_SIGNATURE_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 7, 0, verity_maj, verity_min, verity_patch))
+		t_dm_crypt_flags |= T_DM_VERITY_PANIC_CORRUPTION_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 9, 0, verity_maj, verity_min, verity_patch))
+		t_dm_crypt_flags |= T_DM_VERITY_TASKLETS_SUPPORTED;
 }
 
 static void t_dm_set_integrity_compat(const char *dm_version __attribute__((unused)),
@@ -570,6 +593,24 @@ static void t_dm_set_integrity_compat(const char *dm_version __attribute__((unus
 {
 	if (integrity_maj > 0)
 		t_dm_crypt_flags |= T_DM_INTEGRITY_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 2, 0, integrity_maj, integrity_min, integrity_patch))
+		t_dm_crypt_flags |= T_DM_INTEGRITY_RECALC_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 3, 0, integrity_maj, integrity_min, integrity_patch))
+		t_dm_crypt_flags |= T_DM_INTEGRITY_BITMAP_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 4, 0, integrity_maj, integrity_min, integrity_patch))
+		t_dm_crypt_flags |= T_DM_INTEGRITY_FIX_PADDING_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 6, 0, integrity_maj, integrity_min, integrity_patch))
+		t_dm_crypt_flags |= T_DM_INTEGRITY_DISCARDS_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 7, 0, integrity_maj, integrity_min, integrity_patch))
+		t_dm_crypt_flags |= T_DM_INTEGRITY_FIX_HMAC_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 8, 0, integrity_maj, integrity_min, integrity_patch))
+		t_dm_crypt_flags |= T_DM_INTEGRITY_RESET_RECALC_SUPPORTED;
 }
 
 int t_dm_check_versions(void)
@@ -632,6 +673,16 @@ int t_dm_crypt_cpu_switch_support(void)
 int t_dm_crypt_discard_support(void)
 {
 	return t_dm_crypt_flags & T_DM_DISCARDS_SUPPORTED;
+}
+
+int t_dm_integrity_resize_support(void)
+{
+	return t_dm_crypt_flags & T_DM_INTEGRITY_RESIZE_SUPPORTED;
+}
+
+int t_dm_integrity_recalculate_support(void)
+{
+	return t_dm_crypt_flags & T_DM_INTEGRITY_RECALC_SUPPORTED;
 }
 
 /* loop helpers */

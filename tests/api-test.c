@@ -302,6 +302,9 @@ static int _setup(void)
 	_system("modprobe dm-verity >/dev/null 2>&1", 0);
 	_system("modprobe dm-integrity >/dev/null 2>&1", 0);
 
+	if (t_dm_check_versions())
+		return 1;
+
 	_fips_mode = fips_mode();
 	if (_debug)
 		printf("FIPS MODE: %d\n", _fips_mode);
@@ -1856,6 +1859,11 @@ static void ResizeIntegrity(void)
 	int ret;
 	uint64_t r_size, whole_device_size = 0;
 
+	if (!t_dm_integrity_resize_support()) {
+		printf("WARNING: integrity device resize not supported, skipping test.\n");
+		return;
+	}
+
 	OK_(crypt_init(&cd, DEVICE_2));
 	ret = crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params);
 	if (ret < 0) {
@@ -1934,6 +1942,11 @@ static void ResizeIntegrityWithKey(void)
 
 	params.journal_crypt_key_size = journal_crypt_key_size;
 	params.journal_crypt_key = journal_crypt_key;
+
+	if (!t_dm_integrity_resize_support()) {
+		printf("WARNING: integrity device resize not supported, skipping test.\n");
+		return;
+	}
 
 	OK_(crypt_init(&cd, DEVICE_2));
 	ret = crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params);
@@ -2032,11 +2045,13 @@ static void IntegrityTest(void)
 	OK_(strcmp(ip.integrity,params.integrity));
 	OK_(strcmp(CRYPT_INTEGRITY,crypt_get_type(cd)));
 
-	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
-	EQ_(cad.flags & CRYPT_ACTIVATE_RECALCULATE, 0);
-	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_RECALCULATE));
-	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
-	EQ_(cad.flags & CRYPT_ACTIVATE_RECALCULATE, CRYPT_ACTIVATE_RECALCULATE);
+	if (t_dm_integrity_recalculate_support()) {
+		OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+		EQ_(cad.flags & CRYPT_ACTIVATE_RECALCULATE, 0);
+		OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_RECALCULATE));
+		OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+		EQ_(cad.flags & CRYPT_ACTIVATE_RECALCULATE, CRYPT_ACTIVATE_RECALCULATE);
+	}
 
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
