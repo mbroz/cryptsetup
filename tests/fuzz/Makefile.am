@@ -40,8 +40,8 @@ LUKS2_plain_JSON.pb.cc: LUKS2_plain_JSON.pb.h
 
 generate-proto: | LUKS2.pb.h LUKS2_plain_JSON.pb.h
 
-crypt2_load_proto_plain_json_fuzz.cc: LUKS2_plain_JSON.pb.h
-crypt2_load_proto_fuzz.cc: LUKS2.pb.h
+crypt2_load_proto_plain_json_fuzz.cc: generate-proto
+crypt2_load_proto_fuzz.cc: generate-proto
 
 nodist_crypt2_load_proto_fuzz_SOURCES = LUKS2.pb.h LUKS2.pb.cc
 crypt2_load_proto_fuzz_SOURCES = FuzzerInterface.h \
