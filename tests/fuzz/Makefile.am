@@ -38,10 +38,8 @@ LUKS2_plain_JSON.pb.h: LUKS2_plain_JSON.proto
 	 $(DEPS_PATH)/bin/protoc LUKS2_plain_JSON.proto --cpp_out=.
 LUKS2_plain_JSON.pb.cc: LUKS2_plain_JSON.pb.h
 
-generate-proto: | LUKS2.pb.h LUKS2_plain_JSON.pb.h
-
-crypt2_load_proto_plain_json_fuzz.cc: generate-proto
-crypt2_load_proto_fuzz.cc: generate-proto
+crypt2_load_proto_fuzz-crypt2_load_proto_fuzz.$(OBJEXT): LUKS2.pb.cc
+crypt2_load_proto_plain_json_fuzz-crypt2_load_proto_plain_json_fuzz.$(OBJEXT): LUKS2_plain_JSON.pb.cc
 
 nodist_crypt2_load_proto_fuzz_SOURCES = LUKS2.pb.h LUKS2.pb.cc
 crypt2_load_proto_fuzz_SOURCES = FuzzerInterface.h \
@@ -111,6 +109,6 @@ noinst_PROGRAMS = \
 	proto_to_luks2 \
 	plain_json_proto_to_luks2
 
-fuzz-targets: test-environment generate-proto $(noinst_PROGRAMS)
+fuzz-targets: test-environment $(noinst_PROGRAMS)
 .PHONY: fuzz-targets
 endif
