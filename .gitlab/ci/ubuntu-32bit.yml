@@ -1,0 +1,37 @@
+test-mergerq-job-ubuntu-32bit:
+  extends:
+    - .debian-prep
+  tags:
+    - libvirt
+    - ubuntu-bionic-32bit
+  stage: test
+  interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+test-main-commit-job-ubuntu-32bit:
+  extends:
+    - .debian-prep
+  tags:
+    - libvirt
+    - ubuntu-bionic-32bit
+  stage: test
+  interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
