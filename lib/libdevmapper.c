@@ -481,7 +481,7 @@ static size_t int_log10(uint64_t x)
 #define CAPIL  144   /* should be enough to fit whole capi string */
 #define CAPIS "143"  /* for sscanf of crypto API string + 16  + \0 */
 
-static int cipher_c2dm(const char *org_c, const char *org_i, unsigned tag_size,
+static int cipher_dm2c(const char *org_c, const char *org_i, unsigned tag_size,
 		       char *c_dm, int c_dm_size,
 		       char *i_dm, int i_dm_size)
 {
@@ -543,7 +543,7 @@ static int cipher_c2dm(const char *org_c, const char *org_i, unsigned tag_size,
 	return 0;
 }
 
-static int cipher_dm2c(char **org_c, char **org_i, const char *c_dm, const char *i_dm)
+static int cipher_c2dm(char **org_c, char **org_i, const char *c_dm, const char *i_dm)
 {
 	char cipher[CLEN], mode[CLEN], iv[CLEN], auth[CLEN];
 	char tmp[CAPIL], dmcrypt_tmp[CAPIL*2], capi[CAPIL+1];
@@ -629,7 +629,7 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 	if (!tgt)
 		return NULL;
 
-	r = cipher_c2dm(tgt->u.crypt.cipher, tgt->u.crypt.integrity, tgt->u.crypt.tag_size,
+	r = cipher_dm2c(tgt->u.crypt.cipher, tgt->u.crypt.integrity, tgt->u.crypt.tag_size,
 			cipher_dm, sizeof(cipher_dm), integrity_dm, sizeof(integrity_dm));
 	if (r < 0)
 		return NULL;
@@ -2066,7 +2066,7 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 
 	/* cipher */
 	if (get_flags & DM_ACTIVE_CRYPT_CIPHER) {
-		r = cipher_dm2c(CONST_CAST(char**)&cipher,
+		r = cipher_c2dm(CONST_CAST(char**)&cipher,
 				CONST_CAST(char**)&integrity,
 				rcipher, rintegrity);
 		if (r < 0)
