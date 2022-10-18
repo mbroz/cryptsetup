@@ -137,7 +137,7 @@ format() # expected [forced] [encryption_sector_size]
 	[ $ALIGN -ne $_exp ] && fail "Expected alignment differs: expected $_exp != detected $ALIGN"
 
 	# test some operation, just in case
-	echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $DEV $FAST_PBKDF --key-slot 1
+	echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $DEV $FAST_PBKDF --new-key-slot 1
 	[ $? -ne 0 ] && fail "Keyslot add failed."
 
 	$CRYPTSETUP -q luksKillSlot $DEV 1

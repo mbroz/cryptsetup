@@ -119,7 +119,7 @@ format() # key_bits expected [forced]
 	[ $ALIGN -ne $2 ] && fail "Expected alignment differs: expected $2 != detected $ALIGN"
 
 	# test some operation, just in case
-	echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $DEV $FAST_PBKDF --key-slot 1
+	echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $DEV $FAST_PBKDF --new-key-slot 1
 	[ $? -ne 0 ] && fail "Keyslot add failed."
 
 	$CRYPTSETUP -q luksKillSlot $DEV 1
@@ -152,7 +152,7 @@ format_null()
 	[ $POFF != $2 ] && fail "Expected data offset differs: expected $2 != detected $POFF"
 	if [ -n "$4" ] ; then
 		for j in 1 2 3 4 5 6 7 ; do
-			echo -e "\n" | $CRYPTSETUP luksAddKey $DEV -q $FAST_PBKDF --key-slot $j -c null $PARAMS
+			echo -e "\n" | $CRYPTSETUP luksAddKey $DEV -q $FAST_PBKDF --new-key-slot $j -c null $PARAMS
 			echo -n $j
 			[ $? -ne 0 ] && fail
 		done

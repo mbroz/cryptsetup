@@ -123,7 +123,7 @@ format() # format
 	[ $? -ne 0 ] && fail "Format failed."
 
 	# test some operation, just in case
-	echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $DEV -i1 --key-slot 1
+	echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $DEV -i1 --new-key-slot 1
 	[ $? -ne 0 ] && fail "Keyslot add failed."
 
 	$CRYPTSETUP -q luksKillSlot $DEV 1
