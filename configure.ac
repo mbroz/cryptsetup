@@ -151,6 +151,7 @@ if test "x$enable_external_tokens" = "xyes"; then
 	AC_SUBST(DL_LIBS, $LIBS)
 	LIBS=$saved_LIBS
 fi
+AM_CONDITIONAL(EXTERNAL_TOKENS, test "x$enable_external_tokens" = "xyes")
 
 AC_ARG_ENABLE([ssh-token],
 	AS_HELP_STRING([--disable-ssh-token], [disable LUKS2 ssh-token]),

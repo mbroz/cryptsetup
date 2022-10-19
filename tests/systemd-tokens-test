@@ -1,0 +1,135 @@
+#!/bin/bash
+
+CC="cc"
+
+PASSWD="tpm2_test"
+PASSWD2="tpm2_test2"
+FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
+IMG=systemd_token_test.img
+MAP="systemd_tpm2_test"
+
+function bin_check()
+{
+    command -v $1 >/dev/null || skip "WARNING: test require $1 binary, test skipped."
+}
+
+function cleanup() {
+    [ -S $SWTPM_STATE_DIR/ctrl.sock ] && {
+        # shutdown TPM via control socket
+        swtpm_ioctl -s --unix $SWTPM_STATE_DIR/ctrl.sock
+        sleep 1
+    }
+
+    # if graceful shutdown was successful, pidfile should be deleted
+    # if it is still present, we forcefully kill the process
+    [ -f "$SWTPM_PIDFILE" ] && {
+        kill -9 $(cat $SWTPM_PIDFILE) >/dev/null 2>&1
+    }
+
+    [ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
+
+    rm -f $SWTPM_PIDFILE >/dev/null 2>&1
+    rm -rf $SWTPM_STATE_DIR >/dev/null 2>&1
+    rm -f $IMG >/dev/null 2>&1
+}
+
+function fail()
+{
+    echo "[FAILED]"
+    [ -n "$1" ] && echo "$1"
+    echo "FAILED backtrace:"
+    while caller $frame; do ((frame++)); done
+    cleanup
+    exit 2
+}
+
+function skip()
+{
+    [ -n "$1" ] && echo "$1"
+    cleanup
+    exit 77
+}
+
+# Prevent downloading and compiling systemd by default
+[ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] && skip "WARNING: Variable RUN_SYSTEMD_PLUGIN_TEST must be defined, test skipped."
+
+CRYPTENROLL_LD_PRELOAD=""
+# if CRYPTSETUP_PATH is defined, we run against installed binaries,
+# otherwise we compile systemd tokens from source
+[ -z "$CRYPTSETUP_PATH" ] && {
+    SYSTEMD_PATH=$(pwd)/external-tokens/systemd
+
+    CRYPTSETUP_PATH=$(pwd)/..
+    SYSTEMD_CRYPTENROLL=$SYSTEMD_PATH/build/systemd-cryptenroll
+
+    mkdir -p $SYSTEMD_PATH
+    [ "$(ls -A $SYSTEMD_PATH)" ] || git clone --depth=1 https://github.com/systemd/systemd.git $SYSTEMD_PATH
+    cd $SYSTEMD_PATH
+    meson -D tpm2=true build/ || skip "Failed to configure systemd via meson, some dependencies are probably missing."
+    ninja -C build/ systemd-cryptenroll libcryptsetup-token-systemd-tpm2.so || skip "Failed to build systemd."
+
+    cd $CRYPTSETUP_PATH/tests
+    cp $SYSTEMD_PATH/build/libcryptsetup-token-*.so ../.libs/
+    cp $SYSTEMD_PATH/build/src/shared/*.so ../.libs/
+
+    export LD_PRELOAD="${LD_PRELOAD-}:$CRYPTSETUP_PATH/tests/fake_token_path.so"
+    CRYPTENROLL_LD_PRELOAD="$CRYPTSETUP_PATH/.libs/libcryptsetup.so"
+}
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+bin_check git
+bin_check swtpm
+bin_check swtpm_ioctl
+bin_check meson
+bin_check ninja
+
+[ -z "$SYSTEMD_CRYPTENROLL" ] && {
+    bin_check systemd-cryptenroll
+    SYSTEMD_CRYPTENROLL="systemd-cryptenroll"
+}
+
+[ -z "$TPM_PATH" ] && {
+    echo "Setting up virtual TPM using swtpm..."
+    SWTPM_PIDFILE=$(mktemp /tmp/systemd_swtpm_pid.XXXXXX)
+    SWTPM_STATE_DIR=$(mktemp -d /tmp/systemd_swtpm_state.XXXXXX)
+    modprobe tpm_vtpm_proxy || skip "Failed to load tpm_vtpm_proxy kernel module, required for emulated TPM."
+    SWTPM_LOG=$(swtpm chardev --vtpm-proxy --tpm2 --tpmstate dir=$SWTPM_STATE_DIR -d --pid file=$SWTPM_PIDFILE --ctrl type=unixio,path=$SWTPM_STATE_DIR/ctrl.sock)
+    TPM_PATH=$(echo $SWTPM_LOG | grep -Eo '\/dev\/tpm([0-9])+' | sed 's/tpm/tpmrm/')
+    [ -z "$TPM_PATH" ] && skip "No TPM_PATH set and swtpm failed, test skipped."
+    sleep 1
+    echo "Virtual TPM set up at $TPM_PATH"
+}
+
+$CC -fPIC -shared -o fake_systemd_tpm_path.so fake_systemd_tpm_path.c -DTPM_PATH="\"$TPM_PATH\""
+export LD_PRELOAD="$LD_PRELOAD:$(pwd)/fake_systemd_tpm_path.so"
+
+echo "TPM path is $TPM_PATH"
+
+dd if=/dev/zero of=$IMG bs=1M count=32 >/dev/null 2>&1
+echo $PASSWD | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $IMG --force-password -q
+
+echo "Enrolling the device to TPM 2 using systemd-cryptenroll.."
+LD_PRELOAD="$LD_PRELOAD:$CRYPTENROLL_LD_PRELOAD" PASSWORD="$PASSWD" $SYSTEMD_CRYPTENROLL $IMG --tpm2-device=$TPM_PATH >/dev/null 2>&1
+
+$CRYPTSETUP luksDump $IMG | grep -q "tpm2-blob" || fail "Failed to dump $IMG using systemd_tpm2 token (no tpm2-blob in output)."
+echo "Activating the device via TPM2 external token.."
+$CRYPTSETUP open --token-only $IMG $MAP >/dev/null 2>&1 || fail "Failed to open $IMG using systemd_tpm2 token."
+$CRYPTSETUP close $MAP >/dev/null 2>&1 || fail "Failed to close $MAP."
+
+echo "Adding passphrase via TPM2 token.."
+echo $PASSWD2 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $IMG --force-password -q --token-only >/dev/null 2>&1 || fail "Failed to add passphrase by tpm2 token."
+echo $PASSWD2 | $CRYPTSETUP open $IMG --test-passphrase --disable-external-tokens >/dev/null 2>&1 || fail "Failed to test passphrase added by tpm2 token."
+
+echo "Exporting and removing TPM2 token.."
+EXPORTED_TOKEN=$($CRYPTSETUP token export $IMG --token-id 0)
+$CRYPTSETUP token remove $IMG --token-id 0
+$CRYPTSETUP open $IMG --test-passphrase --token-only >/dev/null 2>&1 && fail "Activating without passphrase should fail after TPM2 token removal."
+
+echo "Re-importing TPM2 token.."
+echo $EXPORTED_TOKEN | $CRYPTSETUP token import $IMG --token-id 0 || fail "Failed to re-import deleted token."
+$CRYPTSETUP open $IMG --test-passphrase --token-only >/dev/null 2>&1 || fail "Failed to activate after re-importing deleted token."
+
+cleanup
+exit 0
