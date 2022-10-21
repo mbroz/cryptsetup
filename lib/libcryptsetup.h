@@ -1667,6 +1667,41 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	size_t passphrase_size);
 
 /**
+ * Get volume key from crypt device by keyslot context.
+ *
+ * @param cd crypt device handle
+ * @param keyslot use this keyslot or @e CRYPT_ANY_SLOT
+ * @param volume_key buffer for volume key
+ * @param volume_key_size on input, size of buffer @e volume_key,
+ *        on output size of @e volume_key
+ * @param kc keyslot context used to unlock volume key
+ *
+ * @return unlocked key slot number or negative errno otherwise.
+ *
+ * @note See @link crypt-keyslot-context-types @endlink for info on keyslot
+ * 	 context initialization.
+ * @note For TCRYPT cipher chain is the volume key concatenated
+ * 	 for all ciphers in chain (kc may be NULL).
+ * @note For VERITY the volume key means root hash used for activation
+ * 	 (kc may be NULL).
+ * @note For LUKS devices, if kc is @e NULL and volume key is cached in
+ * 	 device context it returns the volume key generated in preceding
+ * 	 @link crypt_format @endlink call.
+ * @note @link CRYPT_KC_TYPE_TOKEN @endlink keyslot context is usable only with LUKS2 devices.
+ * @note @link CRYPT_KC_TYPE_KEY @endlink keyslot context can not be used.
+ * @note To get LUKS2 unbound key, keyslot parameter must not be @e CRYPT_ANY_SLOT.
+ * @note EPERM errno means provided keyslot context could not unlock any (or selected)
+ * 	 keyslot.
+ * @note ENOENT errno means no LUKS keyslot is available to retrieve volume key from
+ * 	 and there's no cached volume key in device handle.
+ */
+int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
+	int keyslot,
+	char *volume_key,
+	size_t *volume_key_size,
+	struct crypt_keyslot_context *kc);
+
+/**
  * Verify that provided volume key is valid for crypt device.
  *
  * @param cd crypt device handle

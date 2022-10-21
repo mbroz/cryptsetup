@@ -4855,6 +4855,99 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	return r;
 }
 
+int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
+	int keyslot,
+	char *volume_key,
+	size_t *volume_key_size,
+	struct crypt_keyslot_context *kc)
+{
+	size_t passphrase_size;
+	int key_len, r;
+	const char *passphrase = NULL;
+	struct volume_key *vk = NULL;
+
+	if (!cd || !volume_key || !volume_key_size ||
+	    (!kc && !isLUKS(cd->type) && !isTCRYPT(cd->type) && !isVERITY(cd->type)))
+		return -EINVAL;
+
+	if (isLUKS2(cd->type) && keyslot != CRYPT_ANY_SLOT)
+		key_len = LUKS2_get_keyslot_stored_key_size(&cd->u.luks2.hdr, keyslot);
+	else
+		key_len = crypt_get_volume_key_size(cd);
+
+	if (key_len < 0)
+		return -EINVAL;
+
+	if (key_len > (int)*volume_key_size) {
+		log_err(cd, _("Volume key buffer too small."));
+		return -ENOMEM;
+	}
+
+	if (kc && !kc->get_passphrase)
+		return -EINVAL;
+
+	if (kc && kc->get_passphrase) {
+		r = kc->get_passphrase(cd, kc, &passphrase, &passphrase_size);
+		if (r < 0)
+			return r;
+	}
+
+	r = -EINVAL;
+
+	if (isLUKS2(cd->type)) {
+		if (kc && !kc->get_luks2_key)
+			log_err(cd, _("Cannot retrieve volume key for LUKS2 device."));
+		else if (!kc)
+			r = -ENOENT;
+		else
+			r = kc->get_luks2_key(cd, kc, keyslot,
+					keyslot == CRYPT_ANY_SLOT ? CRYPT_DEFAULT_SEGMENT : CRYPT_ANY_SEGMENT,
+					&vk);
+	} else if (isLUKS1(cd->type)) {
+		if (kc && !kc->get_luks1_volume_key)
+			log_err(cd, _("Cannot retrieve volume key for LUKS1 device."));
+		else if (!kc)
+			r = -ENOENT;
+		else
+			r = kc->get_luks1_volume_key(cd, kc, keyslot, &vk);
+	} else if (isPLAIN(cd->type)) {
+		if (passphrase && cd->u.plain.hdr.hash)
+			r = process_key(cd, cd->u.plain.hdr.hash, key_len,
+					passphrase, passphrase_size, &vk);
+		if (r < 0)
+			log_err(cd, _("Cannot retrieve volume key for plain device."));
+	} else if (isVERITY(cd->type)) {
+		/* volume_key == root hash */
+		if (cd->u.verity.root_hash) {
+			memcpy(volume_key, cd->u.verity.root_hash, cd->u.verity.root_hash_size);
+			*volume_key_size = cd->u.verity.root_hash_size;
+			r = 0;
+		} else
+			log_err(cd, _("Cannot retrieve root hash for verity device."));
+	} else if (isTCRYPT(cd->type)) {
+		r = TCRYPT_get_volume_key(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params, &vk);
+	} else if (isBITLK(cd->type)) {
+		if (passphrase)
+			r = BITLK_get_volume_key(cd, passphrase, passphrase_size, &cd->u.bitlk.params, &vk);
+		if (r < 0)
+			log_err(cd, _("Cannot retrieve volume key for BITLK device."));
+	} else
+		log_err(cd, _("This operation is not supported for %s crypt device."), cd->type ?: "(none)");
+
+	if (r == -ENOENT && isLUKS(cd->type) && cd->volume_key) {
+		vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
+		r = vk ? 0 : -ENOMEM;
+	}
+
+	if (r >= 0 && vk) {
+		memcpy(volume_key, vk->key, vk->keylength);
+		*volume_key_size = vk->keylength;
+	}
+
+	crypt_free_volume_key(vk);
+	return r;
+}
+
 int crypt_volume_key_verify(struct crypt_device *cd,
 	const char *volume_key,
 	size_t volume_key_size)
