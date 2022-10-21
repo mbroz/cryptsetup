@@ -26,7 +26,7 @@
 
 #define FVAULT2_WRAPPED_KEY_SIZE 24
 #define FVAULT2_PBKDF2_SALT_SIZE 16
-#define FVAULT2_UUID_SIZE 16
+#define FVAULT2_UUID_LEN 37
 
 struct crypt_device;
 struct volume_key;
@@ -39,8 +39,8 @@ struct fvault2_params {
 	char pbkdf2_salt[FVAULT2_PBKDF2_SALT_SIZE];
 	char wrapped_kek[FVAULT2_WRAPPED_KEY_SIZE];
 	char wrapped_vk[FVAULT2_WRAPPED_KEY_SIZE];
-	char family_uuid[FVAULT2_UUID_SIZE];
-	char ph_vol_uuid[FVAULT2_UUID_SIZE];
+	char family_uuid[FVAULT2_UUID_LEN];
+	char ph_vol_uuid[FVAULT2_UUID_LEN];
 	uint64_t log_vol_off;
 	uint64_t log_vol_size;
 };

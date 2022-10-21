@@ -55,6 +55,9 @@
 /* size of an XTS tweak value */
 #define FVAULT2_XTS_TWEAK_SIZE 16
 
+/* size of a binary representation of a UUID */
+#define FVAULT2_UUID_BIN_SIZE 16
+
 struct crc32_checksum {
 	uint32_t value;
 	uint32_t seed;
@@ -79,7 +82,7 @@ struct volume_header {
 	uint32_t cipher;
 	uint8_t key_data[FVAULT2_AES_KEY_SIZE];
 	uint8_t unknown5[112];
-	uint8_t ph_vol_uuid[FVAULT2_UUID_SIZE];
+	uint8_t ph_vol_uuid[FVAULT2_UUID_BIN_SIZE];
 } __attribute__((packed));
 
 struct volume_groups_descriptor {
@@ -432,6 +435,26 @@ out:
 }
 
 /**
+ * Validate a UUID string and reformat it to match system defaults.
+ * @param[in] uuid_in the original UUID string
+ * @param[out] uuid_out the reformatted UUID string
+ */
+static int _reformat_uuid(
+	const char *uuid_in,
+	char *uuid_out)
+{
+	uint8_t uuid_bin[UUID_STR_LEN];
+	int r;
+
+	r = uuid_parse(uuid_in, uuid_bin);
+	if (r < 0)
+		return -EINVAL;
+
+	uuid_unparse(uuid_bin, uuid_out);
+	return 0;
+}
+
+/**
  * Extract relevant info from a metadata block of type 0x001A.
  * @param[in] md_block the pre-read and decrypted metadata block
  * @param[out] log_vol_size encrypted logical volume size in bytes
@@ -440,7 +463,7 @@ out:
 static int _parse_metadata_block_0x001a(
 	const struct metadata_block_0x001a *md_block,
 	uint64_t *log_vol_size,
-	uint8_t *family_uuid)
+	char *family_uuid)
 {
 	int r = 0;
 	char *xml = NULL;
@@ -470,7 +493,7 @@ static int _parse_metadata_block_0x001a(
 		&family_uuid_str);
 	if (r < 0)
 		goto out;
-	r = uuid_parse(family_uuid_str, family_uuid);
+	r = _reformat_uuid(family_uuid_str, family_uuid);
 	if (r < 0)
 		goto out;
 
@@ -508,7 +531,7 @@ static int _read_volume_header(
 	struct crypt_device *cd,
 	uint64_t *block_size,
 	uint64_t *disklbl_blkoff,
-	uint8_t *ph_vol_uuid,
+	char *ph_vol_uuid,
 	struct volume_key **enc_md_key)
 {
 	int r = 0;
@@ -555,7 +578,7 @@ static int _read_volume_header(
 
 	*block_size = le32_to_cpu(vol_header->block_size);
 	*disklbl_blkoff = le64_to_cpu(vol_header->disklbl_blkoff);
-	memcpy(ph_vol_uuid, vol_header->ph_vol_uuid, FVAULT2_UUID_SIZE);
+	uuid_unparse(vol_header->ph_vol_uuid, ph_vol_uuid);
 	memcpy((*enc_md_key)->key, vol_header->key_data, FVAULT2_AES_KEY_SIZE);
 	memcpy((*enc_md_key)->key + FVAULT2_AES_KEY_SIZE,
 		vol_header->ph_vol_uuid, FVAULT2_AES_KEY_SIZE);
@@ -724,7 +747,7 @@ static int _read_encrypted_metadata(
 		case 0x001A:
 			r = _parse_metadata_block_0x001a(md_block,
 				&params->log_vol_size,
-				(uint8_t *)params->family_uuid);
+				params->family_uuid);
 			if (r < 0)
 				goto out;
 			status |= FVAULT2_ENC_MD_PARSED_0x001A;
@@ -822,7 +845,7 @@ int FVAULT2_read_metadata(
 	}
 
 	r = _read_volume_header(devfd, cd, &block_size, &disklbl_blkoff,
-		(uint8_t *)params->ph_vol_uuid, &enc_md_key);
+		params->ph_vol_uuid, &enc_md_key);
 	if (r < 0)
 		goto out;
 
@@ -853,11 +876,17 @@ int FVAULT2_get_volume_key(
 	struct volume_key **vol_key)
 {
 	int r = 0;
+	uint8_t family_uuid_bin[FVAULT2_UUID_BIN_SIZE];
 	struct volume_key *passphr_key = NULL;
 	struct volume_key *kek = NULL;
 	struct crypt_hash *hash = NULL;
 
 	*vol_key = NULL;
+
+	if (uuid_parse(params->family_uuid, family_uuid_bin) < 0) {
+		r = -EINVAL;
+		goto out;
+	}
 
 	passphr_key = crypt_alloc_volume_key(FVAULT2_AES_KEY_SIZE, NULL);
 	if (passphr_key == NULL) {
@@ -901,7 +930,8 @@ int FVAULT2_get_volume_key(
 	r = crypt_hash_write(hash, (*vol_key)->key, FVAULT2_AES_KEY_SIZE);
 	if (r < 0)
 		goto out;
-	r = crypt_hash_write(hash, params->family_uuid, FVAULT2_UUID_SIZE);
+	r = crypt_hash_write(hash, (char *)family_uuid_bin,
+		FVAULT2_UUID_BIN_SIZE);
 	if (r < 0)
 		goto out;
 	r = crypt_hash_final(hash, (*vol_key)->key + FVAULT2_AES_KEY_SIZE,
@@ -929,9 +959,8 @@ int FVAULT2_dump(
 	log_std(cd, "Header information for FVAULT2 device %s.\n",
 		device_path(device));
 
-	log_std(cd, "Physical volume UUID  \t");
-	crypt_log_hex(cd, params->ph_vol_uuid, FVAULT2_UUID_SIZE, " ", 0, NULL);
-	log_std(cd, "\n");
+	log_std(cd, "Physical volume UUID: \t%s\n", params->ph_vol_uuid);
+	log_std(cd, "Family UUID:          \t%s\n", params->family_uuid);
 
 	log_std(cd, "Logical volume offset:\t%" PRIu64 " [bytes]\n",
 		params->log_vol_off);
@@ -948,10 +977,6 @@ int FVAULT2_dump(
 	log_std(cd, "PBKDF2 salt:          \t");
 	crypt_log_hex(cd, params->pbkdf2_salt, FVAULT2_PBKDF2_SALT_SIZE, " ", 0,
 		NULL);
-	log_std(cd, "\n");
-
-	log_std(cd, "Family UUID:          \t");
-	crypt_log_hex(cd, params->family_uuid, FVAULT2_UUID_SIZE, " ", 0, NULL);
 	log_std(cd, "\n");
 
 	return 0;
