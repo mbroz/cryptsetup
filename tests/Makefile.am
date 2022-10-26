@@ -39,7 +39,12 @@ if SSHPLUGIN_TOKEN
 TESTS += ssh-test-plugin
 endif
 
+if EXTERNAL_TOKENS
+TESTS += systemd-tokens-test
+endif
+
 ssh-test-plugin: fake_token_path.so
+systemd-tokens-test: fake_token_path.so
 
 fake_token_path.so:
 	$(CC) $(CFLAGS) $(LDFLAGS) -I $(top_srcdir)/lib -fPIC -shared \
@@ -96,7 +101,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 
 CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_token_path.so
 clean-local:
-	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images conversion_imgs luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp
+	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images conversion_imgs luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp external-tokens
 
 differ_SOURCES = differ.c
 differ_CFLAGS = $(AM_CFLAGS) -Wall -O2
