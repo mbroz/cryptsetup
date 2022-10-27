@@ -97,7 +97,8 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	generate-symbols-list \
 	run-all-symbols \
 	fake_token_path.c \
-	unit-wipe-test
+	unit-wipe-test \
+	systemd-tokens-test
 
 CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_token_path.so
 clean-local:

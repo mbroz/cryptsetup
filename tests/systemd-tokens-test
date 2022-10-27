@@ -50,6 +50,8 @@ function skip()
     exit 77
 }
 
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+
 # Prevent downloading and compiling systemd by default
 [ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] && skip "WARNING: Variable RUN_SYSTEMD_PLUGIN_TEST must be defined, test skipped."
 
@@ -78,7 +80,6 @@ CRYPTENROLL_LD_PRELOAD=""
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
-[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 bin_check git
 bin_check swtpm
 bin_check swtpm_ioctl
