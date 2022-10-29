@@ -20,6 +20,7 @@ TESTS = 00modules-test \
 	vectors-test \
 	blockwise-compat-test \
 	bitlk-compat-test \
+	fvault2-compat-test \
 	run-all-symbols \
 	unit-utils-crypt-test \
 	unit-wipe-test \
@@ -98,6 +99,8 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	Makefile.localtest \
 	bitlk-compat-test \
 	bitlk-images.tar.xz \
+	fvault2-compat-test \
+	fvault2-images.tar.xz \
 	ssh-test-plugin \
 	generate-symbols-list \
 	run-all-symbols \
@@ -108,7 +111,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 
 CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_token_path.so fake_systemd_tpm_path.so
 clean-local:
-	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images conversion_imgs luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp external-tokens
+	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images fvault2-images conversion_imgs luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp external-tokens
 
 differ_SOURCES = differ.c
 differ_CFLAGS = $(AM_CFLAGS) -Wall -O2
