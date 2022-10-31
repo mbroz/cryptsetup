@@ -25,12 +25,12 @@ cifuzz:
       - SANITIZER: [address, undefined, memory]
   rules:
     # Default code change.
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      variables:
-        MODE: "code-change"
+    # - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    #   variables:
+    #     MODE: "code-change"
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+    - if: $BUILD_AND_RUN_FUZZERS != null
   before_script:
     # Get gitlab's container id.
     - export CFL_CONTAINER_ID=`cut -c9- < /proc/1/cpuset`
