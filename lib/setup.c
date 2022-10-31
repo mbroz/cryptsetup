@@ -4800,58 +4800,18 @@ int crypt_volume_key_get(struct crypt_device *cd,
 	const char *passphrase,
 	size_t passphrase_size)
 {
-	struct volume_key *vk = NULL;
-	int key_len, r = -EINVAL;
+	int r;
+	struct crypt_keyslot_context kc;
 
-	if (!cd || !volume_key || !volume_key_size || (!isTCRYPT(cd->type) && !isVERITY(cd->type) && !passphrase))
-		return -EINVAL;
+	if (!passphrase)
+		return crypt_volume_key_get_by_keyslot_context(cd, keyslot, volume_key, volume_key_size, NULL);
 
-	if (isLUKS2(cd->type) && keyslot != CRYPT_ANY_SLOT)
-		key_len = LUKS2_get_keyslot_stored_key_size(&cd->u.luks2.hdr, keyslot);
-	else
-		key_len = crypt_get_volume_key_size(cd);
+	crypt_keyslot_unlock_by_passphrase_init_internal(&kc, passphrase, passphrase_size);
 
-	if (key_len < 0)
-		return -EINVAL;
+	r = crypt_volume_key_get_by_keyslot_context(cd, keyslot, volume_key, volume_key_size, &kc);
 
-	if (key_len > (int)*volume_key_size) {
-		log_err(cd, _("Volume key buffer too small."));
-		return -ENOMEM;
-	}
+	crypt_keyslot_context_destroy_internal(&kc);
 
-	if (isPLAIN(cd->type) && cd->u.plain.hdr.hash) {
-		r = process_key(cd, cd->u.plain.hdr.hash, key_len,
-				passphrase, passphrase_size, &vk);
-		if (r < 0)
-			log_err(cd, _("Cannot retrieve volume key for plain device."));
-	} else if (isLUKS1(cd->type)) {
-		r = LUKS_open_key_with_hdr(keyslot, passphrase,
-					passphrase_size, &cd->u.luks1.hdr, &vk, cd);
-	} else if (isLUKS2(cd->type)) {
-		r = LUKS2_keyslot_open(cd, keyslot,
-				keyslot == CRYPT_ANY_SLOT ? CRYPT_DEFAULT_SEGMENT : CRYPT_ANY_SEGMENT,
-				passphrase, passphrase_size, &vk);
-	} else if (isTCRYPT(cd->type)) {
-		r = TCRYPT_get_volume_key(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params, &vk);
-	} else if (isVERITY(cd->type)) {
-		/* volume_key == root hash */
-		if (cd->u.verity.root_hash) {
-			memcpy(volume_key, cd->u.verity.root_hash, cd->u.verity.root_hash_size);
-			*volume_key_size = cd->u.verity.root_hash_size;
-			r = 0;
-		} else
-			log_err(cd, _("Cannot retrieve root hash for verity device."));
-	} else if (isBITLK(cd->type)) {
-		r = BITLK_get_volume_key(cd, passphrase, passphrase_size, &cd->u.bitlk.params, &vk);
-	} else
-		log_err(cd, _("This operation is not supported for %s crypt device."), cd->type ?: "(none)");
-
-	if (r >= 0 && vk) {
-		memcpy(volume_key, vk->key, vk->keylength);
-		*volume_key_size = vk->keylength;
-	}
-
-	crypt_free_volume_key(vk);
 	return r;
 }
 
