@@ -75,7 +75,6 @@ struct crypt_keyslot_context {
 
 	int error;
 
-	struct volume_key *i_vk;
 	char *i_passphrase;
 	size_t i_passphrase_size;
 

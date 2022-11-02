@@ -1231,11 +1231,11 @@ int crypt_keyslot_context_set_pin(struct crypt_device *cd,
 #define CRYPT_KC_TYPE_UNDEFINED  INT16_C(0)
 /** keyslot context initialized by passphrase (@link crypt_keyslot_context_init_by_passphrase @endlink) */
 #define CRYPT_KC_TYPE_PASSPHRASE INT16_C(1)
-/** keyslot context initialized by passphrase (@link crypt_keyslot_context_init_by_keyfile @endlink) */
+/** keyslot context initialized by keyfile (@link crypt_keyslot_context_init_by_keyfile @endlink) */
 #define CRYPT_KC_TYPE_KEYFILE    INT16_C(2)
-/** keyslot context initialized by passphrase (@link crypt_keyslot_context_init_by_token @endlink) */
+/** keyslot context initialized by token (@link crypt_keyslot_context_init_by_token @endlink) */
 #define CRYPT_KC_TYPE_TOKEN      INT16_C(3)
-/** keyslot context initialized by passphrase (@link crypt_keyslot_context_init_by_volume_key @endlink) */
+/** keyslot context initialized by volume key or unbound key (@link crypt_keyslot_context_init_by_volume_key @endlink) */
 #define CRYPT_KC_TYPE_KEY        INT16_C(4)
 /** @} */
 

@@ -6154,7 +6154,7 @@ int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
 	int active_slots, r;
 	const char *new_passphrase;
 	size_t new_passphrase_size;
-	struct volume_key *p_vk = NULL, *vk = NULL;
+	struct volume_key *vk = NULL;
 
 	if (!kc || ((flags & CRYPT_VOLUME_KEY_NO_SEGMENT) &&
 		    (flags & CRYPT_VOLUME_KEY_SET)))
@@ -6191,21 +6191,20 @@ int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
 	if (active_slots == 0 && kc->type != CRYPT_KC_TYPE_KEY)
 		r = -ENOENT;
 	else if (is_luks1 && kc->get_luks1_volume_key)
-		r = kc->get_luks1_volume_key(cd, kc, keyslot_existing, &p_vk);
+		r = kc->get_luks1_volume_key(cd, kc, keyslot_existing, &vk);
 	else if (!is_luks1 && kc->get_luks2_volume_key)
-		r = kc->get_luks2_volume_key(cd, kc, keyslot_existing, &p_vk);
+		r = kc->get_luks2_volume_key(cd, kc, keyslot_existing, &vk);
 	else
 		return -EINVAL;
 
 	if (r == -ENOENT) {
 		if ((flags & CRYPT_VOLUME_KEY_NO_SEGMENT) && kc->type == CRYPT_KC_TYPE_KEY) {
-			vk = crypt_generate_volume_key(cd, kc->u.k.volume_key_size);
-			if (!vk)
+			if (!(vk = crypt_generate_volume_key(cd, kc->u.k.volume_key_size)))
 				return -ENOMEM;
-			p_vk = vk;
 			r = 0;
 		} else if (cd->volume_key) {
-			p_vk = cd->volume_key;
+			if (!(vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key)))
+				return -ENOMEM;
 			r = 0;
 		} else if (active_slots == 0) {
 			log_err(cd, _("Cannot add key slot, all slots disabled and no volume key provided."));
@@ -6221,7 +6220,7 @@ int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
 	if (r >= 0 && new_kc->type == CRYPT_KC_TYPE_TOKEN && !is_luks1)
 		r = LUKS2_token_assign(cd, &cd->u.luks2.hdr, keyslot_new, new_kc->u.t.id, 1, 0);
 	if (r >= 0)
-		r = keyslot_add_by_key(cd, is_luks1, keyslot_new, new_passphrase, new_passphrase_size, p_vk, flags);
+		r = keyslot_add_by_key(cd, is_luks1, keyslot_new, new_passphrase, new_passphrase_size, vk, flags);
 
 	crypt_free_volume_key(vk);
 
