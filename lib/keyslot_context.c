@@ -130,21 +130,15 @@ static int get_luks2_key_by_keyfile(struct crypt_device *cd,
 	assert(kc && kc->type == CRYPT_KC_TYPE_KEYFILE);
 	assert(r_vk);
 
-	if (!kc->i_vk) {
-		r = get_passphrase_by_keyfile(cd, kc, &passphrase, &passphrase_size);
-		if (r)
-			return r;
+	r = get_passphrase_by_keyfile(cd, kc, &passphrase, &passphrase_size);
+	if (r)
+		return r;
 
-		r = LUKS2_keyslot_open(cd, keyslot, segment, passphrase, passphrase_size, &kc->i_vk);
-		if (r < 0) {
-			kc->error = r;
-			return r;
-		}
-	}
+	r = LUKS2_keyslot_open(cd, keyslot, segment, passphrase, passphrase_size, r_vk);
+	if (r < 0)
+		kc->error = r;
 
-	*r_vk = kc->i_vk;
-
-	return 0;
+	return r;
 }
 
 static int get_luks2_volume_key_by_keyfile(struct crypt_device *cd,
@@ -168,22 +162,16 @@ static int get_luks1_volume_key_by_keyfile(struct crypt_device *cd,
 	assert(kc && kc->type == CRYPT_KC_TYPE_KEYFILE);
 	assert(r_vk);
 
-	if (!kc->i_vk) {
-		r = get_passphrase_by_keyfile(cd, kc, &passphrase, &passphrase_size);
-		if (r)
-			return r;
+	r = get_passphrase_by_keyfile(cd, kc, &passphrase, &passphrase_size);
+	if (r)
+		return r;
 
-		r = LUKS_open_key_with_hdr(keyslot, passphrase, passphrase_size,
-					   crypt_get_hdr(cd, CRYPT_LUKS1), &kc->i_vk, cd);
-		if (r < 0) {
-			kc->error = r;
-			return r;
-		}
-	}
+	r = LUKS_open_key_with_hdr(keyslot, passphrase, passphrase_size,
+				   crypt_get_hdr(cd, CRYPT_LUKS1), r_vk, cd);
+	if (r < 0)
+		kc->error = r;
 
-	*r_vk = kc->i_vk;
-
-	return 0;
+	return r;
 }
 
 static int get_key_by_key(struct crypt_device *cd,
@@ -195,23 +183,16 @@ static int get_key_by_key(struct crypt_device *cd,
 	assert(kc && kc->type == CRYPT_KC_TYPE_KEY);
 	assert(r_vk);
 
-	if (kc->i_vk) {
-		*r_vk = kc->i_vk;
-		return 0;
-	}
-
 	if (!kc->u.k.volume_key) {
 		kc->error = -ENOENT;
 		return kc->error;
 	}
 
-	kc->i_vk = crypt_alloc_volume_key(kc->u.k.volume_key_size, kc->u.k.volume_key);
-	if (!kc->i_vk) {
+	*r_vk = crypt_alloc_volume_key(kc->u.k.volume_key_size, kc->u.k.volume_key);
+	if (!*r_vk) {
 		kc->error = -ENOMEM;
 		return kc->error;
 	}
-
-	*r_vk = kc->i_vk;
 
 	return 0;
 }
@@ -236,19 +217,10 @@ static int get_luks2_key_by_token(struct crypt_device *cd,
 	assert(kc && kc->type == CRYPT_KC_TYPE_TOKEN);
 	assert(r_vk);
 
-	if (kc->i_vk) {
-		*r_vk = kc->i_vk;
-		return 0;
-	}
-
 	r = LUKS2_token_unlock_key(cd, crypt_get_hdr(cd, CRYPT_LUKS2), kc->u.t.id, kc->u.t.type,
-				   kc->u.t.pin, kc->u.t.pin_size, segment, kc->u.t.usrptr, &kc->i_vk);
-	if (r < 0) {
+				   kc->u.t.pin, kc->u.t.pin_size, segment, kc->u.t.usrptr, r_vk);
+	if (r < 0)
 		kc->error = r;
-		return r;
-	}
-
-	*r_vk = kc->i_vk;
 
 	return r;
 }
@@ -297,7 +269,6 @@ static void unlock_method_init_internal(struct crypt_keyslot_context *kc)
 	kc->error = 0;
 	kc->i_passphrase = NULL;
 	kc->i_passphrase_size = 0;
-	kc->i_vk = NULL;
 }
 
 void crypt_keyslot_unlock_by_key_init_internal(struct crypt_keyslot_context *kc,
@@ -378,8 +349,6 @@ void crypt_keyslot_context_destroy_internal(struct crypt_keyslot_context *kc)
 		return;
 
 	crypt_safe_free(kc->i_passphrase);
-	crypt_free_volume_key(kc->i_vk);
-	kc->i_vk = NULL;
 	kc->i_passphrase = NULL;
 	kc->i_passphrase_size = 0;
 }
