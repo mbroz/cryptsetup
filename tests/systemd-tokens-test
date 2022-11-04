@@ -66,6 +66,8 @@ CRYPTENROLL_LD_PRELOAD=""
 # if CRYPTSETUP_PATH is defined, we run against installed binaries,
 # otherwise we compile systemd tokens from source
 [ -z "$CRYPTSETUP_PATH" ] && {
+    TOKEN_PATH=fake_token_path.so
+    [ -f $TOKEN_PATH ] || skip "Please compile $TOKEN_PATH."
     INSTALL_PATH=$(pwd)/external-tokens/install
     make -C .. install DESTDIR=$INSTALL_PATH
     PC_FILE="$(find $INSTALL_PATH -name 'libcryptsetup.pc')"
@@ -89,7 +91,7 @@ CRYPTENROLL_LD_PRELOAD=""
     cp $SYSTEMD_PATH/build/libcryptsetup-token-*.so ../.libs/
     cp $SYSTEMD_PATH/build/src/shared/*.so ../.libs/
 
-    export LD_PRELOAD="${LD_PRELOAD-}:$CRYPTSETUP_PATH/tests/fake_token_path.so"
+    export LD_PRELOAD="${LD_PRELOAD-}:$CRYPTSETUP_PATH/tests/$TOKEN_PATH"
     CRYPTENROLL_LD_PRELOAD="$CRYPTSETUP_PATH/.libs/libcryptsetup.so"
 }
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup

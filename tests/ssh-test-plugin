@@ -1,7 +1,9 @@
 #!/bin/bash
 
 [ -z "$CRYPTSETUP_PATH" ] && {
-	export LD_PRELOAD=./fake_token_path.so
+	TOKEN_PATH="./fake_token_path.so"
+	[ ! -f $TOKEN_PATH ] && { echo "Please compile $TOKEN_PATH."; exit 77; }
+	export LD_PRELOAD=$TOKEN_PATH
 	CRYPTSETUP_PATH=".."
 }
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
