@@ -50,24 +50,39 @@ function skip()
     exit 77
 }
 
-[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
-
 # Prevent downloading and compiling systemd by default
 [ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] && skip "WARNING: Variable RUN_SYSTEMD_PLUGIN_TEST must be defined, test skipped."
 
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+bin_check git
+bin_check swtpm
+bin_check swtpm_ioctl
+bin_check meson
+bin_check ninja
+bin_check pkgconf
+
 CRYPTENROLL_LD_PRELOAD=""
+
 # if CRYPTSETUP_PATH is defined, we run against installed binaries,
 # otherwise we compile systemd tokens from source
 [ -z "$CRYPTSETUP_PATH" ] && {
-    SYSTEMD_PATH=$(pwd)/external-tokens/systemd
+    INSTALL_PATH=$(pwd)/external-tokens/install
+    make -C .. install DESTDIR=$INSTALL_PATH
+    PC_FILE="$(find $INSTALL_PATH -name 'libcryptsetup.pc')"
+    sed -i "s/^prefix=/prefix=${INSTALL_PATH//\//\\\/}/g" "$PC_FILE"
+    export PKG_CONFIG_PATH=$(dirname $PC_FILE)
 
+    # systemd build system misses libcryptsetup.h if it is installed in non-default path
+    export CFLAGS="${CFLAGS:-} $(pkgconf --cflags libcryptsetup)"
+
+    SYSTEMD_PATH=$(pwd)/external-tokens/systemd
     CRYPTSETUP_PATH=$(pwd)/..
     SYSTEMD_CRYPTENROLL=$SYSTEMD_PATH/build/systemd-cryptenroll
 
     mkdir -p $SYSTEMD_PATH
     [ "$(ls -A $SYSTEMD_PATH)" ] || git clone --depth=1 https://github.com/systemd/systemd.git $SYSTEMD_PATH
     cd $SYSTEMD_PATH
-    meson -D tpm2=true build/ || skip "Failed to configure systemd via meson, some dependencies are probably missing."
+    meson -D tpm2=true -D libcryptsetup=true -D libcryptsetup-plugins=true build/ || skip "Failed to configure systemd via meson, some dependencies are probably missing."
     ninja -C build/ systemd-cryptenroll libcryptsetup-token-systemd-tpm2.so || skip "Failed to build systemd."
 
     cd $CRYPTSETUP_PATH/tests
@@ -78,13 +93,7 @@ CRYPTENROLL_LD_PRELOAD=""
     CRYPTENROLL_LD_PRELOAD="$CRYPTSETUP_PATH/.libs/libcryptsetup.so"
 }
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
-
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
-bin_check git
-bin_check swtpm
-bin_check swtpm_ioctl
-bin_check meson
-bin_check ninja
 
 [ -z "$SYSTEMD_CRYPTENROLL" ] && {
     bin_check systemd-cryptenroll
