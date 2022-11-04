@@ -27,6 +27,8 @@ test-main-commit-centos-stream9:
   variables:
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
+    - if: $RUN_SYSTEMD_PLUGIN_TEST != null
+      when: never
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
@@ -46,6 +48,8 @@ test-mergerq-centos-stream9:
   variables:
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
+    - if: $RUN_SYSTEMD_PLUGIN_TEST != null
+      when: never
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"

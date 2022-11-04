@@ -3,12 +3,15 @@
     - .dump_kernel_log
   before_script:
     - >
-      sudo apt-get -y install -y -qq  git gcc make
-      autoconf automake autopoint pkg-config libtool libtool-bin gettext
-      libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev
-      libjson-c-dev libssh-dev libblkid-dev tar libargon2-0-dev
-      libpwquality-dev sharutils dmsetup jq xxd expect keyutils
-      netcat passwd openssh-client sshpass asciidoctor
+      [ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] ||
+      sudo apt-get -y install -y -qq swtpm meson ninja-build python3-jinja2
+      gperf libcap-dev tpm2-tss-engine-dev libmount-dev swtpm-tools pkgconf
+    - >
+      sudo apt-get -y install -y -qq git gcc make autoconf automake autopoint
+      pkg-config libtool libtool-bin gettext libssl-dev libdevmapper-dev
+      libpopt-dev uuid-dev libsepol1-dev libjson-c-dev libssh-dev libblkid-dev
+      tar libargon2-0-dev libpwquality-dev sharutils dmsetup jq xxd expect
+      keyutils netcat passwd openssh-client sshpass asciidoctor
     - sudo apt-get -y build-dep cryptsetup
     - sudo -E git clean -xdf
     - ./autogen.sh
@@ -19,7 +22,7 @@ test-mergerq-job-debian:
     - .debian-prep
   tags:
     - libvirt
-    - debian10
+    - debian11
   stage: test
   interruptible: true
   variables:
@@ -38,7 +41,7 @@ test-main-commit-job-debian:
     - .debian-prep
   tags:
     - libvirt
-    - debian10
+    - debian11
   stage: test
   interruptible: true
   variables:

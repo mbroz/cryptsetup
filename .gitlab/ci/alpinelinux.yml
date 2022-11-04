@@ -23,10 +23,10 @@ test-main-commit-job-alpinelinux:
   variables:
     RUN_SSH_PLUGIN_TEST: "0"
   rules:
+    - if: $RUN_SYSTEMD_PLUGIN_TEST != null
+      when: never
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
-  rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
   script:
     - make -j
@@ -44,6 +44,8 @@ test-mergerq-job-alpinelinux:
   variables:
     RUN_SSH_PLUGIN_TEST: "0"
   rules:
+    - if: $RUN_SYSTEMD_PLUGIN_TEST != null
+      when: never
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
