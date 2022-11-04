@@ -3,7 +3,12 @@
     - .dump_kernel_log
   before_script:
     - >
-      sudo dnf -y -q  install
+      [ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] ||
+      sudo dnf -y -q install
+      swtpm meson ninja-build python3-jinja2 gperf libcap-devel tpm2-tss-devel
+      libmount-devel swtpm-tools
+    - >
+      sudo dnf -y -q install
       autoconf automake device-mapper-devel gcc gettext-devel json-c-devel
       libargon2-devel libblkid-devel libpwquality-devel libselinux-devel
       libssh-devel libtool libuuid-devel make popt-devel
