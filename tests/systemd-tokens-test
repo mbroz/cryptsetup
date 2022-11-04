@@ -112,9 +112,9 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
     echo "Virtual TPM set up at $TPM_PATH"
 }
 
-$CC -fPIC -shared -o fake_systemd_tpm_path.so fake_systemd_tpm_path.c -DTPM_PATH="\"$TPM_PATH\""
 export LD_PRELOAD="$LD_PRELOAD:$(pwd)/fake_systemd_tpm_path.so"
 
+export TPM_PATH=$TPM_PATH
 echo "TPM path is $TPM_PATH"
 
 dd if=/dev/zero of=$IMG bs=1M count=32 >/dev/null 2>&1

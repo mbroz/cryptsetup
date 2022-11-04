@@ -44,13 +44,17 @@ TESTS += systemd-tokens-test
 endif
 
 ssh-test-plugin: fake_token_path.so
-systemd-tokens-test: fake_token_path.so
+systemd-tokens-test: fake_token_path.so fake_systemd_tpm_path.so
 
 fake_token_path.so:
 	$(CC) $(CFLAGS) $(LDFLAGS) -I $(top_srcdir)/lib -fPIC -shared \
 	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
 	-o fake_token_path.so  $(top_srcdir)/tests/fake_token_path.c \
 	-DBUILD_DIR=\"$(abs_top_srcdir)/.libs/\"
+
+fake_systemd_tpm_path.so:
+	$(CC) $(LDFLAGS) -fPIC -shared -o fake_systemd_tpm_path.so \
+	$(top_srcdir)/tests/fake_systemd_tpm_path.c
 
 EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	compatimage2.img.xz \
@@ -97,10 +101,11 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	generate-symbols-list \
 	run-all-symbols \
 	fake_token_path.c \
+	fake_systemd_tpm_path.c \
 	unit-wipe-test \
 	systemd-tokens-test
 
-CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_token_path.so
+CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_token_path.so fake_systemd_tpm_path.so
 clean-local:
 	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images conversion_imgs luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp external-tokens
 
@@ -157,7 +162,7 @@ all_symbols_test_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
 check_PROGRAMS = api-test api-test-2 differ vectors-test unit-utils-io unit-utils-crypt-test unit-wipe all-symbols-test
 
-check-programs: test-symbols-list.h $(check_PROGRAMS) fake_token_path.so
+check-programs: test-symbols-list.h $(check_PROGRAMS) fake_token_path.so fake_systemd_tpm_path.so
 
 conversion_imgs:
 	@tar xJf conversion_imgs.tar.xz
