@@ -625,7 +625,7 @@ static bool token_is_blocked(int token, uint32_t *block_list)
 	/* it is safe now, but have assert in case LUKS2_TOKENS_MAX grows */
 	assert(token >= 0 && (size_t)token < BITFIELD_SIZE(block_list));
 
-	return (*block_list & (1 << token));
+	return (*block_list & (UINT32_C(1) << token));
 }
 
 static void token_block(int token, uint32_t *block_list)
@@ -633,7 +633,7 @@ static void token_block(int token, uint32_t *block_list)
 	/* it is safe now, but have assert in case LUKS2_TOKENS_MAX grows */
 	assert(token >= 0 && (size_t)token < BITFIELD_SIZE(block_list));
 
-	*block_list |= (1 << token);
+	*block_list |= (UINT32_C(1) << token);
 }
 
 static int token_open_priority(struct crypt_device *cd,
