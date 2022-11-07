@@ -44,6 +44,8 @@
 #define CRYPT_CD_UNRESTRICTED	(1 << 0)
 #define CRYPT_CD_QUIET		(1 << 1)
 
+#define DEFAULT_CIPHER(type)	(DEFAULT_##type##_CIPHER "-" DEFAULT_##type##_MODE)
+
 struct crypt_device {
 	char *type;
 
@@ -6472,4 +6474,60 @@ static void __attribute__((destructor)) libcryptsetup_exit(void)
 
 	crypt_backend_destroy();
 	crypt_random_exit();
+}
+
+int crypt_get_default_volume_key_size(struct crypt_device *cd, const char *type)
+{
+	int keysize = 0;
+#ifdef ENABLE_LUKS_ADJUST_XTS_KEYSIZE
+	const char *mode = crypt_get_default_cipher_mode(cd, type);
+#endif
+
+	if (isLUKS(type))
+		keysize = DEFAULT_LUKS1_KEYBITS / 8;
+	else if (isPLAIN(type))
+		keysize = DEFAULT_PLAIN_KEYBITS / 8;
+	else if (isLOOPAES(type))
+		keysize = DEFAULT_LOOPAES_KEYBITS / 8;
+
+#ifdef ENABLE_LUKS_ADJUST_XTS_KEYSIZE
+	if (mode && (keysize == 16 || keysize == 32) && !strncmp(mode, "xts-", 4))
+		keysize *= 2;
+#endif
+
+	return keysize;
+}
+
+const char *crypt_get_default_cipher(struct crypt_device *cd, const char *type)
+{
+	if (isLUKS(type))
+		return DEFAULT_LUKS1_CIPHER;
+	else if (isPLAIN(type))
+		return DEFAULT_PLAIN_CIPHER;
+	else if (isLOOPAES(type))
+		return DEFAULT_LOOPAES_CIPHER;
+
+	return NULL;
+}
+
+const char *crypt_get_default_cipher_mode(struct crypt_device *cd, const char *type)
+{
+	if (isLUKS(type))
+		return DEFAULT_LUKS1_MODE;
+	else if (isPLAIN(type))
+		return DEFAULT_PLAIN_MODE;
+
+	return NULL;
+}
+
+const char *crypt_get_default_cipher_spec(struct crypt_device *cd, const char *type)
+{
+	if (isLUKS(type))
+		return DEFAULT_CIPHER(LUKS1);
+	else if (isPLAIN(type))
+		return DEFAULT_CIPHER(PLAIN);
+	else if (isLOOPAES(type))
+		return DEFAULT_LOOPAES_CIPHER;
+
+	return NULL;
 }

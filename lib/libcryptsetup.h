@@ -448,6 +448,11 @@ const char *crypt_get_type(struct crypt_device *cd);
  */
 const char *crypt_get_default_type(void);
 
+int crypt_get_default_volume_key_size(struct crypt_device *cd, const char *type);
+const char *crypt_get_default_cipher(struct crypt_device *cd, const char *type);
+const char *crypt_get_default_cipher_mode(struct crypt_device *cd, const char *type);
+const char *crypt_get_default_cipher_spec(struct crypt_device *cd, const char *type);
+
 /**
  *
  * Structure used as parameter for PLAIN device type.
