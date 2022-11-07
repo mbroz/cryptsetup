@@ -411,7 +411,7 @@ out:
 	return r;
 }
 
-int tools_write_mk(const char *file, const char *key, int keysize)
+int tools_write_vk(const char *file, const char *key, int keysize)
 {
 	int fd, r = -EINVAL;
 

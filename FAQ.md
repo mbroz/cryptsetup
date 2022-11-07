@@ -2380,12 +2380,12 @@ offset  length  name             data type  description
    104      4                               (512 bytes per sector)
 0x006c   0x04   key-bytes        uint32_t   number of bytes in key
    108      4
-0x0070   0x14   mk-digest        byte[]     volume key checksum
+0x0070   0x14   vk-digest        byte[]     volume key checksum
    112     20                               calculated with PBKDF2
-0x0084   0x20   mk-digest-salt   byte[]     salt for PBKDF2 when
-   132     32                               calculating mk-digest
-0x00a4   0x04   mk-digest-iter   uint32_t   iteration count for PBKDF2
-   164      4                               when calculating mk-digest
+0x0084   0x20   vk-digest-salt   byte[]     salt for PBKDF2 when
+   132     32                               calculating vk-digest
+0x00a4   0x04   vk-digest-iter   uint32_t   iteration count for PBKDF2
+   164      4                               when calculating vk-digest
 0x00a8   0x28   uuid             char[]     partition UUID
    168     40
 0x00d0   0x30   key-slot-0       key slot   key slot 0

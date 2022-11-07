@@ -522,8 +522,8 @@ static int tcryptDump_with_volume_key(struct crypt_device *cd)
 	log_std("Cipher chain:  \t%s\n", crypt_get_cipher(cd));
 	log_std("Cipher mode:   \t%s\n", crypt_get_cipher_mode(cd));
 	log_std("Payload offset:\t%d\n", (int)crypt_get_data_offset(cd));
-	log_std("MK bits:       \t%d\n", (int)vk_size * 8);
-	log_std("MK dump:\t");
+	log_std("VK bits:       \t%d\n", (int)vk_size * 8);
+	log_std("VK dump:\t");
 	crypt_log_hex(NULL, vk, vk_size, " ", 16, "\n\t\t");
 	log_std("\n");
 out:
@@ -596,7 +596,7 @@ static int bitlkDump_with_volume_key(struct crypt_device *cd)
 	tools_keyslot_msg(r, UNLOCKED);
 
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
-		r = tools_write_mk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), vk, vk_size);
+		r = tools_write_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), vk, vk_size);
 		if (r < 0)
 			goto out;
 	}
@@ -605,12 +605,12 @@ static int bitlkDump_with_volume_key(struct crypt_device *cd)
 	log_std("Cipher name:   \t%s\n", crypt_get_cipher(cd));
 	log_std("Cipher mode:   \t%s\n", crypt_get_cipher_mode(cd));
 	log_std("UUID:          \t%s\n", crypt_get_uuid(cd));
-	log_std("MK bits:       \t%d\n", (int)vk_size * 8);
+	log_std("VK bits:       \t%d\n", (int)vk_size * 8);
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
 		log_std("Key stored to file %s.\n", ARG_STR(OPT_VOLUME_KEY_FILE_ID));
 		goto out;
 	}
-	log_std("MK dump:\t");
+	log_std("VK dump:\t");
 	crypt_log_hex(NULL, vk, vk_size, " ", 16, "\n\t\t");
 	log_std("\n");
 out:
@@ -2168,7 +2168,7 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	tools_keyslot_msg(r, UNLOCKED);
 
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
-		r = tools_write_mk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), vk, vk_size);
+		r = tools_write_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), vk, vk_size);
 		if (r < 0)
 			goto out;
 	}
@@ -2178,12 +2178,12 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	log_std("Cipher mode:   \t%s\n", crypt_get_cipher_mode(cd));
 	log_std("Payload offset:\t%d\n", (int)crypt_get_data_offset(cd));
 	log_std("UUID:          \t%s\n", crypt_get_uuid(cd));
-	log_std("MK bits:       \t%d\n", (int)vk_size * 8);
+	log_std("VK bits:       \t%d\n", (int)vk_size * 8);
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
 		log_std("Key stored to file %s.\n", ARG_STR(OPT_VOLUME_KEY_FILE_ID));
 		goto out;
 	}
-	log_std("MK dump:\t");
+	log_std("VK dump:\t");
 	crypt_log_hex(NULL, vk, vk_size, " ", 16, "\n\t\t");
 	log_std("\n");
 out:
@@ -2234,7 +2234,7 @@ static int luksDump_with_unbound_key(struct crypt_device *cd)
 	tools_keyslot_msg(r, UNLOCKED);
 
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
-		r = tools_write_mk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), uk, uk_size);
+		r = tools_write_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), uk, uk_size);
 		if (r < 0)
 			goto out;
 	}
