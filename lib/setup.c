@@ -5982,24 +5982,24 @@ static int verify_and_update_segment_digest(struct crypt_device *cd,
 		struct luks2_hdr *hdr, int keyslot, struct crypt_keyslot_context *kc)
 {
 	int digest, r;
-	struct volume_key *p_vk = NULL;
+	struct volume_key *vk = NULL;
 
 	assert(kc);
 	assert(kc->get_luks2_key);
 	assert(keyslot >= 0);
 
-	r = kc->get_luks2_key(cd, kc, keyslot, CRYPT_ANY_SEGMENT, &p_vk);
+	r = kc->get_luks2_key(cd, kc, keyslot, CRYPT_ANY_SEGMENT, &vk);
 	if (r < 0)
 		return r;
 
 	/* check volume_key (param) digest matches keyslot digest */
-	r = LUKS2_digest_verify(cd, hdr, p_vk, keyslot);
+	r = LUKS2_digest_verify(cd, hdr, vk, keyslot);
 	if (r < 0)
 		goto out;
 	digest = r;
 
 	/* nothing to do, volume key in keyslot is already assigned to default segment */
-	r = LUKS2_digest_verify_by_segment(cd, hdr, CRYPT_DEFAULT_SEGMENT, p_vk);
+	r = LUKS2_digest_verify_by_segment(cd, hdr, CRYPT_DEFAULT_SEGMENT, vk);
 	if (r >= 0)
 		goto out;
 
@@ -6009,6 +6009,8 @@ static int verify_and_update_segment_digest(struct crypt_device *cd,
 	if (r)
 		log_err(cd, _("Failed to assign keyslot %u as the new volume key."), keyslot);
 out:
+	crypt_free_volume_key(vk);
+
 	return r < 0 ? r : keyslot;
 }
 
