@@ -596,7 +596,7 @@ static int bitlkDump_with_volume_key(struct crypt_device *cd)
 	tools_keyslot_msg(r, UNLOCKED);
 
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
-		r = tools_write_mk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), vk, vk_size);
+		r = tools_write_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), vk, vk_size);
 		if (r < 0)
 			goto out;
 	}
@@ -2168,7 +2168,7 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	tools_keyslot_msg(r, UNLOCKED);
 
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
-		r = tools_write_mk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), vk, vk_size);
+		r = tools_write_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), vk, vk_size);
 		if (r < 0)
 			goto out;
 	}
@@ -2234,7 +2234,7 @@ static int luksDump_with_unbound_key(struct crypt_device *cd)
 	tools_keyslot_msg(r, UNLOCKED);
 
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
-		r = tools_write_mk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), uk, uk_size);
+		r = tools_write_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), uk, uk_size);
 		if (r < 0)
 			goto out;
 	}
