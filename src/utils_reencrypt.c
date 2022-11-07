@@ -1083,8 +1083,8 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 	if (ARG_SET(OPT_CIPHER_ID))
 		new_cipher = ARG_STR(OPT_CIPHER_ID);
 	else if (!ARG_SET(OPT_CIPHER_ID) && crypt_is_cipher_null(crypt_get_cipher(cd))) {
-		log_std(_("Switching data encryption cipher to %s.\n"), DEFAULT_CIPHER(LUKS1));
-		new_cipher = DEFAULT_CIPHER(LUKS1);
+		new_cipher = crypt_get_default_cipher_spec(NULL, CRYPT_LUKS2);
+		log_std(_("Switching data encryption cipher to %s.\n"), new_cipher);
 	}
 
 	if (!new_cipher) {
