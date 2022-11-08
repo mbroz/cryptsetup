@@ -47,13 +47,13 @@ ssh-test-plugin: fake_token_path.so
 systemd-tokens-test: fake_token_path.so fake_systemd_tpm_path.so
 
 # Do not use global CFLAGS here as the *.so link does not support sanitizers
-fake_token_path.so:
+fake_token_path.so: fake_token_path.c
 	$(CC) $(LDFLAGS) -I $(top_srcdir)/lib -fPIC -shared \
 	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
 	-o fake_token_path.so  $(top_srcdir)/tests/fake_token_path.c \
 	-DBUILD_DIR=\"$(abs_top_srcdir)/.libs/\"
 
-fake_systemd_tpm_path.so:
+fake_systemd_tpm_path.so: fake_systemd_tpm_path.c
 	$(CC) $(LDFLAGS) -fPIC -shared -o fake_systemd_tpm_path.so \
 	$(top_srcdir)/tests/fake_systemd_tpm_path.c
 
