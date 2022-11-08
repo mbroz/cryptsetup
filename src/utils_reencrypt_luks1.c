@@ -564,15 +564,20 @@ static int backup_fake_header(struct reenc_ctx *rc)
 	struct crypt_params_luks1 params = {0};
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	const char *header_file_fake;
-	int r;
+	int r, key_size;
 
 	log_dbg("Creating fake (cipher_null) header for %s device.",
 		(rc->reencrypt_mode == DECRYPT) ? "new" : "original");
 
 	header_file_fake = (rc->reencrypt_mode == DECRYPT) ? rc->header_file_new : rc->header_file_org;
 
-	if (!ARG_SET(OPT_KEY_SIZE_ID))
-		ARG_SET_UINT32(OPT_KEY_SIZE_ID, DEFAULT_LUKS1_KEYBITS);
+	if (ARG_SET(OPT_KEY_SIZE_ID))
+		key_size = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
+	else
+		key_size = crypt_get_default_volume_key_size(NULL, CRYPT_LUKS1);
+
+	if (key_size < 0)
+		return -EINVAL;
 
 	if (ARG_SET(OPT_CIPHER_ID)) {
 		r = crypt_parse_name_and_mode(ARG_STR(OPT_CIPHER_ID), cipher, NULL, cipher_mode);
@@ -595,7 +600,7 @@ static int backup_fake_header(struct reenc_ctx *rc)
 		return r;
 
 	r = crypt_format(cd_new, CRYPT_LUKS1, "cipher_null", "ecb",
-			 NO_UUID, NULL, ARG_UINT32(OPT_KEY_SIZE_ID) / 8, &params);
+			 NO_UUID, NULL, key_size, &params);
 	check_signal(&r);
 	if (r < 0)
 		goto out;
@@ -618,10 +623,10 @@ static int backup_fake_header(struct reenc_ctx *rc)
 
 	params.data_alignment = ROUND_SECTOR(ARG_UINT64(OPT_REDUCE_DEVICE_SIZE_ID));
 	r = create_new_header(rc, NULL,
-		ARG_SET(OPT_CIPHER_ID) ? cipher : DEFAULT_LUKS1_CIPHER,
-		ARG_SET(OPT_CIPHER_ID) ? cipher_mode : DEFAULT_LUKS1_MODE,
+		ARG_SET(OPT_CIPHER_ID) ? cipher : crypt_get_default_cipher(NULL, CRYPT_LUKS1),
+		ARG_SET(OPT_CIPHER_ID) ? cipher_mode : crypt_get_default_cipher_mode(NULL, CRYPT_LUKS1),
 		NULL, NULL,
-		ARG_UINT32(OPT_KEY_SIZE_ID) / 8,
+		key_size,
 		0,
 		0,
 		(void*)&params);

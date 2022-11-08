@@ -137,8 +137,7 @@ static int _try_token_pin_unlock(struct crypt_device *cd,
 static int action_open_plain(void)
 {
 	struct crypt_device *cd = NULL, *cd1 = NULL;
-	const char *pcipher, *pmode;
-	char *msg, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+	char *msg, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN], *password = NULL;
 	struct crypt_active_device cad;
 	struct crypt_params_plain params = {
 		.hash = ARG_SET(OPT_HASH_ID) ? ARG_STR(OPT_HASH_ID) : DEFAULT_PLAIN_HASH,
@@ -146,19 +145,26 @@ static int action_open_plain(void)
 		.offset = ARG_UINT64(OPT_OFFSET_ID),
 		.sector_size = ARG_UINT32(OPT_SECTOR_SIZE_ID) ?: SECTOR_SIZE
 	};
-	char *password = NULL;
-	const char *activated_name = NULL;
-	size_t passwordLen, key_size_max, signatures = 0,
-	       key_size = (ARG_UINT32(OPT_KEY_SIZE_ID) ?: DEFAULT_PLAIN_KEYBITS) / 8;
+	const char *activated_name = NULL, *pcipher = crypt_get_default_cipher(NULL, CRYPT_PLAIN),
+		   *pmode = crypt_get_default_cipher_mode(NULL, CRYPT_PLAIN);
+	size_t passwordLen, key_size, key_size_max, signatures = 0;
 	uint32_t activate_flags = 0;
 	int r;
 
-	r = crypt_parse_name_and_mode(ARG_STR(OPT_CIPHER_ID) ?: DEFAULT_CIPHER(PLAIN),
-				      cipher, NULL, cipher_mode);
-	if (r < 0) {
-		log_err(_("No known cipher specification pattern detected."));
-		goto out;
+	if (ARG_SET(OPT_CIPHER_ID)) {
+		r = crypt_parse_name_and_mode(ARG_STR(OPT_CIPHER_ID), cipher, NULL, cipher_mode);
+		if (r < 0) {
+			log_err(_("No known cipher specification pattern detected."));
+			return r;
+		}
+		pcipher = cipher;
+		pmode = cipher_mode;
 	}
+
+	if (ARG_UINT32(OPT_KEY_SIZE_ID))
+		key_size = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
+	else
+		key_size = crypt_get_default_volume_key_size(NULL, CRYPT_PLAIN);
 
 	/* FIXME: temporary hack, no hashing for keyfiles in plain mode */
 	if (ARG_SET(OPT_KEY_FILE_ID) && !tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID))) {
@@ -223,9 +229,6 @@ static int action_open_plain(void)
 			if (r < 0)
 				goto out;
 		}
-
-		pcipher = cipher;
-		pmode = cipher_mode;
 	}
 
 	if (ARG_SET(OPT_DEVICE_SIZE_ID))
@@ -285,7 +288,7 @@ static int action_open_loopaes(void)
 		.offset = ARG_UINT64(OPT_OFFSET_ID),
 		.skip = ARG_SET(OPT_SKIP_ID) ? ARG_UINT64(OPT_SKIP_ID) : ARG_UINT64(OPT_OFFSET_ID)
 	};
-	unsigned int key_size = (ARG_UINT32(OPT_KEY_SIZE_ID) ?: DEFAULT_LOOPAES_KEYBITS) / 8;
+	unsigned int key_size;
 	uint32_t activate_flags = 0;
 	const char *activated_name = NULL;
 	int r;
@@ -294,6 +297,11 @@ static int action_open_loopaes(void)
 		log_err(_("Option --key-file is required."));
 		return -EINVAL;
 	}
+
+	if (ARG_UINT32(OPT_KEY_SIZE_ID))
+		key_size = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
+	else
+		key_size = crypt_get_default_volume_key_size(NULL, CRYPT_LOOPAES);
 
 	if (ARG_SET(OPT_REFRESH_ID)) {
 		activated_name = action_argc > 1 ? action_argv[1] : action_argv[0];
@@ -305,7 +313,7 @@ static int action_open_loopaes(void)
 		if ((r = crypt_init(&cd, action_argv[0])))
 			goto out;
 
-		r = crypt_format(cd, CRYPT_LOOPAES, ARG_STR(OPT_CIPHER_ID) ?: DEFAULT_LOOPAES_CIPHER,
+		r = crypt_format(cd, CRYPT_LOOPAES, ARG_STR(OPT_CIPHER_ID) ?: crypt_get_default_cipher(NULL, CRYPT_LOOPAES),
 				 NULL, NULL, NULL, key_size, &params);
 		check_signal(&r);
 		if (r < 0)
@@ -950,10 +958,15 @@ static int action_benchmark(void)
 	};
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	double enc_mbr = 0, dec_mbr = 0;
-	int key_size = (ARG_UINT32(OPT_KEY_SIZE_ID) ?: DEFAULT_PLAIN_KEYBITS) / 8;
+	int key_size;
 	int skipped = 0, width;
 	char *c;
 	int i, r;
+
+	if (ARG_UINT32(OPT_KEY_SIZE_ID))
+		key_size = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
+	else
+		key_size = crypt_get_default_volume_key_size(NULL, CRYPT_PLAIN);
 
 	log_std(_("# Tests are approximate using memory only (no storage IO).\n"));
 	if (set_pbkdf || ARG_SET(OPT_HASH_ID)) {
@@ -1218,7 +1231,7 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 {
 	int r = -EINVAL, keysize, integrity_keysize = 0, fd, created = 0;
 	struct stat st;
-	const char *header_device, *type;
+	const char *header_device, *type, *pcipher, *pmode;
 	char *msg = NULL, *key = NULL, *password = NULL;
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN], integrity[MAX_CIPHER_LEN];
 	size_t passwordLen, signatures;
@@ -1287,11 +1300,17 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 
 	header_device = ARG_STR(OPT_HEADER_ID) ?: action_argv[0];
 
-	r = crypt_parse_name_and_mode(ARG_STR(OPT_CIPHER_ID) ?: DEFAULT_CIPHER(LUKS1),
-				      cipher, NULL, cipher_mode);
-	if (r < 0) {
-		log_err(_("No known cipher specification pattern detected."));
-		goto out;
+	pcipher = crypt_get_default_cipher(NULL, type);
+	pmode = crypt_get_default_cipher_mode(NULL, type);
+
+	if (ARG_SET(OPT_CIPHER_ID)) {
+		r = crypt_parse_name_and_mode(ARG_STR(OPT_CIPHER_ID), cipher, NULL, cipher_mode);
+		if (r < 0) {
+			log_err(_("No known cipher specification pattern detected."));
+			goto out;
+		}
+		pcipher = cipher;
+		pmode = cipher_mode;
 	}
 
 	if (ARG_SET(OPT_INTEGRITY_ID)) {
@@ -1305,7 +1324,7 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	}
 
 	/* Never call pwquality if using null cipher */
-	if (crypt_is_cipher_null(cipher))
+	if (crypt_is_cipher_null(pcipher))
 		ARG_SET_TRUE(OPT_FORCE_PASSWORD_ID);
 
 	if ((r = crypt_init(&cd, header_device))) {
@@ -1346,7 +1365,7 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 			goto out;
 	}
 
-	keysize = get_adjusted_key_size(cipher_mode, DEFAULT_LUKS1_KEYBITS, integrity_keysize);
+	keysize = get_adjusted_key_size(pmode, DEFAULT_LUKS1_KEYBITS, integrity_keysize);
 
 	if (ARG_SET(OPT_USE_RANDOM_ID))
 		crypt_set_rng_type(cd, CRYPT_RNG_RANDOM);
@@ -1378,7 +1397,7 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_PADDING_ID))
 		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING);
 
-	r = crypt_format(cd, type, cipher, cipher_mode,
+	r = crypt_format(cd, type, pcipher, pmode,
 			 ARG_STR(OPT_UUID_ID), key, keysize, params);
 	check_signal(&r);
 	if (r < 0)
