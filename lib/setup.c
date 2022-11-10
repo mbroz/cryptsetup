@@ -6491,8 +6491,7 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 
 	r = _activate_by_passphrase(cd, name, keyslot, passphrase, passphrase_size, flags);
 
-	crypt_safe_memzero(passphrase, passphrase_size);
-	free(passphrase);
+	crypt_safe_free(passphrase);
 
 	return r;
 }

@@ -137,3 +137,8 @@ int LUKS2_token_keyring_get(struct luks2_hdr *hdr,
 
 	return token;
 }
+
+void keyring_buffer_free(void *buffer, size_t buffer_len __attribute__((unused)))
+{
+	crypt_safe_free(buffer);
+}
