@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <assert.h>
 #include <errno.h>
 #include <regex.h>
 #include <stdio.h>
@@ -186,8 +187,7 @@ static int _check_crc(
 	uint32_t seed;
 	uint32_t value;
 
-	if (data_size < crc_size)
-		return -EINVAL;
+	assert(data_size >= crc_size);
 
 	value = le32_to_cpu(((const struct crc32_checksum *)data)->value);
 	seed = le32_to_cpu(((const struct crc32_checksum *)data)->seed);
@@ -233,10 +233,7 @@ static int _unwrap_key(
 	uint64_t t;
 	uint64_t r2_prev;
 
-	if (kek_size != 16 || key_wrapped_size != 24 || key_buf_size != 16) {
-		r = -EINVAL;
-		goto out;
-	}
+	assert(kek_size == 16 && key_wrapped_size == 24 && key_buf_size == 16);
 
 	r = crypt_cipher_init(&cipher, "aes", "ecb", kek, kek_size);
 	if (r < 0)
@@ -547,25 +544,34 @@ static int _read_volume_header(
 	if (read_blockwise(devfd, device_block_size(cd, dev),
 			device_alignment(dev), vol_header,
 			FVAULT2_VOL_HEADER_SIZE) != FVAULT2_VOL_HEADER_SIZE) {
+		log_err(cd, _("Could not read %u bytes of volume header."),
+			FVAULT2_VOL_HEADER_SIZE);
 		r = -EINVAL;
 		goto out;
 	}
 
 	r = _check_crc(vol_header, FVAULT2_VOL_HEADER_SIZE);
-	if (r)
+	if (r < 0) {
+		log_err(cd, _("Volume header CRC mismatch."));
 		goto out;
+	}
 
 	if (le16_to_cpu(vol_header->version) != 1) {
+		log_err(cd, _("Unsupported volume header version %" PRIu16 "."),
+			le16_to_cpu(vol_header->version));
 		r = -EINVAL;
 		goto out;
 	}
 
 	if (be16_to_cpu(vol_header->magic) != FVAULT2_CORE_STORAGE_MAGIC) {
+		log_err(cd, _("Invalid Core Storage magic bytes."));
 		r = -EINVAL;
 		goto out;
 	}
 
 	if (le32_to_cpu(vol_header->key_data_size) != FVAULT2_AES_KEY_SIZE) {
+		log_err(cd, _("Unsupported AES key size: %" PRIu32 " bytes."),
+			le32_to_cpu(vol_header->key_data_size));
 		r = -EINVAL;
 		goto out;
 	}
@@ -765,6 +771,7 @@ static int _read_encrypted_metadata(
 	}
 
 	if (status != FVAULT2_ENC_MD_PARSED_ALL) {
+		log_err(cd, _("Some necessary metadata blocks not found"));
 		r = -EINVAL;
 		goto out;
 	}
@@ -884,6 +891,8 @@ int FVAULT2_get_volume_key(
 	*vol_key = NULL;
 
 	if (uuid_parse(params->family_uuid, family_uuid_bin) < 0) {
+		log_err(cd, _("Could not parse logical volume family UUID: %s."),
+			params->family_uuid);
 		r = -EINVAL;
 		goto out;
 	}
