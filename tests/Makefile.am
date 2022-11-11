@@ -198,8 +198,6 @@ valgrind-check: api-test api-test-2 differ
 	@[ -z "$RUN_SSH_PLUGIN_TEST" ] || VALG=1 ./ssh-test-plugin
 	@INFOSTRING="unit-utils-crypt-test" ./valg-api.sh ./unit-utils-crypt-test
 	@INFOSTRING="vectors-test" ./valg-api.sh ./vectors-test
-	@INFOSTRING="api-test" ./valg-api.sh ./api-test
-	@INFOSTRING="api-test-2" ./valg-api.sh ./api-test-2
 	@grep -l "ERROR SUMMARY: [^0][0-9]* errors" valglog* || echo "No leaks detected."
 
 .PHONY: valgrind-check
