@@ -29,6 +29,7 @@
 
 #include "utils_io.h"
 
+/* coverity[ -taint_source : arg-1 ] */
 static ssize_t _read_buffer(int fd, void *buf, size_t length, volatile int *quit)
 {
 	size_t read_size = 0;

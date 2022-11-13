@@ -106,6 +106,7 @@ static int tools_check_password(const char *password)
 
 /* Password reading helpers */
 
+/* coverity[ -taint_source : arg-1 ] */
 static ssize_t read_tty_eol(int fd, char *pass, size_t maxlen)
 {
 	bool eol = false;
