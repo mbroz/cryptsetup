@@ -48,13 +48,13 @@ systemd-test-plugin: fake_token_path.so fake_systemd_tpm_path.so
 
 # Do not use global CFLAGS here as the *.so link does not support sanitizers
 fake_token_path.so: fake_token_path.c
-	$(CC) $(LDFLAGS) -I $(top_srcdir)/lib -fPIC -shared \
+	$(CC) $(LDFLAGS) -I $(top_srcdir)/lib -fPIC -shared -D_GNU_SOURCE \
 	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
 	-o fake_token_path.so  $(top_srcdir)/tests/fake_token_path.c \
 	-DBUILD_DIR=\"$(abs_top_srcdir)/.libs/\"
 
 fake_systemd_tpm_path.so: fake_systemd_tpm_path.c
-	$(CC) $(LDFLAGS) -fPIC -shared -o fake_systemd_tpm_path.so \
+	$(CC) $(LDFLAGS) -fPIC -shared -D_GNU_SOURCE -o fake_systemd_tpm_path.so \
 	$(top_srcdir)/tests/fake_systemd_tpm_path.c
 
 EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
