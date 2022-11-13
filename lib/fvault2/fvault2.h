@@ -51,8 +51,8 @@ int FVAULT2_read_metadata(
 
 int FVAULT2_get_volume_key(
 	struct crypt_device *cd,
-	const char *passphr,
-	size_t passphr_len,
+	const char *passphrase,
+	size_t passphrase_len,
 	const struct fvault2_params *params,
 	struct volume_key **vol_key);
 
@@ -64,8 +64,8 @@ int FVAULT2_dump(
 int FVAULT2_activate_by_passphrase(
 	struct crypt_device *cd,
 	const char *name,
-	const char *passphr,
-	size_t passphr_len,
+	const char *passphrase,
+	size_t passphrase_len,
 	const struct fvault2_params *params,
 	uint32_t flags);
 

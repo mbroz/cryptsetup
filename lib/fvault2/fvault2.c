@@ -858,14 +858,14 @@ out:
 
 int FVAULT2_get_volume_key(
 	struct crypt_device *cd,
-	const char *passphr,
-	size_t passphr_len,
+	const char *passphrase,
+	size_t passphrase_len,
 	const struct fvault2_params *params,
 	struct volume_key **vol_key)
 {
 	int r = 0;
 	uint8_t family_uuid_bin[FVAULT2_UUID_BIN_SIZE];
-	struct volume_key *passphr_key = NULL;
+	struct volume_key *passphrase_key = NULL;
 	struct volume_key *kek = NULL;
 	struct crypt_hash *hash = NULL;
 
@@ -878,14 +878,14 @@ int FVAULT2_get_volume_key(
 		goto out;
 	}
 
-	passphr_key = crypt_alloc_volume_key(FVAULT2_AES_KEY_SIZE, NULL);
-	if (passphr_key == NULL) {
+	passphrase_key = crypt_alloc_volume_key(FVAULT2_AES_KEY_SIZE, NULL);
+	if (passphrase_key == NULL) {
 		r = -ENOMEM;
 		goto out;
 	}
 
-	r = crypt_pbkdf("pbkdf2", "sha256", passphr, passphr_len,
-		params->pbkdf2_salt, FVAULT2_PBKDF2_SALT_SIZE, passphr_key->key,
+	r = crypt_pbkdf("pbkdf2", "sha256", passphrase, passphrase_len,
+		params->pbkdf2_salt, FVAULT2_PBKDF2_SALT_SIZE, passphrase_key->key,
 		FVAULT2_AES_KEY_SIZE, params->pbkdf2_iters, 0, 0);
 	if (r < 0)
 		goto out;
@@ -896,7 +896,7 @@ int FVAULT2_get_volume_key(
 		goto out;
 	}
 
-	r = _unwrap_key(passphr_key->key, FVAULT2_AES_KEY_SIZE, params->wrapped_kek,
+	r = _unwrap_key(passphrase_key->key, FVAULT2_AES_KEY_SIZE, params->wrapped_kek,
 			FVAULT2_WRAPPED_KEY_SIZE, kek->key, FVAULT2_AES_KEY_SIZE);
 	if (r < 0)
 		goto out;
@@ -927,7 +927,7 @@ int FVAULT2_get_volume_key(
 	if (r < 0)
 		goto out;
 out:
-	crypt_free_volume_key(passphr_key);
+	crypt_free_volume_key(passphrase_key);
 	crypt_free_volume_key(kek);
 	if (r < 0) {
 		crypt_free_volume_key(*vol_key);
@@ -968,15 +968,15 @@ int FVAULT2_dump(
 int FVAULT2_activate_by_passphrase(
 	struct crypt_device *cd,
 	const char *name,
-	const char *passphr,
-	size_t passphr_len,
+	const char *passphrase,
+	size_t passphrase_len,
 	const struct fvault2_params *params,
 	uint32_t flags)
 {
 	int r;
 	struct volume_key *vol_key = NULL;
 
-	r = FVAULT2_get_volume_key(cd, passphr, passphr_len, params, &vol_key);
+	r = FVAULT2_get_volume_key(cd, passphrase, passphrase_len, params, &vol_key);
 	if (r < 0)
 		return r;
 
