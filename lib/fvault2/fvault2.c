@@ -534,7 +534,7 @@ static int _read_volume_header(
 			device_alignment(dev), vol_header,
 			FVAULT2_VOL_HEADER_SIZE) != FVAULT2_VOL_HEADER_SIZE) {
 		log_err(cd, _("Could not read %u bytes of volume header."), FVAULT2_VOL_HEADER_SIZE);
-		r = -EINVAL;
+		r = -EIO;
 		goto out;
 	}
 
@@ -746,9 +746,9 @@ static int _read_encrypted_metadata(
 		case 0x0305:
 			r = _parse_metadata_block_0x0305(md_block,
 				&log_vol_blkoff);
-			params->log_vol_off = log_vol_blkoff * block_size;
 			if (r < 0)
 				goto out;
+			params->log_vol_off = log_vol_blkoff * block_size;
 			status |= FVAULT2_ENC_MD_PARSED_0x0305;
 			break;
 		}
@@ -793,23 +793,20 @@ static int _activate(
 	r = device_block_adjust(cd, crypt_data_device(cd), DEV_EXCL,
 		crypt_get_data_offset(cd), &dm_dev.size, &dm_dev.flags);
 	if (r)
-		goto out;
+		return r;
 
 	if (asprintf(&cipher, "%s-%s", params->cipher, params->cipher_mode) < 0)
-		return r;
+		return -ENOMEM;
 
 	r = dm_crypt_target_set(&dm_dev.segment, 0, dm_dev.size,
 		crypt_data_device(cd), vol_key, cipher,
 		crypt_get_iv_offset(cd), crypt_get_data_offset(cd),
 		crypt_get_integrity(cd), crypt_get_integrity_tag_size(cd),
 		crypt_get_sector_size(cd));
-	if (r != 0)
-		goto out;
 
-	r = dm_create_device(cd, name, CRYPT_FVAULT2, &dm_dev);
-	if (r < 0)
-		goto out;
-out:
+	if (!r)
+		r = dm_create_device(cd, name, CRYPT_FVAULT2, &dm_dev);
+
 	dm_targets_free(cd, &dm_dev);
 	free(cipher);
 	return r;
@@ -999,7 +996,7 @@ int FVAULT2_activate_by_volume_key(
 	struct volume_key *vol_key = NULL;
 
 	if (key_size != FVAULT2_XTS_KEY_SIZE)
-		return -ENOMEM;
+		return -EINVAL;
 
 	vol_key = crypt_alloc_volume_key(FVAULT2_XTS_KEY_SIZE, key);
 	if (vol_key == NULL)
