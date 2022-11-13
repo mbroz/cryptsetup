@@ -2410,7 +2410,10 @@ static int reencrypt_make_backup_segments(struct crypt_device *cd,
 		return -EINVAL;
 
 	if (params->flags & CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT) {
-		json_object_copy(LUKS2_get_segment_jobj(hdr, 0), &jobj_segment_bcp);
+		if (json_object_copy(LUKS2_get_segment_jobj(hdr, 0), &jobj_segment_bcp)) {
+			r = -EINVAL;
+			goto err;
+		}
 		r = LUKS2_segment_set_flag(jobj_segment_bcp, "backup-moved-segment");
 		if (r)
 			goto err;
@@ -2435,8 +2438,12 @@ static int reencrypt_make_backup_segments(struct crypt_device *cd,
 						json_segment_get_cipher(jobj_tmp),
 						json_segment_get_sector_size(jobj_tmp),
 						0);
-		} else
-			json_object_copy(LUKS2_get_segment_jobj(hdr, CRYPT_DEFAULT_SEGMENT), &jobj_segment_old);
+		} else {
+			if (json_object_copy(LUKS2_get_segment_jobj(hdr, CRYPT_DEFAULT_SEGMENT), &jobj_segment_old)) {
+				r = -EINVAL;
+				goto err;
+			}
+		}
 	} else if (params->mode == CRYPT_REENCRYPT_ENCRYPT) {
 		r = LUKS2_get_data_size(hdr, &tmp, NULL);
 		if (r)
