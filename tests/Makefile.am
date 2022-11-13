@@ -40,21 +40,21 @@ TESTS += ssh-test-plugin
 endif
 
 if EXTERNAL_TOKENS
-TESTS += systemd-tokens-test
+TESTS += systemd-test-plugin
 endif
 
 ssh-test-plugin: fake_token_path.so
-systemd-tokens-test: fake_token_path.so fake_systemd_tpm_path.so
+systemd-test-plugin: fake_token_path.so fake_systemd_tpm_path.so
 
 # Do not use global CFLAGS here as the *.so link does not support sanitizers
 fake_token_path.so: fake_token_path.c
-	$(CC) $(LDFLAGS) -I $(top_srcdir)/lib -fPIC -shared \
+	$(CC) $(LDFLAGS) -I $(top_srcdir)/lib -fPIC -shared -D_GNU_SOURCE \
 	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
 	-o fake_token_path.so  $(top_srcdir)/tests/fake_token_path.c \
 	-DBUILD_DIR=\"$(abs_top_srcdir)/.libs/\"
 
 fake_systemd_tpm_path.so: fake_systemd_tpm_path.c
-	$(CC) $(LDFLAGS) -fPIC -shared -o fake_systemd_tpm_path.so \
+	$(CC) $(LDFLAGS) -fPIC -shared -D_GNU_SOURCE -o fake_systemd_tpm_path.so \
 	$(top_srcdir)/tests/fake_systemd_tpm_path.c
 
 EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
@@ -104,7 +104,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	fake_token_path.c \
 	fake_systemd_tpm_path.c \
 	unit-wipe-test \
-	systemd-tokens-test
+	systemd-test-plugin
 
 CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_token_path.so fake_systemd_tpm_path.so
 clean-local:
@@ -196,10 +196,9 @@ valgrind-check: api-test api-test-2 differ
 	@VALG=1 ./password-hash-test
 	@VALG=1 ./reencryption-compat-test
 	@[ -z "$RUN_SSH_PLUGIN_TEST" ] || VALG=1 ./ssh-test-plugin
+	@[ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] || VALG=1 ./systemd-test-plugin
 	@INFOSTRING="unit-utils-crypt-test" ./valg-api.sh ./unit-utils-crypt-test
 	@INFOSTRING="vectors-test" ./valg-api.sh ./vectors-test
-	@INFOSTRING="api-test" ./valg-api.sh ./api-test
-	@INFOSTRING="api-test-2" ./valg-api.sh ./api-test-2
 	@grep -l "ERROR SUMMARY: [^0][0-9]* errors" valglog* || echo "No leaks detected."
 
 .PHONY: valgrind-check

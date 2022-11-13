@@ -14,6 +14,10 @@ ifneq ($(RUN_SSH_PLUGIN_TEST),)
 TESTS += ssh-test-plugin
 endif
 
+ifneq ($(RUN_SYSTEMD_PLUGIN_TEST),)
+TESTS += systemd-test-plugin
+endif
+
 check-programs: $(TESTS_UTILS) $(TESTS)
 
 differ: differ.o

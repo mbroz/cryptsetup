@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# check luks1 images parsing
-
-# NOTE: if image with whirlpool hash fails, check
-# that you are not using old gcrypt with flawed whirlpool
-# (see cryptsetup debug output)
-
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 TST_DIR=luks1-images
@@ -52,17 +46,21 @@ function valgrind_run()
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
+function remove_imgs()
+{
+	echo "WARNING: $1 not available, not testing some images."
+	rm $(ls $TST_DIR/*$1*.img)
+}
+
 function test_one()
 {
-	$CRYPTSETUP benchmark -c "$1" -s "$2" | grep -v "#" || skip "Cannot use $1/$2, test skipped."
+	$CRYPTSETUP benchmark -c "$1" -s "$2" | grep -v "#" || remove_imgs $1
 }
 
 function test_required()
 {
-	command -v blkid >/dev/null || skip "blkid tool required, test skipped."
-
 	echo "REQUIRED KDF TEST"
-	$CRYPTSETUP benchmark -h whirlpool | grep "N/A" && skip
+	$CRYPTSETUP benchmark -h whirlpool | grep "N/A" && remove_imgs whirlpool
 
 	echo "REQUIRED CIPHERS TEST"
 	echo "#     Algorithm | Key |  Encryption |  Decryption"
@@ -76,9 +74,10 @@ function test_required()
 
 export LANG=C
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+command -v blkid >/dev/null || skip "blkid tool required, test skipped."
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
-test_required
 [ ! -d $TST_DIR ] && tar xJf $srcdir/luks1-images.tar.xz --no-same-owner
+test_required
 
 echo "PASSPHRASE CHECK"
 for file in $(ls $TST_DIR/luks1_*) ; do
