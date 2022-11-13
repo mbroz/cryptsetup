@@ -689,7 +689,6 @@ static int fvault2Dump_with_volume_key(struct crypt_device *cd)
 	log_std("Volume key:       \t");
 	crypt_log_hex(cd, vk, vk_size, " ", 0, NULL);
 	log_std("\n");
-
 out:
 	crypt_safe_free(password);
 	crypt_safe_free(vk);
@@ -715,7 +714,6 @@ static int action_fvault2Dump(void)
 		r = fvault2Dump_with_volume_key(cd);
 	else
 		r = crypt_dump(cd);
-
 out:
 	crypt_free(cd);
 	return r;
@@ -755,8 +753,7 @@ static int action_open_fvault2(void)
 		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, keysize);
 		if (r < 0)
 			goto out;
-		r = crypt_activate_by_volume_key(cd, activated_name, key, keysize,
-			activate_flags);
+		r = crypt_activate_by_volume_key(cd, activated_name, key, keysize, activate_flags);
 	} else {
 		tries = set_tries_tty();
 		do {
