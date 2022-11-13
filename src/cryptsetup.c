@@ -3021,8 +3021,9 @@ static const char * verify_open(void)
 		return _("Large IV sectors option is supported only for opening plain type device with sector size larger than 512 bytes.");
 
 	if (ARG_SET(OPT_TEST_PASSPHRASE_ID) && (!device_type ||
-	    (strncmp(device_type, "luks", 4) && strcmp(device_type, "tcrypt") && strcmp(device_type, "bitlk"))))
-		return _("Option --test-passphrase is allowed only for open of LUKS, TCRYPT and BITLK devices.");
+	    (strncmp(device_type, "luks", 4) && strcmp(device_type, "tcrypt") &&
+	     strcmp(device_type, "bitlk") && strcmp(device_type, "fvault2"))))
+		return _("Option --test-passphrase is allowed only for open of LUKS, TCRYPT, BITLK and FVAULT2 devices.");
 
 	if (ARG_SET(OPT_DEVICE_SIZE_ID) && ARG_SET(OPT_SIZE_ID))
 		return _("Options --device-size and --size cannot be combined.");

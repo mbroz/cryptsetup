@@ -289,7 +289,7 @@ static int _unwrap_key(
 
 	/* check whether MSB_{64}(S) (= A) matches ICV1 (see step 3) */
 	if (a != 0xA6A6A6A6A6A6A6A6) {
-		r = -EINVAL;
+		r = -EPERM;
 		goto out;
 	}
 
