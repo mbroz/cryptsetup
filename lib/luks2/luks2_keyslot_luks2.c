@@ -31,6 +31,7 @@
 /* Serialize memory-hard keyslot access: optional workaround for parallel processing */
 #define MIN_MEMORY_FOR_SERIALIZE_LOCK_KB 32*1024 /* 32MB */
 
+/* coverity[ -taint_source : arg-0 ] */
 static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 	const char *cipher, const char *cipher_mode,
 	struct volume_key *vk, unsigned int sector,
