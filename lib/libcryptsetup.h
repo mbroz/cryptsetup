@@ -429,6 +429,8 @@ int crypt_get_metadata_size(struct crypt_device *cd,
 #define CRYPT_INTEGRITY "INTEGRITY"
 /** BITLK (BitLocker-compatible mode) */
 #define CRYPT_BITLK "BITLK"
+/** FVAULT2 (FileVault2-compatible mode) */
+#define CRYPT_FVAULT2 "FVAULT2"
 
 /** LUKS any version */
 #define CRYPT_LUKS NULL
