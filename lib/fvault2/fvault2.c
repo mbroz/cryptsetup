@@ -533,6 +533,7 @@ static int _read_volume_header(
 		goto out;
 	}
 
+	log_dbg(cd, "Reading FVAULT2 volume header of size %zu bytes.", FVAULT2_VOL_HEADER_SIZE);
 	if (read_blockwise(devfd, device_block_size(cd, dev),
 			device_alignment(dev), vol_header,
 			FVAULT2_VOL_HEADER_SIZE) != FVAULT2_VOL_HEADER_SIZE) {
@@ -543,25 +544,25 @@ static int _read_volume_header(
 
 	r = _check_crc(vol_header, FVAULT2_VOL_HEADER_SIZE);
 	if (r < 0) {
-		log_err(cd, _("Volume header CRC mismatch."));
+		log_dbg(cd, _("CRC mismatch."));
 		goto out;
 	}
 
 	if (le16_to_cpu(vol_header->version) != 1) {
-		log_err(cd, _("Unsupported volume header version %" PRIu16 "."),
+		log_err(cd, _("Unsupported FVAULT2 version %" PRIu16 "."),
 			le16_to_cpu(vol_header->version));
 		r = -EINVAL;
 		goto out;
 	}
 
 	if (be16_to_cpu(vol_header->magic) != FVAULT2_CORE_STORAGE_MAGIC) {
-		log_err(cd, _("Invalid Core Storage magic bytes."));
+		log_dbg(cd, _("Invalid Core Storage magic bytes."));
 		r = -EINVAL;
 		goto out;
 	}
 
 	if (le32_to_cpu(vol_header->key_data_size) != FVAULT2_AES_KEY_SIZE) {
-		log_err(cd, _("Unsupported AES key size: %" PRIu32 " bytes."),
+		log_dbg(cd, _("Unsupported AES key size: %" PRIu32 " bytes."),
 			le32_to_cpu(vol_header->key_data_size));
 		r = -EINVAL;
 		goto out;
@@ -616,11 +617,12 @@ static int _read_disklabel(
 
 	if (uint64_mult_overflow(&off, disklbl_blkoff, block_size) ||
 	    off > FVAULT2_MAX_OFF) {
-		log_err(cd, _("Device offset overflow."));
+		log_dbg(cd, _("Device offset overflow."));
 		r = -EINVAL;
 		goto out;
 	}
 	size = FVAULT2_MD_BLOCK_SIZE;
+	log_dbg(cd, "Reading FVAULT2 disk label header of size %zu bytes.", size);
 	if (read_lseek_blockwise(devfd, device_block_size(cd, dev),
 			device_alignment(dev), md_block, size, off) != size) {
 		r = -EIO;
@@ -628,8 +630,10 @@ static int _read_disklabel(
 	}
 
 	r = _check_crc(md_block, FVAULT2_MD_BLOCK_SIZE);
-	if (r)
+	if (r < 0) {
+		log_dbg(cd, _("CRC mismatch."));
 		goto out;
+	}
 
 	vol_gr_des = malloc(sizeof(*vol_gr_des));
 	if (vol_gr_des == NULL) {
@@ -639,11 +643,12 @@ static int _read_disklabel(
 
 	off += le32_to_cpu(md_block->vol_gr_des_off);
 	if (off > FVAULT2_MAX_OFF) {
-		log_err(cd, _("Device offset overflow."));
+		log_dbg(cd, _("Device offset overflow."));
 		r = -EINVAL;
 		goto out;
 	}
 	size = sizeof(struct volume_groups_descriptor);
+	log_dbg(cd, "Reading FVAULT2 volume groups descriptor of size %zu bytes.", size);
 	if (read_lseek_blockwise(devfd, device_block_size(cd, dev),
 			device_alignment(dev), vol_gr_des, size, off) != size) {
 		r = -EIO;
@@ -688,6 +693,7 @@ static int _read_encrypted_metadata(
 	uint32_t log_vol_blkoff;
 	uint64_t i, start_off;
 	off_t off;
+	unsigned int block_type;
 
 	tweak = calloc(FVAULT2_XTS_TWEAK_SIZE, 1);
 	if (tweak == NULL) {
@@ -713,15 +719,16 @@ static int _read_encrypted_metadata(
 
 	if (uint64_mult_overflow(&start_off, start_blkoff, block_size) ||
 	    start_off > FVAULT2_MAX_OFF) {
-		log_err(cd, _("Device offset overflow."));
+		log_dbg(cd, _("Device offset overflow."));
 		r = -EINVAL;
 		goto out;
 	}
 
+	log_dbg(cd, "Reading FVAULT2 encrypted metadata blocks.");
 	for (i = 0; i < blocks_n; i++) {
 		off = start_off + i * FVAULT2_MD_BLOCK_SIZE;
 		if (off > FVAULT2_MAX_OFF) {
-			log_err(cd, _("Device offset overflow."));
+			log_dbg(cd, _("Device offset overflow."));
 			r = -EINVAL;
 			goto out;
 		}
@@ -743,11 +750,15 @@ static int _read_encrypted_metadata(
 			goto out;
 
 		r = _check_crc(md_block, FVAULT2_MD_BLOCK_SIZE);
-		if (r < 0)
+		if (r < 0) {
+			log_dbg(cd, _("CRC mismatch."));
 			goto out;
+		}
 
 		md_block_header = md_block;
-		switch (le16_to_cpu(md_block_header->block_type)) {
+		block_type = le16_to_cpu(md_block_header->block_type);
+		log_dbg(cd, "Get FVAULT2 metadata block %" PRIu64 " type 0x%04X.", i, block_type);
+		switch (block_type) {
 		case 0x0019:
 			r = _parse_metadata_block_0x0019(md_block,
 				&params->pbkdf2_iters,
@@ -775,7 +786,7 @@ static int _read_encrypted_metadata(
 				goto out;
 			if (uint64_mult_overflow(&params->log_vol_off,
 			    log_vol_blkoff, block_size)) {
-				log_err(cd, _("Device offset overflow."));
+				log_dbg(cd, _("Device offset overflow."));
 				r = -EINVAL;
 				goto out;
 			}
@@ -785,7 +796,7 @@ static int _read_encrypted_metadata(
 	}
 
 	if (status != FVAULT2_ENC_MD_PARSED_ALL) {
-		log_err(cd, _("Some necessary metadata blocks not found"));
+		log_dbg(cd, _("Necessary FVAULT2 metadata blocks not found."));
 		r = -EINVAL;
 		goto out;
 	}
@@ -853,11 +864,12 @@ int FVAULT2_read_metadata(
 	uint64_t enc_md_blkoff;
 	uint64_t enc_md_blocks_n;
 	struct volume_key *enc_md_key = NULL;
+	struct device *device = crypt_metadata_device(cd);
 
-	devfd = device_open(cd, crypt_data_device(cd), O_RDONLY);
+	devfd = device_open(cd, device, O_RDONLY);
 	if (devfd < 0) {
-		r = -EIO;
-		goto out;
+		log_err(cd, _("Cannot open device %s."), device_path(device));
+		return -EIO;
 	}
 
 	r = _read_volume_header(devfd, cd, &block_size, &disklbl_blkoff,
@@ -899,7 +911,7 @@ int FVAULT2_get_volume_key(
 	*vol_key = NULL;
 
 	if (uuid_parse(params->family_uuid, family_uuid_bin) < 0) {
-		log_err(cd, _("Could not parse logical volume family UUID: %s."),
+		log_dbg(cd, _("Could not parse logical volume family UUID: %s."),
 			params->family_uuid);
 		r = -EINVAL;
 		goto out;
