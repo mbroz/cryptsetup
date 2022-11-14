@@ -474,8 +474,8 @@ static int _parse_metadata_block_0x001a(
 	r = _search_xml(xml, "com.apple.corestorage.lv.size", "integer", &log_vol_size_str);
 	if (r < 0)
 		goto out;
-	*log_vol_size = strtoul(log_vol_size_str, NULL, 16);
-	if (*log_vol_size == 0) {
+	*log_vol_size = strtoull(log_vol_size_str, NULL, 16);
+	if (*log_vol_size == 0 || *log_vol_size == ULLONG_MAX) {
 		r = -EINVAL;
 		goto out;
 	}
