@@ -8,6 +8,7 @@ DEV_NAME=dmc_test
 HEADER_IMG=mode-test.img
 PASSWORD=3xrododenron
 PASSWORD1=$PASSWORD
+FAST_PBKDF2="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
 # cipher-chainmode-ivopts:ivmode
 CIPHERS="aes twofish serpent"
@@ -126,14 +127,14 @@ dmcrypt()
 		echo -n "[n/a]"
 	fi
 
-	echo $PASSWORD | $CRYPTSETUP luksFormat --type luks1 -i 1 -c $1 -s 256 /dev/mapper/$DEV_NAME >/dev/null 2>&1
+	echo $PASSWORD | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF2 -c $1 -s 256 /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	if [ $? -eq 0 ] ; then
 		echo -n -e " LUKS1:"
 		echo $PASSWORD | $CRYPTSETUP luksOpen /dev/mapper/$DEV_NAME "$DEV_NAME"_tstdev >/dev/null 2>&1 || fail
 		dmcrypt_check "$DEV_NAME"_tstdev $OUT
 	fi
 
-	echo $PASSWORD | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2 -i 1 -c $1 -s 256 --offset 8192 /dev/mapper/$DEV_NAME >/dev/null 2>&1
+	echo $PASSWORD | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2 $FAST_PBKDF2 -c $1 -s 256 --offset 8192 /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	if [ $? -eq 0 ] ; then
 		echo -n -e " LUKS2:"
 		echo $PASSWORD | $CRYPTSETUP luksOpen /dev/mapper/$DEV_NAME "$DEV_NAME"_tstdev >/dev/null 2>&1 || fail
