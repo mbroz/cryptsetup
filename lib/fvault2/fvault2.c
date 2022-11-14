@@ -36,6 +36,9 @@
 /* size of a single metadata block in bytes */
 #define FVAULT2_MD_BLOCK_SIZE 8192
 
+/* maximal offset to read metadata block */
+#define FVAULT2_MAX_OFF 1024*1024*1024
+
 /* encrypted metadata parsing progress flags (see _read_encrypted_metadata) */
 #define FVAULT2_ENC_MD_PARSED_0x0019 0b001
 #define FVAULT2_ENC_MD_PARSED_0x001A 0b010
@@ -599,7 +602,7 @@ static int _read_disklabel(
 	uint64_t *enc_md_blocks_n)
 {
 	int r = 0;
-	off_t off;
+	uint64_t off;
 	ssize_t size;
 	struct metadata_block_0x0011 *md_block = NULL;
 	struct volume_groups_descriptor *vol_gr_des = NULL;
@@ -611,7 +614,12 @@ static int _read_disklabel(
 		goto out;
 	}
 
-	off = block_size * disklbl_blkoff;
+	if (uint64_mult_overflow(&off, disklbl_blkoff, block_size) ||
+	    off > FVAULT2_MAX_OFF) {
+		log_err(cd, _("Device offset overflow."));
+		r = -EINVAL;
+		goto out;
+	}
 	size = FVAULT2_MD_BLOCK_SIZE;
 	if (read_lseek_blockwise(devfd, device_block_size(cd, dev),
 			device_alignment(dev), md_block, size, off) != size) {
@@ -629,7 +637,12 @@ static int _read_disklabel(
 		goto out;
 	}
 
-	off = block_size * disklbl_blkoff + le32_to_cpu(md_block->vol_gr_des_off);
+	off += le32_to_cpu(md_block->vol_gr_des_off);
+	if (off > FVAULT2_MAX_OFF) {
+		log_err(cd, _("Device offset overflow."));
+		r = -EINVAL;
+		goto out;
+	}
 	size = sizeof(struct volume_groups_descriptor);
 	if (read_lseek_blockwise(devfd, device_block_size(cd, dev),
 			device_alignment(dev), vol_gr_des, size, off) != size) {
@@ -673,7 +686,7 @@ static int _read_encrypted_metadata(
 	void *md_block = NULL;
 	struct metadata_block_header *md_block_header;
 	uint32_t log_vol_blkoff;
-	uint64_t i;
+	uint64_t i, start_off;
 	off_t off;
 
 	tweak = calloc(FVAULT2_XTS_TWEAK_SIZE, 1);
@@ -698,8 +711,20 @@ static int _read_encrypted_metadata(
 	if (r < 0)
 		goto out;
 
+	if (uint64_mult_overflow(&start_off, start_blkoff, block_size) ||
+	    start_off > FVAULT2_MAX_OFF) {
+		log_err(cd, _("Device offset overflow."));
+		r = -EINVAL;
+		goto out;
+	}
+
 	for (i = 0; i < blocks_n; i++) {
-		off = start_blkoff * block_size + i * FVAULT2_MD_BLOCK_SIZE;
+		off = start_off + i * FVAULT2_MD_BLOCK_SIZE;
+		if (off > FVAULT2_MAX_OFF) {
+			log_err(cd, _("Device offset overflow."));
+			r = -EINVAL;
+			goto out;
+		}
 		if (read_lseek_blockwise(devfd, device_block_size(cd, dev),
 				device_alignment(dev), md_block_enc,
 				FVAULT2_MD_BLOCK_SIZE, off)
@@ -748,7 +773,12 @@ static int _read_encrypted_metadata(
 				&log_vol_blkoff);
 			if (r < 0)
 				goto out;
-			params->log_vol_off = log_vol_blkoff * block_size;
+			if (uint64_mult_overflow(&params->log_vol_off,
+			    log_vol_blkoff, block_size)) {
+				log_err(cd, _("Device offset overflow."));
+				r = -EINVAL;
+				goto out;
+			}
 			status |= FVAULT2_ENC_MD_PARSED_0x0305;
 			break;
 		}
