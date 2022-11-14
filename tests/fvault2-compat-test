@@ -5,6 +5,9 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 MAP=fvault2test
 TST_DIR=fvault2-images
 
+CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+CRYPTSETUP_LIB_VALGRIND=../.libs
+
 [ -z "$srcdir" ] && srcdir="."
 
 function create_mapping()
@@ -12,13 +15,13 @@ function create_mapping()
 	local image=$1
 	local passphrase=$2
 	echo -n "$passphrase" | "$CRYPTSETUP" open --type fvault2 --key-file - \
-		"$TST_DIR/$image" "$MAP"
+		"$image" "$MAP"
 }
 
 function remove_mapping()
 {
 	[ -b "/dev/mapper/$MAP" ] && dmsetup remove --retry "$MAP"
-	rm -f "$IMAGE"
+	rm -rf $TST_DIR
 }
 
 function fail()
@@ -43,8 +46,8 @@ function produce_dump()
 {
 	local image=$1
 	local passphrase=$2
-	echo -n "$passphrase" | "$CRYPTSETUP" fvault2Dump "$TST_DIR/$image" \
-		--dump-volume-key --key-file -
+	echo -n "$passphrase" | "$CRYPTSETUP" fvault2Dump "$image" \
+		--key-file -
 }
 
 function check_dump()
@@ -64,7 +67,6 @@ function check_uuid()
 	local uuid=$(blkid -po value -s UUID "/dev/mapper/$MAP")
 	[ "$uuid" = "$exp_uuid" ] || fail \
 		"UUID check failed: expected \"$exp_uuid\", got \"$uuid\""
-
 }
 
 function check_sha256()
@@ -75,26 +77,51 @@ function check_sha256()
 		"SHA256 sum check failed: expected \"$exp_sum\", got \"$sum\""
 }
 
+function valgrind_setup()
+{
+	command -v valgrind >/dev/null || fail "Cannot find valgrind."
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
+}
+
+export LANG=C
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+
 if [ ! -d $TST_DIR ]; then
 	tar xJSf $srcdir/fvault2-images.tar.xz --no-same-owner 2>/dev/null || skip "Incompatible tar."
 fi
 
-dump=$(produce_dump small heslo123)
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
+
+echo "HEADER CHECK"
+IMG="$TST_DIR/small"
+echo -n " $IMG"
+dump=$(produce_dump $IMG heslo123)
 check_dump "$dump" 'Physical volume UUID' fc52bfae-5a1f-4f9b-b3a6-f33303a0e401
 check_dump "$dump" 'Family UUID' 33a76caa-1481-4bc5-8d04-1ac1707c19c0
 check_dump "$dump" 'Logical volume offset' '67108864 [bytes]'
 check_dump "$dump" 'Logical volume size' '167772160 [bytes]'
 check_dump "$dump" 'PBKDF2 iterations' 204222
 check_dump "$dump" 'PBKDF2 salt' '2c 24 9e db 66 63 d6 fb cc 79 05 b7 a4 d7 27 52'
+echo " [OK]"
 
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run activation part of test, test skipped."
+	remove_mapping
 	exit 0
 fi
 
-create_mapping small heslo123
+echo "ACTIVATION CHECK"
+echo -n " $IMG"
+create_mapping $IMG heslo123
 check_uuid de124d8a-2164-394e-924f-8e28db0a09cb
 check_sha256 2c662e36c0f7e2f5583e6a939bbcbdc660805692d0fccaa45ad4052beb3b8e18
-remove_mapping
+echo " [OK]"
 
+remove_mapping
 exit 0
