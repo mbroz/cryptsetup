@@ -642,6 +642,143 @@ out:
 	return r;
 }
 
+static int fvault2Dump_with_volume_key(struct crypt_device *cd)
+{
+	char *vk = NULL;
+	char *password = NULL;
+	size_t vk_size = 0;
+	size_t pass_len = 0;
+	int r = 0;
+
+	if (!ARG_SET(OPT_BATCH_MODE_ID) && !yesDialog(
+	    _("The header dump with volume key is sensitive information\n"
+	      "that allows access to encrypted partition without a passphrase.\n"
+	      "This dump should be stored encrypted in a safe place."),
+	      NULL))
+		return -EPERM;
+
+	vk_size = crypt_get_volume_key_size(cd);
+	vk = crypt_safe_alloc(vk_size);
+	if (vk == NULL)
+		return -ENOMEM;
+
+	r = tools_get_key(NULL, &password, &pass_len,
+		ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID),
+		ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_TIMEOUT_ID), 0, 0, cd);
+	if (r < 0)
+		goto out;
+
+	r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, vk, &vk_size, password, pass_len);
+	tools_passphrase_msg(r);
+	check_signal(&r);
+	if (r < 0)
+		goto out;
+
+	tools_keyslot_msg(r, UNLOCKED);
+
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		r = tools_write_mk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), vk, vk_size);
+		if (r < 0)
+			goto out;
+	}
+
+	r = crypt_dump(cd);
+	if (r < 0)
+		goto out;
+
+	log_std("Volume key:       \t");
+	crypt_log_hex(cd, vk, vk_size, " ", 0, NULL);
+	log_std("\n");
+out:
+	crypt_safe_free(password);
+	crypt_safe_free(vk);
+	return r;
+}
+
+static int action_fvault2Dump(void)
+{
+	struct crypt_device *cd = NULL;
+	int r = 0;
+
+	r = crypt_init(&cd, action_argv[0]);
+	if (r < 0)
+		goto out;
+
+	r = crypt_load(cd, CRYPT_FVAULT2, NULL);
+	if (r < 0) {
+		log_err(_("Device %s is not a valid FVAULT2 device."), action_argv[0]);
+		goto out;
+	}
+
+	if (ARG_SET(OPT_DUMP_VOLUME_KEY_ID))
+		r = fvault2Dump_with_volume_key(cd);
+	else
+		r = crypt_dump(cd);
+out:
+	crypt_free(cd);
+	return r;
+}
+
+static int action_open_fvault2(void)
+{
+	struct crypt_device *cd = NULL;
+	const char *activated_name;
+	uint32_t activate_flags = 0;
+	int r, tries, keysize;
+	char *password = NULL;
+	char *key = NULL;
+	size_t passwordLen;
+
+	activated_name = ARG_SET(OPT_TEST_PASSPHRASE_ID) ? NULL : action_argv[1];
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		goto out;
+
+	r = crypt_load(cd, CRYPT_FVAULT2, NULL);
+	if (r < 0) {
+		log_err(_("Device %s is not a valid FVAULT2 device."), action_argv[0]);
+		goto out;
+	}
+	set_activation_flags(&activate_flags);
+
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		keysize = crypt_get_volume_key_size(cd);
+		if (!keysize && !ARG_SET(OPT_KEY_SIZE_ID)) {
+			log_err(_("Cannot determine volume key size for FVAULT2, please use --key-size option."));
+			r = -EINVAL;
+			goto out;
+		} else if (!keysize)
+			keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
+
+		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, keysize);
+		if (r < 0)
+			goto out;
+		r = crypt_activate_by_volume_key(cd, activated_name, key, keysize, activate_flags);
+	} else {
+		tries = set_tries_tty();
+		do {
+			r = tools_get_key(NULL, &password, &passwordLen,
+				ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID),
+				ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_TIMEOUT_ID),
+				verify_passphrase(0), 0, cd);
+			if (r < 0)
+				goto out;
+
+			r = crypt_activate_by_passphrase(cd, activated_name, CRYPT_ANY_SLOT,
+				password, passwordLen, activate_flags);
+			tools_passphrase_msg(r);
+			check_signal(&r);
+			crypt_safe_free(password);
+			password = NULL;
+		} while ((r == -EPERM || r == -ERANGE) && (--tries > 0));
+	}
+out:
+	crypt_safe_free(password);
+	crypt_safe_free(key);
+	crypt_free(cd);
+	return r;
+}
+
 static int action_close(void)
 {
 	struct crypt_device *cd = NULL;
@@ -2481,6 +2618,10 @@ static int action_open(void)
 		if (action_argc < 2 && !ARG_SET(OPT_TEST_PASSPHRASE_ID))
 			goto out;
 		return action_open_bitlk();
+	} else if (!strcmp(device_type, "fvault2")) {
+		if (action_argc < 2 && !ARG_SET(OPT_TEST_PASSPHRASE_ID))
+			goto out;
+		return action_open_fvault2();
 	} else
 		r = -ENOENT;
 out:
@@ -2877,8 +3018,9 @@ static const char * verify_open(void)
 		return _("Large IV sectors option is supported only for opening plain type device with sector size larger than 512 bytes.");
 
 	if (ARG_SET(OPT_TEST_PASSPHRASE_ID) && (!device_type ||
-	    (strncmp(device_type, "luks", 4) && strcmp(device_type, "tcrypt") && strcmp(device_type, "bitlk"))))
-		return _("Option --test-passphrase is allowed only for open of LUKS, TCRYPT and BITLK devices.");
+	    (strncmp(device_type, "luks", 4) && strcmp(device_type, "tcrypt") &&
+	     strcmp(device_type, "bitlk") && strcmp(device_type, "fvault2"))))
+		return _("Option --test-passphrase is allowed only for open of LUKS, TCRYPT, BITLK and FVAULT2 devices.");
 
 	if (ARG_SET(OPT_DEVICE_SIZE_ID) && ARG_SET(OPT_SIZE_ID))
 		return _("Options --device-size and --size cannot be combined.");
@@ -3023,6 +3165,7 @@ static struct action_type {
 	{ LUKSDUMP_ACTION,	action_luksDump,	verify_luksDump,	1, N_("<device>"), N_("dump LUKS partition information") },
 	{ TCRYPTDUMP_ACTION,	action_tcryptDump,	verify_tcryptdump,	1, N_("<device>"), N_("dump TCRYPT device information") },
 	{ BITLKDUMP_ACTION,	action_bitlkDump,	NULL,			1, N_("<device>"), N_("dump BITLK device information") },
+	{ FVAULT2DUMP_ACTION,	action_fvault2Dump,	NULL,			1, N_("<device>"), N_("dump FVAULT2 device information") },
 	{ SUSPEND_ACTION,	action_luksSuspend,	NULL,			1, N_("<device>"), N_("Suspend LUKS device and wipe key (all IOs are frozen)") },
 	{ RESUME_ACTION,	action_luksResume,	NULL,			1, N_("<device>"), N_("Resume suspended LUKS device") },
 	{ HEADERBACKUP_ACTION,	action_luksBackup,	NULL,			1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
@@ -3054,8 +3197,8 @@ static void help(poptContext popt_context,
 
 		log_std(_("\n"
 			  "You can also use old <action> syntax aliases:\n"
-			  "\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen, bitlkOpen\n"
-			  "\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose, bitlkClose\n"));
+			  "\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen, bitlkOpen, fvault2Open\n"
+			  "\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose, bitlkClose, fvault2Close\n"));
 		log_std(_("\n"
 			 "<name> is the device to create under %s\n"
 			 "<device> is the encrypted device\n"
@@ -3335,16 +3478,22 @@ int main(int argc, const char **argv)
 	} else if (!strcmp(aname, "bitlkOpen")) {
 		aname = OPEN_ACTION;
 		device_type = "bitlk";
+	} else if (!strcmp(aname, "fvault2Open")) {
+		aname = OPEN_ACTION;
+		device_type = "fvault2";
 	} else if (!strcmp(aname, "tcryptDump")) {
 		device_type = "tcrypt";
 	} else if (!strcmp(aname, "bitlkDump")) {
 		device_type = "bitlk";
+	} else if (!strcmp(aname, "fvault2Dump")) {
+		device_type = "fvault2";
 	} else if (!strcmp(aname, "remove") ||
 		   !strcmp(aname, "plainClose") ||
 		   !strcmp(aname, "luksClose") ||
 		   !strcmp(aname, "loopaesClose") ||
 		   !strcmp(aname, "tcryptClose") ||
-		   !strcmp(aname, "bitlkClose")) {
+		   !strcmp(aname, "bitlkClose") ||
+		   !strcmp(aname, "fvault2Close")) {
 		aname = CLOSE_ACTION;
 	} else if (!strcmp(aname, "luksErase")) {
 		aname = ERASE_ACTION;

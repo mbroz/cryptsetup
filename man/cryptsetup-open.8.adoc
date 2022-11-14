@@ -8,7 +8,7 @@
 
 == Name
 
-cryptsetup-open, cryptsetup-create, cryptsetup-plainOpen, cryptsetup-luksOpen, cryptsetup-loopaesOpen, cryptsetup-tcryptOpen, cryptsetup-bitlkOpen - open an encrypted device and create a mapping with a specified name
+cryptsetup-open, cryptsetup-create, cryptsetup-plainOpen, cryptsetup-luksOpen, cryptsetup-loopaesOpen, cryptsetup-tcryptOpen, cryptsetup-bitlkOpen, cryptsetup-fvault2Open - open an encrypted device and create a mapping with a specified name
 
 == SYNOPSIS
 
@@ -138,6 +138,17 @@ so this space can be discarded).
 bitlkOpen <device> <name> (*old syntax*)
 
 Opens the BITLK (a BitLocker compatible) <device> and sets up a mapping
+<name>.
+
+*<options>* can be [--key-file, --keyfile-offset, --keyfile-size, --key-size,
+--readonly, --test-passphrase, --allow-discards --volume-key-file, --tries,
+--timeout, --verify-passphrase].
+
+=== FileVault2
+*open --type fvault2 <device> <name>* +
+fvault2Open <device> <name> (*old syntax*)
+
+Opens the FVAULT2 (a FileVault2 compatible) <device> and sets up a mapping
 <name>.
 
 *<options>* can be [--key-file, --keyfile-offset, --keyfile-size, --key-size,
