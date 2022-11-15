@@ -87,6 +87,7 @@ struct volume_header {
 	uint8_t key_data[FVAULT2_AES_KEY_SIZE];
 	uint8_t unknown5[112];
 	uint8_t ph_vol_uuid[FVAULT2_UUID_BIN_SIZE];
+	uint8_t unknown6[192];
 } __attribute__((packed));
 
 struct volume_groups_descriptor {
@@ -527,13 +528,15 @@ static int _read_volume_header(
 	struct device *dev = crypt_metadata_device(cd);
 	struct volume_header *vol_header = NULL;
 
+	assert(sizeof(*vol_header) == FVAULT2_VOL_HEADER_SIZE);
+
 	vol_header = malloc(FVAULT2_VOL_HEADER_SIZE);
 	if (vol_header == NULL) {
 		r = -ENOMEM;
 		goto out;
 	}
 
-	log_dbg(cd, "Reading FVAULT2 volume header of size %zu bytes.", FVAULT2_VOL_HEADER_SIZE);
+	log_dbg(cd, "Reading FVAULT2 volume header of size %u bytes.", FVAULT2_VOL_HEADER_SIZE);
 	if (read_blockwise(devfd, device_block_size(cd, dev),
 			device_alignment(dev), vol_header,
 			FVAULT2_VOL_HEADER_SIZE) != FVAULT2_VOL_HEADER_SIZE) {
@@ -605,7 +608,8 @@ static int _read_disklabel(
 	int r = 0;
 	uint64_t off;
 	ssize_t size;
-	struct metadata_block_0x0011 *md_block = NULL;
+	void *md_block = NULL;
+	struct metadata_block_0x0011 *md_block_11;
 	struct volume_groups_descriptor *vol_gr_des = NULL;
 	struct device *dev = crypt_metadata_device(cd);
 
@@ -641,7 +645,8 @@ static int _read_disklabel(
 		goto out;
 	}
 
-	off += le32_to_cpu(md_block->vol_gr_des_off);
+	md_block_11 = md_block;
+	off += le32_to_cpu(md_block_11->vol_gr_des_off);
 	if (off > FVAULT2_MAX_OFF) {
 		log_dbg(cd, _("Device offset overflow."));
 		r = -EINVAL;
