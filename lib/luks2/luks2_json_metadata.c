@@ -22,7 +22,6 @@
 
 #include "luks2_internal.h"
 #include "../integrity/integrity.h"
-#include <assert.h>
 #include <ctype.h>
 #include <uuid/uuid.h>
 

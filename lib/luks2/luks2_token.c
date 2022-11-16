@@ -21,7 +21,6 @@
 
 #include <ctype.h>
 #include <dlfcn.h>
-#include <assert.h>
 
 #include "luks2_internal.h"
 

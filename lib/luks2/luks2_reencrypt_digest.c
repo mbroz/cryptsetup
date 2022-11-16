@@ -21,7 +21,6 @@
  */
 
 #include "luks2_internal.h"
-#include <assert.h>
 
 #define MAX_STR 64
 

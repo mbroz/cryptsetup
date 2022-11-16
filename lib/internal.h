@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <fcntl.h>
+#include <assert.h>
 
 #include "nls.h"
 #include "bitops.h"
