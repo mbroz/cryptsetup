@@ -21,6 +21,7 @@
 #ifndef _CRYPTO_BACKEND_H
 #define _CRYPTO_BACKEND_H
 
+#include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>

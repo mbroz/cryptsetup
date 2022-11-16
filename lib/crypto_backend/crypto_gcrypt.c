@@ -22,7 +22,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
-#include <assert.h>
 #include <gcrypt.h>
 #include "crypto_backend_internal.h"
 

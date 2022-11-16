@@ -31,7 +31,6 @@
 #ifdef HAVE_SYS_SYSMACROS_H
 # include <sys/sysmacros.h>     /* for major, minor */
 #endif
-#include <assert.h>
 #include "internal.h"
 
 #define DM_CRYPT_TARGET		"crypt"

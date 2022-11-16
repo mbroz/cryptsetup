@@ -24,7 +24,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <assert.h>
 
 #include "crypto_backend.h"
 

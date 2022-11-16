@@ -21,7 +21,6 @@
 
 #include "luks2_internal.h"
 #include <uuid/uuid.h>
-#include <assert.h>
 
 struct area {
 	uint64_t offset;

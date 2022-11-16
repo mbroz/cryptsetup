@@ -32,7 +32,6 @@
 # include <sys/sysmacros.h>     /* for major, minor */
 #endif
 #include <libgen.h>
-#include <assert.h>
 
 #include "internal.h"
 #include "utils_device_locking.h"
