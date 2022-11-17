@@ -1228,6 +1228,10 @@ int LUKS_wipe_header_areas(struct luks_phdr *hdr,
 	uint64_t offset, length;
 	size_t wipe_block;
 
+	r = LUKS_check_device_size(ctx, hdr, 1);
+	if (r)
+		return r;
+
 	/* Wipe complete header, keyslots and padding areas with zeroes. */
 	offset = 0;
 	length = (uint64_t)hdr->payloadOffset * SECTOR_SIZE;
