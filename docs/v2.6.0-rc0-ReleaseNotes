@@ -1,0 +1,236 @@
+Cryptsetup 2.6.0-rc0 Release Notes
+==================================
+Stable release candidate with new features and bug fixes.
+
+Changes since version 2.5.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Introduce support for handling macOS FileVault2 devices (FVAULT2).
+
+  Cryptsetup now supports the mapping of FileVault2 full-disk encryption
+  by Apple for the macOS operating system using a native Linux kernel.
+  You can open an existing USB FileVault portable device and (with
+  the hfsplus filesystem driver) access the native data read/write.
+
+  Cryptsetup supports only (legacy) FileVault2 based on Core Storage
+  and HFS+ filesystem (introduced in MacOS X 10.7 Lion).
+  It does NOT support the new version of FileVault based on the APFS
+  filesystem used in recent macOS versions.
+
+  Header formatting and changes are not supported; cryptsetup never
+  changes the metadata on the device.
+
+  FVAULT2 extension requires kernel userspace crypto API and kernel
+  driver for HFS+ (hfsplus) filesystem (available on most systems today).
+
+  Example of using FileVault2 formatted USB device:
+
+  A typical encrypted device contains three partitions; the FileVault
+  encrypted partition is here sda2:
+
+  $ lsblk -o NAME,FSTYPE,LABEL /dev/sda
+    NAME   FSTYPE  LABEL
+    sda
+    ├─sda1 vfat    EFI
+    ├─sda2
+    └─sda3 hfsplus Boot OS X
+
+  Note: blkid does not recognize FileVault2 format yet.
+
+  To dump metadata information about the device, you can use
+  the fvault2Dump command:
+
+  $ cryptsetup fvault2Dump /dev/sda2
+    Header information for FVAULT2 device /dev/sda2.
+    Physical volume UUID:   6f353c05-daae-4e76-a0ee-6a9569a22d81
+    Family UUID:            f82cceb0-a788-4815-945a-53d57fcd55a8
+    Logical volume offset:  67108864 [bytes]
+    Logical volume size:    3288334336 [bytes]
+    Cipher:                 aes
+    Cipher mode:            xts-plain64
+    PBKDF2 iterations:      97962
+    PBKDF2 salt:            173a4ec7447662ec79ca7a47df6c2a01
+
+ To activate the device, use open --type fvault2 option:
+
+ $ cryptsetup open --type fvault2 /dev/sda2 test
+   Enter passphrase for /dev/sda2: ...
+
+ And check the status of the active device:
+
+ $ cryptsetup status test
+   /dev/mapper/test is active.
+   type:    FVAULT2
+   cipher:  aes-xts-plain64
+   keysize: 256 bits
+   key location: dm-crypt
+   device:  /dev/sda2
+   sector size:  512
+   offset:  131072 sectors
+   size:    6422528 sectors
+   mode:    read/write
+
+ Now, if the kernel contains hfsplus filesystem driver, you can mount
+ decrypted content:
+
+ $ mount /dev/mapper/test /mnt/test
+
+ For more info about implementation, please refer to the master thesis
+ by Pavel Tobias, which was the source for this extension.
+ https://is.muni.cz/th/p0aok/?lang=en
+
+* libcryptsetup: no longer use global memory locking through mlockall()
+
+  For many years, libcryptsetup locked all memory (including dependent
+  library address space) to prevent swapping sensitive content outside
+  of RAM.
+
+  This strategy no longer works as the locking of basic libraries exceeds
+  the memory locking limit if running as a non-root user.
+
+  Libcryptsetup now locks only memory ranges containing sensitive
+  material (keys) through crypt_safe_alloc() calls.
+
+  This change solves many reported mysterious problems of unexpected
+  failures. If the initial lock was still under the limit and succeeded,
+  some following memory allocation could fail later as it exceeded
+  the locking limit. If the initial locking fails,  memory locking
+  was quietly ignored completely.
+
+  The whole crypt_memory_lock() API call is deprecated; it no longer
+  calls memlockall().
+
+* libcryptsetup: process priority is increased only for key derivation
+  (PBKDF) calls.
+
+  Increasing priority was tight to memory locking and works only if
+  running under superuser.
+  Only PBKDF calls and benchmarking now increase the process priority.
+
+* Add new LUKS keyslot context handling functions and API.
+
+  In practice, the luksAddKey action does two operations.
+  It unlocks the existing device volume key and stores the unlocked
+  volume key in a new keyslot.
+  Previously the options were limited to key files and passphrases.
+
+  To unlock a keyslot user may:
+    - provide existing passphrase via interactive prompt (default method)
+    - use --key-file option to provide a file with a valid passphrase
+    - provide volume key directly via --volume-key-file
+    - unlock keyslot via all available LUKS2 tokens by --token-only
+    - unlock keyslot via specific token with --token-id
+    - unlock keyslot via specific token type by --token-type
+
+  To provide the passphrase for a new keyslot, a user may:
+    - provide existing passphrase via interactive prompt (default method)
+    - use --new-keyfile to read the passphrase from the file
+    - use --new-token-id to select LUKS2 token to get passphrase
+      for new keyslot. The new keyslot is assigned to the selected token
+      id if the operation is successful.
+
+  The volume key may now be extracted using a passphrase, keyfile, or
+  token. For LUKS devices, it also returns the volume key after
+  a successful crypt_format call.
+
+  The available methods (keyslot contexts) are passphrase, keyfile,
+  key (binary representation), and LUKS2 token.
+
+* Fix --disable-luks2-reencryption configuration option.
+
+* cryptsetup: Print a better error message and warning if the format
+  produces an image without space available for data.
+
+  Activation now fails early with a more descriptive message.
+
+* Print error if anti-forensic LUKS2 hash setting is not available.
+  If the specified hash was not available, activation quietly failed.
+
+* Fix internal crypt segment compare routine if the user
+  specified cipher in kernel format (capi: prefix).
+
+* cryptsetup: Add token unassign action.
+
+  This action allows removing token binding on specific keyslot.
+
+* veritysetup: add support for --use-tasklets option.
+
+  This option sets try_verify_in_tasklet kernel dm-verity option
+  (available since Linux kernel 6.0) to allow some performance
+  improvement on specific systems.
+
+* Provide pkgconfig Require.private settings.
+
+  While we do not completely provide static build on udev systems,
+  it helps produce statically linked binaries in certain situations.
+
+* Always update automake library files if autogen.sh is run.
+
+  For several releases, we distributed older automake scripts by mistake.
+
+* reencryption: Fix user defined moved segment size in LUKS2 decryption.
+
+  The --hotzone-size argument was ignored in cases where the actual data
+  size was less than the original LUKS2 data offset.
+
+* Delegate FIPS mode detection to configured crypto backend.
+  System FIPS mode check no longer depends on /etc/system-fips file.
+
+* tests: externally provided systemd plugin is now optionally compiled
+  from systemd git and tested with cryptsetup
+
+* tests: initial integration to OSS-fuzz project with basic crypt_load()
+  test for LUKS2 and JSON mutated fuzzing.
+
+  For more info, see README in tests/fuzz directory.
+
+* Update documentation, including FAQ and man pages.
+
+Libcryptsetup API extensions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The libcryptsetup API is backward compatible with existing symbols.
+
+New symbols:
+  crypt_keyslot_context_init_by_passphrase
+  crypt_keyslot_context_init_by_keyfile
+  crypt_keyslot_context_init_by_token
+  crypt_keyslot_context_init_by_volume_key
+  crypt_keyslot_context_get_error
+  crypt_keyslot_context_set_pin
+  crypt_keyslot_context_get_type
+  crypt_keyslot_context_free
+  crypt_keyslot_add_by_keyslot_context
+  crypt_volume_key_get_by_keyslot_context
+
+New defines:
+  CRYPT_FVAULT2 "FVAULT2" (FileVault2 compatible mode)
+
+  CRYPT_KC_TYPE_UNDEFINED (keyslot context types)
+  CRYPT_KC_TYPE_PASSPHRASE
+  CRYPT_KC_TYPE_KEYFILE
+  CRYPT_KC_TYPE_TOKEN
+  CRYPT_KC_TYPE_KEY
+
+  CRYPT_ACTIVATE_TASKLETS (dm-verity: use tasklets activation flag)
+
+WARNING!
+~~~~~~~~
+The next version of cryptsetup will change the encryption mode and key
+derivation option for the PLAIN format.
+
+This change will cause backward incompatibility.
+For this reason, the user will have to specify the exact parameters
+for cipher, key size, and key derivation parameters for plain format.
+
+The default encryption mode will be AES-XTS with 512bit key (AES-256).
+The CBC mode is no longer considered the best default, as it allows easy
+bit-flipped ciphertext modification attacks and performance problems.
+
+For the passphrase hashing in plain mode, the encryption key is directly
+derived through iterative hashing from a user-provided passphrase
+(except a keyfile that is not hashed).
+
+The default hash is RIPEMD160, which is no longer the best default
+option. The exact change will be yet discussed but should include
+the possibility of using a password-based key derivation function
+instead of iterative hashing.
