@@ -846,6 +846,50 @@ void LUKS2_reencrypt_free(struct crypt_device *cd, struct luks2_reencrypt *rh)
 	crypt_unlock_internal(cd, rh->reenc_lock);
 	free(rh);
 }
+
+int LUKS2_reencrypt_max_hotzone_size(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	const struct reenc_protection *rp,
+	int reencrypt_keyslot,
+	uint64_t *r_length)
+{
+#if USE_LUKS2_REENCRYPTION
+	int r;
+	uint64_t dummy, area_length;
+
+	assert(hdr);
+	assert(rp);
+	assert(r_length);
+
+	if (rp->type <= REENC_PROTECTION_NONE) {
+		*r_length = LUKS2_REENCRYPT_MAX_HOTZONE_LENGTH;
+		return 0;
+	}
+
+	if (rp->type == REENC_PROTECTION_DATASHIFT) {
+		*r_length = rp->p.ds.data_shift;
+		return 0;
+	}
+
+	r = LUKS2_keyslot_area(hdr, reencrypt_keyslot, &dummy, &area_length);
+	if (r < 0)
+		return -EINVAL;
+
+	if (rp->type == REENC_PROTECTION_JOURNAL) {
+		*r_length = area_length;
+		return 0;
+	}
+
+	if (rp->type == REENC_PROTECTION_CHECKSUM) {
+		*r_length = (area_length / rp->p.csum.hash_size) * rp->p.csum.block_size;
+		return 0;
+	}
+
+	return -EINVAL;
+#else
+	return -ENOTSUP;
+#endif
+}
 #if USE_LUKS2_REENCRYPTION
 static size_t reencrypt_get_alignment(struct crypt_device *cd,
 		struct luks2_hdr *hdr)
@@ -2677,46 +2721,6 @@ static int reencrypt_verify_resilience_params(struct crypt_device *cd,
 	}
 
 	log_err(cd, _("Unsupported resilience mode %s"), params->resilience);
-	return -EINVAL;
-}
-
-int LUKS2_reencrypt_max_hotzone_size(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	const struct reenc_protection *rp,
-	int reencrypt_keyslot,
-	uint64_t *r_length)
-{
-	int r;
-	uint64_t dummy, area_length;
-
-	assert(hdr);
-	assert(rp);
-	assert(r_length);
-
-	if (rp->type <= REENC_PROTECTION_NONE) {
-		*r_length = LUKS2_REENCRYPT_MAX_HOTZONE_LENGTH;
-		return 0;
-	}
-
-	if (rp->type == REENC_PROTECTION_DATASHIFT) {
-		*r_length = rp->p.ds.data_shift;
-		return 0;
-	}
-
-	r = LUKS2_keyslot_area(hdr, reencrypt_keyslot, &dummy, &area_length);
-	if (r < 0)
-		return -EINVAL;
-
-	if (rp->type == REENC_PROTECTION_JOURNAL) {
-		*r_length = area_length;
-		return 0;
-	}
-
-	if (rp->type == REENC_PROTECTION_CHECKSUM) {
-		*r_length = (area_length / rp->p.csum.hash_size) * rp->p.csum.block_size;
-		return 0;
-	}
-
 	return -EINVAL;
 }
 
