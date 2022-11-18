@@ -761,9 +761,9 @@ static int _read_encrypted_metadata(
 
 		md_block_header = md_block;
 		block_type = le16_to_cpu(md_block_header->block_type);
-		log_dbg(cd, "Get FVAULT2 metadata block %" PRIu64 " type 0x%04X.", i, block_type);
 		switch (block_type) {
 		case 0x0019:
+			log_dbg(cd, "Get FVAULT2 metadata block %" PRIu64 " type 0x0019.", i);
 			r = _parse_metadata_block_0x0019(md_block,
 				&params->pbkdf2_iters,
 				(uint8_t *)params->pbkdf2_salt,
@@ -775,6 +775,7 @@ static int _read_encrypted_metadata(
 			break;
 
 		case 0x001A:
+			log_dbg(cd, "Get FVAULT2 metadata block %" PRIu64 " type 0x001A.", i);
 			r = _parse_metadata_block_0x001a(md_block,
 				&params->log_vol_size,
 				params->family_uuid);
@@ -784,6 +785,7 @@ static int _read_encrypted_metadata(
 			break;
 
 		case 0x0305:
+			log_dbg(cd, "Get FVAULT2 metadata block %" PRIu64 " type 0x0305.", i);
 			r = _parse_metadata_block_0x0305(md_block,
 				&log_vol_blkoff);
 			if (r < 0)
