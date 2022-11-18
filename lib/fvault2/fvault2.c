@@ -256,7 +256,7 @@ static int _unwrap_key(
 
 	/* CHAPTER 6.1, ALGORITHM 2: W^-1(C) */
 
-	/* intialize variables */
+	/* initialize variables */
 	a = ((const uint64_t *)key_wrapped)[0]; /* A = C_1 (see step 1c) */
 	r2 = ((const uint64_t *)key_wrapped)[1]; /* R_1 = C_2 (see step 1d) */
 	r3 = ((const uint64_t *)key_wrapped)[2]; /* R_2 = C_3 (see step 1d) */
