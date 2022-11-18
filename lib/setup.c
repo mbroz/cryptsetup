@@ -1732,9 +1732,6 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	if (!device_size(crypt_data_device(cd), &dev_size) &&
-	    dev_size < (crypt_get_data_offset(cd) * SECTOR_SIZE))
-		log_std(cd, _("WARNING: Data offset is outside of currently available data device.\n"));
 
 	if (asprintf(&cd->u.luks1.cipher_spec, "%s-%s", cipher, cipher_mode) < 0) {
 		cd->u.luks1.cipher_spec = NULL;
@@ -1750,10 +1747,17 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	}
 
 	r = LUKS_write_phdr(&cd->u.luks1.hdr, cd);
-	if (r)
+	if (r) {
 		free(cd->u.luks1.cipher_spec);
+		return r;
+	}
 
-	return r;
+	if (!device_size(crypt_data_device(cd), &dev_size) &&
+	    dev_size <= (crypt_get_data_offset(cd) * SECTOR_SIZE))
+		log_std(cd, _("Device %s is too small for activation, there is no remaining space for data.\n"),
+			      device_path(crypt_data_device(cd)));
+
+	return 0;
 }
 
 static int _crypt_format_luks2(struct crypt_device *cd,
@@ -1929,9 +1933,6 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	if (dev_size < (crypt_get_data_offset(cd) * SECTOR_SIZE))
-		log_std(cd, _("WARNING: Data offset is outside of currently available data device.\n"));
-
 	if (cd->metadata_size && (cd->metadata_size != LUKS2_metadata_size(&cd->u.luks2.hdr)))
 		log_std(cd, _("WARNING: LUKS2 metadata size changed to %" PRIu64 " bytes.\n"),
 			LUKS2_metadata_size(&cd->u.luks2.hdr));
@@ -2012,10 +2013,18 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	}
 
 out:
-	if (r)
+	if (r) {
 		LUKS2_hdr_free(cd, &cd->u.luks2.hdr);
+		return r;
+	}
 
-	return r;
+	/* Device size can be larger now if it is a file container */
+	if (!device_size(crypt_data_device(cd), &dev_size) &&
+	    dev_size <= (crypt_get_data_offset(cd) * SECTOR_SIZE))
+		log_std(cd, _("Device %s is too small for activation, there is no remaining space for data.\n"),
+			      device_path(crypt_data_device(cd)));
+
+	return 0;
 }
 
 static int _crypt_format_loopaes(struct crypt_device *cd,

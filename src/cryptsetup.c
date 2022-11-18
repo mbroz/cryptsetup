@@ -1567,6 +1567,7 @@ static int action_open_luks(void)
 	int r, keysize, tries;
 	char *password = NULL;
 	size_t passwordLen;
+	struct stat st;
 
 	if (ARG_SET(OPT_REFRESH_ID)) {
 		activated_name = action_argc > 1 ? action_argv[1] : action_argv[0];
@@ -1590,6 +1591,14 @@ static int action_open_luks(void)
 
 		if (!data_device && (crypt_get_data_offset(cd) < 8) && !ARG_SET(OPT_TEST_PASSPHRASE_ID)) {
 			log_err(_("Reduced data offset is allowed only for detached LUKS header."));
+			r = -EINVAL;
+			goto out;
+		}
+
+		if (activated_name && !stat(crypt_get_device_name(cd), &st) && S_ISREG(st.st_mode) &&
+		    crypt_get_data_offset(cd) >= ((uint64_t)st.st_size / SECTOR_SIZE)) {
+			log_err(_("LUKS file container %s is too small for activation, there is no remaining space for data."),
+				  crypt_get_device_name(cd));
 			r = -EINVAL;
 			goto out;
 		}
