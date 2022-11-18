@@ -21,7 +21,7 @@ features than plain dm-crypt. On the other hand, the header is visible
 and vulnerable to damage.
 
 In addition, cryptsetup provides limited support for the use of loop-AES
-volumes, TrueCrypt, VeraCrypt, and BitLocker compatible volumes.
+volumes, TrueCrypt, VeraCrypt, BitLocker and FileVault2 compatible volumes.
 
 For more information about specific cryptsetup action see
 *cryptsetup-<action>*(8), where *<action>* is the name of the
@@ -388,6 +388,50 @@ See *cryptsetup-bitlkDump*(8).
 Please note that cryptsetup does not use any Windows BitLocker code,
 please report all problems related to this compatibility extension to
 the cryptsetup project.
+
+== FVAULT2 (Apple macOS FileVault2 compatible) EXTENSION
+
+cryptsetup supports the mapping of FileVault2 (FileVault2 full-disk
+encryption) by Apple for the macOS operating system using a native Linux
+kernel API.
+
+*NOTE:* cryptsetup supports only FileVault2 based on Core Storage and HFS+
+filesystem (introduced in MacOS X 10.7 Lion).
+It does NOT support the new version of FileVault based on the APFS
+filesystem used in recent macOS versions.
+
+Header formatting and FVAULT2 header changes are not supported;
+cryptsetup never changes the FVAULT2 header on-device.
+
+FVAULT2 extension requires kernel userspace crypto API to be available
+(for details, see TCRYPT section) and kernel driver for HFS+ (hfsplus)
+filesystem.
+
+Cryptsetup should recognize the basic configuration for portable drives.
+
+The *fvault2Dump* command should work for all recognized FVAULT2 devices
+and doesn't require superuser privilege.
+
+For unlocking with the *open*, a password must be provided.
+Other unlocking methods are not supported.
+
+=== OPEN
+*open --type fvault2 <device> <name>* +
+fvault2Open <device> <name> (*old syntax*)
+
+Opens the FVAULT2 (a FileVault2-compatible) <device> (usually the second
+partition on the device) and sets up a mapping <name>. +
+See *cryptsetup-open*(8).
+
+=== DUMP
+*fvault2Dump <device>*
+
+Dump the header information of an FVAULT2 device. +
+See *cryptsetup-fvault2Dump*(8).
+
+Note that cryptsetup does not use any macOS code or proprietary
+specifications. Please report all problems related to this compatibility
+extension to the cryptsetup project.
 
 == MISCELLANEOUS ACTIONS
 
