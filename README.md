@@ -6,7 +6,7 @@ What the ...?
 on the [DMCrypt](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt) kernel module.
 
 These include **plain** **dm-crypt** volumes, **LUKS** volumes, **loop-AES**,
-**TrueCrypt** (including **VeraCrypt** extension) and **BitLocker** formats.
+**TrueCrypt** (including **VeraCrypt** extension), **BitLocker** and **FileVault2** formats.
 
 The project also includes a **veritysetup** utility used to conveniently setup
 [DMVerity](https://gitlab.com/cryptsetup/cryptsetup/wikis/DMVerity) block integrity checking kernel module
@@ -44,6 +44,12 @@ Why LUKS?
 Download
 --------
 All release tarballs and release notes are hosted on [kernel.org](https://www.kernel.org/pub/linux/utils/cryptsetup/).
+
+**The latest stable cryptsetup release candidate version is 2.6.0-rc0**
+  * [cryptsetup-2.6.0-rc0.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.6/cryptsetup-2.6.0-rc0.tar.xz)
+  * Signature [cryptsetup-2.6.0-rc0.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.6/cryptsetup-2.6.0-rc0.tar.sign)
+    _(You need to decompress file first to check signature.)_
+  * [Cryptsetup 2.6.0-rc0 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.6/v2.6.0-rc0-ReleaseNotes).
 
 **The latest stable cryptsetup version is 2.5.0**
   * [cryptsetup-2.5.0.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.5/cryptsetup-2.5.0.tar.xz)
