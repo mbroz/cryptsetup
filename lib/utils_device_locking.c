@@ -105,7 +105,7 @@ static int open_lock_dir(struct crypt_device *cd, const char *dir, const char *b
 	lockdfd = openat(dirfd, base, O_RDONLY | O_NOFOLLOW | O_DIRECTORY | O_CLOEXEC);
 	if (lockdfd < 0) {
 		if (errno == ENOENT) {
-			log_dbg(cd, _("Locking directory %s/%s will be created with default compiled-in permissions."), dir, base);
+			log_dbg(cd, "Locking directory %s/%s will be created with default compiled-in permissions.", dir, base);
 
 			/* success or failure w/ errno == EEXIST either way just try to open the 'base' directory again */
 			if (mkdirat(dirfd, base, DEFAULT_LUKS2_LOCK_DIR_PERMS) && errno != EEXIST)

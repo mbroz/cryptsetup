@@ -546,7 +546,7 @@ static int _read_volume_header(
 
 	r = _check_crc(vol_header, FVAULT2_VOL_HEADER_SIZE);
 	if (r < 0) {
-		log_dbg(cd, _("CRC mismatch."));
+		log_dbg(cd, "CRC mismatch.");
 		goto out;
 	}
 
@@ -558,13 +558,13 @@ static int _read_volume_header(
 	}
 
 	if (be16_to_cpu(vol_header->magic) != FVAULT2_CORE_STORAGE_MAGIC) {
-		log_dbg(cd, _("Invalid Core Storage magic bytes."));
+		log_dbg(cd, "Invalid Core Storage magic bytes.");
 		r = -EINVAL;
 		goto out;
 	}
 
 	if (le32_to_cpu(vol_header->key_data_size) != FVAULT2_AES_KEY_SIZE) {
-		log_dbg(cd, _("Unsupported AES key size: %" PRIu32 " bytes."),
+		log_dbg(cd, "Unsupported AES key size: %" PRIu32 " bytes.",
 			le32_to_cpu(vol_header->key_data_size));
 		r = -EINVAL;
 		goto out;
@@ -620,7 +620,7 @@ static int _read_disklabel(
 
 	if (uint64_mult_overflow(&off, disklbl_blkoff, block_size) ||
 	    off > FVAULT2_MAX_OFF) {
-		log_dbg(cd, _("Device offset overflow."));
+		log_dbg(cd, "Device offset overflow.");
 		r = -EINVAL;
 		goto out;
 	}
@@ -634,7 +634,7 @@ static int _read_disklabel(
 
 	r = _check_crc(md_block, FVAULT2_MD_BLOCK_SIZE);
 	if (r < 0) {
-		log_dbg(cd, _("CRC mismatch."));
+		log_dbg(cd, "CRC mismatch.");
 		goto out;
 	}
 
@@ -647,7 +647,7 @@ static int _read_disklabel(
 	md_block_11 = md_block;
 	off += le32_to_cpu(md_block_11->vol_gr_des_off);
 	if (off > FVAULT2_MAX_OFF) {
-		log_dbg(cd, _("Device offset overflow."));
+		log_dbg(cd, "Device offset overflow.");
 		r = -EINVAL;
 		goto out;
 	}
@@ -723,7 +723,7 @@ static int _read_encrypted_metadata(
 
 	if (uint64_mult_overflow(&start_off, start_blkoff, block_size) ||
 	    start_off > FVAULT2_MAX_OFF) {
-		log_dbg(cd, _("Device offset overflow."));
+		log_dbg(cd, "Device offset overflow.");
 		r = -EINVAL;
 		goto out;
 	}
@@ -732,7 +732,7 @@ static int _read_encrypted_metadata(
 	for (i = 0; i < blocks_n; i++) {
 		off = start_off + i * FVAULT2_MD_BLOCK_SIZE;
 		if (off > FVAULT2_MAX_OFF) {
-			log_dbg(cd, _("Device offset overflow."));
+			log_dbg(cd, "Device offset overflow.");
 			r = -EINVAL;
 			goto out;
 		}
@@ -755,7 +755,7 @@ static int _read_encrypted_metadata(
 
 		r = _check_crc(md_block, FVAULT2_MD_BLOCK_SIZE);
 		if (r < 0) {
-			log_dbg(cd, _("CRC mismatch."));
+			log_dbg(cd, "CRC mismatch.");
 			goto out;
 		}
 
@@ -792,7 +792,7 @@ static int _read_encrypted_metadata(
 				goto out;
 			if (uint64_mult_overflow(&params->log_vol_off,
 			    log_vol_blkoff, block_size)) {
-				log_dbg(cd, _("Device offset overflow."));
+				log_dbg(cd, "Device offset overflow.");
 				r = -EINVAL;
 				goto out;
 			}
@@ -802,7 +802,7 @@ static int _read_encrypted_metadata(
 	}
 
 	if (status != FVAULT2_ENC_MD_PARSED_ALL) {
-		log_dbg(cd, _("Necessary FVAULT2 metadata blocks not found."));
+		log_dbg(cd, "Necessary FVAULT2 metadata blocks not found.");
 		r = -EINVAL;
 		goto out;
 	}
@@ -917,7 +917,7 @@ int FVAULT2_get_volume_key(
 	*vol_key = NULL;
 
 	if (uuid_parse(params->family_uuid, family_uuid_bin) < 0) {
-		log_dbg(cd, _("Could not parse logical volume family UUID: %s."),
+		log_dbg(cd, "Could not parse logical volume family UUID: %s.",
 			params->family_uuid);
 		r = -EINVAL;
 		goto out;

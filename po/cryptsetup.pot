@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: cryptsetup 2.6.0-rc0\n"
 "Report-Msgid-Bugs-To: cryptsetup@lists.linux.dev\n"
-"POT-Creation-Date: 2022-11-18 22:14+0100\n"
+"POT-Creation-Date: 2022-11-20 12:33+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -774,12 +774,6 @@ msgid ""
 "missing)."
 msgstr ""
 
-#: lib/utils_device_locking.c:108
-#, c-format
-msgid ""
-"Locking directory %s/%s will be created with default compiled-in permissions."
-msgstr ""
-
 #: lib/utils_device_locking.c:118
 #, c-format
 msgid ""
@@ -1245,39 +1239,9 @@ msgstr ""
 msgid "Could not read %u bytes of volume header."
 msgstr ""
 
-#: lib/fvault2/fvault2.c:549 lib/fvault2/fvault2.c:637
-#: lib/fvault2/fvault2.c:758
-msgid "CRC mismatch."
-msgstr ""
-
 #: lib/fvault2/fvault2.c:554
 #, c-format
 msgid "Unsupported FVAULT2 version %<PRIu16>."
-msgstr ""
-
-#: lib/fvault2/fvault2.c:561
-msgid "Invalid Core Storage magic bytes."
-msgstr ""
-
-#: lib/fvault2/fvault2.c:567
-#, c-format
-msgid "Unsupported AES key size: %<PRIu32> bytes."
-msgstr ""
-
-#: lib/fvault2/fvault2.c:623 lib/fvault2/fvault2.c:650
-#: lib/fvault2/fvault2.c:726 lib/fvault2/fvault2.c:735
-#: lib/fvault2/fvault2.c:795 lib/verity/verity_hash.c:167
-#: lib/verity/verity_hash.c:300 lib/verity/verity_hash.c:311
-msgid "Device offset overflow."
-msgstr ""
-
-#: lib/fvault2/fvault2.c:805
-msgid "Necessary FVAULT2 metadata blocks not found."
-msgstr ""
-
-#: lib/fvault2/fvault2.c:920
-#, c-format
-msgid "Could not parse logical volume family UUID: %s."
 msgstr ""
 
 #: lib/verity/verity.c:68 lib/verity/verity.c:182
@@ -1332,6 +1296,11 @@ msgstr ""
 #: lib/verity/verity_hash.c:66
 #, c-format
 msgid "Spare area is not zeroed at position %<PRIu64>."
+msgstr ""
+
+#: lib/verity/verity_hash.c:167 lib/verity/verity_hash.c:300
+#: lib/verity/verity_hash.c:311
+msgid "Device offset overflow."
 msgstr ""
 
 #: lib/verity/verity_hash.c:218
@@ -1926,12 +1895,12 @@ msgstr ""
 
 #: src/cryptsetup.c:108 src/cryptsetup.c:1901
 #, c-format
-msgid "Enter token PIN:"
+msgid "Enter token PIN: "
 msgstr ""
 
 #: src/cryptsetup.c:110 src/cryptsetup.c:1903
 #, c-format
-msgid "Enter token %d PIN:"
+msgid "Enter token %d PIN: "
 msgstr ""
 
 #: src/cryptsetup.c:159 src/cryptsetup.c:1103 src/cryptsetup.c:1430
@@ -2222,7 +2191,7 @@ msgstr ""
 msgid "Device %s is not a valid LUKS2 device."
 msgstr ""
 
-#: src/cryptsetup.c:1867
+#: src/cryptsetup.c:1867 src/cryptsetup.c:2072
 msgid "Enter new passphrase for key slot: "
 msgstr ""
 
@@ -2233,10 +2202,6 @@ msgstr ""
 #: src/cryptsetup.c:2028 src/utils_reencrypt_luks1.c:1149
 #, c-format
 msgid "Enter any existing passphrase: "
-msgstr ""
-
-#: src/cryptsetup.c:2072
-msgid "Enter new passphrase for key slot:"
 msgstr ""
 
 #: src/cryptsetup.c:2152
