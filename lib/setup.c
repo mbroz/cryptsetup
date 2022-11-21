@@ -4897,10 +4897,10 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 		return -ENOMEM;
 	}
 
-	if (kc && !kc->get_passphrase)
+	if (kc && (!kc->get_passphrase || kc->type == CRYPT_KC_TYPE_KEY))
 		return -EINVAL;
 
-	if (kc && kc->get_passphrase) {
+	if (kc) {
 		r = kc->get_passphrase(cd, kc, &passphrase, &passphrase_size);
 		if (r < 0)
 			return r;
