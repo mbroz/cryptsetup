@@ -1229,8 +1229,6 @@ int crypt_keyslot_context_set_pin(struct crypt_device *cd,
  * @addtogroup crypt-keyslot-context-types
  * @{
  */
-/** keyslot context is not properly initialized */
-#define CRYPT_KC_TYPE_UNDEFINED  INT16_C(0)
 /** keyslot context initialized by passphrase (@link crypt_keyslot_context_init_by_passphrase @endlink) */
 #define CRYPT_KC_TYPE_PASSPHRASE INT16_C(1)
 /** keyslot context initialized by keyfile (@link crypt_keyslot_context_init_by_keyfile @endlink) */
