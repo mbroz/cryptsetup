@@ -54,18 +54,19 @@ function skip()
 [ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] && skip "WARNING: Variable RUN_SYSTEMD_PLUGIN_TEST must be defined, test skipped."
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
-bin_check git
 bin_check swtpm
 bin_check swtpm_ioctl
-bin_check meson
-bin_check ninja
-bin_check pkgconf
 
 CRYPTENROLL_LD_PRELOAD=""
 
 # if CRYPTSETUP_PATH is defined, we run against installed binaries,
 # otherwise we compile systemd tokens from source
 [ -z "$CRYPTSETUP_PATH" ] && {
+    bin_check git
+    bin_check meson
+    bin_check ninja
+    bin_check pkgconf
+
     TOKEN_PATH=fake_token_path.so
     [ -f $TOKEN_PATH ] || skip "Please compile $TOKEN_PATH."
     INSTALL_PATH=$(pwd)/external-tokens/install
