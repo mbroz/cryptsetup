@@ -108,7 +108,7 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
     SWTPM_STATE_DIR=$(mktemp -d /tmp/systemd_swtpm_state.XXXXXX)
     modprobe tpm_vtpm_proxy || skip "Failed to load tpm_vtpm_proxy kernel module, required for emulated TPM."
     SWTPM_LOG=$(swtpm chardev --vtpm-proxy --tpm2 --tpmstate dir=$SWTPM_STATE_DIR -d --pid file=$SWTPM_PIDFILE --ctrl type=unixio,path=$SWTPM_STATE_DIR/ctrl.sock)
-    TPM_PATH=$(echo $SWTPM_LOG | grep -Eo '\/dev\/tpm([0-9])+' | sed 's/tpm/tpmrm/')
+    TPM_PATH=$(echo $SWTPM_LOG | grep -Eo '/dev/tpm([0-9])+' | sed 's/tpm/tpmrm/')
     [ -z "$TPM_PATH" ] && skip "No TPM_PATH set and swtpm failed, test skipped."
     sleep 1
     echo "Virtual TPM set up at $TPM_PATH"
