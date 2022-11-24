@@ -4278,7 +4278,7 @@ int crypt_resume_by_token_pin(struct crypt_device *cd, const char *name,
 		return -EINVAL;
 	}
 
-	r = LUKS2_token_unlock_key(cd, &cd->u.luks2.hdr, token, type,
+	r = LUKS2_token_unlock_key(cd, &cd->u.luks2.hdr, CRYPT_ANY_SLOT, token, type,
 				   pin, pin_size, CRYPT_DEFAULT_SEGMENT, usrptr, &vk);
 	keyslot = r;
 	if (r >= 0)
@@ -6636,8 +6636,8 @@ int crypt_activate_by_token_pin(struct crypt_device *cd, const char *name,
 	if (r < 0)
 		return r;
 
-	return LUKS2_token_open_and_activate(cd, &cd->u.luks2.hdr, token, name, type,
-					     pin, pin_size, flags, usrptr);
+	return LUKS2_token_open_and_activate(cd, &cd->u.luks2.hdr, CRYPT_ANY_SLOT, token,
+					     name, type, pin, pin_size, flags, usrptr);
 }
 
 int crypt_activate_by_token(struct crypt_device *cd,

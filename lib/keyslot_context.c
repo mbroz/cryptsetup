@@ -206,7 +206,7 @@ static int get_volume_key_by_key(struct crypt_device *cd,
 
 static int get_luks2_key_by_token(struct crypt_device *cd,
 	struct crypt_keyslot_context *kc,
-	int keyslot __attribute__((unused)),
+	int keyslot,
 	int segment,
 	struct volume_key **r_vk)
 {
@@ -216,7 +216,7 @@ static int get_luks2_key_by_token(struct crypt_device *cd,
 	assert(kc && kc->type == CRYPT_KC_TYPE_TOKEN);
 	assert(r_vk);
 
-	r = LUKS2_token_unlock_key(cd, crypt_get_hdr(cd, CRYPT_LUKS2), kc->u.t.id, kc->u.t.type,
+	r = LUKS2_token_unlock_key(cd, crypt_get_hdr(cd, CRYPT_LUKS2), keyslot, kc->u.t.id, kc->u.t.type,
 				   kc->u.t.pin, kc->u.t.pin_size, segment, kc->u.t.usrptr, r_vk);
 	if (r < 0)
 		kc->error = r;
@@ -226,10 +226,10 @@ static int get_luks2_key_by_token(struct crypt_device *cd,
 
 static int get_luks2_volume_key_by_token(struct crypt_device *cd,
 	struct crypt_keyslot_context *kc,
-	int keyslot __attribute__((unused)),
+	int keyslot,
 	struct volume_key **r_vk)
 {
-	return get_luks2_key_by_token(cd, kc, -2 /* unused */, CRYPT_DEFAULT_SEGMENT, r_vk);
+	return get_luks2_key_by_token(cd, kc, keyslot, CRYPT_DEFAULT_SEGMENT, r_vk);
 }
 
 static int get_passphrase_by_token(struct crypt_device *cd,
