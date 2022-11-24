@@ -163,7 +163,7 @@ int keyring_get_passphrase(const char *key_desc,
 	ret = keyctl_read(kid, NULL, 0);
 	if (ret > 0) {
 		len = ret;
-		buf = malloc(len);
+		buf = crypt_safe_alloc(len);
 		if (!buf)
 			return -ENOMEM;
 
@@ -173,9 +173,7 @@ int keyring_get_passphrase(const char *key_desc,
 
 	if (ret < 0) {
 		err = errno;
-		if (buf)
-			crypt_safe_memzero(buf, len);
-		free(buf);
+		crypt_safe_free(buf);
 		return -err;
 	}
 

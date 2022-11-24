@@ -37,6 +37,7 @@ static struct crypt_token_handler_internal token_handlers[LUKS2_TOKENS_MAX] = {
 	  .u = {
 		  .v1 = { .name = LUKS2_TOKEN_KEYRING,
 			  .open = keyring_open,
+			  .buffer_free = keyring_buffer_free,
 			  .validate = keyring_validate,
 			  .dump = keyring_dump }
 	       }

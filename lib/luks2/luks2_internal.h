@@ -189,6 +189,8 @@ void keyring_dump(struct crypt_device *cd, const char *json);
 
 int keyring_validate(struct crypt_device *cd, const char *json);
 
+void keyring_buffer_free(void *buffer, size_t buffer_size);
+
 struct crypt_token_handler_v2 {
 	const char *name;
 	crypt_token_open_func open;
