@@ -31,9 +31,9 @@ Changes since version 2.5.0
   $ lsblk -o NAME,FSTYPE,LABEL /dev/sda
     NAME   FSTYPE  LABEL
     sda
-    ├─sda1 vfat    EFI
-    ├─sda2
-    └─sda3 hfsplus Boot OS X
+    |-sda1 vfat    EFI
+    |-sda2
+    `-sda3 hfsplus Boot OS X
 
   Note: blkid does not recognize FileVault2 format yet.
 
@@ -114,6 +114,9 @@ Changes since version 2.5.0
   volume key in a new keyslot.
   Previously the options were limited to key files and passphrases.
 
+  Newly available methods (keyslot contexts) are passphrase, keyfile,
+  key (binary representation), and LUKS2 token.
+
   To unlock a keyslot user may:
     - provide existing passphrase via interactive prompt (default method)
     - use --key-file option to provide a file with a valid passphrase
@@ -129,12 +132,9 @@ Changes since version 2.5.0
       for new keyslot. The new keyslot is assigned to the selected token
       id if the operation is successful.
 
-  The volume key may now be extracted using a passphrase, keyfile, or
+* The volume key may now be extracted using a passphrase, keyfile, or
   token. For LUKS devices, it also returns the volume key after
   a successful crypt_format call.
-
-  The available methods (keyslot contexts) are passphrase, keyfile,
-  key (binary representation), and LUKS2 token.
 
 * Fix --disable-luks2-reencryption configuration option.
 
@@ -205,7 +205,7 @@ New symbols:
 New defines:
   CRYPT_FVAULT2 "FVAULT2" (FileVault2 compatible mode)
 
-  CRYPT_KC_TYPE_UNDEFINED (keyslot context types)
+Keyslot context types:
   CRYPT_KC_TYPE_PASSPHRASE
   CRYPT_KC_TYPE_KEYFILE
   CRYPT_KC_TYPE_TOKEN
