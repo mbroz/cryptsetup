@@ -114,7 +114,9 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
     echo "Virtual TPM set up at $TPM_PATH"
 }
 
-export LD_PRELOAD="$LD_PRELOAD:$(pwd)/fake_systemd_tpm_path.so"
+FAKE_TPM_PATH="$(pwd)/fake_systemd_tpm_path.so"
+[ -f $FAKE_TPM_PATH ] || skip "Please compile $FAKE_TPM_PATH."
+export LD_PRELOAD="$LD_PRELOAD:$FAKE_TPM_PATH"
 
 export TPM_PATH=$TPM_PATH
 echo "TPM path is $TPM_PATH"
