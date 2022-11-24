@@ -54,18 +54,19 @@ function skip()
 [ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] && skip "WARNING: Variable RUN_SYSTEMD_PLUGIN_TEST must be defined, test skipped."
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
-bin_check git
 bin_check swtpm
 bin_check swtpm_ioctl
-bin_check meson
-bin_check ninja
-bin_check pkgconf
 
 CRYPTENROLL_LD_PRELOAD=""
 
 # if CRYPTSETUP_PATH is defined, we run against installed binaries,
 # otherwise we compile systemd tokens from source
 [ -z "$CRYPTSETUP_PATH" ] && {
+    bin_check git
+    bin_check meson
+    bin_check ninja
+    bin_check pkgconf
+
     TOKEN_PATH=fake_token_path.so
     [ -f $TOKEN_PATH ] || skip "Please compile $TOKEN_PATH."
     INSTALL_PATH=$(pwd)/external-tokens/install
@@ -108,13 +109,15 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
     SWTPM_STATE_DIR=$(mktemp -d /tmp/systemd_swtpm_state.XXXXXX)
     modprobe tpm_vtpm_proxy || skip "Failed to load tpm_vtpm_proxy kernel module, required for emulated TPM."
     SWTPM_LOG=$(swtpm chardev --vtpm-proxy --tpm2 --tpmstate dir=$SWTPM_STATE_DIR -d --pid file=$SWTPM_PIDFILE --ctrl type=unixio,path=$SWTPM_STATE_DIR/ctrl.sock)
-    TPM_PATH=$(echo $SWTPM_LOG | grep -Eo '\/dev\/tpm([0-9])+' | sed 's/tpm/tpmrm/')
+    TPM_PATH=$(echo $SWTPM_LOG | grep -Eo '/dev/tpm([0-9])+' | sed 's/tpm/tpmrm/')
     [ -z "$TPM_PATH" ] && skip "No TPM_PATH set and swtpm failed, test skipped."
     sleep 1
     echo "Virtual TPM set up at $TPM_PATH"
 }
 
-export LD_PRELOAD="$LD_PRELOAD:$(pwd)/fake_systemd_tpm_path.so"
+FAKE_TPM_PATH="$(pwd)/fake_systemd_tpm_path.so"
+[ -f $FAKE_TPM_PATH ] || skip "Please compile $FAKE_TPM_PATH."
+export LD_PRELOAD="$LD_PRELOAD:$FAKE_TPM_PATH"
 
 export TPM_PATH=$TPM_PATH
 echo "TPM path is $TPM_PATH"

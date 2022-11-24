@@ -16,6 +16,7 @@ endif
 
 ifneq ($(RUN_SYSTEMD_PLUGIN_TEST),)
 TESTS += systemd-test-plugin
+TESTS_UTILS += fake_systemd_tpm_path.so
 endif
 
 check-programs: $(TESTS_UTILS) $(TESTS)
@@ -46,6 +47,9 @@ all-symbols-test.o: test-symbols-list.h
 
 all-symbols-test: all-symbols-test.o
 	$(CC) -o $@ $^ -ldl
+
+fake_systemd_tpm_path.so: fake_systemd_tpm_path.c
+	$(CC) -fPIC -shared -D_GNU_SOURCE -o fake_systemd_tpm_path.so fake_systemd_tpm_path.c
 
 tests: $(TESTS_UTILS) $(TESTS)
 	@for test in $(sort $(TESTS)); do \
