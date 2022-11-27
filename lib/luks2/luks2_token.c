@@ -764,7 +764,7 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 {
 	bool use_keyring;
 	int keyslot, r, segment;
-	struct volume_key *vk = NULL;
+	struct volume_key *p_crypt, *p_opal, *crypt_key = NULL, *opal_key = NULL, *vk = NULL;
 
 	if (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY)
 		segment = CRYPT_ANY_SEGMENT;
@@ -779,23 +779,39 @@ int LUKS2_token_open_and_activate(struct crypt_device *cd,
 
 	keyslot = r;
 
-	if (!crypt_use_keyring_for_vk(cd))
+	if (LUKS2_segment_is_hw_opal(hdr, CRYPT_DEFAULT_SEGMENT)) {
+		r = LUKS2_split_crypt_and_opal_keys(cd, hdr, vk, &crypt_key, &opal_key);
+		if (r < 0) {
+			crypt_free_volume_key(vk);
+			return r;
+		}
+
+		p_crypt = crypt_key;
+		p_opal = opal_key ?: vk;
+	} else {
+		p_crypt = vk;
+		p_opal = NULL;
+	}
+
+	if (!crypt_use_keyring_for_vk(cd) || !p_crypt)
 		use_keyring = false;
 	else
 		use_keyring = ((name && !crypt_is_cipher_null(crypt_get_cipher(cd))) ||
 			       (flags & CRYPT_ACTIVATE_KEYRING_KEY));
 
 	if (use_keyring) {
-		if (!(r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd, hdr, vk, keyslot)))
+		if (!(r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd, hdr, p_crypt, keyslot)))
 			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 	}
 
 	if (r >= 0 && name)
-		r = LUKS2_activate(cd, name, vk, flags);
+		r = LUKS2_activate(cd, name, p_crypt, p_opal, flags);
 
 	if (r < 0)
-		crypt_drop_keyring_key(cd, vk);
+		crypt_drop_keyring_key(cd, p_crypt);
 	crypt_free_volume_key(vk);
+	crypt_free_volume_key(crypt_key);
+	crypt_free_volume_key(opal_key);
 
 	return r < 0 ? r : keyslot;
 }

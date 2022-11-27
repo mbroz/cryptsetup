@@ -635,6 +635,28 @@ if get_option('blkid')
     endforeach
 endif
 
+have = get_option('hw-opal')
+if have
+    if cc.has_header('linux/sed-opal.h')
+        foreach symbol : [
+            'OPAL_FL_SUM_SUPPORTED',
+            'IOC_OPAL_GET_LR_STATUS',
+            'IOC_OPAL_GET_GEOMETRY',
+        ]
+            if not cc.has_header_symbol('linux/sed-opal.h', symbol)
+                have = false
+                warning('OPAL support disabled, linux/sed-opal.h does not define ' + symbol)
+            endif
+        endforeach
+
+    else
+        have = false
+        warning('OPAL support disabled, linux/sed-opal.h not found, requires kernel v6.4.')
+    endif
+endif
+conf.set10('HAVE_HW_OPAL', have, description: 'Define to 1 to enable OPAL support.')
+
+
 # ==========================================================================
 # Check compiler support for symver function attribute
 

@@ -609,6 +609,18 @@ struct crypt_params_luks2 {
 	const char *label;       /**< header label or @e NULL*/
 	const char *subsystem;   /**< header subsystem label or @e NULL*/
 };
+
+/**
+ * Structure used as parameter for OPAL (HW encrypted) device type.
+ *
+ * @see crypt_format_luks2_opal
+ *
+ */
+struct crypt_params_hw_opal {
+	const char *admin_key;   /**< admin key */
+	size_t admin_key_size;   /**< admin key size in bytes */
+	size_t user_key_size;    /**< user authority key size part in bytes */
+};
 /** @} */
 
 /**
@@ -647,6 +659,34 @@ int crypt_format(struct crypt_device *cd,
 	const char *volume_key,
 	size_t volume_key_size,
 	void *params);
+
+/**
+ * Create (format) new LUKS2 crypt device over HW OPAL device but do not activate it.
+ *
+ * @pre @e cd contains initialized and not formatted device context (device type must @b not be set)
+ *
+ * @param cd crypt device handle
+ * @param cipher for SW encryption (e.g. "aes") or NULL for HW encryption only
+ * @param cipher_mode including IV specification (e.g. "xts-plain") or NULL for HW encryption only
+ * @param uuid requested UUID or @e NULL if it should be generated
+ * @param volume_key pre-generated volume key or @e NULL if it should be generated (only for LUKS2 SW encryption)
+ * @param volume_key_size size of volume key in bytes (only for SW encryption).
+ * @param params LUKS2 crypt type specific parameters (see @link crypt-type @endlink)
+ * @param opal_params OPAL specific parameters
+ *
+ * @returns @e 0 on success or negative errno value otherwise.
+ *
+ * @note Note that crypt_format_luks2_opal does not create LUKS keyslot.
+ *       To create keyslot call any crypt_keyslot_add_* function.
+ */
+int crypt_format_luks2_opal(struct crypt_device *cd,
+	const char *cipher,
+	const char *cipher_mode,
+	const char *uuid,
+	const char *volume_keys,
+	size_t volume_keys_size,
+	struct crypt_params_luks2 *params,
+	struct crypt_params_hw_opal *opal_params);
 
 /**
  * Set format compatibility flags.

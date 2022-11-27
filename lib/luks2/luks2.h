@@ -359,7 +359,8 @@ int LUKS2_digest_create(struct crypt_device *cd,
  */
 int LUKS2_activate(struct crypt_device *cd,
 	const char *name,
-	struct volume_key *vk,
+	struct volume_key *crypt_key,
+	struct volume_key *opal_key,
 	uint32_t flags);
 
 int LUKS2_activate_multi(struct crypt_device *cd,
@@ -384,7 +385,10 @@ int LUKS2_generate_hdr(
 	unsigned int sector_size,
 	uint64_t data_offset,
 	uint64_t metadata_size_bytes,
-	uint64_t keyslots_size_bytes);
+	uint64_t keyslots_size_bytes,
+	uint64_t device_size_bytes,
+	uint32_t opal_segment_number,
+	uint32_t opal_key_size);
 
 int LUKS2_hdr_get_storage_params(struct crypt_device *cd,
 			    uint64_t alignment_offset_bytes,
@@ -417,6 +421,12 @@ int LUKS2_keyslot_area(struct luks2_hdr *hdr,
 	uint64_t *offset,
 	uint64_t *length);
 int LUKS2_keyslot_pbkdf(struct luks2_hdr *hdr, int keyslot, struct crypt_pbkdf_type *pbkdf);
+
+int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd,
+		struct luks2_hdr *hdr,
+		const struct volume_key *vk,
+		struct volume_key **ret_crypt_key,
+		struct volume_key **ret_opal_key);
 
 /*
  * Permanent activation flags stored in header

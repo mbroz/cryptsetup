@@ -165,3 +165,8 @@ CRYPTSETUP_2.6 {
 		crypt_keyslot_add_by_keyslot_context;
 		crypt_volume_key_get_by_keyslot_context;
 } CRYPTSETUP_2.5;
+
+CRYPTSETUP_2.7 {
+	global:
+		crypt_format_luks2_opal;
+} CRYPTSETUP_2.6;

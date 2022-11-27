@@ -210,6 +210,24 @@ static int _path_get_uint64(const char *sysfs_path, uint64_t *value, const char 
 	return _read_uint64(path, value);
 }
 
+int crypt_dev_get_partition_number(const char *dev_path)
+{
+	uint64_t partno;
+	struct stat st;
+
+	if (stat(dev_path, &st) < 0)
+		return 0;
+
+	if (!S_ISBLK(st.st_mode))
+		return 0;
+
+	if (!_sysfs_get_uint64(major(st.st_rdev), minor(st.st_rdev),
+			      &partno, "partition"))
+		return -EINVAL;
+
+	return (int)partno;
+}
+
 int crypt_dev_is_rotational(int major, int minor)
 {
 	uint64_t val;

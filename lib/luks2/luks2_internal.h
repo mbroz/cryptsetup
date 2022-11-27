@@ -296,6 +296,8 @@ uint64_t json_segment_get_iv_offset(json_object *jobj_segment);
 uint64_t json_segment_get_size(json_object *jobj_segment, unsigned blockwise);
 const char *json_segment_get_cipher(json_object *jobj_segment);
 uint32_t json_segment_get_sector_size(json_object *jobj_segment);
+int json_segment_get_opal_segment_id(json_object *jobj_segment, uint32_t *ret_opal_segment_id);
+int json_segment_get_opal_key_size(json_object *jobj_segment, size_t *ret_key_size);
 bool json_segment_is_backup(json_object *jobj_segment);
 json_object *json_segments_get_segment(json_object *jobj_segments, int segment);
 unsigned json_segments_count(json_object *jobj_segments);
@@ -305,6 +307,13 @@ json_object *json_segment_create_linear(uint64_t offset, const uint64_t *length,
 json_object *json_segment_create_crypt(uint64_t offset, uint64_t iv_offset, const uint64_t *length,
 				       const char *cipher, const char *integrity,
 				       uint32_t sector_size, unsigned reencryption);
+json_object *json_segment_create_opal(uint64_t offset, const uint64_t *length,
+				      uint32_t segment_number, uint32_t key_size);
+json_object *json_segment_create_opal_crypt(uint64_t offset, const uint64_t *length,
+					    uint32_t segment_number, uint32_t key_size,
+					    uint64_t iv_offset, const char *cipher,
+					    const char *integrity, uint32_t sector_size,
+					    unsigned reencryption);
 int json_segments_segment_in_reencrypt(json_object *jobj_segments);
 bool json_segment_cmp(json_object *jobj_segment_1, json_object *jobj_segment_2);
 bool json_segment_contains_flag(json_object *jobj_segment, const char *flag_str, size_t len);
@@ -349,6 +358,11 @@ int LUKS2_segment_is_type(struct luks2_hdr *hdr,
 	int segment,
 	const char *type);
 
+bool LUKS2_segment_is_hw_opal(struct luks2_hdr *hdr, int segment);
+
+int LUKS2_get_opal_segment_number(struct luks2_hdr *hdr, int segment,
+				  uint32_t *ret_opal_segment_number);
+
 int LUKS2_segment_by_type(struct luks2_hdr *hdr,
 	const char *type);
 
@@ -356,6 +370,8 @@ int LUKS2_last_segment_by_type(struct luks2_hdr *hdr,
 	const char *type);
 
 int LUKS2_get_default_segment(struct luks2_hdr *hdr);
+
+bool LUKS2_segments_dynamic_size(struct luks2_hdr *hdr);
 
 int LUKS2_reencrypt_digest_new(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_digest_old(struct luks2_hdr *hdr);

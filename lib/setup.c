@@ -31,6 +31,7 @@
 #include "libcryptsetup.h"
 #include "luks1/luks.h"
 #include "luks2/luks2.h"
+#include "luks2/luks2_internal.h"
 #include "loopaes/loopaes.h"
 #include "verity/verity.h"
 #include "tcrypt/tcrypt.h"
@@ -40,6 +41,7 @@
 #include "utils_device_locking.h"
 #include "internal.h"
 #include "keyslot_context.h"
+#include "luks2/hw_opal/hw_opal.h"
 
 #define CRYPT_CD_UNRESTRICTED	(1 << 0)
 #define CRYPT_CD_QUIET		(1 << 1)
@@ -239,6 +241,27 @@ uint64_t crypt_get_data_offset_sectors(struct crypt_device *cd)
 {
 	assert(cd);
 	return cd->data_offset;
+}
+
+int crypt_opal_supported(struct crypt_device *cd, struct device *opal_device)
+{
+	int r;
+
+	assert(cd);
+	assert(opal_device);
+
+	r = opal_supported(cd, opal_device);
+	if (r <= 0) {
+		if (r == -ENOTSUP)
+			log_err(cd, _("cryptsetup library SED OPAL2 support is disabled."));
+		else
+			log_err(cd, _("Device %s does not support OPAL2 HW encryption."),
+				    device_path(opal_device));
+		r = -EINVAL;
+	} else
+		r = 0;
+
+	return r;
 }
 
 int init_crypto(struct crypt_device *ctx)
@@ -783,9 +806,12 @@ static int _crypt_load_luks2(struct crypt_device *cd, int reload, int repair)
 	if (r)
 		return r;
 
-	if (!reload && !(type = strdup(CRYPT_LUKS2))) {
-		r = -ENOMEM;
-		goto out;
+	if (!reload) {
+		type = strdup(CRYPT_LUKS2);
+		if (!type) {
+			r = -ENOMEM;
+			goto out;
+		}
 	}
 
 	if (verify_pbkdf_params(cd, &cd->pbkdf)) {
@@ -2052,7 +2078,8 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       integrity, uuid,
 			       sector_size,
 			       data_offset_bytes,
-			       metadata_size_bytes, keyslots_size_bytes);
+			       metadata_size_bytes, keyslots_size_bytes,
+			       0, 0, 0);
 	if (r < 0)
 		goto out;
 
@@ -2131,6 +2158,409 @@ out:
 			      device_path(crypt_data_device(cd)));
 
 	return 0;
+}
+
+static int opal_topology_alignment(struct crypt_device *cd,
+				   uint64_t partition_offset_sectors,
+				   uint64_t data_offset_sectors,
+				   uint64_t required_alignment_sectors,
+				   uint64_t default_alignment_bytes,
+				   uint64_t *ret_alignment_offset_bytes,
+				   uint64_t *ret_alignment_bytes,
+				   uint32_t *ret_opal_block_bytes,
+				   uint64_t *ret_opal_alignment_granularity_blocks)
+{
+	bool opal_align;
+	int r;
+	uint32_t opal_block_bytes;
+	uint64_t opal_alignment_granularity_blocks, opal_lowest_lba_blocks;
+
+	assert(cd);
+	assert(ret_alignment_offset_bytes);
+	assert(ret_alignment_bytes);
+	assert(ret_opal_block_bytes);
+	assert(ret_opal_alignment_granularity_blocks);
+
+	r = opal_geometry(cd, crypt_data_device(cd), &opal_align, &opal_block_bytes,
+			  &opal_alignment_granularity_blocks, &opal_lowest_lba_blocks);
+	if (r) {
+		log_err(cd, _("Cannot get OPAL alignment parameters."));
+		return -EINVAL;
+	}
+
+	log_dbg(cd, "OPAL geometry: alignment: '%c', logical block size: %" PRIu32
+		    ", alignment granularity: %" PRIu64 ", lowest aligned LBA: %" PRIu64,
+	        opal_align ? 'y' : 'n', opal_block_bytes, opal_alignment_granularity_blocks, opal_lowest_lba_blocks);
+
+	if (opal_block_bytes < SECTOR_SIZE || NOTPOW2(opal_block_bytes)) {
+		log_err(cd, _("Bogus OPAL2 logical block size."));
+		return -EINVAL;
+	}
+
+	if (data_offset_sectors &&
+	    MISALIGNED(data_offset_sectors + partition_offset_sectors, opal_block_bytes / SECTOR_SIZE)) {
+		log_err(cd, _("Requested data offset is not compatible with OPAL block size."));
+		return -EINVAL;
+	}
+
+	/* Data offset has priority over data alignment parameter */
+	if (!data_offset_sectors &&
+	    MISALIGNED(required_alignment_sectors, opal_block_bytes / SECTOR_SIZE)) {
+		log_err(cd, _("Requested data alignment is not compatible with OPAL alignment."));
+		return -EINVAL;
+	}
+
+	if (!opal_align) {
+		*ret_alignment_bytes = required_alignment_sectors ? (required_alignment_sectors * SECTOR_SIZE) : default_alignment_bytes;
+		*ret_alignment_offset_bytes = 0;
+		*ret_opal_block_bytes = opal_block_bytes;
+		*ret_opal_alignment_granularity_blocks = 1;
+		return 0;
+	}
+
+	if (data_offset_sectors) {
+		if (MISALIGNED((((data_offset_sectors + partition_offset_sectors) * SECTOR_SIZE) / opal_block_bytes) - opal_lowest_lba_blocks,
+			       opal_alignment_granularity_blocks)) {
+			// FIXME: Add hint to user on how to fix it
+			log_err(cd, _("Data offset does not satisfy OPAL alignment requirements."));
+			return -EINVAL;
+		}
+
+		*ret_alignment_offset_bytes = 0;
+		*ret_alignment_bytes = 0;
+		*ret_opal_block_bytes = opal_block_bytes;
+		*ret_opal_alignment_granularity_blocks = opal_alignment_granularity_blocks;
+
+		return 0;
+	}
+
+	if (MISALIGNED(required_alignment_sectors * SECTOR_SIZE, opal_block_bytes * opal_alignment_granularity_blocks)) {
+		log_err(cd, _("Requested data alignment does not satisfy locking range alignment requirements."));
+		return -EINVAL;
+	}
+
+	if (required_alignment_sectors)
+		*ret_alignment_bytes = required_alignment_sectors * SECTOR_SIZE;
+	else
+		*ret_alignment_bytes = size_round_up(default_alignment_bytes, opal_block_bytes * opal_alignment_granularity_blocks);
+
+	/* data offset is not set, calculate proper aligment */
+	*ret_alignment_offset_bytes = (partition_offset_sectors * SECTOR_SIZE) % (opal_block_bytes * opal_alignment_granularity_blocks);
+	if (*ret_alignment_offset_bytes)
+		*ret_alignment_offset_bytes = opal_block_bytes * opal_alignment_granularity_blocks - *ret_alignment_offset_bytes;
+
+	if (*ret_alignment_offset_bytes)
+		log_dbg(cd, "Compensating misaligned partition offset by %" PRIu64 "bytes.",
+			*ret_alignment_offset_bytes);
+
+	*ret_alignment_offset_bytes += (opal_lowest_lba_blocks * opal_block_bytes);
+	*ret_opal_block_bytes = opal_block_bytes;
+	*ret_opal_alignment_granularity_blocks = opal_alignment_granularity_blocks;
+
+	log_dbg(cd, "OPAL alignment (%" PRIu32 "/%" PRIu64 "), offset = %" PRIu64 ". Required alignment is %" PRIu64 ".",
+		opal_block_bytes, opal_alignment_granularity_blocks, *ret_alignment_offset_bytes, *ret_alignment_bytes);
+
+	return 0;
+}
+
+int crypt_format_luks2_opal(struct crypt_device *cd,
+			      const char *cipher,
+			      const char *cipher_mode,
+			      const char *uuid,
+			      const char *volume_keys,
+			      size_t volume_keys_size,
+			      struct crypt_params_luks2 *params,
+			      struct crypt_params_hw_opal *opal_params)
+{
+	bool opal_range_reset = false, subsystem_overridden = false, sector_size_autodetect = cipher != NULL;
+	int r;
+	char cipher_spec[128];
+	const char *integrity = params ? params->integrity : NULL;
+	uint32_t sector_size, opal_block_bytes, opal_segment_number = 1; /* We'll use the partition number if available later */
+	uint64_t alignment_offset_bytes, data_offset_bytes, device_size_bytes, opal_alignment_granularity_blocks,
+		 partition_offset_sectors, range_offset_blocks, range_length_blocks,
+		 required_alignment_bytes, metadata_size_bytes, keyslots_size_bytes;
+	struct volume_key *user_key = NULL;
+
+	if (!cd || !params || !opal_params ||
+	    !opal_params->admin_key || !opal_params->admin_key_size || !opal_params->user_key_size)
+		return -EINVAL;
+
+	if (cd->type) {
+		log_dbg(cd, "Context already formatted as %s.", cd->type);
+		return -EINVAL;
+	}
+
+	log_dbg(cd, "Formatting device %s as type LUKS2 with OPAL HW encryption.", mdata_device_path(cd) ?: "(none)");
+
+	if (volume_keys_size < opal_params->user_key_size)
+		return -EINVAL;
+
+	if (cipher && (volume_keys_size == opal_params->user_key_size))
+		return -EINVAL;
+
+	if (!crypt_metadata_device(cd)) {
+		log_err(cd, _("Can't format LUKS without device."));
+		return -EINVAL;
+	}
+
+	if (params->data_alignment &&
+	    MISALIGNED(cd->data_offset, params->data_alignment)) {
+		log_err(cd, _("Requested data alignment is not compatible with data offset."));
+		return -EINVAL;
+	}
+
+	if (params->data_device) {
+		if (!cd->metadata_device)
+			cd->metadata_device = cd->device;
+		else
+			device_free(cd, cd->device);
+		cd->device = NULL;
+		if (device_alloc(cd, &cd->device, params->data_device) < 0)
+			return -ENOMEM;
+	}
+
+	r = crypt_opal_supported(cd, crypt_data_device(cd));
+	if (r < 0)
+		return r;
+
+	if (params->sector_size)
+		sector_size_autodetect = false;
+
+	partition_offset_sectors = crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
+
+	if (!(cd->type = strdup(CRYPT_LUKS2)))
+		return -ENOMEM;
+
+	if (volume_keys)
+		cd->volume_key = crypt_alloc_volume_key(volume_keys_size, volume_keys);
+	else
+		cd->volume_key = crypt_generate_volume_key(cd, volume_keys_size);
+
+	if (!cd->volume_key) {
+		r = -ENOMEM;
+		goto out;
+	}
+
+	if (cipher) {
+		user_key = crypt_alloc_volume_key(opal_params->user_key_size, cd->volume_key->key);
+		if (!user_key) {
+			r = -ENOMEM;
+			goto out;
+		}
+	}
+
+	r = 0;
+	if (params->pbkdf)
+		r = crypt_set_pbkdf_type(cd, params->pbkdf);
+	else if (verify_pbkdf_params(cd, &cd->pbkdf))
+		r = init_pbkdf_type(cd, NULL, CRYPT_LUKS2);
+
+	if (r < 0)
+		goto out;
+
+	if (cd->metadata_device && !cd->data_offset)
+		/* For detached header the alignment is used directly as data offset */
+		cd->data_offset = params->data_alignment;
+
+	r = opal_topology_alignment(cd, partition_offset_sectors,
+				    cd->data_offset, params->data_alignment,
+				    DEFAULT_DISK_ALIGNMENT, &alignment_offset_bytes, &required_alignment_bytes,
+				    &opal_block_bytes, &opal_alignment_granularity_blocks);
+	if (r < 0)
+		goto out;
+
+	if (sector_size_autodetect) {
+		sector_size = device_optimal_encryption_sector_size(cd, crypt_data_device(cd));
+		if ((opal_block_bytes * opal_alignment_granularity_blocks) > sector_size)
+			sector_size = opal_block_bytes * opal_alignment_granularity_blocks;
+		log_dbg(cd, "Auto-detected optimal encryption sector size for device %s is %d bytes.",
+			device_path(crypt_data_device(cd)), sector_size);
+	} else
+		sector_size = params->sector_size;
+
+	/* To ensure it is obvious and explicit that OPAL is being used, set the
+	 * subsystem tag if the user hasn't passed one. */
+	if (!params->subsystem) {
+		params->subsystem = "HW-OPAL";
+		subsystem_overridden = true;
+	}
+
+	/* We need to give the drive a segment number - use the partition number if there is
+	 * one, otherwise the first valid (1) number if it's a single-volume setup */
+	r = crypt_dev_get_partition_number(device_path(crypt_data_device(cd)));
+	if (r > 0)
+		opal_segment_number = r;
+
+	if (cipher) {
+		r = LUKS2_check_encryption_params(cd, cipher, cipher_mode, integrity,
+						  volume_keys_size - opal_params->user_key_size,
+						  params, &integrity);
+		if (r < 0)
+			goto out;
+	}
+
+	r = device_size(crypt_data_device(cd), &device_size_bytes);
+	if (r < 0)
+		goto out;
+
+	r = LUKS2_hdr_get_storage_params(cd, alignment_offset_bytes, required_alignment_bytes,
+			     &metadata_size_bytes, &keyslots_size_bytes, &data_offset_bytes);
+	if (r < 0)
+		goto out;
+
+	r = -EINVAL;
+	if (device_size_bytes < data_offset_bytes && !cd->metadata_device) {
+		log_err(cd, _("Device %s is too small."), device_path(crypt_data_device(cd)));
+		goto out;
+	}
+
+	device_size_bytes -= data_offset_bytes;
+	if (MISALIGNED(device_size_bytes, opal_block_bytes * opal_alignment_granularity_blocks)) {
+		log_err(cd, _("Compensating device size by %" PRIu64 " sectors to align it with OPAL alignment granularity."),
+			(device_size_bytes % (opal_alignment_granularity_blocks * opal_block_bytes)) / SECTOR_SIZE);
+		device_size_bytes -= (device_size_bytes % (opal_block_bytes * opal_alignment_granularity_blocks));
+	}
+
+	if (!device_size_bytes)
+		goto out;
+
+	if (cipher) {
+		r = LUKS2_check_encryption_sector(cd, device_size_bytes, data_offset_bytes, sector_size,
+						  sector_size_autodetect, integrity == NULL,
+						  &sector_size);
+		if (r < 0)
+			goto out;
+
+		if (*cipher_mode != '\0')
+			r = snprintf(cipher_spec, sizeof(cipher_spec), "%s-%s", cipher, cipher_mode);
+		else
+			r = snprintf(cipher_spec, sizeof(cipher_spec), "%s", cipher);
+		if (r < 0 || (size_t)r >= sizeof(cipher_spec)) {
+			r = -EINVAL;
+			goto out;
+		}
+	}
+
+	r = LUKS2_generate_hdr(cd, &cd->u.luks2.hdr, cd->volume_key,
+			       cipher ? cipher_spec : NULL, integrity, uuid,
+			       sector_size,
+			       data_offset_bytes,
+			       metadata_size_bytes, keyslots_size_bytes,
+			       device_size_bytes,
+			       opal_segment_number,
+			       opal_params->user_key_size);
+	if (r < 0)
+		goto out;
+
+	if (params->label || params->subsystem) {
+		r = LUKS2_hdr_labels(cd, &cd->u.luks2.hdr,
+				     params->label, params->subsystem, 0);
+		if (r < 0)
+			goto out;
+	}
+
+	device_set_block_size(crypt_data_device(cd), sector_size);
+
+	r = LUKS2_wipe_header_areas(cd, &cd->u.luks2.hdr, cd->metadata_device != NULL);
+	if (r < 0) {
+		log_err(cd, _("Cannot wipe header on device %s."),
+			mdata_device_path(cd));
+		if (device_size_bytes < LUKS2_hdr_and_areas_size(&cd->u.luks2.hdr))
+			log_err(cd, _("Device %s is too small."), device_path(crypt_metadata_device(cd)));
+		goto out;
+	}
+
+	range_offset_blocks = (data_offset_bytes + partition_offset_sectors * SECTOR_SIZE) / opal_block_bytes;
+
+	range_length_blocks = device_size_bytes / opal_block_bytes;
+
+	r = opal_setup_ranges(cd, crypt_data_device(cd), user_key ?: cd->volume_key,
+					range_offset_blocks, range_length_blocks,
+					opal_segment_number, opal_params->admin_key, opal_params->admin_key_size);
+	if (r < 0) {
+		if (r == -EPERM)
+			log_err(cd, _("Incorrect OPAL Admin key."));
+		else
+			log_err(cd, _("Cannot setup OPAL segment."));
+		goto out;
+	}
+
+	opal_range_reset = true;
+
+	/* integrity metadata goes in unlocked OPAL locking range */
+	if (crypt_get_integrity_tag_size(cd)) {
+		r = opal_unlock(cd, crypt_data_device(cd), opal_segment_number, user_key ?: cd->volume_key);
+		if (r < 0)
+			goto out;
+
+		r = crypt_wipe_device(cd, crypt_data_device(cd), CRYPT_WIPE_ZERO,
+				      crypt_get_data_offset(cd) * SECTOR_SIZE,
+				      8 * SECTOR_SIZE, 8 * SECTOR_SIZE, NULL, NULL);
+		if (r < 0) {
+			if (r == -EBUSY)
+				log_err(cd, _("Cannot format device %s in use."),
+					data_device_path(cd));
+			else if (r == -EACCES) {
+				log_err(cd, _("Cannot format device %s, permission denied."),
+					data_device_path(cd));
+				r = -EINVAL;
+			} else
+				log_err(cd, _("Cannot wipe header on device %s."),
+					data_device_path(cd));
+
+			goto out;
+		}
+
+		r = INTEGRITY_format(cd, params->integrity_params, NULL, NULL, 0);
+		if (r)
+			log_err(cd, _("Cannot format integrity for device %s."),
+				data_device_path(cd));
+		if (r < 0)
+			goto out;
+
+		r = opal_lock(cd, crypt_data_device(cd), opal_segment_number);
+		if (r < 0)
+			goto out;
+	}
+
+	/* override sequence id check with format */
+	r = LUKS2_hdr_write_force(cd, &cd->u.luks2.hdr);
+	if (r < 0) {
+		if (r == -EBUSY)
+			log_err(cd, _("Cannot format device %s in use."),
+				mdata_device_path(cd));
+		else if (r == -EACCES) {
+			log_err(cd, _("Cannot format device %s, permission denied."),
+				mdata_device_path(cd));
+			r = -EINVAL;
+		} else
+			log_err(cd, _("Cannot format device %s."),
+				mdata_device_path(cd));
+	}
+
+out:
+	crypt_free_volume_key(user_key);
+
+	if (subsystem_overridden)
+		params->subsystem = NULL;
+
+	if (r >= 0)
+		return 0;
+
+	if (opal_range_reset &&
+	    (opal_reset_segment(cd, crypt_data_device(cd), opal_segment_number,
+				opal_params->admin_key, opal_params->admin_key_size) < 0))
+		log_err(cd, _("Locking range %d reset on device %s failed."),
+			opal_segment_number, device_path(crypt_data_device(cd)));
+
+	LUKS2_hdr_free(cd, &cd->u.luks2.hdr);
+
+	crypt_set_null_type(cd);
+	crypt_free_volume_key(cd->volume_key);
+	cd->volume_key = NULL;
+
+	return r;
 }
 
 static int _crypt_format_loopaes(struct crypt_device *cd,
@@ -3023,11 +3453,6 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	uint64_t old_size;
 	int r;
 
-	/*
-	 * FIXME: Also with LUKS2 we must not allow resize when there's
-	 *	  explicit size stored in metadata (length != "dynamic")
-	 */
-
 	/* Device context type must be initialized */
 	if (!cd || !cd->type || !name)
 		return -EINVAL;
@@ -3035,6 +3460,11 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	if (isTCRYPT(cd->type) || isBITLK(cd->type)) {
 		log_err(cd, _("This operation is not supported for this device type."));
 		return -ENOTSUP;
+	}
+
+	if (isLUKS2(cd->type) && !LUKS2_segments_dynamic_size(&cd->u.luks2.hdr)) {
+		log_err(cd, _("Can not resize LUKS2 device with static size."));
+		return -EINVAL;
 	}
 
 	log_dbg(cd, "Resizing device %s to %" PRIu64 " sectors.", name, new_size);
@@ -4054,12 +4484,13 @@ int create_or_reload_device(struct crypt_device *cd, const char *name,
 	int r;
 	enum devcheck device_check;
 	struct dm_target *tgt;
+	uint64_t offset;
 
 	if (!type || !name || !single_segment(dmd))
 		return -EINVAL;
 
 	tgt = &dmd->segment;
-	if (tgt->type != DM_CRYPT && tgt->type != DM_INTEGRITY)
+	if (tgt->type != DM_CRYPT && tgt->type != DM_INTEGRITY && tgt->type != DM_LINEAR)
 		return -EINVAL;
 
 	/* drop CRYPT_ACTIVATE_REFRESH flag if any device is inactive */
@@ -4070,11 +4501,12 @@ int create_or_reload_device(struct crypt_device *cd, const char *name,
 	if (dmd->flags & CRYPT_ACTIVATE_REFRESH)
 		r = _reload_device(cd, name, dmd);
 	else {
-		if (tgt->type == DM_CRYPT) {
+		if (tgt->type == DM_CRYPT || tgt->type == DM_LINEAR) {
 			device_check = dmd->flags & CRYPT_ACTIVATE_SHARED ? DEV_OK : DEV_EXCL;
+			offset = tgt->type == DM_CRYPT ? tgt->u.crypt.offset : tgt->u.linear.offset;
 
 			r = device_block_adjust(cd, tgt->data_device, device_check,
-					tgt->u.crypt.offset, &dmd->size, &dmd->flags);
+					offset, &dmd->size, &dmd->flags);
 			if (!r) {
 				tgt->size = dmd->size;
 				r = dm_create_device(cd, name, type, dmd);
@@ -4137,7 +4569,7 @@ static int _open_and_activate(struct crypt_device *cd,
 {
 	bool use_keyring;
 	int r;
-	struct volume_key *vk = NULL;
+	struct volume_key *p_crypt, *p_opal, *crypt_key = NULL, *opal_key = NULL, *vk = NULL;
 
 	r = LUKS2_keyslot_open(cd, keyslot,
 			       (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ?
@@ -4147,7 +4579,21 @@ static int _open_and_activate(struct crypt_device *cd,
 		return r;
 	keyslot = r;
 
-	if (!crypt_use_keyring_for_vk(cd))
+	if (LUKS2_segment_is_hw_opal(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT)) {
+		r = LUKS2_split_crypt_and_opal_keys(cd, &cd->u.luks2.hdr,
+						    vk, &crypt_key,
+						    &opal_key);
+		if (r < 0)
+			return r;
+
+		p_crypt = crypt_key;
+		p_opal = opal_key ?: vk;
+	} else {
+		p_crypt = vk;
+		p_opal = NULL;
+	}
+
+	if (!crypt_use_keyring_for_vk(cd) || !p_crypt)
 		use_keyring = false;
 	else
 		use_keyring = ((name && !crypt_is_cipher_null(crypt_get_cipher(cd))) ||
@@ -4155,18 +4601,20 @@ static int _open_and_activate(struct crypt_device *cd,
 
 	if (use_keyring) {
 		r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd,
-				&cd->u.luks2.hdr, vk, keyslot);
+				&cd->u.luks2.hdr, p_crypt, keyslot);
 		if (r < 0)
 			goto out;
 		flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 	}
 
 	if (name)
-		r = LUKS2_activate(cd, name, vk, flags);
+		r = LUKS2_activate(cd, name, p_crypt, p_opal, flags);
 out:
 	if (r < 0)
-		crypt_drop_keyring_key(cd, vk);
+		crypt_drop_keyring_key(cd, p_crypt);
 	crypt_free_volume_key(vk);
+	crypt_free_volume_key(crypt_key);
+	crypt_free_volume_key(opal_key);
 
 	return r < 0 ? r : keyslot;
 }
@@ -4594,7 +5042,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	uint32_t flags)
 {
 	bool use_keyring;
-	struct volume_key *vk = NULL;
+	struct volume_key *p_opal, *crypt_key = NULL, *opal_key = NULL, *vk = NULL, *p_crypt = NULL;
 	int r;
 
 	if (!cd ||
@@ -4669,7 +5117,23 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		if (r > 0)
 			r = 0;
 
-		if (!crypt_use_keyring_for_vk(cd))
+		if (LUKS2_segment_is_hw_opal(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT)) {
+			r = LUKS2_split_crypt_and_opal_keys(cd, &cd->u.luks2.hdr,
+							    vk, &crypt_key,
+							    &opal_key);
+			if (r < 0) {
+				crypt_free_volume_key(vk);
+				return r;
+			}
+
+			p_crypt = crypt_key;
+			p_opal = opal_key ?: vk;
+		} else {
+			p_crypt = vk;
+			p_opal = NULL;
+		}
+
+		if (!crypt_use_keyring_for_vk(cd) || !p_crypt)
 			use_keyring = false;
 		else
 			use_keyring = (name && !crypt_is_cipher_null(crypt_get_cipher(cd))) ||
@@ -4677,15 +5141,15 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 
 		if (!r && use_keyring) {
 			r = LUKS2_key_description_by_segment(cd,
-				&cd->u.luks2.hdr, vk, CRYPT_DEFAULT_SEGMENT);
+				&cd->u.luks2.hdr, p_crypt, CRYPT_DEFAULT_SEGMENT);
 			if (!r)
-				r = crypt_volume_key_load_in_keyring(cd, vk);
+				r = crypt_volume_key_load_in_keyring(cd, p_crypt);
 			if (!r)
 				flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 		}
 
 		if (!r && name)
-			r = LUKS2_activate(cd, name, vk, flags);
+			r = LUKS2_activate(cd, name, p_crypt, p_opal, flags);
 	} else if (isVERITY(cd->type)) {
 		r = crypt_activate_by_signed_key(cd, name, volume_key, volume_key_size, NULL, 0, flags);
 	} else if (isTCRYPT(cd->type)) {
@@ -4716,8 +5180,11 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	}
 
 	if (r < 0)
-		crypt_drop_keyring_key(cd, vk);
+		crypt_drop_keyring_key(cd, p_crypt);
+
 	crypt_free_volume_key(vk);
+	crypt_free_volume_key(crypt_key);
+	crypt_free_volume_key(opal_key);
 
 	return r;
 }
@@ -4817,6 +5284,17 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 		if (r < 0)
 			return r;
 		cd = fake_cd;
+	}
+
+	if (flags & (CRYPT_DEACTIVATE_DEFERRED | CRYPT_DEACTIVATE_DEFERRED_CANCEL)) {
+		struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+		if (hdr) {
+			json_object *jobj = json_segments_get_segment(LUKS2_get_segments_jobj(hdr), 0);
+			if (jobj && !strcmp(json_segment_type(jobj), "hw-opal")) {
+				log_err(cd, _("OPAL does not support deferred deactivation."));
+				return -EINVAL;
+			}
+		}
 	}
 
 	/* skip holders detection and early abort when some flags raised */
@@ -5565,6 +6043,12 @@ const char *crypt_keyslot_get_encryption(struct crypt_device *cd, int keyslot, s
 		return cd->u.luks2.keyslot_cipher;
 	}
 
+	if (LUKS2_segment_is_hw_opal(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT)) {
+		/* Fallback to default LUKS2 keyslot encryption */
+		*key_size = DEFAULT_LUKS2_KEYSLOT_KEYBITS / 8;
+		return DEFAULT_LUKS2_KEYSLOT_CIPHER;
+	}
+
 	/* Try to reuse volume encryption parameters */
 	cipher =  LUKS2_get_cipher(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
 	if (!LUKS2_keyslot_cipher_incompatible(cd, cipher)) {
@@ -5901,6 +6385,10 @@ int crypt_convert(struct crypt_device *cd,
 /* Internal access function to header pointer */
 void *crypt_get_hdr(struct crypt_device *cd, const char *type)
 {
+	/* One type can be OPAL */
+	if (isLUKS2(type) && isLUKS2(cd->type))
+		return &cd->u.luks2.hdr;
+
 	/* If requested type differs, ignore it */
 	if (strcmp(cd->type, type))
 		return NULL;
@@ -5910,9 +6398,6 @@ void *crypt_get_hdr(struct crypt_device *cd, const char *type)
 
 	if (isLUKS1(cd->type))
 		return &cd->u.luks1.hdr;
-
-	if (isLUKS2(cd->type))
-		return &cd->u.luks2.hdr;
 
 	if (isLOOPAES(cd->type))
 		return &cd->u.loopaes;

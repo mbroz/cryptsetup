@@ -210,11 +210,16 @@ int LUKS2_generate_hdr(
 	unsigned int sector_size,  /* in bytes */
 	uint64_t data_offset,      /* in bytes */
 	uint64_t metadata_size_bytes,
-	uint64_t keyslots_size_bytes)
+	uint64_t keyslots_size_bytes,
+	uint64_t device_size_bytes,
+	uint32_t opal_segment_number,
+	uint32_t opal_key_size)
 {
 	struct json_object *jobj_segment, *jobj_keyslots, *jobj_segments, *jobj_config;
 	uuid_t partitionUuid;
 	int r, digest;
+
+	assert(cipher_spec || (opal_key_size > 0 && device_size_bytes));
 
 	hdr->hdr_size = metadata_size_bytes;
 
@@ -284,7 +289,20 @@ int LUKS2_generate_hdr(
 		goto err;
 	}
 
-	jobj_segment = json_segment_create_crypt(data_offset, 0, NULL, cipher_spec, integrity, sector_size, 0);
+	if (!opal_key_size)
+		jobj_segment = json_segment_create_crypt(data_offset, 0,
+							 NULL, cipher_spec,
+							 integrity, sector_size,
+							 0);
+	else if (opal_key_size && cipher_spec)
+		jobj_segment = json_segment_create_opal_crypt(data_offset, &device_size_bytes,
+							      opal_segment_number, opal_key_size, 0,
+							      cipher_spec, integrity,
+							      sector_size, 0);
+	else
+		jobj_segment = json_segment_create_opal(data_offset, &device_size_bytes,
+							opal_segment_number, opal_key_size);
+
 	if (!jobj_segment) {
 		r = -EINVAL;
 		goto err;

@@ -158,6 +158,7 @@ struct device *crypt_data_device(struct crypt_device *cd);
 uint64_t crypt_get_metadata_size_bytes(struct crypt_device *cd);
 uint64_t crypt_get_keyslots_size_bytes(struct crypt_device *cd);
 uint64_t crypt_get_data_offset_sectors(struct crypt_device *cd);
+int crypt_opal_supported(struct crypt_device *cd, struct device *opal_device);
 
 int crypt_confirm(struct crypt_device *cd, const char *msg);
 
@@ -166,6 +167,7 @@ int crypt_dev_is_rotational(int major, int minor);
 int crypt_dev_is_dax(int major, int minor);
 int crypt_dev_is_partition(const char *dev_path);
 char *crypt_get_partition_device(const char *dev_path, uint64_t offset, uint64_t size);
+int crypt_dev_get_partition_number(const char *dev_path);
 char *crypt_get_base_device(const char *dev_path);
 uint64_t crypt_dev_partition_offset(const char *dev_path);
 int lookup_by_disk_id(const char *dm_uuid);

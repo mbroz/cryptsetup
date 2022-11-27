@@ -132,6 +132,37 @@ uint32_t json_segment_get_sector_size(json_object *jobj_segment)
 	return i < 0 ? SECTOR_SIZE : i;
 }
 
+int json_segment_get_opal_segment_id(json_object *jobj_segment, uint32_t *ret_opal_segment_id)
+{
+	json_object *jobj_segment_id;
+
+	assert(ret_opal_segment_id);
+
+	if (!json_object_object_get_ex(jobj_segment, "opal_segment_number", &jobj_segment_id))
+		return -EINVAL;
+
+	*ret_opal_segment_id = json_object_get_int(jobj_segment_id);
+
+	return 0;
+}
+
+int json_segment_get_opal_key_size(json_object *jobj_segment, size_t *ret_key_size)
+{
+	json_object *jobj_key_size;
+
+	assert(ret_key_size);
+
+	if (!jobj_segment)
+		return -EINVAL;
+
+	if (!json_object_object_get_ex(jobj_segment, "opal_key_size", &jobj_key_size))
+		return -EINVAL;
+
+	*ret_key_size = json_object_get_int(jobj_key_size);
+
+	return 0;
+}
+
 static json_object *json_segment_get_flags(json_object *jobj_segment)
 {
 	json_object *jobj;
@@ -307,6 +338,39 @@ json_object *json_segment_create_crypt(uint64_t offset,
 	return NULL;
 }
 
+json_object *json_segment_create_opal(uint64_t offset, const uint64_t *length,
+				      uint32_t segment_number, uint32_t key_size)
+{
+	json_object *jobj = _segment_create_generic("hw-opal", offset, length);
+	if (!jobj)
+		return NULL;
+
+	json_object_object_add(jobj, "opal_segment_number", json_object_new_int(segment_number));
+	json_object_object_add(jobj, "opal_key_size", json_object_new_int(key_size));
+
+	return jobj;
+}
+
+json_object *json_segment_create_opal_crypt(uint64_t offset, const uint64_t *length,
+					    uint32_t segment_number, uint32_t key_size,
+					    uint64_t iv_offset, const char *cipher,
+					    const char *integrity, uint32_t sector_size,
+					    unsigned reencryption)
+{
+	json_object *jobj = _segment_create_generic("hw-opal-crypt", offset, length);
+	if (!jobj)
+		return NULL;
+
+	json_object_object_add(jobj, "opal_segment_number", json_object_new_int(segment_number));
+	json_object_object_add(jobj, "opal_key_size", json_object_new_int(key_size));
+
+	if (json_add_crypt_fields(jobj, iv_offset, cipher, integrity, sector_size, reencryption))
+		return jobj;
+
+	json_object_put(jobj);
+	return NULL;
+}
+
 uint64_t LUKS2_segment_offset(struct luks2_hdr *hdr, int segment, unsigned blockwise)
 {
 	return json_segment_get_offset(LUKS2_get_segment_jobj(hdr, segment), blockwise);
@@ -340,6 +404,34 @@ bool LUKS2_segment_set_size(struct luks2_hdr *hdr, int segment, const uint64_t *
 int LUKS2_segment_is_type(struct luks2_hdr *hdr, int segment, const char *type)
 {
 	return !strcmp(json_segment_type(LUKS2_get_segment_jobj(hdr, segment)) ?: "", type);
+}
+
+static bool json_segment_is_hw_opal(json_object *jobj_segment)
+{
+	const char *type = json_segment_type(jobj_segment);
+
+	if (!type)
+		return false;
+
+	/* hw-opal, hw-opal-crypt */
+	return !strcmp(type, "hw-opal") || !strcmp(type, "hw-opal-crypt");
+}
+
+bool LUKS2_segment_is_hw_opal(struct luks2_hdr *hdr, int segment)
+{
+	return json_segment_is_hw_opal(LUKS2_get_segment_jobj(hdr, segment));
+}
+
+int LUKS2_get_opal_segment_number(struct luks2_hdr *hdr, int segment, uint32_t *ret_opal_segment_number)
+{
+	json_object *jobj_segment = LUKS2_get_segment_jobj(hdr, segment);
+
+	assert(ret_opal_segment_number);
+
+	if (!json_segment_is_hw_opal(jobj_segment))
+		return -ENOENT;
+
+	return json_segment_get_opal_segment_id(jobj_segment, ret_opal_segment_number);
 }
 
 int LUKS2_last_segment_by_type(struct luks2_hdr *hdr, const char *type)
@@ -472,4 +564,28 @@ bool json_segment_cmp(json_object *jobj_segment_1, json_object *jobj_segment_2)
 			        json_segment_get_cipher(jobj_segment_2)));
 
 	return true;
+}
+
+bool LUKS2_segments_dynamic_size(struct luks2_hdr *hdr)
+{
+	json_object *jobj_segments, *jobj_size;
+
+	assert(hdr);
+
+	jobj_segments = LUKS2_get_segments_jobj(hdr);
+	if (!jobj_segments)
+		return false;
+
+	json_object_object_foreach(jobj_segments, key, val) {
+		UNUSED(key);
+
+		if (json_segment_is_backup(val))
+			continue;
+
+		if (json_object_object_get_ex(val, "size", &jobj_size) &&
+		    !strcmp(json_object_get_string(jobj_size), "dynamic"))
+			return true;
+	}
+
+	return false;
 }

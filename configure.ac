@@ -592,6 +592,27 @@ AM_CONDITIONAL(HAVE_BLKID, test "x$enable_blkid" = "xyes")
 AM_CONDITIONAL(HAVE_BLKID_WIPE, test "x$enable_blkid_wipe" = "xyes")
 AM_CONDITIONAL(HAVE_BLKID_STEP_BACK, test "x$enable_blkid_step_back" = "xyes")
 
+AC_ARG_ENABLE([hw-opal],
+	AS_HELP_STRING([--disable-hw-opal], [disable use of hardware-backed OPAL for device encryption]),
+	[],
+	[enable_hw_opal=yes])
+
+if test "x$enable_hw_opal" = "xyes"; then
+	have_opal=yes
+	AC_CHECK_DECLS([ OPAL_FL_SUM_SUPPORTED,
+			 IOC_OPAL_GET_LR_STATUS,
+			 IOC_OPAL_GET_GEOMETRY
+		       ],
+		       [],
+		       [have_opal=no],
+		       [#include <linux/sed-opal.h>])
+	if test "x$have_opal" = "xyes"; then
+		AC_DEFINE([HAVE_HW_OPAL], 1, [Define to 1 to enable OPAL support.])
+	else
+		AC_MSG_WARN([Can not compile with OPAL support, kernel headers are too old, requires v6.4.])
+	fi
+fi
+
 dnl Magic for cryptsetup.static build.
 if test "x$enable_static_cryptsetup" = "xyes"; then
 	saved_PKG_CONFIG=$PKG_CONFIG

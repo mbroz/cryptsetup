@@ -25,6 +25,7 @@ libcryptsetup_sources = files(
     'luks1/af.c',
     'luks1/keyencryption.c',
     'luks1/keymanage.c',
+    'luks2/hw_opal/hw_opal.c',
     'luks2/luks2_digest.c',
     'luks2/luks2_digest_pbkdf2.c',
     'luks2/luks2_disk_metadata.c',

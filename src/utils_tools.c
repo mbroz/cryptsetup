@@ -435,8 +435,9 @@ int tools_write_mk(const char *file, const char *key, int keysize)
 
 void tools_package_version(const char *name, bool use_pwlibs)
 {
-	bool udev = false, blkid = false, keyring = false, fips = false;
-	bool kernel_capi = false, pwquality = false, passwdqc = false;
+	bool udev = false, blkid = false, keyring = false, fips = false,
+	     kernel_capi = false, pwquality = false, passwdqc = false,
+	     hw_opal = false;
 #ifdef USE_UDEV
 	udev = true;
 #endif
@@ -457,12 +458,16 @@ void tools_package_version(const char *name, bool use_pwlibs)
 #elif defined(ENABLE_PASSWDQC)
 	passwdqc = true;
 #endif
-	log_std("%s %s flags: %s%s%s%s%s%s%s\n", name, PACKAGE_VERSION,
+#ifdef HAVE_HW_OPAL
+	hw_opal = true;
+#endif
+	log_std("%s %s flags: %s%s%s%s%s%s%s%s\n", name, PACKAGE_VERSION,
 		udev ?	"UDEV " : "",
 		blkid ? "BLKID " : "",
 		keyring ? "KEYRING " : "",
 		fips ? "FIPS " : "",
 		kernel_capi ? "KERNEL_CAPI " : "",
 		pwquality && use_pwlibs ? "PWQUALITY " : "",
-		passwdqc && use_pwlibs ? "PASSWDQC " : "");
+		passwdqc && use_pwlibs ? "PASSWDQC " : "",
+		hw_opal ? "HW_OPAL " : "");
 }
