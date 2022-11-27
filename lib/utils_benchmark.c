@@ -47,6 +47,7 @@ int crypt_benchmark(struct crypt_device *cd,
 	r = -ENOMEM;
 	if (posix_memalign(&buffer, crypt_getpagesize(), buffer_size))
 		goto out;
+	memset(buffer, 0, buffer_size);
 
 	r = crypt_cipher_ivsize(cipher, cipher_mode);
 	if (r >= 0 && iv_size != (size_t)r) {

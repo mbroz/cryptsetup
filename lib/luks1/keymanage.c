@@ -236,6 +236,7 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 		r = -ENOMEM;
 		goto out;
 	}
+	memset(buffer, 0, buffer_size);
 
 	log_dbg(ctx, "Storing backup of header (%zu bytes) and keyslot area (%zu bytes).",
 		sizeof(hdr), hdr_size - LUKS_ALIGN_KEYSLOTS);
