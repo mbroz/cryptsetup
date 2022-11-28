@@ -50,7 +50,8 @@ bool isLUKS1(const char *type)
 
 bool isLUKS2(const char *type)
 {
-	return type && !strcmp(type, CRYPT_LUKS2);
+	/* OPAL just changes the driver, header format is identical, so overload */
+	return type && (!strcmp(type, CRYPT_LUKS2));
 }
 
 int verify_passphrase(int def)

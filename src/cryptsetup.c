@@ -1374,6 +1374,9 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 		.label = ARG_STR(OPT_LABEL_ID),
 		.subsystem = ARG_STR(OPT_SUBSYSTEM_ID)
 	};
+	struct crypt_params_hw_opal opal_params = {
+		.user_key_size = DEFAULT_LUKS1_KEYBITS / 8
+	};
 	void *params;
 
 	type = luksType(device_type);
@@ -1487,6 +1490,11 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 
 	keysize = get_adjusted_key_size(cipher_mode, DEFAULT_LUKS1_KEYBITS, integrity_keysize);
 
+	if (ARG_SET(OPT_HW_OPAL_ONLY_ID))
+		keysize = opal_params.user_key_size;
+	else if (ARG_SET(OPT_HW_OPAL_ID))
+		keysize += opal_params.user_key_size;
+
 	if (ARG_SET(OPT_USE_RANDOM_ID))
 		crypt_set_rng_type(cd, CRYPT_RNG_RANDOM);
 	else if (ARG_SET(OPT_USE_URANDOM_ID))
@@ -1497,6 +1505,19 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 			  ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
 	if (r < 0)
 		goto out;
+
+	if (ARG_SET(OPT_HW_OPAL_ID) || ARG_SET(OPT_HW_OPAL_ONLY_ID)) {
+		r = tools_get_key("Enter OPAL Admin password: ", CONST_CAST(char **)&opal_params.admin_key, &opal_params.admin_key_size,
+				  0, 0, NULL,
+				  ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
+		if (r < 0)
+			goto out;
+		if (opal_params.admin_key_size == 0) {
+			log_err(_("OPAL Admin password cannot be empty."));
+			r = -EPERM;
+			goto out;
+		}
+	}
 
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
 		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, keysize);
@@ -1517,7 +1538,13 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_PADDING_ID))
 		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING);
 
-	r = crypt_format(cd, type, cipher, cipher_mode,
+	if (ARG_SET(OPT_HW_OPAL_ID) || ARG_SET(OPT_HW_OPAL_ONLY_ID))
+		r = crypt_format_luks2_opal(cd,
+			 ARG_SET(OPT_HW_OPAL_ONLY_ID) ? NULL : cipher,
+			 ARG_SET(OPT_HW_OPAL_ONLY_ID) ? NULL : cipher_mode,
+			 ARG_STR(OPT_UUID_ID), key, keysize, params, &opal_params);
+	else
+		r = crypt_format(cd, type, cipher, cipher_mode,
 			 ARG_STR(OPT_UUID_ID), key, keysize, params);
 	check_signal(&r);
 	if (r < 0)
@@ -1550,6 +1577,7 @@ out:
 	}
 
 	crypt_safe_free(key);
+	crypt_safe_free(CONST_CAST(void *)opal_params.admin_key);
 
 	return r;
 }
