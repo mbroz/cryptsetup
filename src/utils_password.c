@@ -49,10 +49,8 @@ static int tools_check_pwquality(const char *password)
 		log_err(_("Password quality check failed:\n %s"),
 			pwquality_strerror(NULL, 0, r, auxerror));
 		r = -EPERM;
-	} else {
-		log_dbg("New password libpwquality score is %d.", r);
+	} else
 		r = 0;
-	}
 
 	pwquality_free_settings(pwq);
 	return r;
