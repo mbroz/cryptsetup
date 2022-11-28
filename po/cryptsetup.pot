@@ -5,9 +5,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 2.6.0-rc0\n"
+"Project-Id-Version: cryptsetup 2.6.0\n"
 "Report-Msgid-Bugs-To: cryptsetup@lists.linux.dev\n"
-"POT-Creation-Date: 2022-11-20 12:33+0100\n"
+"POT-Creation-Date: 2022-11-28 12:16+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -174,7 +174,7 @@ msgstr ""
 msgid "Failed to rollback LUKS2 metadata in memory."
 msgstr ""
 
-#: lib/setup.c:849 lib/luks1/keymanage.c:247 lib/luks1/keymanage.c:525
+#: lib/setup.c:849 lib/luks1/keymanage.c:248 lib/luks1/keymanage.c:526
 #: lib/luks2/luks2_json_metadata.c:1336 src/cryptsetup.c:1587
 #: src/cryptsetup.c:1727 src/cryptsetup.c:1782 src/cryptsetup.c:1977
 #: src/cryptsetup.c:2133 src/cryptsetup.c:2414 src/cryptsetup.c:2656
@@ -184,7 +184,7 @@ msgstr ""
 msgid "Device %s is not a valid LUKS device."
 msgstr ""
 
-#: lib/setup.c:852 lib/luks1/keymanage.c:528
+#: lib/setup.c:852 lib/luks1/keymanage.c:529
 #, c-format
 msgid "Unsupported LUKS version %d."
 msgstr ""
@@ -607,7 +607,7 @@ msgstr ""
 msgid "Failed to read passphrase from keyring (error %d)."
 msgstr ""
 
-#: lib/setup.c:6512
+#: lib/setup.c:6511
 msgid "Failed to acquire global memory-hard access serialization lock."
 msgstr ""
 
@@ -627,8 +627,8 @@ msgstr ""
 msgid "Cannot seek to requested keyfile offset."
 msgstr ""
 
-#: lib/utils.c:202 lib/utils.c:217 src/utils_password.c:227
-#: src/utils_password.c:239
+#: lib/utils.c:202 lib/utils.c:217 src/utils_password.c:225
+#: src/utils_password.c:237
 msgid "Out of memory while reading passphrase."
 msgstr ""
 
@@ -754,16 +754,16 @@ msgstr ""
 msgid "Only PBKDF2 is supported in FIPS mode."
 msgstr ""
 
-#: lib/utils_benchmark.c:174
+#: lib/utils_benchmark.c:175
 msgid "PBKDF benchmark disabled but iterations not set."
 msgstr ""
 
-#: lib/utils_benchmark.c:193
+#: lib/utils_benchmark.c:194
 #, c-format
 msgid "Not compatible PBKDF2 options (using hash algorithm %s)."
 msgstr ""
 
-#: lib/utils_benchmark.c:213
+#: lib/utils_benchmark.c:214
 msgid "Not compatible PBKDF options."
 msgstr ""
 
@@ -805,8 +805,8 @@ msgstr ""
 msgid "Cipher specification should be in [cipher]-[mode]-[iv] format."
 msgstr ""
 
-#: lib/luks1/keyencryption.c:97 lib/luks1/keymanage.c:364
-#: lib/luks1/keymanage.c:675 lib/luks1/keymanage.c:1126
+#: lib/luks1/keyencryption.c:97 lib/luks1/keymanage.c:365
+#: lib/luks1/keymanage.c:676 lib/luks1/keymanage.c:1127
 #: lib/luks2/luks2_json_metadata.c:1490 lib/luks2/luks2_keyslot.c:714
 #, c-format
 msgid "Cannot write to device %s, permission denied."
@@ -825,8 +825,8 @@ msgstr ""
 msgid "IO error while encrypting keyslot."
 msgstr ""
 
-#: lib/luks1/keyencryption.c:246 lib/luks1/keymanage.c:367
-#: lib/luks1/keymanage.c:628 lib/luks1/keymanage.c:678 lib/tcrypt/tcrypt.c:679
+#: lib/luks1/keyencryption.c:246 lib/luks1/keymanage.c:368
+#: lib/luks1/keymanage.c:629 lib/luks1/keymanage.c:679 lib/tcrypt/tcrypt.c:679
 #: lib/fvault2/fvault2.c:877 lib/verity/verity.c:80 lib/verity/verity.c:196
 #: lib/verity/verity_hash.c:320 lib/verity/verity_hash.c:329
 #: lib/verity/verity_hash.c:349 lib/verity/verity_fec.c:260
@@ -853,184 +853,184 @@ msgstr ""
 msgid "LUKS keyslot %u is invalid."
 msgstr ""
 
-#: lib/luks1/keymanage.c:265 lib/luks2/luks2_json_metadata.c:1353
+#: lib/luks1/keymanage.c:266 lib/luks2/luks2_json_metadata.c:1353
 #, c-format
 msgid "Requested header backup file %s already exists."
 msgstr ""
 
-#: lib/luks1/keymanage.c:267 lib/luks2/luks2_json_metadata.c:1355
+#: lib/luks1/keymanage.c:268 lib/luks2/luks2_json_metadata.c:1355
 #, c-format
 msgid "Cannot create header backup file %s."
 msgstr ""
 
-#: lib/luks1/keymanage.c:274 lib/luks2/luks2_json_metadata.c:1362
+#: lib/luks1/keymanage.c:275 lib/luks2/luks2_json_metadata.c:1362
 #, c-format
 msgid "Cannot write header backup file %s."
 msgstr ""
 
-#: lib/luks1/keymanage.c:306 lib/luks2/luks2_json_metadata.c:1399
+#: lib/luks1/keymanage.c:307 lib/luks2/luks2_json_metadata.c:1399
 msgid "Backup file does not contain valid LUKS header."
 msgstr ""
 
-#: lib/luks1/keymanage.c:319 lib/luks1/keymanage.c:591
+#: lib/luks1/keymanage.c:320 lib/luks1/keymanage.c:592
 #: lib/luks2/luks2_json_metadata.c:1420
 #, c-format
 msgid "Cannot open header backup file %s."
 msgstr ""
 
-#: lib/luks1/keymanage.c:327 lib/luks2/luks2_json_metadata.c:1428
+#: lib/luks1/keymanage.c:328 lib/luks2/luks2_json_metadata.c:1428
 #, c-format
 msgid "Cannot read header backup file %s."
 msgstr ""
 
-#: lib/luks1/keymanage.c:337
+#: lib/luks1/keymanage.c:338
 msgid "Data offset or key size differs on device and backup, restore failed."
 msgstr ""
 
-#: lib/luks1/keymanage.c:345
+#: lib/luks1/keymanage.c:346
 #, c-format
 msgid "Device %s %s%s"
 msgstr ""
 
-#: lib/luks1/keymanage.c:346
+#: lib/luks1/keymanage.c:347
 msgid ""
 "does not contain LUKS header. Replacing header can destroy data on that "
 "device."
 msgstr ""
 
-#: lib/luks1/keymanage.c:347
+#: lib/luks1/keymanage.c:348
 msgid ""
 "already contains LUKS header. Replacing header will destroy existing "
 "keyslots."
 msgstr ""
 
-#: lib/luks1/keymanage.c:348 lib/luks2/luks2_json_metadata.c:1462
+#: lib/luks1/keymanage.c:349 lib/luks2/luks2_json_metadata.c:1462
 msgid ""
 "\n"
 "WARNING: real device header has different UUID than backup!"
 msgstr ""
 
-#: lib/luks1/keymanage.c:396
+#: lib/luks1/keymanage.c:397
 msgid "Non standard key size, manual repair required."
 msgstr ""
 
-#: lib/luks1/keymanage.c:406
+#: lib/luks1/keymanage.c:407
 msgid "Non standard keyslots alignment, manual repair required."
 msgstr ""
 
-#: lib/luks1/keymanage.c:415
+#: lib/luks1/keymanage.c:416
 #, c-format
 msgid "Cipher mode repaired (%s -> %s)."
 msgstr ""
 
-#: lib/luks1/keymanage.c:426
+#: lib/luks1/keymanage.c:427
 #, c-format
 msgid "Cipher hash repaired to lowercase (%s)."
 msgstr ""
 
-#: lib/luks1/keymanage.c:428 lib/luks1/keymanage.c:534
-#: lib/luks1/keymanage.c:790
+#: lib/luks1/keymanage.c:429 lib/luks1/keymanage.c:535
+#: lib/luks1/keymanage.c:791
 #, c-format
 msgid "Requested LUKS hash %s is not supported."
 msgstr ""
 
-#: lib/luks1/keymanage.c:442
+#: lib/luks1/keymanage.c:443
 msgid "Repairing keyslots."
 msgstr ""
 
-#: lib/luks1/keymanage.c:461
+#: lib/luks1/keymanage.c:462
 #, c-format
 msgid "Keyslot %i: offset repaired (%u -> %u)."
 msgstr ""
 
-#: lib/luks1/keymanage.c:469
+#: lib/luks1/keymanage.c:470
 #, c-format
 msgid "Keyslot %i: stripes repaired (%u -> %u)."
 msgstr ""
 
-#: lib/luks1/keymanage.c:478
+#: lib/luks1/keymanage.c:479
 #, c-format
 msgid "Keyslot %i: bogus partition signature."
 msgstr ""
 
-#: lib/luks1/keymanage.c:483
+#: lib/luks1/keymanage.c:484
 #, c-format
 msgid "Keyslot %i: salt wiped."
 msgstr ""
 
-#: lib/luks1/keymanage.c:500
+#: lib/luks1/keymanage.c:501
 msgid "Writing LUKS header to disk."
 msgstr ""
 
-#: lib/luks1/keymanage.c:505
+#: lib/luks1/keymanage.c:506
 msgid "Repair failed."
 msgstr ""
 
-#: lib/luks1/keymanage.c:560
+#: lib/luks1/keymanage.c:561
 #, c-format
 msgid "LUKS cipher mode %s is invalid."
 msgstr ""
 
-#: lib/luks1/keymanage.c:565
+#: lib/luks1/keymanage.c:566
 #, c-format
 msgid "LUKS hash %s is invalid."
 msgstr ""
 
-#: lib/luks1/keymanage.c:572 src/cryptsetup.c:1281
+#: lib/luks1/keymanage.c:573 src/cryptsetup.c:1281
 msgid "No known problems detected for LUKS header."
 msgstr ""
 
-#: lib/luks1/keymanage.c:700
+#: lib/luks1/keymanage.c:701
 #, c-format
 msgid "Error during update of LUKS header on device %s."
 msgstr ""
 
-#: lib/luks1/keymanage.c:708
+#: lib/luks1/keymanage.c:709
 #, c-format
 msgid "Error re-reading LUKS header after update on device %s."
 msgstr ""
 
-#: lib/luks1/keymanage.c:784
+#: lib/luks1/keymanage.c:785
 msgid ""
 "Data offset for LUKS header must be either 0 or higher than header size."
 msgstr ""
 
-#: lib/luks1/keymanage.c:795 lib/luks1/keymanage.c:864
+#: lib/luks1/keymanage.c:796 lib/luks1/keymanage.c:865
 #: lib/luks2/luks2_json_format.c:286 lib/luks2/luks2_json_metadata.c:1236
 #: src/utils_reencrypt.c:514
 msgid "Wrong LUKS UUID format provided."
 msgstr ""
 
-#: lib/luks1/keymanage.c:817
+#: lib/luks1/keymanage.c:818
 msgid "Cannot create LUKS header: reading random salt failed."
 msgstr ""
 
-#: lib/luks1/keymanage.c:843
+#: lib/luks1/keymanage.c:844
 #, c-format
 msgid "Cannot create LUKS header: header digest failed (using hash %s)."
 msgstr ""
 
-#: lib/luks1/keymanage.c:887
+#: lib/luks1/keymanage.c:888
 #, c-format
 msgid "Key slot %d active, purge first."
 msgstr ""
 
-#: lib/luks1/keymanage.c:893
+#: lib/luks1/keymanage.c:894
 #, c-format
 msgid "Key slot %d material includes too few stripes. Header manipulation?"
 msgstr ""
 
-#: lib/luks1/keymanage.c:1034
+#: lib/luks1/keymanage.c:1035
 #, c-format
 msgid "Cannot open keyslot (using hash %s)."
 msgstr ""
 
-#: lib/luks1/keymanage.c:1112
+#: lib/luks1/keymanage.c:1113
 #, c-format
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d."
 msgstr ""
 
-#: lib/luks1/keymanage.c:1130 lib/luks2/luks2_keyslot.c:718
+#: lib/luks1/keymanage.c:1131 lib/luks2/luks2_keyslot.c:718
 #, c-format
 msgid "Cannot wipe device %s."
 msgstr ""
@@ -3199,7 +3199,7 @@ msgstr ""
 msgid "Finished, time %s, %s, %s\n"
 msgstr ""
 
-#: src/utils_password.c:41 src/utils_password.c:74
+#: src/utils_password.c:41 src/utils_password.c:72
 #, c-format
 msgid "Cannot check password quality: %s"
 msgstr ""
@@ -3211,42 +3211,42 @@ msgid ""
 " %s"
 msgstr ""
 
-#: src/utils_password.c:81
+#: src/utils_password.c:79
 #, c-format
 msgid "Password quality check failed: Bad passphrase (%s)"
 msgstr ""
 
-#: src/utils_password.c:232 src/utils_password.c:246
+#: src/utils_password.c:230 src/utils_password.c:244
 msgid "Error reading passphrase from terminal."
 msgstr ""
 
-#: src/utils_password.c:244
+#: src/utils_password.c:242
 msgid "Verify passphrase: "
 msgstr ""
 
-#: src/utils_password.c:251
+#: src/utils_password.c:249
 msgid "Passphrases do not match."
 msgstr ""
 
-#: src/utils_password.c:289
+#: src/utils_password.c:287
 msgid "Cannot use offset with terminal input."
 msgstr ""
 
-#: src/utils_password.c:293
+#: src/utils_password.c:291
 #, c-format
 msgid "Enter passphrase: "
 msgstr ""
 
-#: src/utils_password.c:296
+#: src/utils_password.c:294
 #, c-format
 msgid "Enter passphrase for %s: "
 msgstr ""
 
-#: src/utils_password.c:330
+#: src/utils_password.c:328
 msgid "No key available with this passphrase."
 msgstr ""
 
-#: src/utils_password.c:332
+#: src/utils_password.c:330
 msgid "No usable keyslot is available."
 msgstr ""
 

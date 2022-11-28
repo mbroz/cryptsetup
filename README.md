@@ -45,22 +45,16 @@ Download
 --------
 All release tarballs and release notes are hosted on [kernel.org](https://www.kernel.org/pub/linux/utils/cryptsetup/).
 
-**The latest stable cryptsetup release candidate version is 2.6.0-rc0**
-  * [cryptsetup-2.6.0-rc0.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.6/cryptsetup-2.6.0-rc0.tar.xz)
-  * Signature [cryptsetup-2.6.0-rc0.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.6/cryptsetup-2.6.0-rc0.tar.sign)
+**The latest stable cryptsetup release version is 2.6.0**
+  * [cryptsetup-2.6.0.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.6/cryptsetup-2.6.0.tar.xz)
+  * Signature [cryptsetup-2.6.0.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.6/cryptsetup-2.6.0.tar.sign)
     _(You need to decompress file first to check signature.)_
-  * [Cryptsetup 2.6.0-rc0 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.6/v2.6.0-rc0-ReleaseNotes).
-
-**The latest stable cryptsetup version is 2.5.0**
-  * [cryptsetup-2.5.0.tar.xz](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.5/cryptsetup-2.5.0.tar.xz)
-  * Signature [cryptsetup-2.5.0.tar.sign](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.5/cryptsetup-2.5.0.tar.sign)
-    _(You need to decompress file first to check signature.)_
-  * [Cryptsetup 2.5.0 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.5/v2.5.0-ReleaseNotes).
+  * [Cryptsetup 2.6.0 Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.6/v2.6.0-ReleaseNotes).
 
 Previous versions
- * [Version 2.4.3](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.4/cryptsetup-2.4.3.tar.xz) -
-   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.4/cryptsetup-2.4.3.tar.sign) -
-   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.4/v2.4.3-ReleaseNotes).
+ * [Version 2.5.0](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.5/cryptsetup-2.5.0.tar.xz) -
+   [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.5/cryptsetup-2.5.0.tar.sign) -
+   [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v2.5/v2.5.0-ReleaseNotes).
  * [Version 1.7.5](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.5.tar.xz) -
    [Signature](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.5.tar.sign) -
    [Release Notes](https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/v1.7.5-ReleaseNotes).
