@@ -1,7 +1,7 @@
 #!/bin/bash
 
-DIR=../.libs
-FILE=$DIR/libcryptsetup.so
+[ -z "$LIBCRYPTSETUP_DIR" ] && LIBCRYPTSETUP_DIR=../.libs
+FILE=$LIBCRYPTSETUP_DIR/libcryptsetup.so
 
 function fail()
 {
@@ -15,7 +15,7 @@ function skip()
 	exit 77
 }
 
-test -d $DIR || fail "Directory $DIR is missing."
+test -d $LIBCRYPTSETUP_DIR || fail "Directory $LIBCRYPTSETUP_DIR is missing."
 test -f $FILE || skip "WARNING: Shared $FILE is missing, test skipped."
 
 ./all-symbols-test $FILE $@

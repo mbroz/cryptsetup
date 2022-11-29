@@ -4,18 +4,26 @@ test-gcc-disable-compiles:
   parallel:
     matrix:
       - DISABLE_FLAGS: [
-          "--disable-keyring",
-          "--disable-external-tokens --disable-ssh-token",
-          "--disable-luks2-reencryption",
-          "--disable-cryptsetup --disable-veritysetup --disable-integritysetup",
-          "--disable-kernel_crypto",
-          "--disable-selinux",
-          "--disable-udev",
-          "--disable-internal-argon2",
-          "--disable-blkid"
+          "keyring",
+          "external-tokens ssh-token",
+          "luks2-reencryption",
+          "cryptsetup veritysetup integritysetup",
+          "kernel_crypto",
+          "udev",
+          "internal-argon2",
+          "blkid"
       ]
+  artifacts:
+    name: "meson-build-logs-$CI_COMMIT_REF_NAME"
+    paths:
+      - meson_builddir/meson-logs
   script:
+    - DEBIAN_FRONTEND=noninteractive apt-get -yq install meson ninja-build
     - export CFLAGS="-Wall -Werror"
-    - ./configure $DISABLE_FLAGS
+    - ./configure $(for i in $DISABLE_FLAGS; do echo "--disable-$i"; done)
     - make -j
     - make -j check-programs
+    - git checkout -f && git clean -xdf
+    - meson -v
+    - meson setup meson_builddir $(for i in $DISABLE_FLAGS; do echo "-D$i=false"; done)
+    - ninja -C meson_builddir

@@ -1,4 +1,17 @@
 EXTRA_DIST = README.md COPYING.LGPL FAQ.md docs misc autogen.sh
+EXTRA_DIST += meson_options.txt \
+	meson.build \
+	lib/crypto_backend/argon2/meson.build \
+	lib/crypto_backend/meson.build \
+	lib/meson.build \
+	man/meson.build \
+	po/meson.build \
+	scripts/meson.build \
+	src/meson.build \
+	tests/meson.build \
+	tokens/meson.build \
+	tokens/ssh/meson.build
+
 SUBDIRS = po tests tests/fuzz
 CLEANFILES =
 DISTCLEAN_TARGETS =

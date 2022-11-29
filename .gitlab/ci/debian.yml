@@ -54,3 +54,44 @@ test-main-commit-job-debian:
     - make -j
     - make -j -C tests check-programs
     - sudo -E make check
+
+# meson tests
+test-mergerq-job-debian-meson:
+  extends:
+    - .debian-prep
+  tags:
+    - libvirt
+    - debian11
+  stage: test
+  interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - sudo apt-get -y install -y -qq meson ninja-build
+    - meson setup build
+    - ninja -C build
+    - cd build && sudo -E meson test --verbose
+
+test-main-commit-job-debian-meson:
+  extends:
+    - .debian-prep
+  tags:
+    - libvirt
+    - debian11
+  stage: test
+  interruptible: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  script:
+    - sudo apt-get -y install -y -qq meson ninja-build
+    - meson setup build
+    - ninja -C build
+    - cd build && sudo -E meson test --verbose

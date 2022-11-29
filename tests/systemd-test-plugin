@@ -61,6 +61,46 @@ CRYPTENROLL_LD_PRELOAD=""
 
 # if CRYPTSETUP_PATH is defined, we run against installed binaries,
 # otherwise we compile systemd tokens from source
+[ ! -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ] && {
+    bin_check git
+    bin_check meson
+    bin_check ninja
+    bin_check pkgconf
+
+    TOKEN_PATH=fake_token_path.so
+    [ -f $TOKEN_PATH ] || skip "Please compile $TOKEN_PATH."
+    INSTALL_PATH=$CRYPTSETUP_PATH/../external-tokens/install
+    mkdir -p $INSTALL_PATH
+    DESTDIR=$INSTALL_PATH meson install -C ..
+    PC_FILE="$(find $INSTALL_PATH -name 'libcryptsetup.pc')"
+    echo "INSTALL_PATH $INSTALL_PATH"
+    echo "PC_FILE $PC_FILE"
+    sed -i "s/^prefix=/prefix=${INSTALL_PATH//\//\\\/}/g" "$PC_FILE"
+    export PKG_CONFIG_PATH=$(dirname $PC_FILE)
+
+    # systemd build system misses libcryptsetup.h if it is installed in non-default path
+    export CFLAGS="${CFLAGS:-} $(pkgconf --cflags libcryptsetup)"
+
+    SYSTEMD_PATH=$CRYPTSETUP_PATH/../external-tokens/systemd
+    SYSTEMD_CRYPTENROLL=$SYSTEMD_PATH/build/systemd-cryptenroll
+
+    mkdir -p $SYSTEMD_PATH
+    [ -e $SYSTEMD_PATH ] || git clone --depth=1 https://github.com/systemd/systemd.git $SYSTEMD_PATH
+    cd $SYSTEMD_PATH
+    meson -D tpm2=true -D libcryptsetup=true -D libcryptsetup-plugins=true build/ || skip "Failed to configure systemd via meson, some dependencies are probably missing."
+    ninja -C build/ systemd-cryptenroll libcryptsetup-token-systemd-tpm2.so || skip "Failed to build systemd."
+
+    cd $CRYPTSETUP_PATH/../tests
+    cp $SYSTEMD_PATH/build/libcryptsetup-token-*.so $CRYPTSETUP_PATH/../tokens/ssh
+    cp $SYSTEMD_PATH/build/src/shared/*.so $CRYPTSETUP_PATH/../tests
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$CRYPTSETUP_PATH/../tests"
+
+    export LD_PRELOAD="${LD_PRELOAD-}:$CRYPTSETUP_PATH/../tests/$TOKEN_PATH"
+    CRYPTENROLL_LD_PRELOAD="$CRYPTSETUP_PATH/../lib/libcryptsetup.so"
+
+    echo "CRYPTENROLL_LD_PRELOAD $CRYPTENROLL_LD_PRELOAD"
+}
+
 [ -z "$CRYPTSETUP_PATH" ] && {
     bin_check git
     bin_check meson
@@ -83,7 +123,7 @@ CRYPTENROLL_LD_PRELOAD=""
     SYSTEMD_CRYPTENROLL=$SYSTEMD_PATH/build/systemd-cryptenroll
 
     mkdir -p $SYSTEMD_PATH
-    [ "$(ls -A $SYSTEMD_PATH)" ] || git clone --depth=1 https://github.com/systemd/systemd.git $SYSTEMD_PATH
+    [ -e $SYSTEMD_PATH ] || git clone --depth=1 https://github.com/systemd/systemd.git $SYSTEMD_PATH
     cd $SYSTEMD_PATH
     meson -D tpm2=true -D libcryptsetup=true -D libcryptsetup-plugins=true build/ || skip "Failed to configure systemd via meson, some dependencies are probably missing."
     ninja -C build/ systemd-cryptenroll libcryptsetup-token-systemd-tpm2.so || skip "Failed to build systemd."
@@ -116,6 +156,7 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 }
 
 FAKE_TPM_PATH="$(pwd)/fake_systemd_tpm_path.so"
+[ ! -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ] && FAKE_TPM_PATH="$CRYPTSETUP_PATH/../tests/fake_systemd_tpm_path.so"
 [ -f $FAKE_TPM_PATH ] || skip "Please compile $FAKE_TPM_PATH."
 export LD_PRELOAD="$LD_PRELOAD:$FAKE_TPM_PATH"
 

@@ -27,6 +27,15 @@ CRYPTSETUP_LIB_VALGRIND=../.libs
 
 [ -z "$srcdir" ] && srcdir="."
 
+[ -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ] || {
+    # test runs on meson build
+    TOKEN_PATH="$CRYPTSETUP_PATH/../tests/fake_token_path.so"
+    [ ! -f $TOKEN_PATH ] && { echo "Please compile $TOKEN_PATH."; exit 77; }
+    export LD_PRELOAD=$TOKEN_PATH
+
+    CRYPTSETUP_SSH="$CRYPTSETUP_PATH/../tokens/ssh/cryptsetup-ssh"
+}
+
 function remove_mapping()
 {
 	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
