@@ -10,8 +10,15 @@ PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
 FAST_PBKDF="--pbkdf-force-iterations 1000"
 
+FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
+
 CRYPTSETUP_VALGRIND=../.libs/cryptsetup
 CRYPTSETUP_LIB_VALGRIND=../.libs
+
+function fips_mode()
+{
+	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
+}
 
 cleanup() {
 	udevadm settle >/dev/null 2>&1
@@ -276,6 +283,8 @@ format_plain_fail 2048
 format_plain_fail 4096
 cleanup
 
+# skip tests using empty passphrase (LUKS1 cipher_null)
+if [ ! fips_mode ]; then
 echo "# Offset check: 512B sector drive"
 add_device dev_size_mb=16 sector_size=512 num_tgts=1
 #           |k| expO reqO expected slot offsets
@@ -314,6 +323,7 @@ format_null 512 4040    8
 format_null 512 4096  128
 format_null 512 4096 2048
 cleanup
+fi
 
 echo "# Create enterprise-class 4K drive with fs and LUKS images."
 # loop device here presents 512 block but images have 4k block

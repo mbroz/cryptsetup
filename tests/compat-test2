@@ -427,10 +427,14 @@ if [ -d /dev/disk/by-uuid ] ; then
 	$CRYPTSETUP luksOpen -d $KEY1 UUID=$TEST_UUID $DEV_NAME || fail
 	$CRYPTSETUP -q luksClose  $DEV_NAME || fail
 fi
+# skip tests using empty passphrases
+if [ ! fips_mode ]; then
 # empty keyfile
 $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEYE || fail
 $CRYPTSETUP luksOpen -d $KEYE $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
+fi
+
 # open by volume key
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT -s 256 --volume-key-file $KEY1 --type luks2 $LOOPDEV || fail
 $CRYPTSETUP luksOpen --volume-key-file /dev/urandom $LOOPDEV $DEV_NAME 2>/dev/null && fail
@@ -477,7 +481,7 @@ echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $LOOPDEV --
 echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
 # keyfile/passphrase
-echo -e "$PWD2\n" | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $LOOPDEV $KEY1 --key-slot 2 --new-keyfile-size 3 || fail
+echo -e "$PWD2\n" | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $LOOPDEV $KEY1 --key-slot 2 --new-keyfile-size 8 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2" || fail
 
 prepare "[18] RemoveKey passphrase and keyfile" reuse
@@ -1001,14 +1005,14 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "pbkdf2" || fail
 echo $PWD1 | $CRYPTSETUP -q luksConvertKey $LOOPDEV -S 1 --pbkdf argon2i -i1 --pbkdf-memory 32 || can_fail_fips
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "1: luks2" || can_fail_fips
-echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S 21 --unbound -s 16 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S 21 --unbound -s 72 $LOOPDEV || fail
 echo $PWD3 | $CRYPTSETUP luksConvertKey --pbkdf-force-iterations 1001 --pbkdf pbkdf2 -S 21 $LOOPDEV || fail
 
 prepare "[38] luksAddKey unbound tests" wipe
 $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEY5 --key-slot 5 || fail
 # unbound key may have arbitrary size
-echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 16 $LOOPDEV || fail
-echo $PWD2 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --unbound -s 32 -S 2 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 72 $LOOPDEV || fail
+echo $PWD2 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --unbound -s 72 -S 2 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2 (unbound)" || fail
 dd if=/dev/urandom of=$KEY_FILE0 bs=64 count=1 > /dev/null 2>&1 || fail
 echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --unbound -s 512 -S 3 --volume-key-file $KEY_FILE0 $LOOPDEV || fail
@@ -1100,10 +1104,10 @@ $CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY2 $KEY1 --key-slot 2 -
 [ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "2: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
 [ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "2: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
 # unbound keyslot
-echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --key-slot 21 --unbound -s 32 --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --key-slot 21 --unbound -s 72 --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 $LOOPDEV || fail
 [ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "21: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
 [ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "21: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
-echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --key-slot 22 --unbound -s 32 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --key-slot 22 --unbound -s 72 $LOOPDEV || fail
 echo $PWD3 | $CRYPTSETUP luksConvertKey --key-slot 22 $LOOPDEV --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 $LOOPDEV || fail
 [ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "22: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
 [ "$($CRYPTSETUP luksDump $IMG | grep -A8 -m1 "22: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail

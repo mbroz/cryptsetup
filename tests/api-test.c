@@ -65,8 +65,8 @@
 #define KEYFILE2 "key2.file"
 #define KEY2 "0123456789abcdef"
 
-#define PASSPHRASE "blabla"
-#define PASSPHRASE1 "albalb"
+#define PASSPHRASE "blablabl"
+#define PASSPHRASE1 "albalbal"
 
 #define DEVICE_TEST_UUID "12345678-1234-1234-1234-123456789abc"
 
@@ -327,7 +327,7 @@ static void AddDevicePlain(void)
 	char key[128], key2[128], path[128];
 	struct crypt_keyslot_context *kc = NULL;
 
-	const char *passphrase = PASSPHRASE;
+	const char *passphrase = "blabla";
 	// hashed hex version of PASSPHRASE
 	const char *vk_hex = "ccadd99b16cd3d200c22d6db45d8b6630ef3d936767127347ec8a76ab992c2ea";
 	size_t key_size = strlen(vk_hex) / 2;
@@ -772,6 +772,10 @@ static void SuspendDevice(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
+	/* skip tests using empty passphrase */
+	if(_fips_mode)
+		return;
+
 	OK_(get_luks_offsets(0, key_size, 1024*2, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
 
@@ -806,7 +810,7 @@ static void AddDeviceLuks(void)
 	};
 	char key[128], key2[128], key3[128];
 
-	const char *passphrase = "blabla", *passphrase2 = "nsdkFI&Y#.sd";
+	const char *passphrase = PASSPHRASE, *passphrase2 = "nsdkFI&Y#.sd";
 	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	const char *vk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
 	size_t key_size = strlen(vk_hex) / 2;
@@ -2105,7 +2109,7 @@ static void LuksKeyslotAdd(void)
 	};
 	char key[128], key3[128];
 
-	const char *passphrase = "blabla", *passphrase2 = "nsdkFI&Y#.sd";
+	const char *passphrase = PASSPHRASE, *passphrase2 = "nsdkFI&Y#.sd";
 	const char *vk_hex = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
 	const char *vk_hex2 = "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1e";
 	size_t key_size = strlen(vk_hex) / 2;

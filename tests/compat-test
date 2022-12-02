@@ -450,10 +450,13 @@ if [ -d /dev/disk/by-uuid ] ; then
 	$CRYPTSETUP luksOpen -d $KEY1 UUID=$TEST_UUID $DEV_NAME || fail
 	$CRYPTSETUP -q luksClose  $DEV_NAME || fail
 fi
+# skip tests using empty passphrase
+if [ ! fips_mode ]; then
 # empty keyfile
 $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV $KEYE || fail
 $CRYPTSETUP luksOpen -d $KEYE $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
+fi
 # open by volume key
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT -s 256 --volume-key-file $KEY1 $LOOPDEV || fail
 $CRYPTSETUP luksOpen --volume-key-file /dev/urandom $LOOPDEV $DEV_NAME 2>/dev/null && fail
@@ -503,7 +506,7 @@ echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $LOOPDEV --
 echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase --key-slot 1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: ENABLED" || fail
 # keyfile/passphrase
-echo -e "$PWD2\n" | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $LOOPDEV $KEY1 --key-slot 2 --new-keyfile-size 3 || fail
+echo -e "$PWD2\n" | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $LOOPDEV $KEY1 --key-slot 2 --new-keyfile-size 8 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 2: ENABLED" || fail
 
 prepare "[18] RemoveKey passphrase and keyfile" reuse
@@ -728,12 +731,15 @@ echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
 [ $? -ne 2 ] && fail "luksResume should return EPERM exit code"
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
 $CRYPTSETUP -q luksClose $DEV_NAME || fail
+# skip tests using empty passphrase
+if [ ! fips_mode ]; then
 echo | $CRYPTSETUP -q luksFormat -c null $FAST_PBKDF_OPT --type luks1 $LOOPDEV || fail
 echo | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksSuspend $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep -q "(suspended)" || fail
 echo | $CRYPTSETUP luksResume $DEV_NAME || fail
 $CRYPTSETUP -q luksClose $DEV_NAME || fail
+fi
 
 prepare "[27] luksOpen/luksResume with specified key slot number" wipe
 # first, let's try passphrase option
