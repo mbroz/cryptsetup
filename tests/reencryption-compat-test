@@ -15,6 +15,7 @@ IMG=reenc-data
 IMG_HDR=$IMG.hdr
 HEADER_LUKS2_PV=blkid-luks2-pv.img
 ORIG_IMG=reenc-data-orig
+DEV_LINK="reenc-test-link"
 KEY1=key1
 PWD1="93R4P4pIqAH8"
 PWD2="1cND4319812f"
@@ -40,7 +41,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
-	rm -f $IMG $IMG_HDR $ORIG_IMG $KEY1 $HEADER_LUKS2_PV >/dev/null 2>&1
+	rm -f $IMG $IMG_HDR $ORIG_IMG $KEY1 $HEADER_LUKS2_PV $DEV_LINK >/dev/null 2>&1
 	umount $MNT_DIR > /dev/null 2>&1
 	rmdir $MNT_DIR > /dev/null 2>&1
 	LOOPDEV1=""
@@ -302,12 +303,25 @@ check_slot 0 || fail "Only keyslot 0 expected to be enabled"
 $REENC $LOOPDEV1 -d $KEY1 $FAST_PBKDF -q || fail
 # FIXME echo $PWD1 | $REENC ...
 
-if [ ! fips_mode ]; then
 echo "[4] Encryption of not yet encrypted device"
+# Encrypt without size reduction must not allow header device same as data device
+wipe_dev $LOOPDEV1
+echo $PWD1 | $REENC $LOOPDEV1 --type luks1 --new --header $LOOPDEV1 -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+$CRYPTSETUP isLUKS $LOOPDEV1 2>/dev/null && fail
+ln -s $LOOPDEV1 $DEV_LINK || fail
+echo $PWD1 | $REENC $LOOPDEV1 --type luks1 --new --header $DEV_LINK -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+$CRYPTSETUP isLUKS $LOOPDEV1 2>/dev/null && fail
+rm -f $DEV_LINK || fail
+echo $PWD1 | $REENC $IMG --type luks1 --new --header $IMG -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+$CRYPTSETUP isLUKS $IMG 2>/dev/null && fail
+ln -s $IMG $DEV_LINK || fail
+echo $PWD1 | $REENC $IMG --type luks1 --new --header $DEV_LINK -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+$CRYPTSETUP isLUKS $IMG 2>/dev/null && fail
+
+if [ ! fips_mode ]; then
 # well, movin' zeroes :-)
 OFFSET=2048
 SIZE=$(blockdev --getsz $LOOPDEV1)
-wipe_dev $LOOPDEV1
 dmsetup create $DEV_NAME2 --table "0 $(($SIZE - $OFFSET)) linear $LOOPDEV1 0" || fail
 check_hash_dev /dev/mapper/$DEV_NAME2 $HASH3
 dmsetup remove --retry $DEV_NAME2 || fail

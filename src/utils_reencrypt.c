@@ -467,6 +467,26 @@ static int reencrypt_check_active_device_sb_block_size(const char *active_device
 	return reencrypt_check_data_sb_block_size(dm_device, new_sector_size);
 }
 
+static int reencrypt_is_header_detached(const char *header_device, const char *data_device)
+{
+	int r;
+	struct stat st;
+	struct crypt_device *cd;
+
+	if (!header_device)
+		return 0;
+
+	if (header_device && stat(header_device, &st) < 0 && errno == ENOENT)
+		return 1;
+
+	if ((r = crypt_init_data_device(&cd, header_device, data_device)))
+		return r;
+
+	r = crypt_header_is_detached(cd);
+	crypt_free(cd);
+	return r;
+}
+
 static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device, const char *device_name)
 {
 	int keyslot, r, fd;
@@ -490,9 +510,14 @@ static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device,
 
 	_set_reencryption_flags(&params.flags);
 
-	if (!data_shift && !ARG_SET(OPT_HEADER_ID)) {
-		log_err(_("Encryption without detached header (--header) is not possible without data device size reduction (--reduce-device-size)."));
-		return -ENOTSUP;
+	if (!data_shift) {
+		r = reencrypt_is_header_detached(ARG_STR(OPT_HEADER_ID), data_device);
+		if (r < 0)
+			return r;
+		if (!r) {
+			log_err(_("Encryption without detached header (--header) is not possible without data device size reduction (--reduce-device-size)."));
+			return -ENOTSUP;
+		}
 	}
 
 	if (!ARG_SET(OPT_HEADER_ID) && ARG_UINT64(OPT_OFFSET_ID) &&
@@ -1358,9 +1383,16 @@ static int _encrypt(struct crypt_device *cd, const char *type, enum device_statu
 	if (!type)
 		type = crypt_get_default_type();
 
-	if (dev_st == DEVICE_LUKS1_UNUSABLE || isLUKS1(type))
+	if (dev_st == DEVICE_LUKS1_UNUSABLE || isLUKS1(type)) {
+		r = reencrypt_is_header_detached(ARG_STR(OPT_HEADER_ID), action_argv[0]);
+		if (r < 0)
+			return r;
+		if (!r && !ARG_SET(OPT_REDUCE_DEVICE_SIZE_ID)) {
+			log_err(_("Encryption without detached header (--header) is not possible without data device size reduction (--reduce-device-size)."));
+			return -ENOTSUP;
+		}
 		return reencrypt_luks1(action_argv[0]);
-	else if (dev_st == DEVICE_NOT_LUKS) {
+	} else if (dev_st == DEVICE_NOT_LUKS) {
 		r = encrypt_luks2_init(&encrypt_cd, action_argv[0], action_argc > 1 ? action_argv[1] : NULL);
 		if (r < 0 || ARG_SET(OPT_INIT_ONLY_ID)) {
 			crypt_free(encrypt_cd);
