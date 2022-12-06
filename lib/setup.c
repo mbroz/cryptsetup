@@ -701,6 +701,49 @@ int crypt_init_data_device(struct crypt_device **cd, const char *device, const c
 	return r;
 }
 
+static void crypt_free_type(struct crypt_device *cd, const char *force_type)
+{
+	const char *type = force_type ?: cd->type;
+
+	if (isPLAIN(type)) {
+		free(CONST_CAST(void*)cd->u.plain.hdr.hash);
+		free(cd->u.plain.cipher);
+		free(cd->u.plain.cipher_spec);
+	} else if (isLUKS2(type)) {
+		LUKS2_reencrypt_free(cd, cd->u.luks2.rh);
+		LUKS2_hdr_free(cd, &cd->u.luks2.hdr);
+		free(cd->u.luks2.keyslot_cipher);
+	} else if (isLUKS1(type)) {
+		free(cd->u.luks1.cipher_spec);
+	} else if (isLOOPAES(type)) {
+		free(CONST_CAST(void*)cd->u.loopaes.hdr.hash);
+		free(cd->u.loopaes.cipher);
+		free(cd->u.loopaes.cipher_spec);
+	} else if (isVERITY(type)) {
+		free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
+		free(CONST_CAST(void*)cd->u.verity.hdr.data_device);
+		free(CONST_CAST(void*)cd->u.verity.hdr.hash_device);
+		free(CONST_CAST(void*)cd->u.verity.hdr.fec_device);
+		free(CONST_CAST(void*)cd->u.verity.hdr.salt);
+		free(CONST_CAST(void*)cd->u.verity.root_hash);
+		free(cd->u.verity.uuid);
+		device_free(cd, cd->u.verity.fec_device);
+	} else if (isINTEGRITY(type)) {
+		free(CONST_CAST(void*)cd->u.integrity.params.integrity);
+		free(CONST_CAST(void*)cd->u.integrity.params.journal_integrity);
+		free(CONST_CAST(void*)cd->u.integrity.params.journal_crypt);
+		crypt_free_volume_key(cd->u.integrity.journal_crypt_key);
+		crypt_free_volume_key(cd->u.integrity.journal_mac_key);
+	} else if (isBITLK(type)) {
+		free(cd->u.bitlk.cipher_spec);
+		BITLK_bitlk_metadata_free(&cd->u.bitlk.params);
+	} else if (!type) {
+		free(cd->u.none.active_name);
+		cd->u.none.active_name = NULL;
+	}
+
+	crypt_set_null_type(cd);
+}
 
 /* internal only */
 struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd)
@@ -1150,48 +1193,6 @@ static const char *LUKS_UUID(struct crypt_device *cd)
 	return NULL;
 }
 
-static void crypt_free_type(struct crypt_device *cd)
-{
-	if (isPLAIN(cd->type)) {
-		free(CONST_CAST(void*)cd->u.plain.hdr.hash);
-		free(cd->u.plain.cipher);
-		free(cd->u.plain.cipher_spec);
-	} else if (isLUKS2(cd->type)) {
-		LUKS2_reencrypt_free(cd, cd->u.luks2.rh);
-		LUKS2_hdr_free(cd, &cd->u.luks2.hdr);
-		free(cd->u.luks2.keyslot_cipher);
-	} else if (isLUKS1(cd->type)) {
-		free(cd->u.luks1.cipher_spec);
-	} else if (isLOOPAES(cd->type)) {
-		free(CONST_CAST(void*)cd->u.loopaes.hdr.hash);
-		free(cd->u.loopaes.cipher);
-		free(cd->u.loopaes.cipher_spec);
-	} else if (isVERITY(cd->type)) {
-		free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
-		free(CONST_CAST(void*)cd->u.verity.hdr.data_device);
-		free(CONST_CAST(void*)cd->u.verity.hdr.hash_device);
-		free(CONST_CAST(void*)cd->u.verity.hdr.fec_device);
-		free(CONST_CAST(void*)cd->u.verity.hdr.salt);
-		free(CONST_CAST(void*)cd->u.verity.root_hash);
-		free(cd->u.verity.uuid);
-		device_free(cd, cd->u.verity.fec_device);
-	} else if (isINTEGRITY(cd->type)) {
-		free(CONST_CAST(void*)cd->u.integrity.params.integrity);
-		free(CONST_CAST(void*)cd->u.integrity.params.journal_integrity);
-		free(CONST_CAST(void*)cd->u.integrity.params.journal_crypt);
-		crypt_free_volume_key(cd->u.integrity.journal_crypt_key);
-		crypt_free_volume_key(cd->u.integrity.journal_mac_key);
-	} else if (isBITLK(cd->type)) {
-		free(cd->u.bitlk.cipher_spec);
-		BITLK_bitlk_metadata_free(&cd->u.bitlk.params);
-	} else if (!cd->type) {
-		free(cd->u.none.active_name);
-		cd->u.none.active_name = NULL;
-	}
-
-	crypt_set_null_type(cd);
-}
-
 static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 {
 	bool found = false;
@@ -1325,7 +1326,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			if (r < 0) {
 				log_dbg(cd, "LUKS device header uuid: %s mismatches DM returned uuid %s",
 					LUKS_UUID(cd), dmd.uuid);
-				crypt_free_type(cd);
+				crypt_free_type(cd, NULL);
 				r = 0;
 				goto out;
 			}
@@ -3252,7 +3253,7 @@ void crypt_free(struct crypt_device *cd)
 	dm_backend_exit(cd);
 	crypt_free_volume_key(cd->volume_key);
 
-	crypt_free_type(cd);
+	crypt_free_type(cd, NULL);
 
 	device_free(cd, cd->device);
 	device_free(cd, cd->metadata_device);
@@ -5777,7 +5778,7 @@ int crypt_convert(struct crypt_device *cd,
 		return r;
 	}
 
-	crypt_free_type(cd);
+	crypt_free_type(cd, NULL);
 
 	return crypt_load(cd, type, params);
 }
