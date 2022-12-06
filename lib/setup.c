@@ -396,15 +396,12 @@ int onlyLUKS2mask(struct crypt_device *cd, uint32_t mask)
 
 static void crypt_set_null_type(struct crypt_device *cd)
 {
-	if (!cd->type)
-		return;
-
 	free(cd->type);
 	cd->type = NULL;
-	cd->u.none.active_name = NULL;
 	cd->data_offset = 0;
 	cd->metadata_size = 0;
 	cd->keyslots_size = 0;
+	crypt_safe_memzero(&cd->u, sizeof(cd->u));
 }
 
 static void crypt_reset_null_type(struct crypt_device *cd)
