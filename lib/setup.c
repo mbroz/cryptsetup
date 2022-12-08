@@ -489,7 +489,7 @@ static int crypt_uuid_type_cmp(struct crypt_device *cd, const char *type)
 	size_t len;
 	int r;
 
-	/* Must user header-on-disk if we know type here */
+	/* Must use header-on-disk if we know the type here */
 	if (cd->type || !cd->u.none.active_name)
 		return -EINVAL;
 
