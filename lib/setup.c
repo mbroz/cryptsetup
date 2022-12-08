@@ -396,15 +396,12 @@ int onlyLUKS2mask(struct crypt_device *cd, uint32_t mask)
 
 static void crypt_set_null_type(struct crypt_device *cd)
 {
-	if (!cd->type)
-		return;
-
 	free(cd->type);
 	cd->type = NULL;
-	cd->u.none.active_name = NULL;
 	cd->data_offset = 0;
 	cd->metadata_size = 0;
 	cd->keyslots_size = 0;
+	crypt_safe_memzero(&cd->u, sizeof(cd->u));
 }
 
 static void crypt_reset_null_type(struct crypt_device *cd)
@@ -492,7 +489,7 @@ static int crypt_uuid_type_cmp(struct crypt_device *cd, const char *type)
 	size_t len;
 	int r;
 
-	/* Must user header-on-disk if we know type here */
+	/* Must use header-on-disk if we know the type here */
 	if (cd->type || !cd->u.none.active_name)
 		return -EINVAL;
 
@@ -701,6 +698,49 @@ int crypt_init_data_device(struct crypt_device **cd, const char *device, const c
 	return r;
 }
 
+static void crypt_free_type(struct crypt_device *cd, const char *force_type)
+{
+	const char *type = force_type ?: cd->type;
+
+	if (isPLAIN(type)) {
+		free(CONST_CAST(void*)cd->u.plain.hdr.hash);
+		free(cd->u.plain.cipher);
+		free(cd->u.plain.cipher_spec);
+	} else if (isLUKS2(type)) {
+		LUKS2_reencrypt_free(cd, cd->u.luks2.rh);
+		LUKS2_hdr_free(cd, &cd->u.luks2.hdr);
+		free(cd->u.luks2.keyslot_cipher);
+	} else if (isLUKS1(type)) {
+		free(cd->u.luks1.cipher_spec);
+	} else if (isLOOPAES(type)) {
+		free(CONST_CAST(void*)cd->u.loopaes.hdr.hash);
+		free(cd->u.loopaes.cipher);
+		free(cd->u.loopaes.cipher_spec);
+	} else if (isVERITY(type)) {
+		free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
+		free(CONST_CAST(void*)cd->u.verity.hdr.data_device);
+		free(CONST_CAST(void*)cd->u.verity.hdr.hash_device);
+		free(CONST_CAST(void*)cd->u.verity.hdr.fec_device);
+		free(CONST_CAST(void*)cd->u.verity.hdr.salt);
+		free(CONST_CAST(void*)cd->u.verity.root_hash);
+		free(cd->u.verity.uuid);
+		device_free(cd, cd->u.verity.fec_device);
+	} else if (isINTEGRITY(type)) {
+		free(CONST_CAST(void*)cd->u.integrity.params.integrity);
+		free(CONST_CAST(void*)cd->u.integrity.params.journal_integrity);
+		free(CONST_CAST(void*)cd->u.integrity.params.journal_crypt);
+		crypt_free_volume_key(cd->u.integrity.journal_crypt_key);
+		crypt_free_volume_key(cd->u.integrity.journal_mac_key);
+	} else if (isBITLK(type)) {
+		free(cd->u.bitlk.cipher_spec);
+		BITLK_bitlk_metadata_free(&cd->u.bitlk.params);
+	} else if (!type) {
+		free(cd->u.none.active_name);
+		cd->u.none.active_name = NULL;
+	}
+
+	crypt_set_null_type(cd);
+}
 
 /* internal only */
 struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd)
@@ -880,11 +920,13 @@ static int _crypt_load_tcrypt(struct crypt_device *cd, struct crypt_params_tcryp
 	cd->u.tcrypt.params.veracrypt_pim = 0;
 
 	if (r < 0)
-		return r;
+		goto out;
 
 	if (!cd->type && !(cd->type = strdup(CRYPT_TCRYPT)))
-		return -ENOMEM;
-
+		r = -ENOMEM;
+out:
+	if (r < 0)
+		crypt_free_type(cd, CRYPT_TCRYPT);
 	return r;
 }
 
@@ -905,14 +947,11 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 
 	r = VERITY_read_sb(cd, sb_offset, &cd->u.verity.uuid, &cd->u.verity.hdr);
 	if (r < 0)
-		return r;
+		goto out;
 
 	if (!cd->type && !(cd->type = strdup(CRYPT_VERITY))) {
-		free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
-		free(CONST_CAST(void*)cd->u.verity.hdr.salt);
-		free(cd->u.verity.uuid);
-		crypt_safe_memzero(&cd->u.verity.hdr, sizeof(cd->u.verity.hdr));
-		return -ENOMEM;
+		r = -ENOMEM;
+		goto out;
 	}
 
 	if (params)
@@ -920,21 +959,25 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 
 	/* Hash availability checked in sb load */
 	cd->u.verity.root_hash_size = crypt_hash_size(cd->u.verity.hdr.hash_name);
-	if (cd->u.verity.root_hash_size > 4096)
-		return -EINVAL;
+	if (cd->u.verity.root_hash_size > 4096) {
+		r = -EINVAL;
+		goto out;
+	}
 
 	if (params && params->data_device &&
 	    (r = crypt_set_data_device(cd, params->data_device)) < 0)
-		return r;
+		goto out;
 
 	if (params && params->fec_device) {
 		r = device_alloc(cd, &cd->u.verity.fec_device, params->fec_device);
 		if (r < 0)
-			return r;
+			goto out;
 		cd->u.verity.hdr.fec_area_offset = params->fec_area_offset;
 		cd->u.verity.hdr.fec_roots = params->fec_roots;
 	}
-
+out:
+	if (r < 0)
+		crypt_free_type(cd, CRYPT_VERITY);
 	return r;
 }
 
@@ -949,45 +992,49 @@ static int _crypt_load_integrity(struct crypt_device *cd,
 
 	r = INTEGRITY_read_sb(cd, &cd->u.integrity.params, &cd->u.integrity.sb_flags);
 	if (r < 0)
-		return r;
+		goto out;
 
 	// FIXME: add checks for fields in integrity sb vs params
 
+	r = -ENOMEM;
 	if (params) {
 		cd->u.integrity.params.journal_watermark = params->journal_watermark;
 		cd->u.integrity.params.journal_commit_time = params->journal_commit_time;
 		cd->u.integrity.params.buffer_sectors = params->buffer_sectors;
-		// FIXME: check ENOMEM
-		if (params->integrity)
-			cd->u.integrity.params.integrity = strdup(params->integrity);
+		if (params->integrity &&
+		    !(cd->u.integrity.params.integrity = strdup(params->integrity)))
+			goto out;
 		cd->u.integrity.params.integrity_key_size = params->integrity_key_size;
-		if (params->journal_integrity)
-			cd->u.integrity.params.journal_integrity = strdup(params->journal_integrity);
-		if (params->journal_crypt)
-			cd->u.integrity.params.journal_crypt = strdup(params->journal_crypt);
+		if (params->journal_integrity &&
+		    !(cd->u.integrity.params.journal_integrity = strdup(params->journal_integrity)))
+			goto out;
+		if (params->journal_crypt &&
+		    !(cd->u.integrity.params.journal_crypt = strdup(params->journal_crypt)))
+			goto out;
 
 		if (params->journal_crypt_key) {
 			cd->u.integrity.journal_crypt_key =
 				crypt_alloc_volume_key(params->journal_crypt_key_size,
 						       params->journal_crypt_key);
 			if (!cd->u.integrity.journal_crypt_key)
-				return -ENOMEM;
+				goto out;
 		}
 		if (params->journal_integrity_key) {
 			cd->u.integrity.journal_mac_key =
 				crypt_alloc_volume_key(params->journal_integrity_key_size,
 						       params->journal_integrity_key);
 			if (!cd->u.integrity.journal_mac_key)
-				return -ENOMEM;
+				goto out;
 		}
 	}
 
-	if (!cd->type && !(cd->type = strdup(CRYPT_INTEGRITY))) {
-		free(CONST_CAST(void*)cd->u.integrity.params.integrity);
-		return -ENOMEM;
-	}
-
-	return 0;
+	if (!cd->type && !(cd->type = strdup(CRYPT_INTEGRITY)))
+		goto out;
+	r = 0;
+out:
+	if (r < 0)
+		crypt_free_type(cd, CRYPT_INTEGRITY);
+	return r;
 }
 
 static int _crypt_load_bitlk(struct crypt_device *cd)
@@ -1000,20 +1047,25 @@ static int _crypt_load_bitlk(struct crypt_device *cd)
 
 	r = BITLK_read_sb(cd, &cd->u.bitlk.params);
 	if (r < 0)
-		return r;
+		goto out;
 
 	if (asprintf(&cd->u.bitlk.cipher_spec, "%s-%s",
 		     cd->u.bitlk.params.cipher, cd->u.bitlk.params.cipher_mode) < 0) {
 		cd->u.bitlk.cipher_spec = NULL;
-		return -ENOMEM;
+		r = -ENOMEM;
+		goto out;
 	}
 
-	if (!cd->type && !(cd->type = strdup(CRYPT_BITLK)))
-		return -ENOMEM;
+	if (!cd->type && !(cd->type = strdup(CRYPT_BITLK))) {
+		r = -ENOMEM;
+		goto out;
+	}
 
 	device_set_block_size(crypt_data_device(cd), cd->u.bitlk.params.sector_size);
-
-	return 0;
+out:
+	if (r < 0)
+		crypt_free_type(cd, CRYPT_BITLK);
+	return r;
 }
 
 static int _crypt_load_fvault2(struct crypt_device *cd)
@@ -1026,12 +1078,14 @@ static int _crypt_load_fvault2(struct crypt_device *cd)
 
 	r = FVAULT2_read_metadata(cd, &cd->u.fvault2.params);
 	if (r < 0)
-		return r;
+		goto out;
 
 	if (!cd->type && !(cd->type = strdup(CRYPT_FVAULT2)))
-		return -ENOMEM;
-
-	return 0;
+		r = -ENOMEM;
+out:
+	if (r < 0)
+		crypt_free_type(cd, CRYPT_FVAULT2);
+	return r;
 }
 
 int crypt_load(struct crypt_device *cd,
@@ -1148,48 +1202,6 @@ static const char *LUKS_UUID(struct crypt_device *cd)
 		return cd->u.luks2.hdr.uuid;
 
 	return NULL;
-}
-
-static void crypt_free_type(struct crypt_device *cd)
-{
-	if (isPLAIN(cd->type)) {
-		free(CONST_CAST(void*)cd->u.plain.hdr.hash);
-		free(cd->u.plain.cipher);
-		free(cd->u.plain.cipher_spec);
-	} else if (isLUKS2(cd->type)) {
-		LUKS2_reencrypt_free(cd, cd->u.luks2.rh);
-		LUKS2_hdr_free(cd, &cd->u.luks2.hdr);
-		free(cd->u.luks2.keyslot_cipher);
-	} else if (isLUKS1(cd->type)) {
-		free(cd->u.luks1.cipher_spec);
-	} else if (isLOOPAES(cd->type)) {
-		free(CONST_CAST(void*)cd->u.loopaes.hdr.hash);
-		free(cd->u.loopaes.cipher);
-		free(cd->u.loopaes.cipher_spec);
-	} else if (isVERITY(cd->type)) {
-		free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
-		free(CONST_CAST(void*)cd->u.verity.hdr.data_device);
-		free(CONST_CAST(void*)cd->u.verity.hdr.hash_device);
-		free(CONST_CAST(void*)cd->u.verity.hdr.fec_device);
-		free(CONST_CAST(void*)cd->u.verity.hdr.salt);
-		free(CONST_CAST(void*)cd->u.verity.root_hash);
-		free(cd->u.verity.uuid);
-		device_free(cd, cd->u.verity.fec_device);
-	} else if (isINTEGRITY(cd->type)) {
-		free(CONST_CAST(void*)cd->u.integrity.params.integrity);
-		free(CONST_CAST(void*)cd->u.integrity.params.journal_integrity);
-		free(CONST_CAST(void*)cd->u.integrity.params.journal_crypt);
-		crypt_free_volume_key(cd->u.integrity.journal_crypt_key);
-		crypt_free_volume_key(cd->u.integrity.journal_mac_key);
-	} else if (isBITLK(cd->type)) {
-		free(cd->u.bitlk.cipher_spec);
-		BITLK_bitlk_metadata_free(&cd->u.bitlk.params);
-	} else if (!cd->type) {
-		free(cd->u.none.active_name);
-		cd->u.none.active_name = NULL;
-	}
-
-	crypt_set_null_type(cd);
 }
 
 static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
@@ -1325,7 +1337,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			if (r < 0) {
 				log_dbg(cd, "LUKS device header uuid: %s mismatches DM returned uuid %s",
 					LUKS_UUID(cd), dmd.uuid);
-				crypt_free_type(cd);
+				crypt_free_type(cd, NULL);
 				r = 0;
 				goto out;
 			}
@@ -3252,7 +3264,7 @@ void crypt_free(struct crypt_device *cd)
 	dm_backend_exit(cd);
 	crypt_free_volume_key(cd->volume_key);
 
-	crypt_free_type(cd);
+	crypt_free_type(cd, NULL);
 
 	device_free(cd, cd->device);
 	device_free(cd, cd->metadata_device);
@@ -5777,7 +5789,7 @@ int crypt_convert(struct crypt_device *cd,
 		return r;
 	}
 
-	crypt_free_type(cd);
+	crypt_free_type(cd, NULL);
 
 	return crypt_load(cd, type, params);
 }
