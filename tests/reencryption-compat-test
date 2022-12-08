@@ -22,6 +22,12 @@ PWD3="1-9Qu5Ejfnqv"
 
 MNT_DIR=./mnt_luks
 START_DIR=$(pwd)
+FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
+
+function fips_mode()
+{
+	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
+}
 
 function del_scsi_device()
 {
@@ -296,6 +302,7 @@ check_slot 0 || fail "Only keyslot 0 expected to be enabled"
 $REENC $LOOPDEV1 -d $KEY1 $FAST_PBKDF -q || fail
 # FIXME echo $PWD1 | $REENC ...
 
+if [ ! fips_mode ]; then
 echo "[4] Encryption of not yet encrypted device"
 # well, movin' zeroes :-)
 OFFSET=2048
@@ -323,6 +330,7 @@ OFFSET=4096
 echo fake | $REENC $LOOPDEV1 -d $KEY1 --new --type luks1 --reduce-device-size "$OFFSET"S -q $FAST_PBKDF || fail
 $CRYPTSETUP open --test-passphrase $LOOPDEV1 -d $KEY1 || fail
 wipe_dev $LOOPDEV1
+fi
 
 echo "[5] Reencryption using specific keyslot"
 echo $PWD2 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF $LOOPDEV1 || fail
@@ -396,6 +404,7 @@ add_scsi_device sector_size=512 dev_size_mb=32 physblk_exp=3
 test_logging "[4096/512 sector]" || fail
 test_logging_tmpfs || fail
 
+if [ ! fips_mode ]; then
 echo "[10] Removal of encryption"
 prepare 8192
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF $LOOPDEV1 || fail
@@ -460,6 +469,7 @@ if [ "$HAVE_BLKID" -gt 0 ]; then
 	echo $PWD1 | $REENC --header $IMG_HDR $HEADER_LUKS2_PV -q $FAST_PBKDF --new --type luks1 2>/dev/null && fail
 	test -f $IMG_HDR && fail
 fi
+fi # if [ ! fips_mode ]
 
 remove_mapping
 exit 0

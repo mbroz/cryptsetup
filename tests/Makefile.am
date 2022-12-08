@@ -66,8 +66,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	xfs_512_block_size.img.xz \
 	valid_header_file.xz \
 	luks2_valid_hdr.img.xz \
-	luks2_header_requirements.xz \
-	luks2_header_requirements_free.xz \
+	luks2_header_requirements.tar.xz \
 	luks2_mda_images.tar.xz \
 	evil_hdr-payload_overwrite.xz \
 	evil_hdr-stripes_payload_dmg.xz \
