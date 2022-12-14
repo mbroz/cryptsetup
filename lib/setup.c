@@ -3242,7 +3242,7 @@ int crypt_header_is_detached(struct crypt_device *cd)
 {
 	int r;
 
-	if (!cd || !isLUKS(cd->type))
+	if (!cd || (cd->type && !isLUKS(cd->type)))
 		return -EINVAL;
 
 	r = device_is_identical(crypt_data_device(cd), crypt_metadata_device(cd));

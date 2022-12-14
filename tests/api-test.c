@@ -960,7 +960,7 @@ static void AddDeviceLuks(void)
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_2, key, key_size, 0), "Device is active");
 	EQ_(crypt_status(cd, CDEVICE_2), CRYPT_INACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
-	FAIL_(crypt_header_is_detached(cd), "no header for mismatched device");
+	EQ_(crypt_header_is_detached(cd), 1);
 	CRYPT_FREE(cd);
 
 	params.data_device = NULL;

@@ -1080,6 +1080,22 @@ $CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail
 $CRYPTSETUP close $DEV_NAME
 echo $PWD1 | $CRYPTSETUP open --header $IMG_HDR $DEV --test-passphrase || fail
 
+# Encrypt without size reduction must not allow header device same as data device
+wipe_dev_head $DEV 1
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --type luks2 --encrypt --header $DEV -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+$CRYPTSETUP isLUKS $DEV 2>/dev/null && fail
+ln -s $DEV $DEV_LINK || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --type luks2 --encrypt --header $DEV_LINK -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+$CRYPTSETUP isLUKS $DEV 2>/dev/null && fail
+rm -f $DEV_LINK || fail
+
+dd if=/dev/zero of=$IMG bs=4k count=1 >/dev/null 2>&1
+echo $PWD1 | $CRYPTSETUP reencrypt $IMG --type luks2 --encrypt --header $IMG -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+$CRYPTSETUP isLUKS $IMG 2>/dev/null && fail
+ln -s $IMG $DEV_LINK || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $IMG --type luks2 --encrypt --header $DEV_LINK -q $FAST_PBKDF_ARGON 2>/dev/null && fail
+$CRYPTSETUP isLUKS $IMG 2>/dev/null && fail
+
 echo "[4] Reencryption with detached header"
 wipe $PWD1 $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt -c aes-cbc-essiv:sha256 -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
