@@ -729,8 +729,8 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 
 	log_dbg("Reencrypting in forward direction.");
 
-	if (lseek64(fd_old, rc->device_offset, SEEK_SET) < 0 ||
-	    lseek64(fd_new, rc->device_offset, SEEK_SET) < 0) {
+	if (lseek(fd_old, rc->device_offset, SEEK_SET) < 0 ||
+	    lseek(fd_new, rc->device_offset, SEEK_SET) < 0) {
 		log_err(_("Cannot seek to device offset."));
 		goto out;
 	}
@@ -788,7 +788,7 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 			      size_t block_size, void *buf, uint64_t *bytes)
 {
 	ssize_t s1, s2, working_block;
-	off64_t working_offset;
+	off_t working_offset;
 	int r = -EIO;
 	char *backing_file = NULL;
 	struct tools_progress_params prog_parms = {
@@ -827,8 +827,8 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 			working_block = block_size;
 		}
 
-		if (lseek64(fd_old, working_offset, SEEK_SET) < 0 ||
-		    lseek64(fd_new, working_offset, SEEK_SET) < 0) {
+		if (lseek(fd_old, working_offset, SEEK_SET) < 0 ||
+		    lseek(fd_new, working_offset, SEEK_SET) < 0) {
 			log_err(_("Cannot seek to device offset."));
 			goto out;
 		}
@@ -874,7 +874,7 @@ static void zero_rest_of_device(int fd, size_t block_size, void *buf,
 
 	log_dbg("Zeroing rest of device.");
 
-	if (lseek64(fd, offset, SEEK_SET) < 0) {
+	if (lseek(fd, offset, SEEK_SET) < 0) {
 		log_dbg("Cannot seek to device offset.");
 		return;
 	}

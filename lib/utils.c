@@ -102,9 +102,9 @@ static int keyfile_seek(int fd, uint64_t bytes)
 	char tmp[BUFSIZ];
 	size_t next_read;
 	ssize_t bytes_r;
-	off64_t r;
+	off_t r;
 
-	r = lseek64(fd, bytes, SEEK_CUR);
+	r = lseek(fd, bytes, SEEK_CUR);
 	if (r > 0)
 		return 0;
 	if (r < 0 && errno != ESPIPE)
