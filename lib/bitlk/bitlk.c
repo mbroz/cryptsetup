@@ -405,6 +405,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	struct bitlk_fve_metadata fve = {};
 	struct bitlk_entry_vmk entry_vmk = {};
 	uint8_t *fve_entries = NULL;
+	size_t fve_entries_size = 0;
 	uint32_t fve_metadata_size = 0;
 	int fve_offset = 0;
 	char guid_buf[UUID_STR_LEN] = {0};
@@ -413,7 +414,6 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	int i = 0;
 	int r = 0;
 	int start = 0;
-	int end = 0;
 	size_t key_size = 0;
 	const char *key = NULL;
 	char *description = NULL;
@@ -514,7 +514,6 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 
 	params->volume_size = le64_to_cpu(fve.volume_size);
 	params->metadata_version = le16_to_cpu(fve.fve_version);
-	fve_metadata_size = le32_to_cpu(fve.metadata_size);
 
 	switch (le16_to_cpu(fve.encryption)) {
 	/* AES-CBC with Elephant difuser */
@@ -569,33 +568,45 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 
 	params->creation_time = filetime_to_unixtime(le64_to_cpu(fve.creation_time));
 
+	fve_metadata_size = le32_to_cpu(fve.metadata_size);
+	if (fve_metadata_size < (BITLK_FVE_METADATA_HEADER_LEN + sizeof(entry_size) + sizeof(entry_type)) ||
+	    fve_metadata_size > BITLK_FVE_METADATA_SIZE) {
+		r = -EINVAL;
+		goto out;
+	}
+	fve_entries_size = fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN;
+
 	/* read and parse all FVE metadata entries */
-	fve_entries = malloc(fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN);
+	fve_entries = malloc(fve_entries_size);
 	if (!fve_entries) {
 		r = -ENOMEM;
 		goto out;
 	}
-	memset(fve_entries, 0, (fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN));
+	memset(fve_entries, 0, fve_entries_size);
 
 	log_dbg(cd, "Reading BITLK FVE metadata entries of size %" PRIu32 " on device %s, offset %" PRIu64 ".",
-		fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN, device_path(device),
-		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADERS_LEN);
+		fve_entries_size, device_path(device), params->metadata_offset[0] + BITLK_FVE_METADATA_HEADERS_LEN);
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
-		device_alignment(device), fve_entries, fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN,
-		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADERS_LEN) != (ssize_t)(fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN)) {
+		device_alignment(device), fve_entries, fve_entries_size,
+		params->metadata_offset[0] + BITLK_FVE_METADATA_HEADERS_LEN) != (ssize_t)fve_entries_size) {
 		log_err(cd, _("Failed to read BITLK metadata entries from %s."), device_path(device));
 		r = -EINVAL;
 		goto out;
 	}
 
-	end = fve_metadata_size - BITLK_FVE_METADATA_HEADER_LEN;
-	while (end - start > 2) {
+	while ((fve_entries_size - start) >= (sizeof(entry_size) + sizeof(entry_type))) {
+
 		/* size of this entry */
 		memcpy(&entry_size, fve_entries + start, sizeof(entry_size));
 		entry_size = le16_to_cpu(entry_size);
 		if (entry_size == 0)
 			break;
+
+		if (entry_size > (fve_entries_size - start)) {
+			r = -EINVAL;
+			goto out;
+		}
 
 		/* type of this entry */
 		memcpy(&entry_type, fve_entries + start + sizeof(entry_size), sizeof(entry_type));
@@ -603,6 +614,10 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 
 		/* VMK */
 		if (entry_type == BITLK_ENTRY_TYPE_VMK) {
+			if ((fve_entries_size - start - BITLK_ENTRY_HEADER_LEN) < sizeof(entry_vmk)) {
+				r = -EINVAL;
+				goto out;
+			}
 			/* skip first four variables in the entry (entry size, type, value and version) */
 			memcpy(&entry_vmk,
 			       fve_entries + start + BITLK_ENTRY_HEADER_LEN,
@@ -640,6 +655,11 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			vmk = vmk->next;
 		/* FVEK */
 		} else if (entry_type == BITLK_ENTRY_TYPE_FVEK) {
+			if ((fve_entries_size - start - BITLK_ENTRY_HEADER_LEN) <
+			    (BITLK_NONCE_SIZE + BITLK_VMK_MAC_TAG_SIZE)) {
+				r = -EINVAL;
+				goto out;
+			}
 			params->fvek = malloc(sizeof(struct bitlk_fvek));
 			if (!params->fvek) {
 				r = -ENOMEM;
@@ -647,11 +667,11 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			}
 			memcpy(params->fvek->nonce,
 			       fve_entries + start + BITLK_ENTRY_HEADER_LEN,
-			       sizeof(params->fvek->nonce));
+			       BITLK_NONCE_SIZE);
 			/* MAC tag */
 			memcpy(params->fvek->mac_tag,
 			       fve_entries + start + BITLK_ENTRY_HEADER_LEN + BITLK_NONCE_SIZE,
-			       sizeof(params->fvek->mac_tag));
+			       BITLK_VMK_MAC_TAG_SIZE);
 			/* AES-CCM encrypted key */
 			key_size = entry_size - (BITLK_ENTRY_HEADER_LEN + BITLK_NONCE_SIZE + BITLK_VMK_MAC_TAG_SIZE);
 			key = (const char *) fve_entries + start + BITLK_ENTRY_HEADER_LEN + BITLK_NONCE_SIZE + BITLK_VMK_MAC_TAG_SIZE;
@@ -663,6 +683,10 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		/* volume header info (location and size) */
 		} else if (entry_type == BITLK_ENTRY_TYPE_VOLUME_HEADER) {
 			struct bitlk_entry_header_block entry_header;
+			if ((fve_entries_size - start - BITLK_ENTRY_HEADER_LEN) < sizeof(entry_header)) {
+				r = -EINVAL;
+				goto out;
+			}
 			memcpy(&entry_header,
 			       fve_entries + start + BITLK_ENTRY_HEADER_LEN,
 			       sizeof(entry_header));
@@ -670,9 +694,16 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			params->volume_header_size = le64_to_cpu(entry_header.size);
 		/* volume description (utf-16 string) */
 		} else if (entry_type == BITLK_ENTRY_TYPE_DESCRIPTION) {
-			description = malloc((entry_size - BITLK_ENTRY_HEADER_LEN - BITLK_ENTRY_HEADER_LEN) * 2 + 1);
-			if (!description)
-				return -ENOMEM;
+			size_t description_size = (entry_size - BITLK_ENTRY_HEADER_LEN - BITLK_ENTRY_HEADER_LEN) * 2 + 1;
+			if ((fve_entries_size - start - BITLK_ENTRY_HEADER_LEN) < description_size) {
+				r = -EINVAL;
+				goto out;
+			}
+			description = malloc(description_size);
+			if (!description) {
+				r = -ENOMEM;
+				goto out;
+			}
 			r = crypt_utf16_to_utf8(&description, CONST_CAST(char16_t *)(fve_entries + start + BITLK_ENTRY_HEADER_LEN),
 					                  entry_size - BITLK_ENTRY_HEADER_LEN);
 			if (r < 0 || !description) {
