@@ -2672,15 +2672,46 @@ out:
 	return r;
 }
 
+static int opal_erase(struct crypt_device *cd, bool factory_reset) {
+	char *password = NULL;
+	size_t password_size = 0;
+	int r;
+
+	r = tools_get_key(factory_reset ? _("Enter OPAL PSID: ") : _("Enter OPAL Admin password: "),
+				&password, &password_size,
+				0, 0, NULL,
+				ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
+	if (r < 0)
+		return r;
+
+	if (factory_reset && !ARG_SET(OPT_BATCH_MODE_ID) &&
+		!yesDialog(_("WARNING: WHOLE disk will be factory reset and all data will be lost! Continue?"),
+			_("Operation aborted.\n"))) {
+		return -EPERM;
+	}
+
+	return crypt_wipe_hw_opal(cd,
+			factory_reset ? CRYPT_NO_SEGMENT : CRYPT_LUKS2_SEGMENT,
+			password,
+			password_size,
+			0);
+}
+
 static int action_luksErase(void)
 {
 	struct crypt_device *cd = NULL;
 	crypt_keyslot_info ki;
 	char *msg = NULL;
-	int i, max, r;
+	int i, max, r, hw_enc;
 
 	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
 		goto out;
+
+	/* Allow factory reset even if there's no LUKS header, as long as OPAL is enabled on the device */
+	if (ARG_SET(OPT_HW_OPAL_FACTORY_RESET_ID)) {
+		r = opal_erase(cd, true);
+		goto out;
+	}
 
 	if ((r = crypt_load(cd, luksType(device_type), NULL))) {
 		log_err(_("Device %s is not a valid LUKS device."),
@@ -2688,7 +2719,15 @@ static int action_luksErase(void)
 		goto out;
 	}
 
-	if(asprintf(&msg, _("This operation will erase all keyslots on device %s.\n"
+	hw_enc = crypt_get_hw_encryption_type(cd);
+	if (hw_enc < 0)
+		goto out;
+	if (hw_enc == CRYPT_OPAL_HW_ONLY || hw_enc == CRYPT_SW_AND_OPAL_HW) {
+		r = opal_erase(cd, false);
+		goto out;
+	}
+
+	if (asprintf(&msg, _("This operation will erase all keyslots on device %s.\n"
 			    "Device will become unusable after this operation."),
 			    uuid_or_device_header(NULL)) == -1) {
 		r = -ENOMEM;
@@ -3539,7 +3578,10 @@ int main(int argc, const char **argv)
 		aname = CLOSE_ACTION;
 	} else if (!strcmp(aname, "luksErase")) {
 		aname = ERASE_ACTION;
-		device_type = "luks";
+		if (ARG_SET(OPT_TYPE_ID))
+			device_type = ARG_STR(OPT_TYPE_ID);
+		else
+			device_type = "luks";
 	} else if (!strcmp(aname, "luksConfig")) {
 		aname = CONFIG_ACTION;
 		device_type = "luks2";

@@ -2325,6 +2325,35 @@ int crypt_wipe(struct crypt_device *cd,
 #define CRYPT_WIPE_NO_DIRECT_IO (UINT32_C(1) << 0)
 /** @} */
 
+enum {
+	CRYPT_LUKS2_SEGMENT = -2,
+	CRYPT_NO_SEGMENT = -1,
+};
+
+/**
+ * Safe erase of a partition or an entire OPAL device. WARNING: ALL DATA ON
+ * PARTITION/DISK WILL BE LOST. If the CRYPT_NO_SEGMENT is passed as the segment
+ * parameter, the entire device will be wiped, not just what is included in the
+ * LUKS2 device/partition.
+ *
+ * @param cd crypt device handle
+ * @param segment the segment number to wipe (0..8), or CRYPT_LUKS2_SEGMENT
+ *        to wipe the segment configured in the LUKS2 header, or CRYPT_NO_SEGMENT
+ *        to wipe the entire device via a factory reset.
+ * @param password admin password/PSID (for factory reset) to wipe the
+ *        partition/device
+ * @param password_size length of password/PSID
+ * @param flags (currently unused)
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_wipe_hw_opal(struct crypt_device *cd,
+	int segment, /* 0..8, CRYPT_LUKS2_SEGMENT -2, CRYPT_NO_SEGMENT -1 */
+	const char *password, /* Admin1 PIN or PSID */
+	size_t password_size,
+	uint32_t flags /* currently unused */
+);
+
 /**
  * @defgroup crypt-tokens LUKS2 token wrapper access
  *

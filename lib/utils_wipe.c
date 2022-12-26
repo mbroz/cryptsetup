@@ -26,6 +26,8 @@
 #include <sys/stat.h>
 #include <linux/fs.h>
 #include "internal.h"
+#include "luks2/luks2_internal.h"
+#include "luks2/hw_opal/hw_opal.h"
 
 /* block device zeroout ioctls, introduced in Linux kernel 3.7 */
 #ifndef BLKZEROOUT
@@ -308,4 +310,63 @@ int crypt_wipe(struct crypt_device *cd,
 		device_free(cd, device);
 
 	return r;
+}
+
+int crypt_wipe_hw_opal(struct crypt_device *cd,
+		       int segment,
+		       const char *password,
+		       size_t password_size,
+		       uint32_t flags)
+{
+	int r;
+	struct luks2_hdr *hdr;
+	uint32_t opal_segment_number;
+
+	if (!cd)
+		return -EINVAL;
+
+	if (!password)
+		return -EINVAL;
+
+	if (segment < CRYPT_LUKS2_SEGMENT || segment > 8)
+		return -EINVAL;
+
+	r = crypt_opal_supported(cd, crypt_data_device(cd));
+	if (r < 0)
+		return r;
+
+	if (segment == CRYPT_NO_SEGMENT) {
+		r = opal_factory_reset(cd, crypt_data_device(cd), password, password_size);
+		if (r == -EPERM)
+			log_err(cd, _("Incorrect OPAL PSID."));
+		else if (r < 0)
+			log_err(cd, _("Cannot erase OPAL device."));
+		return r;
+	}
+
+	if (onlyLUKS2(cd) < 0)
+		return -EINVAL;
+
+	hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+	if (!hdr)
+		return -EINVAL;
+
+	if (segment == CRYPT_LUKS2_SEGMENT) {
+		r = LUKS2_get_opal_segment_number(hdr, CRYPT_DEFAULT_SEGMENT, &opal_segment_number);
+		if (r < 0) {
+			log_dbg(cd, "Can not get OPAL segment number.");
+			return r;
+		}
+	} else
+		opal_segment_number = segment;
+
+	r = opal_reset_segment(cd,
+			       crypt_data_device(cd),
+			       opal_segment_number,
+			       password,
+			       password_size);
+	if (r < 0)
+		return r;
+
+	return LUKS2_wipe_header_areas(cd, hdr, crypt_header_is_detached(cd));
 }

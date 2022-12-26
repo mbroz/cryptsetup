@@ -63,6 +63,7 @@
 #define OPT_HOTZONE_SIZE		"hotzone-size"
 #define OPT_HW_OPAL			"hw-opal"
 #define OPT_HW_OPAL_ONLY		"hw-opal-only"
+#define OPT_HW_OPAL_FACTORY_RESET	"hw-opal-factory-reset"
 #define OPT_IGNORE_CORRUPTION		"ignore-corruption"
 #define OPT_IGNORE_ZERO_BLOCKS		"ignore-zero-blocks"
 #define OPT_INIT_ONLY			"init-only"

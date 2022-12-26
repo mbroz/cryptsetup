@@ -73,6 +73,8 @@ ARG(OPT_HW_OPAL, '\0', POPT_ARG_NONE, N_("Use HW OPAL encryption together with S
 
 ARG(OPT_HW_OPAL_ONLY, '\0', POPT_ARG_NONE, N_("Use only HW OPAL encryption."), NULL, CRYPT_ARG_BOOL, {}, {})
 
+ARG(OPT_HW_OPAL_FACTORY_RESET, '\0', POPT_ARG_NONE, N_("Wipe WHOLE OPAL disk on luksErase."), NULL, CRYPT_ARG_BOOL, {}, OPT_ERASE_ACTIONS)
+
 ARG(OPT_INIT_ONLY, '\0', POPT_ARG_NONE, N_("Initialize LUKS2 reencryption in metadata only."), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_INTEGRITY, 'I', POPT_ARG_STRING, N_("Data integrity algorithm (LUKS2 only)"), NULL, CRYPT_ARG_STRING, {}, OPT_INTEGRITY_ACTIONS)
