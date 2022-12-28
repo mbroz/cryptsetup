@@ -944,13 +944,14 @@ static int get_startup_key(struct crypt_device *cd,
 	else
 		return -EPERM;
 
-	if (bek_header.metadata_version != 1) {
-		log_err(cd, _("Unsupported BEK metadata version %" PRIu32), bek_header.metadata_version);
+	if (le32_to_cpu(bek_header.metadata_version) != 1) {
+		log_err(cd, _("Unsupported BEK metadata version %" PRIu32), le32_to_cpu(bek_header.metadata_version));
 		return -ENOTSUP;
 	}
 
-	if (bek_header.metadata_size != passwordLen) {
-		log_err(cd, _("Unexpected BEK metadata size %" PRIu32 " does not match BEK file length"), bek_header.metadata_size);
+	if (le32_to_cpu(bek_header.metadata_size) != passwordLen) {
+		log_err(cd, _("Unexpected BEK metadata size %" PRIu32 " does not match BEK file length"),
+			le32_to_cpu(bek_header.metadata_size));
 		return -EINVAL;
 	}
 
