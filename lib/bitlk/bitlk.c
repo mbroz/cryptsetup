@@ -255,12 +255,15 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 		    (*vmk)->protection == BITLK_PROTECTION_RECOVERY_PASSPHRASE ||
 		    (*vmk)->protection == BITLK_PROTECTION_STARTUP_KEY;
 
-	while (end - start > 2) {
+	while ((end - start) >= (ssize_t)(sizeof(key_entry_size) + sizeof(key_entry_type) + sizeof(key_entry_value))) {
 		/* size of this entry */
 		memcpy(&key_entry_size, data + start, sizeof(key_entry_size));
 		key_entry_size = le16_to_cpu(key_entry_size);
 		if (key_entry_size == 0)
 			break;
+
+		if (key_entry_size > (end - start))
+			return -EINVAL;
 
 		/* type and value of this entry */
 		memcpy(&key_entry_type, data + start + sizeof(key_entry_size), sizeof(key_entry_type));
@@ -280,20 +283,24 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 		}
 
 		/* stretch key with salt, skip 4 B (encryption method of the stretch key) */
-		if (key_entry_value == BITLK_ENTRY_VALUE_STRETCH_KEY)
+		if (key_entry_value == BITLK_ENTRY_VALUE_STRETCH_KEY) {
+			if ((end - start) < (BITLK_ENTRY_HEADER_LEN + BITLK_SALT_SIZE + 4))
+				return -EINVAL;
 			memcpy((*vmk)->salt,
 			       data + start + BITLK_ENTRY_HEADER_LEN + 4,
-			       sizeof((*vmk)->salt));
+			       BITLK_SALT_SIZE);
 		/* AES-CCM encrypted key */
-		else if (key_entry_value == BITLK_ENTRY_VALUE_ENCRYPTED_KEY) {
+		} else if (key_entry_value == BITLK_ENTRY_VALUE_ENCRYPTED_KEY) {
+			if (key_entry_size < (BITLK_ENTRY_HEADER_LEN + BITLK_NONCE_SIZE + BITLK_VMK_MAC_TAG_SIZE))
+				return -EINVAL;
 			/* nonce */
 			memcpy((*vmk)->nonce,
 			       data + start + BITLK_ENTRY_HEADER_LEN,
-			       sizeof((*vmk)->nonce));
+			       BITLK_NONCE_SIZE);
 			/* MAC tag */
 			memcpy((*vmk)->mac_tag,
 			       data + start + BITLK_ENTRY_HEADER_LEN + BITLK_NONCE_SIZE,
-			       sizeof((*vmk)->mac_tag));
+			       BITLK_VMK_MAC_TAG_SIZE);
 			/* AES-CCM encrypted key */
 			key_size = key_entry_size - (BITLK_ENTRY_HEADER_LEN + BITLK_NONCE_SIZE + BITLK_VMK_MAC_TAG_SIZE);
 			key = (const char *) data + start + BITLK_ENTRY_HEADER_LEN + BITLK_NONCE_SIZE + BITLK_VMK_MAC_TAG_SIZE;
@@ -318,6 +325,8 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_RECOVERY_TIME) {
 			;
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_STRING) {
+			if (key_entry_size < BITLK_ENTRY_HEADER_LEN)
+				return -EINVAL;
 			string = malloc((key_entry_size - BITLK_ENTRY_HEADER_LEN) * 2 + 1);
 			if (!string)
 				return -ENOMEM;
@@ -614,7 +623,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 
 		/* VMK */
 		if (entry_type == BITLK_ENTRY_TYPE_VMK) {
-			if ((fve_entries_size - start - BITLK_ENTRY_HEADER_LEN) < sizeof(entry_vmk)) {
+			if (entry_size < (BITLK_ENTRY_HEADER_LEN + sizeof(entry_vmk))) {
 				r = -EINVAL;
 				goto out;
 			}
@@ -654,9 +663,8 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			vmk_p = vmk;
 			vmk = vmk->next;
 		/* FVEK */
-		} else if (entry_type == BITLK_ENTRY_TYPE_FVEK) {
-			if ((fve_entries_size - start - BITLK_ENTRY_HEADER_LEN) <
-			    (BITLK_NONCE_SIZE + BITLK_VMK_MAC_TAG_SIZE)) {
+		} else if (entry_type == BITLK_ENTRY_TYPE_FVEK && !params->fvek) {
+			if (entry_size < (BITLK_ENTRY_HEADER_LEN + BITLK_NONCE_SIZE + BITLK_VMK_MAC_TAG_SIZE)) {
 				r = -EINVAL;
 				goto out;
 			}
@@ -683,7 +691,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 		/* volume header info (location and size) */
 		} else if (entry_type == BITLK_ENTRY_TYPE_VOLUME_HEADER) {
 			struct bitlk_entry_header_block entry_header;
-			if ((fve_entries_size - start - BITLK_ENTRY_HEADER_LEN) < sizeof(entry_header)) {
+			if ((fve_entries_size - start) < (BITLK_ENTRY_HEADER_LEN + sizeof(entry_header))) {
 				r = -EINVAL;
 				goto out;
 			}
@@ -694,19 +702,18 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			params->volume_header_size = le64_to_cpu(entry_header.size);
 		/* volume description (utf-16 string) */
 		} else if (entry_type == BITLK_ENTRY_TYPE_DESCRIPTION) {
-			size_t description_size = (entry_size - BITLK_ENTRY_HEADER_LEN - BITLK_ENTRY_HEADER_LEN) * 2 + 1;
-			if ((fve_entries_size - start - BITLK_ENTRY_HEADER_LEN) < description_size) {
+			if (entry_size < BITLK_ENTRY_HEADER_LEN) {
 				r = -EINVAL;
 				goto out;
 			}
-			description = malloc(description_size);
+			description = malloc((entry_size - BITLK_ENTRY_HEADER_LEN) * 2 + 1);
 			if (!description) {
 				r = -ENOMEM;
 				goto out;
 			}
 			r = crypt_utf16_to_utf8(&description, CONST_CAST(char16_t *)(fve_entries + start + BITLK_ENTRY_HEADER_LEN),
 					                  entry_size - BITLK_ENTRY_HEADER_LEN);
-			if (r < 0 || !description) {
+			if (r < 0) {
 				free(description);
 				BITLK_bitlk_vmk_free(vmk);
 				log_err(cd, _("Failed to convert BITLK volume description"));
@@ -853,12 +860,15 @@ static int parse_external_key_entry(struct crypt_device *cd,
 	struct bitlk_guid guid;
 	char guid_buf[UUID_STR_LEN] = {0};
 
-	while (end - start > 2) {
+	while ((end - start) >= (ssize_t)(sizeof(key_entry_size) + sizeof(key_entry_type) + sizeof(key_entry_value))) {
 		/* size of this entry */
 		memcpy(&key_entry_size, data + start, sizeof(key_entry_size));
 		key_entry_size = le16_to_cpu(key_entry_size);
 		if (key_entry_size == 0)
 			break;
+
+		if (key_entry_size > (end - start))
+			return -EINVAL;
 
 		/* type and value of this entry */
 		memcpy(&key_entry_type, data + start + sizeof(key_entry_size), sizeof(key_entry_type));
@@ -874,6 +884,8 @@ static int parse_external_key_entry(struct crypt_device *cd,
 		}
 
 		if (key_entry_value == BITLK_ENTRY_VALUE_KEY) {
+			if (key_entry_size < (BITLK_ENTRY_HEADER_LEN + 4))
+				return -EINVAL;
 			key_size = key_entry_size - (BITLK_ENTRY_HEADER_LEN + 4);
 			key = (const char *) data + start + BITLK_ENTRY_HEADER_LEN + 4;
 			*vk = crypt_alloc_volume_key(key_size, key);
@@ -885,6 +897,8 @@ static int parse_external_key_entry(struct crypt_device *cd,
 			;
 		/* GUID of the BitLocker device we are trying to open with this key */
 		else if (key_entry_value == BITLK_ENTRY_VALUE_GUID) {
+			if ((end - start) < (ssize_t)(BITLK_ENTRY_HEADER_LEN + sizeof(struct bitlk_guid)))
+				return -EINVAL;
 			memcpy(&guid, data + start + BITLK_ENTRY_HEADER_LEN, sizeof(struct bitlk_guid));
 			guid_to_string(&guid, guid_buf);
 			if (strcmp(guid_buf, params->guid) != 0) {
@@ -918,7 +932,7 @@ static int get_startup_key(struct crypt_device *cd,
 	uint16_t key_entry_type = 0;
 	uint16_t key_entry_value = 0;
 
-	if (passwordLen < BITLK_BEK_FILE_HEADER_LEN)
+	if (passwordLen < (BITLK_BEK_FILE_HEADER_LEN + sizeof(key_entry_size) + sizeof(key_entry_type) + sizeof(key_entry_value)))
 		return -EPERM;
 
 	memcpy(&bek_header, password, BITLK_BEK_FILE_HEADER_LEN);
