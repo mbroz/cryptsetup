@@ -701,7 +701,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			params->volume_header_offset = le64_to_cpu(entry_header.offset);
 			params->volume_header_size = le64_to_cpu(entry_header.size);
 		/* volume description (utf-16 string) */
-		} else if (entry_type == BITLK_ENTRY_TYPE_DESCRIPTION) {
+		} else if (entry_type == BITLK_ENTRY_TYPE_DESCRIPTION && !params->description) {
 			if (entry_size < BITLK_ENTRY_HEADER_LEN) {
 				r = -EINVAL;
 				goto out;
