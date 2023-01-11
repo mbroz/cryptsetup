@@ -98,11 +98,15 @@ cp ./libdm/libdevmapper.pc "$PKG_CONFIG_PATH"
 cd ..
 
 cd popt
-./autogen.sh
-./configure --prefix="$DEPS_PATH" --disable-shared --enable-static
+# --no-undefined is incompatible with sanitizers
+sed -i -e 's/-Wl,--no-undefined //' src/CMakeLists.txt
+mkdir -p build
+rm -fr build/*
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX="$DEPS_PATH" -DBUILD_SHARED_LIBS=OFF
 make -j
 make install
-cd ..
+cd ../..
 
 cd libprotobuf-mutator
 mkdir -p build
