@@ -933,7 +933,7 @@ out:
 static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verity *params)
 {
 	int r;
-	size_t sb_offset = 0;
+	uint64_t sb_offset = 0;
 
 	r = init_crypto(cd);
 	if (r < 0)
