@@ -435,7 +435,7 @@ static int _reformat_uuid(
 	const char *uuid_in,
 	char *uuid_out)
 {
-	uint8_t uuid_bin[UUID_STR_LEN];
+	uint8_t uuid_bin[FVAULT2_UUID_LEN];
 	int r;
 
 	r = uuid_parse(uuid_in, uuid_bin);
