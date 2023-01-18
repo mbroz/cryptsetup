@@ -593,7 +593,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 	}
 	memset(fve_entries, 0, fve_entries_size);
 
-	log_dbg(cd, "Reading BITLK FVE metadata entries of size %" PRIu32 " on device %s, offset %" PRIu64 ".",
+	log_dbg(cd, "Reading BITLK FVE metadata entries of size %zu on device %s, offset %" PRIu64 ".",
 		fve_entries_size, device_path(device), params->metadata_offset[0] + BITLK_FVE_METADATA_HEADERS_LEN);
 
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
