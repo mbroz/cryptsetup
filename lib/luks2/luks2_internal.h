@@ -62,6 +62,7 @@ uint32_t crypt_jobj_get_uint32(json_object *jobj);
 json_object *crypt_jobj_new_uint64(uint64_t value);
 
 int json_object_object_add_by_uint(json_object *jobj, unsigned key, json_object *jobj_val);
+int json_object_object_add_by_uint_by_ref(json_object *jobj, unsigned key, json_object **jobj_val_ref);
 void json_object_object_del_by_uint(json_object *jobj, unsigned key);
 int json_object_copy(json_object *jobj_src, json_object **jobj_dst);
 

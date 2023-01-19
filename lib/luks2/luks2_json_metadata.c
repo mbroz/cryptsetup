@@ -2867,6 +2867,20 @@ int json_object_object_add_by_uint(json_object *jobj, unsigned key, json_object 
 #endif
 }
 
+int json_object_object_add_by_uint_by_ref(json_object *jobj, unsigned key, json_object **jobj_val_ref)
+{
+	int r;
+
+	assert(jobj);
+	assert(jobj_val_ref);
+
+	r = json_object_object_add_by_uint(jobj, key, *jobj_val_ref);
+	if (!r)
+		*jobj_val_ref = NULL;
+
+	return r;
+}
+
 /* jobj_dst must contain pointer initialized to NULL (see json-c json_object_deep_copy API) */
 int json_object_copy(json_object *jobj_src, json_object **jobj_dst)
 {
