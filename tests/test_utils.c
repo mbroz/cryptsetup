@@ -685,6 +685,11 @@ int t_dm_integrity_recalculate_support(void)
 	return t_dm_crypt_flags & T_DM_INTEGRITY_RECALC_SUPPORTED;
 }
 
+int t_dm_capi_string_supported(void)
+{
+	return t_dm_crypt_flags & T_DM_CAPI_STRING_SUPPORTED;
+}
+
 /* loop helpers */
 
 #define LOOP_DEV_MAJOR 7

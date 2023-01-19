@@ -1727,15 +1727,17 @@ static void ResizeDeviceLuks2(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
-	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
-	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
-	OK_(crypt_format(cd, CRYPT_LUKS2, capi_cipher, capi_cipher_mode, NULL, key, key_size, NULL));
-	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
-	OK_(crypt_resize(cd, CDEVICE_1, 8));
-	if (!t_device_size(DMDIR CDEVICE_1, &r_size))
-		EQ_(8, r_size >> TST_SECTOR_SHIFT);
-	OK_(crypt_deactivate(cd, CDEVICE_1));
-	CRYPT_FREE(cd);
+	if (t_dm_capi_string_supported()) {
+		OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+		OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
+		OK_(crypt_format(cd, CRYPT_LUKS2, capi_cipher, capi_cipher_mode, NULL, key, key_size, NULL));
+		OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
+		OK_(crypt_resize(cd, CDEVICE_1, 8));
+		if (!t_device_size(DMDIR CDEVICE_1, &r_size))
+			EQ_(8, r_size >> TST_SECTOR_SHIFT);
+		OK_(crypt_deactivate(cd, CDEVICE_1));
+		CRYPT_FREE(cd);
+	}
 
 	_cleanup_dmdevices();
 }
