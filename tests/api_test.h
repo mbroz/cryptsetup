@@ -40,6 +40,7 @@ int t_dm_crypt_cpu_switch_support(void);
 int t_dm_crypt_discard_support(void);
 int t_dm_integrity_resize_support(void);
 int t_dm_integrity_recalculate_support(void);
+int t_dm_capi_string_supported(void);
 int t_set_readahead(const char *device, unsigned value);
 
 int fips_mode(void);
