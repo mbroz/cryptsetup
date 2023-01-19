@@ -2005,10 +2005,6 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 	 */
 	first_segment_offset = 0;
 	first_segment_length = moved_segment_length;
-	if (dev_size > moved_segment_length) {
-		second_segment_offset = data_offset + first_segment_length;
-		second_segment_length = 0;
-	}
 
 	jobj_segments = json_object_new_object();
 	if (!jobj_segments)
@@ -2029,6 +2025,8 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 		goto err;
 
 	if (dev_size > moved_segment_length) {
+		second_segment_offset = data_offset + first_segment_length;
+		second_segment_length = 0;
 		jobj_segment_second = json_segment_create_crypt(second_segment_offset,
 								crypt_get_iv_offset(cd) + (first_segment_length >> SECTOR_SHIFT),
 								second_segment_length ? &second_segment_length : NULL,
@@ -2039,14 +2037,14 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 			log_dbg(cd, "Failed generate 2nd segment.");
 			goto err;
 		}
+
+		r = json_object_object_add_by_uint_by_ref(jobj_segments, 1, &jobj_segment_second);
+		if (r)
+			goto err;
 	}
 
-	if (jobj_segment_second && (r = json_object_object_add_by_uint_by_ref(jobj_segments, 1, &jobj_segment_second)))
-		goto err;
-
-	r = LUKS2_segments_set(cd, hdr, jobj_segments, 0);
-
-	return r ?: LUKS2_digest_segment_assign(cd, hdr, CRYPT_ANY_SEGMENT, 0, 1, 0);
+	if (!(r = LUKS2_segments_set(cd, hdr, jobj_segments, 0)))
+		return LUKS2_digest_segment_assign(cd, hdr, CRYPT_ANY_SEGMENT, 0, 1, 0);
 err:
 	json_object_put(jobj_segment_first);
 	json_object_put(jobj_segment_second);
