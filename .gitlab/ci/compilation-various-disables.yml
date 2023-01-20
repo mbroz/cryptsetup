@@ -1,0 +1,21 @@
+test-gcc-disable-compiles:
+  extends:
+    - .gitlab-shared-gcc
+  parallel:
+    matrix:
+      - DISABLE_FLAGS: [
+          "--disable-keyring",
+          "--disable-external-tokens --disable-ssh-token",
+          "--disable-luks2-reencryption",
+          "--disable-cryptsetup --disable-veritysetup --disable-integritysetup",
+          "--disable-kernel_crypto",
+          "--disable-selinux",
+          "--disable-udev",
+          "--disable-internal-argon2",
+          "--disable-blkid"
+      ]
+  script:
+    - export CFLAGS="-Wall -Werror"
+    - ./configure $DISABLE_FLAGS
+    - make -j
+    - make -j check-programs
