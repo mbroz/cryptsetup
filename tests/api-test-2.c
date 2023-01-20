@@ -4745,12 +4745,12 @@ static void Luks2Reencryption(void)
 
 static void LuksKeyslotAdd(void)
 {
-	int ks;
 	struct crypt_params_luks2 params = {
 		.sector_size = 512
 	};
 	char key[128], key3[128];
 #ifdef KERNEL_KEYRING
+	int ks;
 	key_serial_t kid;
 #endif
 	const struct crypt_token_params_luks2_keyring tparams = {
@@ -4894,10 +4894,10 @@ static void VolumeKeyGet(void)
 	char key[256], key2[256];
 #ifdef KERNEL_KEYRING
 	key_serial_t kid;
-#endif
 	const struct crypt_token_params_luks2_keyring tparams = {
 		.key_description = KEY_DESC_TEST0
 	};
+#endif
 
 	const char *vk_hex =  "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a"
 			      "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1b";
