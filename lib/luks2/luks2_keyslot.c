@@ -825,7 +825,10 @@ int placeholder_keyslot_alloc(struct crypt_device *cd,
 	json_object_object_add(jobj_area, "size", crypt_jobj_new_uint64(area_length));
 	json_object_object_add(jobj_keyslot, "area", jobj_area);
 
-	json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot);
+	if (json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot)) {
+		json_object_put(jobj_keyslot);
+		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -972,14 +975,17 @@ int LUKS2_keyslot_swap(struct crypt_device *cd, struct luks2_hdr *hdr,
 	json_object_object_del_by_uint(jobj_keyslots, keyslot);
 	r = json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot2);
 	if (r < 0) {
+		json_object_put(jobj_keyslot2);
 		log_dbg(cd, "Failed to swap keyslot %d.", keyslot);
 		return r;
 	}
 
 	json_object_object_del_by_uint(jobj_keyslots, keyslot2);
 	r = json_object_object_add_by_uint(jobj_keyslots, keyslot2, jobj_keyslot);
-	if (r < 0)
+	if (r < 0) {
+		json_object_put(jobj_keyslot);
 		log_dbg(cd, "Failed to swap keyslot2 %d.", keyslot2);
+	}
 
 	return r;
 }

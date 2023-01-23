@@ -358,7 +358,10 @@ int LUKS2_generate_hdr(
 		json_object_object_add(jobj_segment, "integrity", jobj_integrity);
 	}
 
-	json_object_object_add_by_uint(jobj_segments, 0, jobj_segment);
+	if (json_object_object_add_by_uint(jobj_segments, 0, jobj_segment)) {
+		json_object_put(jobj_segment);
+		goto err;
+	}
 
 	json_object_object_add(jobj_config, "json_size", crypt_jobj_new_uint64(metadata_size - LUKS2_HDR_BIN_LEN));
 	json_object_object_add(jobj_config, "keyslots_size", crypt_jobj_new_uint64(keyslots_size));

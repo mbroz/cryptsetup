@@ -166,7 +166,12 @@ static int json_luks1_keyslots(const struct luks_phdr *hdr_v1, struct json_objec
 			json_object_put(keyslot_obj);
 			return r;
 		}
-		json_object_object_add_by_uint(keyslot_obj, keyslot, field);
+		r = json_object_object_add_by_uint(keyslot_obj, keyslot, field);
+		if (r) {
+			json_object_put(field);
+			json_object_put(keyslot_obj);
+			return r;
+		}
 	}
 
 	*keyslots_object = keyslot_obj;
@@ -261,7 +266,12 @@ static int json_luks1_segments(const struct luks_phdr *hdr_v1, struct json_objec
 		json_object_put(segments_obj);
 		return r;
 	}
-	json_object_object_add_by_uint(segments_obj, 0, field);
+	r = json_object_object_add_by_uint(segments_obj, 0, field);
+	if (r) {
+		json_object_put(field);
+		json_object_put(segments_obj);
+		return r;
+	}
 
 	*segments_object = segments_obj;
 	return 0;

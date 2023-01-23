@@ -145,7 +145,12 @@ static int reenc_keyslot_alloc(struct crypt_device *cd,
 	else
 		json_object_object_add(jobj_keyslot, "direction", json_object_new_string("backward"));
 
-	json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot);
+	r = json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot);
+	if (r) {
+		json_object_put(jobj_keyslot);
+		return r;
+	}
+
 	if (LUKS2_check_json_size(cd, hdr)) {
 		log_dbg(cd, "New keyslot too large to fit in free metadata space.");
 		json_object_object_del_by_uint(jobj_keyslots, keyslot);

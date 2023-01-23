@@ -553,7 +553,11 @@ static int luks2_keyslot_alloc(struct crypt_device *cd,
 	json_object_object_add(jobj_area, "size", crypt_jobj_new_uint64(area_length));
 	json_object_object_add(jobj_keyslot, "area", jobj_area);
 
-	json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot);
+	r = json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot);
+	if (r) {
+		json_object_put(jobj_keyslot);
+		return r;
+	}
 
 	r = luks2_keyslot_update_json(cd, jobj_keyslot, params);
 
