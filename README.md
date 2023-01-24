@@ -75,9 +75,9 @@ Required packages
 All distributions provide cryptsetup as distro package. If you need to compile cryptsetup yourself, some packages are required for compilation. Please always prefer distro specific build tools to manually configuring cryptsetup.
 
 Here is the list of packages needed for the compilation of project for particular distributions:
- * For Fedora: `git gcc make autoconf automake gettext-devel pkgconfig openssl-devel popt-devel device-mapper-devel libuuid-devel json-c-devel libblkid-devel findutils libtool libssh-devel tar`. Optionally `libargon2-devel libpwquality-devel`. To run the internal testsuite you also need to install `sharutils device-mapper jq vim-common expect keyutils netcat shadow-utils openssh-clients openssh sshpass`.
+ * For Fedora: `git gcc make autoconf automake gettext-devel pkgconfig openssl-devel popt-devel device-mapper-devel libuuid-devel json-c-devel libblkid-devel findutils libtool libssh-devel tar asciidoctor`. Optionally `libargon2-devel libpwquality-devel`. To run the internal testsuite you also need to install `sharutils device-mapper jq vim-common expect keyutils netcat shadow-utils openssh-clients openssh sshpass`.
 
- * For Debian and Ubuntu: `git gcc make autoconf automake autopoint pkg-config libtool gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev libjson-c-dev libssh-dev libblkid-dev tar`. Optionally `libargon2-0-dev libpwquality-dev`. To run the internal testsuite you also need to install `sharutils dmsetup jq xxd expect keyutils netcat passwd openssh-client sshpass`
+ * For Debian and Ubuntu: `git gcc make autoconf automake autopoint pkg-config libtool gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol1-dev libjson-c-dev libssh-dev libblkid-dev tar asciidoctor`. Optionally `libargon2-0-dev libpwquality-dev`. To run the internal testsuite you also need to install `sharutils dmsetup jq xxd expect keyutils netcat passwd openssh-client sshpass`
 
 Note that the list could change as the distributions evolve.
 
