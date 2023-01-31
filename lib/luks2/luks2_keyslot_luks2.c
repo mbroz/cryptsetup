@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <limits.h>
 #include "luks2_internal.h"
 
 /* FIXME: move keyslot encryption to crypto backend */
@@ -264,6 +265,9 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 			pbkdf.parallel_threads);
 	free(salt);
 	if (r < 0) {
+		if ((crypt_backend_flags() & CRYPT_BACKEND_PBKDF2_INT) &&
+		     pbkdf.iterations > INT_MAX)
+			log_err(cd, _("PBKDF2 iteration value overflow."));
 		crypt_free_volume_key(derived_key);
 		return r;
 	}
