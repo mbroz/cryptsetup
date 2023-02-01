@@ -4,7 +4,8 @@ dist_noinst_DATA = \
 	LUKS2_plain_JSON.proto \
 	crypt2_load_fuzz.dict \
 	crypt2_load_ondisk_fuzz.dict \
-	crypt2_load_proto_plain_json_fuzz.dict
+	crypt2_load_proto_plain_json_fuzz.dict \
+	unpoison-mutated-buffers-from-libfuzzer.patch
 CLEANFILES = \
 	LUKS2.pb.h \
 	LUKS2.pb.cc \
