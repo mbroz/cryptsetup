@@ -2,13 +2,13 @@
 # Copyright (C) 2012 Free Software Foundation, Inc.
 # This file is put in the public domain.
 #
-# Yuri Chornoivan <yurchor@ukr.net>, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022.
+# Yuri Chornoivan <yurchor@ukr.net>, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023.
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 2.6.0-rc1\n"
+"Project-Id-Version: cryptsetup 2.6.1-rc0\n"
 "Report-Msgid-Bugs-To: cryptsetup@lists.linux.dev\n"
-"POT-Creation-Date: 2022-11-20 12:38+0100\n"
-"PO-Revision-Date: 2022-11-20 19:39+0200\n"
+"POT-Creation-Date: 2023-02-01 15:58+0100\n"
+"PO-Revision-Date: 2023-02-02 10:48+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -120,7 +120,7 @@ msgstr "Не вдалося ініціалізувати допоміжну пр
 msgid "Cannot initialize crypto backend."
 msgstr "Не вдалося ініціалізувати допоміжну програму шифрування."
 
-#: lib/setup.c:268 lib/setup.c:2139 lib/verity/verity.c:122
+#: lib/setup.c:268 lib/setup.c:2151 lib/verity/verity.c:122
 #, c-format
 msgid "Hash algorithm %s not supported."
 msgstr "Підтримки алгоритму хешування %s не передбачено."
@@ -134,7 +134,7 @@ msgstr "Помилка під час обробки ключа (на основ�
 msgid "Cannot determine device type. Incompatible activation of device?"
 msgstr "Не вдалося визначити тип пристрою. Несумісна дія з активації пристрою?"
 
-#: lib/setup.c:348 lib/setup.c:3308
+#: lib/setup.c:348 lib/setup.c:3320
 msgid "This operation is supported only for LUKS device."
 msgstr "Підтримку цієї дії передбачено лише для пристроїв LUKS."
 
@@ -142,470 +142,470 @@ msgstr "Підтримку цієї дії передбачено лише дл�
 msgid "This operation is supported only for LUKS2 device."
 msgstr "Підтримку цієї дії передбачено лише для пристроїв LUKS2."
 
-#: lib/setup.c:430 lib/luks2/luks2_reencrypt.c:3010
+#: lib/setup.c:427 lib/luks2/luks2_reencrypt.c:3010
 msgid "All key slots full."
 msgstr "Заповнено всі слоти ключів."
 
-#: lib/setup.c:441
+#: lib/setup.c:438
 #, c-format
 msgid "Key slot %d is invalid, please select between 0 and %d."
 msgstr "Слот ключа %d є некоректним, будь ласка, виберіть число від 0 до %d."
 
-#: lib/setup.c:447
+#: lib/setup.c:444
 #, c-format
 msgid "Key slot %d is full, please select another one."
 msgstr "Слот ключа %d заповнено, будь ласка, виберіть інший."
 
-#: lib/setup.c:532 lib/setup.c:3030
+#: lib/setup.c:529 lib/setup.c:3042
 msgid "Device size is not aligned to device logical block size."
 msgstr "Розмір пристрою не вирівняно за розміром логічного блоку пристрою."
 
-#: lib/setup.c:630
+#: lib/setup.c:627
 #, c-format
 msgid "Header detected but device %s is too small."
 msgstr "Виявлено заголовок, але об’єм пристрою %s є надто малим."
 
-#: lib/setup.c:671 lib/setup.c:2930 lib/setup.c:4275
+#: lib/setup.c:668 lib/setup.c:2942 lib/setup.c:4287
 #: lib/luks2/luks2_reencrypt.c:3782 lib/luks2/luks2_reencrypt.c:4184
 msgid "This operation is not supported for this device type."
 msgstr "Підтримки цієї дії для цього типу пристроїв не передбачено."
 
-#: lib/setup.c:676
+#: lib/setup.c:673
 msgid "Illegal operation with reencryption in-progress."
 msgstr "Виконуємо заборонену дію із повторного шифрування."
 
-#: lib/setup.c:762
+#: lib/setup.c:802
 msgid "Failed to rollback LUKS2 metadata in memory."
 msgstr "Не вдалося відкотити метадані LUKS2 у пам'яті."
 
-#: lib/setup.c:849 lib/luks1/keymanage.c:247 lib/luks1/keymanage.c:525
+#: lib/setup.c:889 lib/luks1/keymanage.c:249 lib/luks1/keymanage.c:527
 #: lib/luks2/luks2_json_metadata.c:1336 src/cryptsetup.c:1587
 #: src/cryptsetup.c:1727 src/cryptsetup.c:1782 src/cryptsetup.c:1977
 #: src/cryptsetup.c:2133 src/cryptsetup.c:2414 src/cryptsetup.c:2656
-#: src/cryptsetup.c:2716 src/utils_reencrypt.c:1433
+#: src/cryptsetup.c:2716 src/utils_reencrypt.c:1465
 #: src/utils_reencrypt_luks1.c:1192 tokens/ssh/cryptsetup-ssh.c:77
 #, c-format
 msgid "Device %s is not a valid LUKS device."
 msgstr "Пристрій %s не є коректним пристроєм LUKS."
 
-#: lib/setup.c:852 lib/luks1/keymanage.c:528
+#: lib/setup.c:892 lib/luks1/keymanage.c:530
 #, c-format
 msgid "Unsupported LUKS version %d."
 msgstr "Непідтримувана версія LUKS, %d."
 
-#: lib/setup.c:1479 lib/setup.c:2679 lib/setup.c:2761 lib/setup.c:2773
-#: lib/setup.c:2940 lib/setup.c:4752
+#: lib/setup.c:1491 lib/setup.c:2691 lib/setup.c:2773 lib/setup.c:2785
+#: lib/setup.c:2952 lib/setup.c:4764
 #, c-format
 msgid "Device %s is not active."
 msgstr "Пристрій %s є неактивним."
 
-#: lib/setup.c:1496
+#: lib/setup.c:1508
 #, c-format
 msgid "Underlying device for crypt device %s disappeared."
 msgstr "Зник основний пристрій для пристрою для шифрування %s."
 
-#: lib/setup.c:1578
+#: lib/setup.c:1590
 msgid "Invalid plain crypt parameters."
 msgstr "Некоректні параметри звичайного шифрування."
 
-#: lib/setup.c:1583 lib/setup.c:2042
+#: lib/setup.c:1595 lib/setup.c:2054
 msgid "Invalid key size."
 msgstr "Некоректний розмір ключа."
 
-#: lib/setup.c:1588 lib/setup.c:2047 lib/setup.c:2250
+#: lib/setup.c:1600 lib/setup.c:2059 lib/setup.c:2262
 msgid "UUID is not supported for this crypt type."
 msgstr "Підтримки UUID для цього типу шифрування не передбачено."
 
-#: lib/setup.c:1593 lib/setup.c:2052
+#: lib/setup.c:1605 lib/setup.c:2064
 msgid "Detached metadata device is not supported for this crypt type."
 msgstr "Підтримки пристрою від'єднаних метаданих для цього типу шифрування не передбачено."
 
-#: lib/setup.c:1603 lib/setup.c:1819 lib/luks2/luks2_reencrypt.c:2966
+#: lib/setup.c:1615 lib/setup.c:1831 lib/luks2/luks2_reencrypt.c:2966
 #: src/cryptsetup.c:1387 src/cryptsetup.c:3383
 msgid "Unsupported encryption sector size."
 msgstr "Непідтримуваний розмір сектора шифрування."
 
-#: lib/setup.c:1611 lib/setup.c:1947 lib/setup.c:3024
+#: lib/setup.c:1623 lib/setup.c:1959 lib/setup.c:3036
 msgid "Device size is not aligned to requested sector size."
 msgstr "Розмір пристрою не вирівняно за вказаним розміром сектора."
 
-#: lib/setup.c:1663 lib/setup.c:1787
+#: lib/setup.c:1675 lib/setup.c:1799
 msgid "Can't format LUKS without device."
 msgstr "Форматування LUKS без пристрою неможливе."
 
-#: lib/setup.c:1669 lib/setup.c:1793
+#: lib/setup.c:1681 lib/setup.c:1805
 msgid "Requested data alignment is not compatible with data offset."
 msgstr "Потрібне вам вирівнювання даних є несумісним із відступом у даних."
 
-#: lib/setup.c:1744 lib/setup.c:1964 lib/setup.c:1985 lib/setup.c:2262
+#: lib/setup.c:1756 lib/setup.c:1976 lib/setup.c:1997 lib/setup.c:2274
 #, c-format
 msgid "Cannot wipe header on device %s."
 msgstr "Не можна витирати заголовок на пристрої %s."
 
-#: lib/setup.c:1757 lib/setup.c:2024
+#: lib/setup.c:1769 lib/setup.c:2036
 #, c-format
 msgid "Device %s is too small for activation, there is no remaining space for data.\n"
 msgstr "Пристрій %s є надто малим для активації, на ньому не лишиться місця для даних.\n"
 
-#: lib/setup.c:1828
+#: lib/setup.c:1840
 msgid "WARNING: The device activation will fail, dm-crypt is missing support for requested encryption sector size.\n"
 msgstr "Увага: спроба активувати пристрій завершиться невдало, у dm-crypt не передбачено підтримки для вказаного розміру сектора шифрування.\n"
 
-#: lib/setup.c:1851
+#: lib/setup.c:1863
 msgid "Volume key is too small for encryption with integrity extensions."
 msgstr "Ключ тому є надто малим для шифрування із розширеннями цілісності."
 
-#: lib/setup.c:1911
+#: lib/setup.c:1923
 #, c-format
 msgid "Cipher %s-%s (key size %zd bits) is not available."
 msgstr "Шифрування  %s-%s (розмір ключа — %zd бітів) є недоступним."
 
-#: lib/setup.c:1937
+#: lib/setup.c:1949
 #, c-format
 msgid "WARNING: LUKS2 metadata size changed to %<PRIu64> bytes.\n"
 msgstr "Увага: розмір метаданих LUKS2 змінено до %<PRIu64> байтів.\n"
 
-#: lib/setup.c:1941
+#: lib/setup.c:1953
 #, c-format
 msgid "WARNING: LUKS2 keyslots area size changed to %<PRIu64> bytes.\n"
 msgstr "Увага: розмір області слотів ключів LUKS2 змінено до %<PRIu64> байтів.\n"
 
-#: lib/setup.c:1967 lib/utils_device.c:911 lib/luks1/keyencryption.c:255
+#: lib/setup.c:1979 lib/utils_device.c:911 lib/luks1/keyencryption.c:255
 #: lib/luks2/luks2_reencrypt.c:3034 lib/luks2/luks2_reencrypt.c:4279
 #, c-format
 msgid "Device %s is too small."
 msgstr "Об’єм пристрою %s є надто малим."
 
-#: lib/setup.c:1978 lib/setup.c:2004
+#: lib/setup.c:1990 lib/setup.c:2016
 #, c-format
 msgid "Cannot format device %s in use."
 msgstr "Не можна форматувати пристрій %s, який перебуває у користуванні."
 
-#: lib/setup.c:1981 lib/setup.c:2007
+#: lib/setup.c:1993 lib/setup.c:2019
 #, c-format
 msgid "Cannot format device %s, permission denied."
 msgstr "Не можна форматувати пристрій %s, недостатні права доступу."
 
-#: lib/setup.c:1993 lib/setup.c:2322
+#: lib/setup.c:2005 lib/setup.c:2334
 #, c-format
 msgid "Cannot format integrity for device %s."
 msgstr "Не вдалося форматувати цілісність для пристрою %s."
 
-#: lib/setup.c:2011
+#: lib/setup.c:2023
 #, c-format
 msgid "Cannot format device %s."
 msgstr "Не вдалося форматувати пристрій %s."
 
-#: lib/setup.c:2037
+#: lib/setup.c:2049
 msgid "Can't format LOOPAES without device."
 msgstr "Не можна форматувати LOOPAES без пристрою."
 
-#: lib/setup.c:2082
+#: lib/setup.c:2094
 msgid "Can't format VERITY without device."
 msgstr "Форматування VERITY без пристрою неможливе."
 
-#: lib/setup.c:2093 lib/verity/verity.c:101
+#: lib/setup.c:2105 lib/verity/verity.c:101
 #, c-format
 msgid "Unsupported VERITY hash type %d."
 msgstr "Непідтримуваний тип хешування VERITY, %d."
 
-#: lib/setup.c:2099 lib/verity/verity.c:109
+#: lib/setup.c:2111 lib/verity/verity.c:109
 msgid "Unsupported VERITY block size."
 msgstr "Непідтримуваний розмір блоку VERITY."
 
-#: lib/setup.c:2104 lib/verity/verity.c:74
+#: lib/setup.c:2116 lib/verity/verity.c:74
 msgid "Unsupported VERITY hash offset."
 msgstr "Непідтримуваний відступ хешу VERITY."
 
-#: lib/setup.c:2109
+#: lib/setup.c:2121
 msgid "Unsupported VERITY FEC offset."
 msgstr "Непідтримуваний зсув FEC VERITY."
 
-#: lib/setup.c:2133
+#: lib/setup.c:2145
 msgid "Data area overlaps with hash area."
 msgstr "Область даних перекривається із областю хешу."
 
-#: lib/setup.c:2158
+#: lib/setup.c:2170
 msgid "Hash area overlaps with FEC area."
 msgstr "Область хешування перекриваються з областю FEC."
 
-#: lib/setup.c:2165
+#: lib/setup.c:2177
 msgid "Data area overlaps with FEC area."
 msgstr "Область даних перекривається із областю FEC."
 
-#: lib/setup.c:2301
+#: lib/setup.c:2313
 #, c-format
 msgid "WARNING: Requested tag size %d bytes differs from %s size output (%d bytes).\n"
 msgstr "Увага: бажаний розмір мітки у %d байтів відрізняється від розміру у результаті %s (%d байтів).\n"
 
-#: lib/setup.c:2380
+#: lib/setup.c:2392
 #, c-format
 msgid "Unknown crypt device type %s requested."
 msgstr "Надіслано запит щодо невідомого типу пристрою шифрування, %s."
 
-#: lib/setup.c:2687 lib/setup.c:2766 lib/setup.c:2779
+#: lib/setup.c:2699 lib/setup.c:2778 lib/setup.c:2791
 #, c-format
 msgid "Unsupported parameters on device %s."
 msgstr "Непідтримувані параметри на пристрої %s."
 
-#: lib/setup.c:2693 lib/setup.c:2786 lib/luks2/luks2_reencrypt.c:2862
+#: lib/setup.c:2705 lib/setup.c:2798 lib/luks2/luks2_reencrypt.c:2862
 #: lib/luks2/luks2_reencrypt.c:3099 lib/luks2/luks2_reencrypt.c:3484
 #, c-format
 msgid "Mismatching parameters on device %s."
 msgstr "Невідповідність параметрів на пристрої %s."
 
-#: lib/setup.c:2810
+#: lib/setup.c:2822
 msgid "Crypt devices mismatch."
 msgstr "Невідповідність пристроїв шифрування."
 
-#: lib/setup.c:2847 lib/setup.c:2852 lib/luks2/luks2_reencrypt.c:2361
+#: lib/setup.c:2859 lib/setup.c:2864 lib/luks2/luks2_reencrypt.c:2361
 #: lib/luks2/luks2_reencrypt.c:2878 lib/luks2/luks2_reencrypt.c:4032
 #, c-format
 msgid "Failed to reload device %s."
 msgstr "Не вдалося перезавантажити пристрій %s."
 
-#: lib/setup.c:2858 lib/setup.c:2864 lib/luks2/luks2_reencrypt.c:2332
+#: lib/setup.c:2870 lib/setup.c:2876 lib/luks2/luks2_reencrypt.c:2332
 #: lib/luks2/luks2_reencrypt.c:2339 lib/luks2/luks2_reencrypt.c:2892
 #, c-format
 msgid "Failed to suspend device %s."
 msgstr "Не вдалося приспати пристрій %s."
 
-#: lib/setup.c:2870 lib/luks2/luks2_reencrypt.c:2346
+#: lib/setup.c:2882 lib/luks2/luks2_reencrypt.c:2346
 #: lib/luks2/luks2_reencrypt.c:2913 lib/luks2/luks2_reencrypt.c:3945
 #: lib/luks2/luks2_reencrypt.c:4036
 #, c-format
 msgid "Failed to resume device %s."
 msgstr "Не вдалося відновити роботу пристрою %s."
 
-#: lib/setup.c:2885
+#: lib/setup.c:2897
 #, c-format
 msgid "Fatal error while reloading device %s (on top of device %s)."
 msgstr "Критична помилка під час перезавантаження пристрої %s (над пристроєм %s)."
 
-#: lib/setup.c:2888 lib/setup.c:2890
+#: lib/setup.c:2900 lib/setup.c:2902
 #, c-format
 msgid "Failed to switch device %s to dm-error."
 msgstr "Не вдалося перемкнути пристрій %s у режим dm-error."
 
-#: lib/setup.c:2972
+#: lib/setup.c:2984
 msgid "Cannot resize loop device."
 msgstr "Неможливо змінити розмір петльового пристрою."
 
-#: lib/setup.c:3015
+#: lib/setup.c:3027
 msgid "WARNING: Maximum size already set or kernel doesn't support resize.\n"
 msgstr "УВАГА: уже вказано максимальний розмір або у ядрі не передбачено можливості зміни розміру.\n"
 
-#: lib/setup.c:3076
+#: lib/setup.c:3088
 msgid "Resize failed, the kernel doesn't support it."
 msgstr "Не вдалося змінити розмір, у ядрі не передбачено підтримки такої дії."
 
-#: lib/setup.c:3108
+#: lib/setup.c:3120
 msgid "Do you really want to change UUID of device?"
 msgstr "Ви справді хочете змінити UUID пристрою?"
 
-#: lib/setup.c:3200
+#: lib/setup.c:3212
 msgid "Header backup file does not contain compatible LUKS header."
 msgstr "Файл резервної копії заголовка не містить сумісного із LUKS заголовка."
 
-#: lib/setup.c:3316
+#: lib/setup.c:3328
 #, c-format
 msgid "Volume %s is not active."
 msgstr "Том %s не є активним."
 
-#: lib/setup.c:3327
+#: lib/setup.c:3339
 #, c-format
 msgid "Volume %s is already suspended."
 msgstr "Том %s вже приспано."
 
-#: lib/setup.c:3340
+#: lib/setup.c:3352
 #, c-format
 msgid "Suspend is not supported for device %s."
 msgstr "Підтримки присипляння для пристрою %s не передбачено."
 
-#: lib/setup.c:3342
+#: lib/setup.c:3354
 #, c-format
 msgid "Error during suspending device %s."
 msgstr "Помилка під час спроби приспати пристрій %s."
 
-#: lib/setup.c:3377
+#: lib/setup.c:3389
 #, c-format
 msgid "Resume is not supported for device %s."
 msgstr "Підтримки дії з пробудження для пристрою %s не передбачено."
 
-#: lib/setup.c:3379
+#: lib/setup.c:3391
 #, c-format
 msgid "Error during resuming device %s."
 msgstr "Помилка під час спроби пробудити пристрій %s."
 
-#: lib/setup.c:3413 lib/setup.c:3461 lib/setup.c:3532 lib/setup.c:3577
+#: lib/setup.c:3425 lib/setup.c:3473 lib/setup.c:3544 lib/setup.c:3589
 #: src/cryptsetup.c:2479
 #, c-format
 msgid "Volume %s is not suspended."
 msgstr "Том %s не приспано."
 
-#: lib/setup.c:3547 lib/setup.c:4528 lib/setup.c:4541 lib/setup.c:4549
-#: lib/setup.c:4562 lib/setup.c:6145 lib/setup.c:6167 lib/setup.c:6216
+#: lib/setup.c:3559 lib/setup.c:4540 lib/setup.c:4553 lib/setup.c:4561
+#: lib/setup.c:4574 lib/setup.c:6157 lib/setup.c:6179 lib/setup.c:6228
 #: src/cryptsetup.c:2011
 msgid "Volume key does not match the volume."
 msgstr "Ключ тому не відповідає тому."
 
-#: lib/setup.c:3725
+#: lib/setup.c:3737
 msgid "Failed to swap new key slot."
 msgstr "Не вдалося зарезервувати новий слот ключа."
 
-#: lib/setup.c:3823
+#: lib/setup.c:3835
 #, c-format
 msgid "Key slot %d is invalid."
 msgstr "Слот ключа %d є некоректним."
 
-#: lib/setup.c:3829 src/cryptsetup.c:1740 src/cryptsetup.c:2208
+#: lib/setup.c:3841 src/cryptsetup.c:1740 src/cryptsetup.c:2208
 #: src/cryptsetup.c:2816 src/cryptsetup.c:2876
 #, c-format
 msgid "Keyslot %d is not active."
 msgstr "Слот ключа %d не є активним."
 
-#: lib/setup.c:3848
+#: lib/setup.c:3860
 msgid "Device header overlaps with data area."
 msgstr "Заголовок пристрою перекривається із областю даних."
 
-#: lib/setup.c:4153
+#: lib/setup.c:4165
 msgid "Reencryption in-progress. Cannot activate device."
 msgstr "Виконуємо повторне шифрування. Не можна активувати пристрій."
 
-#: lib/setup.c:4155 lib/luks2/luks2_json_metadata.c:2703
+#: lib/setup.c:4167 lib/luks2/luks2_json_metadata.c:2703
 #: lib/luks2/luks2_reencrypt.c:3590
 msgid "Failed to get reencryption lock."
 msgstr "Не вдалося отримати стан блокування для повторного шифрування."
 
-#: lib/setup.c:4168 lib/luks2/luks2_reencrypt.c:3609
+#: lib/setup.c:4180 lib/luks2/luks2_reencrypt.c:3609
 msgid "LUKS2 reencryption recovery failed."
 msgstr "Не вдалося виконати відновлення даних повторного шифрування LUKS2."
 
-#: lib/setup.c:4340 lib/setup.c:4606
+#: lib/setup.c:4352 lib/setup.c:4618
 msgid "Device type is not properly initialized."
 msgstr "Тип пристрою не ініціалізовано належним чином."
 
-#: lib/setup.c:4388
+#: lib/setup.c:4400
 #, c-format
 msgid "Device %s already exists."
 msgstr "Пристрій %s вже існує."
 
-#: lib/setup.c:4395
+#: lib/setup.c:4407
 #, c-format
 msgid "Cannot use device %s, name is invalid or still in use."
 msgstr "Неможливо скористатися пристроєм %s, некоректна назва або пристрій усе ще використовується."
 
-#: lib/setup.c:4515
+#: lib/setup.c:4527
 msgid "Incorrect volume key specified for plain device."
 msgstr "Для пристрою зі звичайним шифруванням вказано помилковий ключ тому."
 
-#: lib/setup.c:4632
+#: lib/setup.c:4644
 msgid "Incorrect root hash specified for verity device."
 msgstr "Для пристрою перевірки вказано помилковий кореневий хеш."
 
-#: lib/setup.c:4642
+#: lib/setup.c:4654
 msgid "Root hash signature required."
 msgstr "Потрібен хеш-підпис кореневої теки."
 
-#: lib/setup.c:4651
+#: lib/setup.c:4663
 msgid "Kernel keyring missing: required for passing signature to kernel."
 msgstr "Немає сховища ключів ядра: це сховище потрібне для передавання підпису ядру."
 
-#: lib/setup.c:4668 lib/setup.c:6411
+#: lib/setup.c:4680 lib/setup.c:6423
 msgid "Failed to load key in kernel keyring."
 msgstr "Не вдалося завантажити ключ до сховища ключів ядра."
 
-#: lib/setup.c:4724
+#: lib/setup.c:4736
 #, c-format
 msgid "Could not cancel deferred remove from device %s."
 msgstr "Не вдалося скасувати відкладене вилучення з пристрою %s."
 
-#: lib/setup.c:4731 lib/setup.c:4747 lib/luks2/luks2_json_metadata.c:2756
+#: lib/setup.c:4743 lib/setup.c:4759 lib/luks2/luks2_json_metadata.c:2756
 #: src/utils_reencrypt.c:116
 #, c-format
 msgid "Device %s is still in use."
 msgstr "Пристрій %s все ще використовується."
 
-#: lib/setup.c:4756
+#: lib/setup.c:4768
 #, c-format
 msgid "Invalid device %s."
 msgstr "Некоректний пристрій %s."
 
-#: lib/setup.c:4896
+#: lib/setup.c:4908
 msgid "Volume key buffer too small."
 msgstr "Буфер ключів тому є занадто малим."
 
-#: lib/setup.c:4913
+#: lib/setup.c:4925
 msgid "Cannot retrieve volume key for LUKS2 device."
 msgstr "Неможливо отримати ключ тому для пристрою із шифруванням LUKS2."
 
-#: lib/setup.c:4922
+#: lib/setup.c:4934
 msgid "Cannot retrieve volume key for LUKS1 device."
 msgstr "Неможливо отримати ключ тому для пристрою із шифруванням LUKS1."
 
-#: lib/setup.c:4932
+#: lib/setup.c:4944
 msgid "Cannot retrieve volume key for plain device."
 msgstr "Неможливо отримати ключ тому для пристрою зі звичайним шифруванням."
 
-#: lib/setup.c:4940
+#: lib/setup.c:4952
 msgid "Cannot retrieve root hash for verity device."
 msgstr "Не вдалося отримати кореневий хеш для пристрою VERITY."
 
-#: lib/setup.c:4947
+#: lib/setup.c:4959
 msgid "Cannot retrieve volume key for BITLK device."
 msgstr "Неможливо отримати ключ тому для пристрою BITLK."
 
-#: lib/setup.c:4952
+#: lib/setup.c:4964
 msgid "Cannot retrieve volume key for FVAULT2 device."
 msgstr "Неможливо отримати ключ тому для пристрою FVAULT2."
 
-#: lib/setup.c:4954
+#: lib/setup.c:4966
 #, c-format
 msgid "This operation is not supported for %s crypt device."
 msgstr "Підтримки цієї дії для шифрованого пристрою %s не передбачено."
 
-#: lib/setup.c:5135 lib/setup.c:5146
+#: lib/setup.c:5147 lib/setup.c:5158
 msgid "Dump operation is not supported for this device type."
 msgstr "Підтримки дії зі створення дампу для цього типу пристроїв не передбачено."
 
-#: lib/setup.c:5488
+#: lib/setup.c:5500
 #, c-format
 msgid "Data offset is not multiple of %u bytes."
 msgstr "Зсув у даних не є кратним до %u байтів."
 
-#: lib/setup.c:5776
+#: lib/setup.c:5788
 #, c-format
 msgid "Cannot convert device %s which is still in use."
 msgstr "Не можна перетворити пристрій %s, який перебуває у користуванні."
 
-#: lib/setup.c:6086 lib/setup.c:6225
+#: lib/setup.c:6098 lib/setup.c:6237
 #, c-format
 msgid "Failed to assign keyslot %u as the new volume key."
 msgstr "Не вдалося прив'язати слот ключа %u як новий ключ тому."
 
-#: lib/setup.c:6110
+#: lib/setup.c:6122
 msgid "Failed to initialize default LUKS2 keyslot parameters."
 msgstr "Не вдалося ініціалізувати типові параметри слоту ключів LUKS2."
 
-#: lib/setup.c:6116
+#: lib/setup.c:6128
 #, c-format
 msgid "Failed to assign keyslot %d to digest."
 msgstr "Не вдалося прив'язати слот ключа %d до контрольної суми."
 
-#: lib/setup.c:6341
+#: lib/setup.c:6353
 msgid "Cannot add key slot, all slots disabled and no volume key provided."
 msgstr "Не вдалося додати слот ключа, всі слоти вимкнено і не вказано ключа тому."
 
-#: lib/setup.c:6478
+#: lib/setup.c:6490
 msgid "Kernel keyring is not supported by the kernel."
 msgstr "У ядрі не передбачено підтримки сховища ключів ядра."
 
-#: lib/setup.c:6488 lib/luks2/luks2_reencrypt.c:3807
+#: lib/setup.c:6500 lib/luks2/luks2_reencrypt.c:3807
 #, c-format
 msgid "Failed to read passphrase from keyring (error %d)."
 msgstr "Не вдалося прочитати пароль із ключа зі сховища ключів (помилка %d)."
 
-#: lib/setup.c:6512
+#: lib/setup.c:6523
 msgid "Failed to acquire global memory-hard access serialization lock."
 msgstr "Не вдалося створити загальне блокування серіалізації доступу до пам'яті."
 
@@ -625,8 +625,8 @@ msgstr "Не вдалося отримати статистичні дані щ�
 msgid "Cannot seek to requested keyfile offset."
 msgstr "Не вдалося встановити потрібну позицію у файлі ключа."
 
-#: lib/utils.c:202 lib/utils.c:217 src/utils_password.c:227
-#: src/utils_password.c:239
+#: lib/utils.c:202 lib/utils.c:217 src/utils_password.c:225
+#: src/utils_password.c:237
 msgid "Out of memory while reading passphrase."
 msgstr "Під час читання пароля вичерпано пам’ять."
 
@@ -647,7 +647,7 @@ msgid "Cannot read requested amount of data."
 msgstr "Не вдалося прочитати бажаний об’єм даних."
 
 #: lib/utils_device.c:207 lib/utils_storage_wrappers.c:110
-#: lib/luks1/keyencryption.c:91 src/utils_reencrypt.c:1408
+#: lib/luks1/keyencryption.c:91 src/utils_reencrypt.c:1440
 #, c-format
 msgid "Device %s does not exist or access denied."
 msgstr "Пристрою %s не існує або доступ до цього пристрою заборонено."
@@ -749,16 +749,16 @@ msgstr "Вказана кількість паралельних потоків 
 msgid "Only PBKDF2 is supported in FIPS mode."
 msgstr "У режимі FIPS передбачено підтримку лише PBKDF2."
 
-#: lib/utils_benchmark.c:174
+#: lib/utils_benchmark.c:175
 msgid "PBKDF benchmark disabled but iterations not set."
 msgstr "Тестування PBKDF вимкнено, але кількість ітерацій не встановлено."
 
-#: lib/utils_benchmark.c:193
+#: lib/utils_benchmark.c:194
 #, c-format
 msgid "Not compatible PBKDF2 options (using hash algorithm %s)."
 msgstr "Несумісні параметри PBKDF2 (з використанням алгоритму хешування %s)."
 
-#: lib/utils_benchmark.c:213
+#: lib/utils_benchmark.c:214
 msgid "Not compatible PBKDF options."
 msgstr "Несумісні параметри PBKDF."
 
@@ -799,8 +799,8 @@ msgstr "Розмір ключа у режимі XTS має бути рівним
 msgid "Cipher specification should be in [cipher]-[mode]-[iv] format."
 msgstr "Специфікацію шифрування слід вказувати так: [алгоритм]-[режим]-[iv]."
 
-#: lib/luks1/keyencryption.c:97 lib/luks1/keymanage.c:364
-#: lib/luks1/keymanage.c:675 lib/luks1/keymanage.c:1126
+#: lib/luks1/keyencryption.c:97 lib/luks1/keymanage.c:366
+#: lib/luks1/keymanage.c:677 lib/luks1/keymanage.c:1132
 #: lib/luks2/luks2_json_metadata.c:1490 lib/luks2/luks2_keyslot.c:714
 #, c-format
 msgid "Cannot write to device %s, permission denied."
@@ -814,13 +814,13 @@ msgstr "Не вдалося відкрити пристрій тимчасово
 msgid "Failed to access temporary keystore device."
 msgstr "Не вдалося отримати доступ до пристрою тимчасового сховища ключів."
 
-#: lib/luks1/keyencryption.c:200 lib/luks2/luks2_keyslot_luks2.c:61
-#: lib/luks2/luks2_keyslot_luks2.c:79 lib/luks2/luks2_keyslot_reenc.c:192
+#: lib/luks1/keyencryption.c:200 lib/luks2/luks2_keyslot_luks2.c:62
+#: lib/luks2/luks2_keyslot_luks2.c:80 lib/luks2/luks2_keyslot_reenc.c:192
 msgid "IO error while encrypting keyslot."
 msgstr "Помилка введення-виведення під час шифрування слоту ключів."
 
-#: lib/luks1/keyencryption.c:246 lib/luks1/keymanage.c:367
-#: lib/luks1/keymanage.c:628 lib/luks1/keymanage.c:678 lib/tcrypt/tcrypt.c:679
+#: lib/luks1/keyencryption.c:246 lib/luks1/keymanage.c:369
+#: lib/luks1/keymanage.c:630 lib/luks1/keymanage.c:680 lib/tcrypt/tcrypt.c:679
 #: lib/fvault2/fvault2.c:877 lib/verity/verity.c:80 lib/verity/verity.c:196
 #: lib/verity/verity_hash.c:320 lib/verity/verity_hash.c:329
 #: lib/verity/verity_hash.c:349 lib/verity/verity_fec.c:260
@@ -831,70 +831,70 @@ msgstr "Помилка введення-виведення під час шиф�
 msgid "Cannot open device %s."
 msgstr "Не вдалося відкрити пристрій %s."
 
-#: lib/luks1/keyencryption.c:257 lib/luks2/luks2_keyslot_luks2.c:138
+#: lib/luks1/keyencryption.c:257 lib/luks2/luks2_keyslot_luks2.c:139
 msgid "IO error while decrypting keyslot."
 msgstr "Помилка введення-виведення під час розшифрування слоту ключів."
 
-#: lib/luks1/keymanage.c:129
+#: lib/luks1/keymanage.c:130
 #, c-format
 msgid "Device %s is too small. (LUKS1 requires at least %<PRIu64> bytes.)"
 msgstr "Обсяг пристрою %s є надто малим. (LUKS1 потрібно принаймні %<PRIu64> байтів.)"
 
-#: lib/luks1/keymanage.c:150 lib/luks1/keymanage.c:158
-#: lib/luks1/keymanage.c:170 lib/luks1/keymanage.c:181
-#: lib/luks1/keymanage.c:193
+#: lib/luks1/keymanage.c:151 lib/luks1/keymanage.c:159
+#: lib/luks1/keymanage.c:171 lib/luks1/keymanage.c:182
+#: lib/luks1/keymanage.c:194
 #, c-format
 msgid "LUKS keyslot %u is invalid."
 msgstr "Слот ключа LUKS %u є некоректним."
 
-#: lib/luks1/keymanage.c:265 lib/luks2/luks2_json_metadata.c:1353
+#: lib/luks1/keymanage.c:267 lib/luks2/luks2_json_metadata.c:1353
 #, c-format
 msgid "Requested header backup file %s already exists."
 msgstr "Потрібний вам файл резервної копії заголовка, %s, вже існує."
 
-#: lib/luks1/keymanage.c:267 lib/luks2/luks2_json_metadata.c:1355
+#: lib/luks1/keymanage.c:269 lib/luks2/luks2_json_metadata.c:1355
 #, c-format
 msgid "Cannot create header backup file %s."
 msgstr "Не вдалося створити файл резервної копії заголовка, %s."
 
-#: lib/luks1/keymanage.c:274 lib/luks2/luks2_json_metadata.c:1362
+#: lib/luks1/keymanage.c:276 lib/luks2/luks2_json_metadata.c:1362
 #, c-format
 msgid "Cannot write header backup file %s."
 msgstr "Не вдалося записати файл резервної копії заголовка, %s."
 
-#: lib/luks1/keymanage.c:306 lib/luks2/luks2_json_metadata.c:1399
+#: lib/luks1/keymanage.c:308 lib/luks2/luks2_json_metadata.c:1399
 msgid "Backup file does not contain valid LUKS header."
 msgstr "Файл резервної копії не містить коректного заголовка LUKS."
 
-#: lib/luks1/keymanage.c:319 lib/luks1/keymanage.c:591
+#: lib/luks1/keymanage.c:321 lib/luks1/keymanage.c:593
 #: lib/luks2/luks2_json_metadata.c:1420
 #, c-format
 msgid "Cannot open header backup file %s."
 msgstr "Не вдалося відкрити файл резервної копії заголовка, %s."
 
-#: lib/luks1/keymanage.c:327 lib/luks2/luks2_json_metadata.c:1428
+#: lib/luks1/keymanage.c:329 lib/luks2/luks2_json_metadata.c:1428
 #, c-format
 msgid "Cannot read header backup file %s."
 msgstr "Не вдалося прочитати дані з файла резервної копії заголовка, %s."
 
-#: lib/luks1/keymanage.c:337
+#: lib/luks1/keymanage.c:339
 msgid "Data offset or key size differs on device and backup, restore failed."
 msgstr "Відступ у даних або розмір ключа на пристрої і у резервній копії є різними. Відновлення неможливе."
 
-#: lib/luks1/keymanage.c:345
+#: lib/luks1/keymanage.c:347
 #, c-format
 msgid "Device %s %s%s"
 msgstr "Пристрій %s %s%s"
 
-#: lib/luks1/keymanage.c:346
+#: lib/luks1/keymanage.c:348
 msgid "does not contain LUKS header. Replacing header can destroy data on that device."
 msgstr "не містить заголовка LUKS. Заміна заголовка може зруйнувати дані, що зберігаються на пристрої."
 
-#: lib/luks1/keymanage.c:347
+#: lib/luks1/keymanage.c:349
 msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
 msgstr "вже містить заголовок LUKS. Заміна заголовка призведе до руйнування вже створених слотів ключів."
 
-#: lib/luks1/keymanage.c:348 lib/luks2/luks2_json_metadata.c:1462
+#: lib/luks1/keymanage.c:350 lib/luks2/luks2_json_metadata.c:1462
 msgid ""
 "\n"
 "WARNING: real device header has different UUID than backup!"
@@ -902,126 +902,130 @@ msgstr ""
 "\n"
 "ПОПЕРЕДЖЕННЯ: заголовок, що зберігається на пристрої, має інший UUID, ніж заголовок у резервній копії!"
 
-#: lib/luks1/keymanage.c:396
+#: lib/luks1/keymanage.c:398
 msgid "Non standard key size, manual repair required."
 msgstr "Нестандартний розмір ключа, слід виправити дані вручну."
 
-#: lib/luks1/keymanage.c:406
+#: lib/luks1/keymanage.c:408
 msgid "Non standard keyslots alignment, manual repair required."
 msgstr "Нестандартне вирівнювання слотів ключів, слід виправити дані вручну."
 
-#: lib/luks1/keymanage.c:415
+#: lib/luks1/keymanage.c:417
 #, c-format
 msgid "Cipher mode repaired (%s -> %s)."
 msgstr "Виправлений режим шифрування (%s -> %s)."
 
-#: lib/luks1/keymanage.c:426
+#: lib/luks1/keymanage.c:428
 #, c-format
 msgid "Cipher hash repaired to lowercase (%s)."
 msgstr "Виправлений хеш шифрування малими літерами (%s)."
 
-#: lib/luks1/keymanage.c:428 lib/luks1/keymanage.c:534
-#: lib/luks1/keymanage.c:790
+#: lib/luks1/keymanage.c:430 lib/luks1/keymanage.c:536
+#: lib/luks1/keymanage.c:792
 #, c-format
 msgid "Requested LUKS hash %s is not supported."
 msgstr "Підтримки бажаного хешування LUKS, %s, не передбачено."
 
-#: lib/luks1/keymanage.c:442
+#: lib/luks1/keymanage.c:444
 msgid "Repairing keyslots."
 msgstr "Виправлення слотів ключів."
 
-#: lib/luks1/keymanage.c:461
+#: lib/luks1/keymanage.c:463
 #, c-format
 msgid "Keyslot %i: offset repaired (%u -> %u)."
 msgstr "Слот ключа %i: виправлено відступ (%u -> %u)."
 
-#: lib/luks1/keymanage.c:469
+#: lib/luks1/keymanage.c:471
 #, c-format
 msgid "Keyslot %i: stripes repaired (%u -> %u)."
 msgstr "Слот ключа %i: виправлено смужки (%u -> %u)."
 
-#: lib/luks1/keymanage.c:478
+#: lib/luks1/keymanage.c:480
 #, c-format
 msgid "Keyslot %i: bogus partition signature."
 msgstr "Слот ключа %i: зайвий підпис розділу."
 
-#: lib/luks1/keymanage.c:483
+#: lib/luks1/keymanage.c:485
 #, c-format
 msgid "Keyslot %i: salt wiped."
 msgstr "Слот ключа %i: дані ініціалізації (сіль) витерто."
 
-#: lib/luks1/keymanage.c:500
+#: lib/luks1/keymanage.c:502
 msgid "Writing LUKS header to disk."
 msgstr "Запис заголовка LUKS на диск."
 
-#: lib/luks1/keymanage.c:505
+#: lib/luks1/keymanage.c:507
 msgid "Repair failed."
 msgstr "Спроба виправлення зазнала невдачі."
 
-#: lib/luks1/keymanage.c:560
+#: lib/luks1/keymanage.c:562
 #, c-format
 msgid "LUKS cipher mode %s is invalid."
 msgstr "Режим шифрування LUKS %s є некоректним."
 
-#: lib/luks1/keymanage.c:565
+#: lib/luks1/keymanage.c:567
 #, c-format
 msgid "LUKS hash %s is invalid."
 msgstr "Хеш-сума LUKS %s є некоректною."
 
-#: lib/luks1/keymanage.c:572 src/cryptsetup.c:1281
+#: lib/luks1/keymanage.c:574 src/cryptsetup.c:1281
 msgid "No known problems detected for LUKS header."
 msgstr "У заголовку LUKS не виявлено жодних проблем."
 
-#: lib/luks1/keymanage.c:700
+#: lib/luks1/keymanage.c:702
 #, c-format
 msgid "Error during update of LUKS header on device %s."
 msgstr "Помилка під час оновлення заголовка LUKS на пристрої %s."
 
-#: lib/luks1/keymanage.c:708
+#: lib/luks1/keymanage.c:710
 #, c-format
 msgid "Error re-reading LUKS header after update on device %s."
 msgstr "Помилка під час спроби повторного читання заголовка LUKS після оновлення на пристрої %s."
 
-#: lib/luks1/keymanage.c:784
+#: lib/luks1/keymanage.c:786
 msgid "Data offset for LUKS header must be either 0 or higher than header size."
 msgstr "Відступ даних для заголовка LUKS має бути або рівним нулеві, або перевищувати розмір заголовка."
 
-#: lib/luks1/keymanage.c:795 lib/luks1/keymanage.c:864
+#: lib/luks1/keymanage.c:797 lib/luks1/keymanage.c:866
 #: lib/luks2/luks2_json_format.c:286 lib/luks2/luks2_json_metadata.c:1236
-#: src/utils_reencrypt.c:514
+#: src/utils_reencrypt.c:539
 msgid "Wrong LUKS UUID format provided."
 msgstr "Вказано UUID LUKS у помилковому форматі."
 
-#: lib/luks1/keymanage.c:817
+#: lib/luks1/keymanage.c:819
 msgid "Cannot create LUKS header: reading random salt failed."
 msgstr "Не вдалося створити заголовок LUKS: помилка читання випадкових даних для ініціалізації."
 
-#: lib/luks1/keymanage.c:843
+#: lib/luks1/keymanage.c:845
 #, c-format
 msgid "Cannot create LUKS header: header digest failed (using hash %s)."
 msgstr "Не вдалося створити заголовок LUKS: помилка під час обчислення контрольної суми заголовка (з використанням хешу %s)."
 
-#: lib/luks1/keymanage.c:887
+#: lib/luks1/keymanage.c:889
 #, c-format
 msgid "Key slot %d active, purge first."
 msgstr "Слот ключа %d є активним. Його слід спочатку спорожнити."
 
-#: lib/luks1/keymanage.c:893
+#: lib/luks1/keymanage.c:895
 #, c-format
 msgid "Key slot %d material includes too few stripes. Header manipulation?"
 msgstr "Ентропія даних слота ключа %d є надто низькою. Маніпуляції з заголовком?"
 
-#: lib/luks1/keymanage.c:1034
+#: lib/luks1/keymanage.c:931 lib/luks2/luks2_keyslot_luks2.c:270
+msgid "PBKDF2 iteration value overflow."
+msgstr "Переповнення значення ітерації PBKDF2."
+
+#: lib/luks1/keymanage.c:1040
 #, c-format
 msgid "Cannot open keyslot (using hash %s)."
 msgstr "Не вдалося відкрити слот ключа (за допомогою хешу %s)."
 
-#: lib/luks1/keymanage.c:1112
+#: lib/luks1/keymanage.c:1118
 #, c-format
 msgid "Key slot %d is invalid, please select keyslot between 0 and %d."
 msgstr "Слот ключа %d є некоректним, будь ласка, виберіть слот ключа з номером від 0 до %d."
 
-#: lib/luks1/keymanage.c:1130 lib/luks2/luks2_keyslot.c:718
+#: lib/luks1/keymanage.c:1136 lib/luks2/luks2_keyslot.c:718
 #, c-format
 msgid "Cannot wipe device %s."
 msgstr "Не вдалося витерти пристрій %s."
@@ -1087,129 +1091,129 @@ msgstr "У ядрі не передбачено підтримки призна�
 msgid "This function is not supported without TCRYPT header load."
 msgstr "Підтримки цієї дії без завантаження заголовка TCRYPT."
 
-#: lib/bitlk/bitlk.c:275
+#: lib/bitlk/bitlk.c:278
 #, c-format
 msgid "Unexpected metadata entry type '%u' found when parsing supported Volume Master Key."
 msgstr "Під час обробки підтримуваного основного ключа тому виявлено неочікуваний тип запису метаданих «%u»."
 
-#: lib/bitlk/bitlk.c:328
+#: lib/bitlk/bitlk.c:337
 msgid "Invalid string found when parsing Volume Master Key."
 msgstr "Під час обробки основного ключа тому виявлено некоректний рядок."
 
-#: lib/bitlk/bitlk.c:332
+#: lib/bitlk/bitlk.c:341
 #, c-format
 msgid "Unexpected string ('%s') found when parsing supported Volume Master Key."
 msgstr "Під час обробки підтримуваного основного ключа тому виявлено неочікуваний рядок («%s»)."
 
-#: lib/bitlk/bitlk.c:349
+#: lib/bitlk/bitlk.c:358
 #, c-format
 msgid "Unexpected metadata entry value '%u' found when parsing supported Volume Master Key."
 msgstr "Під час обробки підтримуваного основного ключа тому виявлено неочікуване значення запису метаданих «%u»."
 
-#: lib/bitlk/bitlk.c:451
+#: lib/bitlk/bitlk.c:460
 msgid "BITLK version 1 is currently not supported."
 msgstr "Підтримки BITLK версії 1 у поточній версії не передбачено."
 
-#: lib/bitlk/bitlk.c:457
+#: lib/bitlk/bitlk.c:466
 msgid "Invalid or unknown boot signature for BITLK device."
 msgstr "Некоректний або невідомий підпис завантаження для пристрою BITLK."
 
-#: lib/bitlk/bitlk.c:469
+#: lib/bitlk/bitlk.c:478
 #, c-format
 msgid "Unsupported sector size %<PRIu16>."
 msgstr "Непідтримуваний розмір сектора %<PRIu16>."
 
-#: lib/bitlk/bitlk.c:477
+#: lib/bitlk/bitlk.c:486
 #, c-format
 msgid "Failed to read BITLK header from %s."
 msgstr "Не вдалося прочитати заголовок BITLK з %s."
 
-#: lib/bitlk/bitlk.c:502
+#: lib/bitlk/bitlk.c:511
 #, c-format
 msgid "Failed to read BITLK FVE metadata from %s."
 msgstr "Не вдалося прочитати метадані FVE BITLK з %s."
 
-#: lib/bitlk/bitlk.c:554
+#: lib/bitlk/bitlk.c:562
 msgid "Unknown or unsupported encryption type."
 msgstr "Невідомий або непідтримуваний тип шифрування."
 
-#: lib/bitlk/bitlk.c:587
+#: lib/bitlk/bitlk.c:602
 #, c-format
 msgid "Failed to read BITLK metadata entries from %s."
 msgstr "Не вдалося прочитати записи метаданих BITLK з %s."
 
-#: lib/bitlk/bitlk.c:681
+#: lib/bitlk/bitlk.c:719
 msgid "Failed to convert BITLK volume description"
 msgstr "Не вдалося перетворити опис тому BITLK"
 
-#: lib/bitlk/bitlk.c:841
+#: lib/bitlk/bitlk.c:882
 #, c-format
 msgid "Unexpected metadata entry type '%u' found when parsing external key."
 msgstr "Під час обробки зовнішнього ключа виявлено неочікуваний тип запису метаданих «%u»."
 
-#: lib/bitlk/bitlk.c:860
+#: lib/bitlk/bitlk.c:905
 #, c-format
 msgid "BEK file GUID '%s' does not match GUID of the volume."
 msgstr "Файл GUID BEK «%s» не відповідає GUID тому."
 
-#: lib/bitlk/bitlk.c:864
+#: lib/bitlk/bitlk.c:909
 #, c-format
 msgid "Unexpected metadata entry value '%u' found when parsing external key."
 msgstr "Під час обробки зовнішнього ключа виявлено неочікуване значення запису метаданих «%u»."
 
-#: lib/bitlk/bitlk.c:903
+#: lib/bitlk/bitlk.c:948
 #, c-format
 msgid "Unsupported BEK metadata version %<PRIu32>"
 msgstr "Непідтримувана версія метаданих BEK, %<PRIu32>"
 
-#: lib/bitlk/bitlk.c:908
+#: lib/bitlk/bitlk.c:953
 #, c-format
 msgid "Unexpected BEK metadata size %<PRIu32> does not match BEK file length"
 msgstr "Неочікуваний розмір метаданих BEK, %<PRIu32>, не відповідає довжині файла BEK"
 
-#: lib/bitlk/bitlk.c:933
+#: lib/bitlk/bitlk.c:979
 msgid "Unexpected metadata entry found when parsing startup key."
 msgstr "Під час обробки ключа запуску виявлено неочікуваний запис метаданих."
 
-#: lib/bitlk/bitlk.c:1029
+#: lib/bitlk/bitlk.c:1075
 msgid "This operation is not supported."
 msgstr "Підтримки цієї дії не передбачено."
 
-#: lib/bitlk/bitlk.c:1037
+#: lib/bitlk/bitlk.c:1083
 msgid "Unexpected key data size."
 msgstr "Неочікуваний розмір даних ключа."
 
-#: lib/bitlk/bitlk.c:1163
+#: lib/bitlk/bitlk.c:1209
 msgid "This BITLK device is in an unsupported state and cannot be activated."
 msgstr "Цей пристрій BITLK перебуває у непідтримуваному стані — його неможливо активувати."
 
-#: lib/bitlk/bitlk.c:1168
+#: lib/bitlk/bitlk.c:1214
 #, c-format
 msgid "BITLK devices with type '%s' cannot be activated."
 msgstr "Пристрої BITLK типу «%s» неможливо активувати."
 
-#: lib/bitlk/bitlk.c:1175
+#: lib/bitlk/bitlk.c:1221
 msgid "Activation of partially decrypted BITLK device is not supported."
 msgstr "Активації частково розшифрованого пристрою BITLK не передбачено."
 
-#: lib/bitlk/bitlk.c:1216
+#: lib/bitlk/bitlk.c:1262
 #, c-format
 msgid "WARNING: BitLocker volume size %<PRIu64> does not match the underlying device size %<PRIu64>"
 msgstr "УВАГА: розмір тому BitLocker %<PRIu64> не відповідає розміру базового пристрою %<PRIu64>"
 
-#: lib/bitlk/bitlk.c:1343
+#: lib/bitlk/bitlk.c:1389
 msgid "Cannot activate device, kernel dm-crypt is missing support for BITLK IV."
 msgstr "Не вдалося активувати пристрій — у dm-crypt ядра немає підтримки BITLK IV."
 
-#: lib/bitlk/bitlk.c:1347
+#: lib/bitlk/bitlk.c:1393
 msgid "Cannot activate device, kernel dm-crypt is missing support for BITLK Elephant diffuser."
 msgstr "Не вдалося активувати пристрій — у dm-crypt ядра немає підтримки дифузера Elephant BITLK."
 
-#: lib/bitlk/bitlk.c:1351
+#: lib/bitlk/bitlk.c:1397
 msgid "Cannot activate device, kernel dm-crypt is missing support for large sector size."
 msgstr "Не вдалося активувати пристрій — у dm-crypt ядра немає підтримки великого розміру секторів."
 
-#: lib/bitlk/bitlk.c:1355
+#: lib/bitlk/bitlk.c:1401
 msgid "Cannot activate device, kernel dm-zero module is missing."
 msgstr "Не вдалося активувати пристрій — немає модуля ядра dm-zero."
 
@@ -1402,8 +1406,8 @@ msgid "WARNING: keyslots area (%<PRIu64> bytes) is very small, available LUKS2 k
 msgstr "Увага: область слоту ключів є надто малою (%<PRIu64> байтів), доступна кількість слотів ключів LUKS2 буде дуже обмеженою.\n"
 
 #: lib/luks2/luks2_json_metadata.c:1146 lib/luks2/luks2_json_metadata.c:1328
-#: lib/luks2/luks2_json_metadata.c:1388 lib/luks2/luks2_keyslot_luks2.c:93
-#: lib/luks2/luks2_keyslot_luks2.c:115
+#: lib/luks2/luks2_json_metadata.c:1388 lib/luks2/luks2_keyslot_luks2.c:94
+#: lib/luks2/luks2_keyslot_luks2.c:116
 #, c-format
 msgid "Failed to acquire read lock on device %s."
 msgstr "Не вдалося отримати блокування читання на пристрої %s."
@@ -1509,18 +1513,18 @@ msgstr "Недостатньо пам'яті для відкриття слот�
 msgid "Keyslot open failed."
 msgstr "Не вдалося відкрити слот ключів."
 
-#: lib/luks2/luks2_keyslot_luks2.c:54 lib/luks2/luks2_keyslot_luks2.c:109
+#: lib/luks2/luks2_keyslot_luks2.c:55 lib/luks2/luks2_keyslot_luks2.c:110
 #, c-format
 msgid "Cannot use %s-%s cipher for keyslot encryption."
 msgstr "Не можна використовувати шифрування %s-%s для слотів ключів."
 
-#: lib/luks2/luks2_keyslot_luks2.c:281 lib/luks2/luks2_keyslot_luks2.c:390
+#: lib/luks2/luks2_keyslot_luks2.c:285 lib/luks2/luks2_keyslot_luks2.c:394
 #: lib/luks2/luks2_keyslot_reenc.c:443 lib/luks2/luks2_reencrypt.c:2668
 #, c-format
 msgid "Hash algorithm %s is not available."
 msgstr "Алгоритм хешування %s є недоступним."
 
-#: lib/luks2/luks2_keyslot_luks2.c:506
+#: lib/luks2/luks2_keyslot_luks2.c:510
 msgid "No space for new keyslot."
 msgstr "Немає простору для нового слоту ключа."
 
@@ -1860,7 +1864,7 @@ msgid "Enter token %d PIN: "
 msgstr "Введіть пінкод жетона %d: "
 
 #: src/cryptsetup.c:159 src/cryptsetup.c:1103 src/cryptsetup.c:1430
-#: src/utils_reencrypt.c:1097 src/utils_reencrypt_luks1.c:517
+#: src/utils_reencrypt.c:1122 src/utils_reencrypt_luks1.c:517
 #: src/utils_reencrypt_luks1.c:580
 msgid "No known cipher specification pattern detected."
 msgstr "Не виявлено жодного відомого зразка специфікації шифрування."
@@ -1881,7 +1885,7 @@ msgstr "На %s виявлено підписи пристроїв. Подаль
 #: src/cryptsetup.c:221 src/cryptsetup.c:1177 src/cryptsetup.c:1225
 #: src/cryptsetup.c:1291 src/cryptsetup.c:1407 src/cryptsetup.c:1480
 #: src/cryptsetup.c:2266 src/integritysetup.c:187 src/utils_reencrypt.c:138
-#: src/utils_reencrypt.c:314 src/utils_reencrypt.c:724
+#: src/utils_reencrypt.c:314 src/utils_reencrypt.c:749
 msgid "Operation aborted.\n"
 msgstr "Дію перервано.\n"
 
@@ -3165,7 +3169,7 @@ msgstr "Поступ: %5.1f%%, приблизний час %s, %s, %s%s"
 msgid "Finished, time %s, %s, %s\n"
 msgstr "Завершено, час %s, %s, %s\n"
 
-#: src/utils_password.c:41 src/utils_password.c:74
+#: src/utils_password.c:41 src/utils_password.c:72
 #, c-format
 msgid "Cannot check password quality: %s"
 msgstr "Не вдалося перевірити якість пароля: %s"
@@ -3179,42 +3183,42 @@ msgstr ""
 "Помилка під час спроби оцінити якість пароля:\n"
 " %s"
 
-#: src/utils_password.c:81
+#: src/utils_password.c:79
 #, c-format
 msgid "Password quality check failed: Bad passphrase (%s)"
 msgstr "Помилка під час спроби оцінити якість пароля: некоректний пароль (%s)"
 
-#: src/utils_password.c:232 src/utils_password.c:246
+#: src/utils_password.c:230 src/utils_password.c:244
 msgid "Error reading passphrase from terminal."
 msgstr "Помилка під час читання пароля з термінала."
 
-#: src/utils_password.c:244
+#: src/utils_password.c:242
 msgid "Verify passphrase: "
 msgstr "Перевірка пароля: "
 
-#: src/utils_password.c:251
+#: src/utils_password.c:249
 msgid "Passphrases do not match."
 msgstr "Паролі не збігаються."
 
-#: src/utils_password.c:289
+#: src/utils_password.c:287
 msgid "Cannot use offset with terminal input."
 msgstr "Не можна використовувати відступ у даних, що надходять з термінала."
 
-#: src/utils_password.c:293
+#: src/utils_password.c:291
 #, c-format
 msgid "Enter passphrase: "
 msgstr "Введіть пароль: "
 
-#: src/utils_password.c:296
+#: src/utils_password.c:294
 #, c-format
 msgid "Enter passphrase for %s: "
 msgstr "Введіть пароль до %s: "
 
-#: src/utils_password.c:330
+#: src/utils_password.c:328
 msgid "No key available with this passphrase."
 msgstr "Для цього пароля немає відповідного ключа."
 
-#: src/utils_password.c:332
+#: src/utils_password.c:330
 msgid "No usable keyslot is available."
 msgstr "Немає доступних придатних до користування слотів ключів."
 
@@ -3340,103 +3344,103 @@ msgstr ""
 "Вказаний --sector-size %<PRIu32> є несумісним із суперблоком %s\n"
 "(розмір блоку: %<PRIu32> байтів), який виявлено на пристрої %s."
 
-#: src/utils_reencrypt.c:494
+#: src/utils_reencrypt.c:518 src/utils_reencrypt.c:1391
 msgid "Encryption without detached header (--header) is not possible without data device size reduction (--reduce-device-size)."
 msgstr "Шифрування без від'єднаного заголовка (--header) є неможливим без зменшення розміру пристрою зберігання даних (--reduce-device-size)."
 
-#: src/utils_reencrypt.c:500
+#: src/utils_reencrypt.c:525
 msgid "Requested data offset must be less than or equal to half of --reduce-device-size parameter."
 msgstr "Вказаний зсув даних має бути меншим або рівним половині значення параметра --reduce-device-size."
 
-#: src/utils_reencrypt.c:510
+#: src/utils_reencrypt.c:535
 #, c-format
 msgid "Adjusting --reduce-device-size value to twice the --offset %<PRIu64> (sectors).\n"
 msgstr "Коригуємо значення --reduce-device-size до подвійного значення --offset %<PRIu64> (у секторах).\n"
 
-#: src/utils_reencrypt.c:540
+#: src/utils_reencrypt.c:565
 #, c-format
 msgid "Temporary header file %s already exists. Aborting."
 msgstr "Файл тимчасового заголовка %s вже існує. Перериваємо обробку."
 
-#: src/utils_reencrypt.c:542 src/utils_reencrypt.c:549
+#: src/utils_reencrypt.c:567 src/utils_reencrypt.c:574
 #, c-format
 msgid "Cannot create temporary header file %s."
 msgstr "Не вдалося створити файл тимчасового заголовка %s."
 
-#: src/utils_reencrypt.c:574
+#: src/utils_reencrypt.c:599
 msgid "LUKS2 metadata size is larger than data shift value."
 msgstr "Розмір метаданих LUKS2 перевищує значення зсуву даних."
 
-#: src/utils_reencrypt.c:611
+#: src/utils_reencrypt.c:636
 #, c-format
 msgid "Failed to place new header at head of device %s."
 msgstr "Не вдалося розмістити новий заголовок на початку пристрою %s."
 
-#: src/utils_reencrypt.c:621
+#: src/utils_reencrypt.c:646
 #, c-format
 msgid "%s/%s is now active and ready for online encryption.\n"
 msgstr "%s/%s задіяно, система готова до інтерактивного шифрування.\n"
 
-#: src/utils_reencrypt.c:657
+#: src/utils_reencrypt.c:682
 #, c-format
 msgid "Active device %s is not LUKS2."
 msgstr "Активний пристрій %s не є пристроєм LUKS2."
 
-#: src/utils_reencrypt.c:685
+#: src/utils_reencrypt.c:710
 msgid "Restoring original LUKS2 header."
 msgstr "Відновлюємо початковий заголовок LUKS2."
 
-#: src/utils_reencrypt.c:693
+#: src/utils_reencrypt.c:718
 msgid "Original LUKS2 header restore failed."
 msgstr "Спроба відновлення початкового заголовка LUKS2 зазнала невдачі."
 
-#: src/utils_reencrypt.c:719
+#: src/utils_reencrypt.c:744
 #, c-format
 msgid "Header file %s does not exist. Do you want to initialize LUKS2 decryption of device %s and export LUKS2 header to file %s?"
 msgstr "Файла заголовка %s не існує. Хочете ініціалізувати розшифрування LUKS2 пристрою %s і експортувати заголовок LUKS2 до файла %s?"
 
-#: src/utils_reencrypt.c:767
+#: src/utils_reencrypt.c:792
 msgid "Failed to add read/write permissions to exported header file."
 msgstr "Не вдалося додати права доступу для читання-запису до експортованого файла заголовка."
 
-#: src/utils_reencrypt.c:820
+#: src/utils_reencrypt.c:845
 #, c-format
 msgid "Reencryption initialization failed. Header backup is available in %s."
 msgstr "Не вдалося ініціалізувати повторне шифрування. Резервна копія заголовка перебуває у %s."
 
-#: src/utils_reencrypt.c:848
+#: src/utils_reencrypt.c:873
 msgid "LUKS2 decryption is supported with detached header device only (with data offset set to 0)."
 msgstr "Підтримку розшифровування LUKS2 передбачено лише для пристроїв із від'єднаним заголовком (із встановленим нульовим відступом даних)."
 
-#: src/utils_reencrypt.c:983 src/utils_reencrypt.c:992
+#: src/utils_reencrypt.c:1008 src/utils_reencrypt.c:1017
 msgid "Not enough free keyslots for reencryption."
 msgstr "Недостатньо вільних слотів ключів для повторного шифрування."
 
-#: src/utils_reencrypt.c:1013 src/utils_reencrypt_luks1.c:1100
+#: src/utils_reencrypt.c:1038 src/utils_reencrypt_luks1.c:1100
 msgid "Key file can be used only with --key-slot or with exactly one key slot active."
 msgstr "Файлом ключа можна користуватися лише з --key-slot, або якщо активним є лише один слот ключа."
 
-#: src/utils_reencrypt.c:1022 src/utils_reencrypt_luks1.c:1147
+#: src/utils_reencrypt.c:1047 src/utils_reencrypt_luks1.c:1147
 #: src/utils_reencrypt_luks1.c:1158
 #, c-format
 msgid "Enter passphrase for key slot %d: "
 msgstr "Вкажіть пароль для слоту ключа %d: "
 
-#: src/utils_reencrypt.c:1034
+#: src/utils_reencrypt.c:1059
 #, c-format
 msgid "Enter passphrase for key slot %u: "
 msgstr "Вкажіть пароль для слоту ключа %u: "
 
-#: src/utils_reencrypt.c:1086
+#: src/utils_reencrypt.c:1111
 #, c-format
 msgid "Switching data encryption cipher to %s.\n"
 msgstr "Перемикаємося на шифрування даних %s.\n"
 
-#: src/utils_reencrypt.c:1140
+#: src/utils_reencrypt.c:1165
 msgid "No data segment parameters changed. Reencryption aborted."
 msgstr "Не змінено параметри сегмента даних. Повторне шифрування перервано."
 
-#: src/utils_reencrypt.c:1242
+#: src/utils_reencrypt.c:1267
 msgid ""
 "Encryption sector size increase on offline device is not supported.\n"
 "Activate the device first or use --force-offline-reencrypt option (dangerous!)."
@@ -3444,7 +3448,7 @@ msgstr ""
 "Підтримки збільшення розміру сектора шифрування на вимкненому пристрої не передбачено.\n"
 "Спочатку активуйте пристрій або скористайтеся параметром --force-offline-reencrypt (небезпечно!)."
 
-#: src/utils_reencrypt.c:1282 src/utils_reencrypt_luks1.c:726
+#: src/utils_reencrypt.c:1307 src/utils_reencrypt_luks1.c:726
 #: src/utils_reencrypt_luks1.c:798
 msgid ""
 "\n"
@@ -3453,58 +3457,58 @@ msgstr ""
 "\n"
 "Повторне шифрування перервано."
 
-#: src/utils_reencrypt.c:1287
+#: src/utils_reencrypt.c:1312
 msgid "Resuming LUKS reencryption in forced offline mode.\n"
 msgstr "Відновлюємо повторне шифрування LUKS у примусовому вимкненому режимі.\n"
 
-#: src/utils_reencrypt.c:1304
+#: src/utils_reencrypt.c:1329
 #, c-format
 msgid "Device %s contains broken LUKS metadata. Aborting operation."
 msgstr "На пристрої %s містяться пошкоджені метадані LUKS. Перериваємо дію."
 
-#: src/utils_reencrypt.c:1320 src/utils_reencrypt.c:1342
+#: src/utils_reencrypt.c:1345 src/utils_reencrypt.c:1367
 #, c-format
 msgid "Device %s is already LUKS device. Aborting operation."
 msgstr "Пристрій %s вже є пристроєм LUKS. Перериваємо дію."
 
-#: src/utils_reencrypt.c:1348
+#: src/utils_reencrypt.c:1373
 #, c-format
 msgid "Device %s is already in LUKS reencryption. Aborting operation."
 msgstr "Пристрій %s вже перебуває у стані повторного шифрування LUKS. Перериваємо дію."
 
-#: src/utils_reencrypt.c:1421
+#: src/utils_reencrypt.c:1453
 msgid "LUKS2 decryption requires --header option."
 msgstr "Для розшифровування LUKS2 потрібен параметр --header."
 
-#: src/utils_reencrypt.c:1469
+#: src/utils_reencrypt.c:1501
 msgid "Command requires device as argument."
 msgstr "Комарні слід передати аргумент пристрою."
 
-#: src/utils_reencrypt.c:1482
+#: src/utils_reencrypt.c:1514
 #, c-format
 msgid "Conflicting versions. Device %s is LUKS1."
 msgstr "Конфлікт версій. Пристрій %s є пристроєм LUKS1."
 
-#: src/utils_reencrypt.c:1488
+#: src/utils_reencrypt.c:1520
 #, c-format
 msgid "Conflicting versions. Device %s is in LUKS1 reencryption."
 msgstr "Конфлікт версій. Пристрій %s перебуває у стані повторного шифрування LUKS1."
 
-#: src/utils_reencrypt.c:1494
+#: src/utils_reencrypt.c:1526
 #, c-format
 msgid "Conflicting versions. Device %s is LUKS2."
 msgstr "Конфлікт версій. Пристрій %s є пристроєм LUKS2."
 
-#: src/utils_reencrypt.c:1500
+#: src/utils_reencrypt.c:1532
 #, c-format
 msgid "Conflicting versions. Device %s is in LUKS2 reencryption."
 msgstr "Конфлікт версій. Пристрій %s перебуває у стані повторного шифрування LUKS2."
 
-#: src/utils_reencrypt.c:1506
+#: src/utils_reencrypt.c:1538
 msgid "LUKS2 reencryption already initialized. Aborting operation."
 msgstr "Вже ініційовано повторне шифрування LUKS2. Перериваємо виконання дії."
 
-#: src/utils_reencrypt.c:1513
+#: src/utils_reencrypt.c:1545
 msgid "Device reencryption not in progress."
 msgstr "Повторне шифрування пристрою не виконується."
 
@@ -4438,9 +4442,6 @@ msgstr "Помилка розпізнавання за відкритим клю
 
 #~ msgid "Read new volume (master) key from file"
 #~ msgstr "Прочитати новий ключ тому (основний ключ) з файла"
-
-#~ msgid "PBKDF2 iteration time for LUKS (in ms)"
-#~ msgstr "Тривалість ітерації PBKDF2 для LUKS (у мс)"
 
 #~ msgid "Use direct-io when accessing devices"
 #~ msgstr "Використовувати безпосереднє введення-виведення під час доступу до пристроїв"
