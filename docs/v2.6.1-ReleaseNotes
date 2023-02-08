@@ -1,0 +1,48 @@
+Cryptsetup 2.6.1 Release Notes
+==============================
+Stable bug-fix release with minor extensions.
+
+All users of cryptsetup 2.6.0 should upgrade to this version.
+
+Changes since version 2.6.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* bitlk: Fixes for BitLocker-compatible on-disk metadata parser
+  (found by new cryptsetup OSS-Fuzz fuzzers).
+  - Fix possible leak of description if the metadata contains more than
+    one description field.
+  - Harden parsing of metadata entries for key and description entry.
+  - Fix broken metadata parsing can cause a crash or out of memory.
+
+* Fix OpenSSL2 crypto backend PBKDF2 possible iteration count overflow.
+  OpenSSL2 uses a signed integer for PBKDF2 iteration count.
+  This can lead to overflow and a decrease in the actual iteration count.
+  This situation can happen only if the user specifies
+  --pbkdf-force-iterations option.
+  OpenSSL3 (and other supported crypto backends) are not affected.
+
+* Fix compilation for new ISO C standards (gcc with -std=c11 and higher).
+
+* fvault2: Fix compilation with very old uuid.h.
+
+* verity: Fix possible hash offset setting overflow.
+
+* bitlk: Fix use of startup BEK key on big-endian platforms.
+
+* Fix compilation with latest musl library.
+  Recent musl no longer implements lseek64() in some configurations.
+  Use lseek() as the large file (64-bit offset) is mandatory.
+
+* Do not allow encryption (reencryption command) when the header and
+  data devices are the same.
+  If data device reduction is not requsted, this leads to data
+  corruption since LUKS metadata was written over the data device.
+
+* Fix possible memory leak if crypt_load() fails.
+
+* Always use passphrases with a minimal 8 chars length for benchmarking.
+  Some enterprise distributions decided to set an unconditional check
+  for PBKDF2 password length when running in FIPS mode.
+  This questionable change led to unexpected failures during LUKS format
+  and keyslot operations, where short passwords were used
+  for benchmarking PBKDF2 speed.
