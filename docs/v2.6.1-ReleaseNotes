@@ -9,14 +9,15 @@ Changes since version 2.6.0
 
 * bitlk: Fixes for BitLocker-compatible on-disk metadata parser
   (found by new cryptsetup OSS-Fuzz fuzzers).
-  - Fix possible leak of description if the metadata contains more than
+  - Fix a possible memory leak if the metadata contains more than
     one description field.
-  - Harden parsing of metadata entries for key and description entry.
-  - Fix broken metadata parsing can cause a crash or out of memory.
+  - Harden parsing of metadata entries for key and description entries.
+  - Fix broken metadata parsing that can cause a crash or out of memory.
 
-* Fix OpenSSL2 crypto backend PBKDF2 possible iteration count overflow.
+* Fix possible iteration overflow in OpenSSL2 PBKDF2 crypto backend.
   OpenSSL2 uses a signed integer for PBKDF2 iteration count.
-  This can lead to overflow and a decrease in the actual iteration count.
+  As cryptsetup uses an unsigned value, this can lead to overflow and
+  a decrease in the actual iteration count.
   This situation can happen only if the user specifies
   --pbkdf-force-iterations option.
   OpenSSL3 (and other supported crypto backends) are not affected.
@@ -31,12 +32,12 @@ Changes since version 2.6.0
 
 * Fix compilation with latest musl library.
   Recent musl no longer implements lseek64() in some configurations.
-  Use lseek() as the large file (64-bit offset) is mandatory.
+  Use lseek() as 64-bit offset is mandatory for cryptsetup.
 
-* Do not allow encryption (reencryption command) when the header and
+* Do not initiate encryption (reencryption command) when the header and
   data devices are the same.
-  If data device reduction is not requsted, this leads to data
-  corruption since LUKS metadata was written over the data device.
+  If data device reduction is not requsted, this leads to data corruption
+  since LUKS metadata was written over the data device.
 
 * Fix possible memory leak if crypt_load() fails.
 
@@ -44,5 +45,6 @@ Changes since version 2.6.0
   Some enterprise distributions decided to set an unconditional check
   for PBKDF2 password length when running in FIPS mode.
   This questionable change led to unexpected failures during LUKS format
-  and keyslot operations, where short passwords were used
-  for benchmarking PBKDF2 speed.
+  and keyslot operations, where short passwords were used for
+  benchmarking PBKDF2 speed.
+  PBKDF2 benchmark calculations should not be affected by this change.
