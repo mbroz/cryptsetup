@@ -1,9 +1,9 @@
 /*
  * BITLK (BitLocker-compatible) header definition
  *
- * Copyright (C) 2019-2022 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2019-2022 Milan Broz
- * Copyright (C) 2019-2022 Vojtech Trefny
+ * Copyright (C) 2019-2023 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2019-2023 Milan Broz
+ * Copyright (C) 2019-2023 Vojtech Trefny
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
