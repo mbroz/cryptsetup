@@ -78,10 +78,13 @@ void tool_log(int level, const char *msg, void *usrptr)
 
 	case CRYPT_LOG_NORMAL:
 		fprintf(stdout, "%s", msg);
+		fflush(stdout);
 		break;
 	case CRYPT_LOG_VERBOSE:
-		if (params && params->verbose)
+		if (params && params->verbose) {
 			fprintf(stdout, "%s", msg);
+			fflush(stdout);
+		}
 		break;
 	case CRYPT_LOG_ERROR:
 		fprintf(stderr, "%s", msg);
@@ -90,6 +93,7 @@ void tool_log(int level, const char *msg, void *usrptr)
 	case CRYPT_LOG_DEBUG:
 		if (params && params->debug)
 			fprintf(stdout, "# %s", msg);
+			fflush(stdout);
 		break;
 	}
 }
