@@ -59,9 +59,15 @@ luksOpen <device> <name> (*old syntax*)
 Opens the LUKS device <device> and sets up a mapping <name> after
 successful verification of the supplied passphrase.
 
-First, the passphrase is searched in LUKS tokens. If it's not found in
-any token and also the passphrase is not supplied via --key-file, the
-command prompts for it interactively.
+First, the passphrase is searched in LUKS2 tokens unprotected by PIN.
+If such token does not exist (or fails to unlock keyslot) and
+also the passphrase is not supplied via --key-file, the command
+prompts for passphrase interactively.
+
+If there is valid LUKS2 token but it requires PIN to unlock assigned keyslot,
+it is not used unless one of following options is added: --token-only,
+--token-type where type matches desired PIN protected token or --token-id with id
+matching PIN protected token.
 
 *<options>* can be [--key-file, --keyfile-offset, --keyfile-size,
 --readonly, --test-passphrase, --allow-discards, --header, --key-slot,

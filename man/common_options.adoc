@@ -800,8 +800,9 @@ endif::[]
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_LUKSADDKEY[]
 *--token-id*::
 ifndef::ACTION_TOKEN,ACTION_LUKSADDKEY[]
-Specify what token to use. If omitted, all available tokens will be checked
-before proceeding further with passphrase prompt.
+Specify what token to use and allow token PIN prompt to take precedence over interative
+keyslot passphrase prompt. If omitted, all available tokens (not protected by PIN)
+will be checked before proceeding further with passphrase prompt.
 endif::[]
 ifdef::ACTION_LUKSADDKEY[]
 Specify what token to use when unlocking existing keyslot to get volume key.
@@ -822,6 +823,9 @@ ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY[]
 ifndef::ACTION_LUKSADDKEY[]
 Do not proceed further with action if token based keyslot unlock failed. Without the
 option, action asks for passphrase to proceed further.
++
+It allows LUKS2 tokens protected by PIN to take precedence over interactive keyslot
+passphrase prompt.
 endif::[]
 ifdef::ACTION_LUKSADDKEY[]
 Use only LUKS2 tokens to unlock existing volume key.
@@ -835,6 +839,9 @@ ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY[]
 ifndef::ACTION_LUKSADDKEY[]
 Restrict tokens eligible for operation to specific token _type_.
 Mostly useful when no --token-id is specified.
++
+It allows LUKS2 _type_ tokens protected by PIN to take precedence over interactive keyslot
+passphrase prompt.
 endif::[]
 ifdef::ACTION_LUKSADDKEY[]
 Specify what token type (all _type_ tokens) to use when unlocking existing keyslot to get volume key.
