@@ -78,7 +78,6 @@ static int token_add(
 		goto out;
 	}
 
-	r = -EINVAL;
 	jobj = json_object_new_object();
 	if (!jobj) {
 		r = -ENOMEM;
