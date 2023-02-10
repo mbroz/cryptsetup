@@ -88,6 +88,9 @@ struct json_object *LUKS2_array_remove(struct json_object *array, const char *nu
 
 	/* Create new array without jobj_removing. */
 	array_new = json_object_new_array();
+	if (!array_new)
+		return NULL;
+
 	for (i = 0; i < (int) json_object_array_length(array); i++) {
 		jobj1 = json_object_array_get_idx(array, i);
 		if (jobj1 != jobj_removing)
@@ -478,6 +481,9 @@ static int hdr_validate_json_size(struct crypt_device *cd, json_object *hdr_jobj
 
 	json = json_object_to_json_string_ext(hdr_jobj,
 		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
+	if (!json)
+		return 1;
+
 	json_area_size = crypt_jobj_get_uint64(jobj1);
 	json_size = (uint64_t)strlen(json);
 
@@ -1575,6 +1581,8 @@ int LUKS2_config_set_flags(struct crypt_device *cd, struct luks2_hdr *hdr, uint3
 		return 0;
 
 	jobj_flags = json_object_new_array();
+	if (!jobj_flags)
+		return -ENOMEM;
 
 	for (i = 0; persistent_flags[i].description; i++) {
 		if (flags & persistent_flags[i].flag) {

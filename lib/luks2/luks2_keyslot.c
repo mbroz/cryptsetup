@@ -803,6 +803,9 @@ int placeholder_keyslot_alloc(struct crypt_device *cd,
 		return -EINVAL;
 
 	jobj_keyslot = json_object_new_object();
+	if (!jobj_keyslot)
+		return -ENOMEM;
+
 	json_object_object_add(jobj_keyslot, "type", json_object_new_string("placeholder"));
 	/*
 	 * key_size = -1 makes placeholder keyslot impossible to pass validation.
@@ -813,6 +816,11 @@ int placeholder_keyslot_alloc(struct crypt_device *cd,
 
 	/* Area object */
 	jobj_area = json_object_new_object();
+	if (!jobj_area) {
+		json_object_put(jobj_keyslot);
+		return -ENOMEM;
+	}
+
 	json_object_object_add(jobj_area, "offset", crypt_jobj_new_uint64(area_offset));
 	json_object_object_add(jobj_area, "size", crypt_jobj_new_uint64(area_length));
 	json_object_object_add(jobj_keyslot, "area", jobj_area);

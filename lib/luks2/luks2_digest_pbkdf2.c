@@ -147,6 +147,9 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 		json_object_object_get_ex(hdr->jobj, "digests", &jobj_digests);
 	}
 
+	if (!jobj_digest)
+		return -ENOMEM;
+
 	json_object_object_add(jobj_digest, "type", json_object_new_string("pbkdf2"));
 	json_object_object_add(jobj_digest, "keyslots", json_object_new_array());
 	json_object_object_add(jobj_digest, "segments", json_object_new_array());

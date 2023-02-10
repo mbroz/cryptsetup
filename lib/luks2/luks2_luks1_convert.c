@@ -67,11 +67,21 @@ static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struc
 	int r;
 
 	keyslot_obj = json_object_new_object();
+	if (!keyslot_obj) {
+		r = -ENOMEM;
+		goto err;
+	}
+
 	json_object_object_add(keyslot_obj, "type", json_object_new_string("luks2"));
 	json_object_object_add(keyslot_obj, "key_size", json_object_new_int64(hdr_v1->keyBytes));
 
 	/* KDF */
 	jobj_kdf = json_object_new_object();
+	if (!jobj_kdf) {
+		r = -ENOMEM;
+		goto err;
+	}
+
 	json_object_object_add(jobj_kdf, "type", json_object_new_string(CRYPT_KDF_PBKDF2));
 	json_object_object_add(jobj_kdf, "hash", json_object_new_string(hdr_v1->hashSpec));
 	json_object_object_add(jobj_kdf, "iterations", json_object_new_int64(hdr_v1->keyblock[keyslot].passwordIterations));
@@ -89,6 +99,11 @@ static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struc
 
 	/* AF */
 	jobj_af = json_object_new_object();
+	if (!jobj_af) {
+		r = -ENOMEM;
+		goto err;
+	}
+
 	json_object_object_add(jobj_af, "type", json_object_new_string("luks1"));
 	json_object_object_add(jobj_af, "hash", json_object_new_string(hdr_v1->hashSpec));
 	/* stripes field ignored, fixed to LUKS_STRIPES (4000) */
@@ -97,6 +112,11 @@ static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struc
 
 	/* Area */
 	jobj_area = json_object_new_object();
+	if (!jobj_area) {
+		r = -ENOMEM;
+		goto err;
+	}
+
 	json_object_object_add(jobj_area, "type", json_object_new_string("raw"));
 
 	/* encryption algorithm field */
@@ -124,6 +144,9 @@ static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struc
 
 	*keyslot_object = keyslot_obj;
 	return 0;
+err:
+	json_object_put(keyslot_obj);
+	return r;
 }
 
 static int json_luks1_keyslots(const struct luks_phdr *hdr_v1, struct json_object **keyslots_object)

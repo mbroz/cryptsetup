@@ -80,13 +80,19 @@ static int token_add(
 
 	r = -EINVAL;
 	jobj = json_object_new_object();
-	if (!jobj)
+	if (!jobj) {
+		r = -ENOMEM;
 		goto out;
+	}
 
 	/* type is mandatory field in all tokens and must match handler name member */
 	json_object_object_add(jobj, "type", json_object_new_string(TOKEN_NAME));
 
 	jobj_keyslots = json_object_new_array();
+	if (!jobj_keyslots) {
+		r = -ENOMEM;
+		goto out;
+	}
 
 	/* mandatory array field (may be empty and assigned later */
 	json_object_object_add(jobj, "keyslots", jobj_keyslots);

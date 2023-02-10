@@ -299,29 +299,59 @@ int LUKS2_generate_hdr(
 		return -EINVAL;
 
 	hdr->jobj = json_object_new_object();
+	if (!hdr->jobj) {
+		r = -ENOMEM;
+		goto err;
+	}
 
 	jobj_keyslots = json_object_new_object();
+	if (!jobj_keyslots) {
+		r = -ENOMEM;
+		goto err;
+	}
+
 	json_object_object_add(hdr->jobj, "keyslots", jobj_keyslots);
 	json_object_object_add(hdr->jobj, "tokens", json_object_new_object());
 	jobj_segments = json_object_new_object();
+	if (!jobj_segments) {
+		r = -ENOMEM;
+		goto err;
+	}
+
 	json_object_object_add(hdr->jobj, "segments", jobj_segments);
 	json_object_object_add(hdr->jobj, "digests", json_object_new_object());
 	jobj_config = json_object_new_object();
+	if (!jobj_config) {
+		r = -ENOMEM;
+		goto err;
+	}
+
 	json_object_object_add(hdr->jobj, "config", jobj_config);
 
 	digest = LUKS2_digest_create(cd, "pbkdf2", hdr, vk);
-	if (digest < 0)
+	if (digest < 0) {
+		r = -EINVAL;
 		goto err;
+	}
 
-	if (LUKS2_digest_segment_assign(cd, hdr, 0, digest, 1, 0) < 0)
+	if (LUKS2_digest_segment_assign(cd, hdr, 0, digest, 1, 0) < 0) {
+		r = -EINVAL;
 		goto err;
+	}
 
 	jobj_segment = json_segment_create_crypt(data_offset, 0, NULL, cipher, sector_size, 0);
-	if (!jobj_segment)
+	if (!jobj_segment) {
+		r = -EINVAL;
 		goto err;
+	}
 
 	if (integrity) {
 		jobj_integrity = json_object_new_object();
+		if (!jobj_integrity) {
+			r = -ENOMEM;
+			goto err;
+		}
+
 		json_object_object_add(jobj_integrity, "type", json_object_new_string(integrity));
 		json_object_object_add(jobj_integrity, "journal_encryption", json_object_new_string("none"));
 		json_object_object_add(jobj_integrity, "journal_integrity", json_object_new_string("none"));
@@ -338,7 +368,7 @@ int LUKS2_generate_hdr(
 err:
 	json_object_put(hdr->jobj);
 	hdr->jobj = NULL;
-	return -EINVAL;
+	return r;
 }
 
 int LUKS2_wipe_header_areas(struct crypt_device *cd,

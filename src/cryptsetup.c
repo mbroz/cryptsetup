@@ -3439,6 +3439,9 @@ int main(int argc, const char **argv)
 	textdomain(PACKAGE);
 
 	popt_context = poptGetContext(PACKAGE, argc, argv, popt_options, 0);
+	if (!popt_context)
+		exit(EXIT_FAILURE);
+
 	poptSetOtherOptionHelp(popt_context,
 	                       _("[OPTION...] <action> <action-specific>"));
 

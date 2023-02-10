@@ -512,17 +512,32 @@ static int luks2_keyslot_alloc(struct crypt_device *cd,
 	}
 
 	jobj_keyslot = json_object_new_object();
+	if (!jobj_keyslot) {
+		r = -ENOMEM;
+		goto err;
+	}
+
 	json_object_object_add(jobj_keyslot, "type", json_object_new_string("luks2"));
 	json_object_object_add(jobj_keyslot, "key_size", json_object_new_int(volume_key_len));
 
 	/* AF object */
 	jobj_af = json_object_new_object();
+	if (!jobj_af) {
+		r = -ENOMEM;
+		goto err;
+	}
+
 	json_object_object_add(jobj_af, "type", json_object_new_string("luks1"));
 	json_object_object_add(jobj_af, "stripes", json_object_new_int(params->af.luks1.stripes));
 	json_object_object_add(jobj_keyslot, "af", jobj_af);
 
 	/* Area object */
 	jobj_area = json_object_new_object();
+	if (!jobj_area) {
+		r = -ENOMEM;
+		goto err;
+	}
+
 	json_object_object_add(jobj_area, "type", json_object_new_string("raw"));
 	json_object_object_add(jobj_area, "offset", crypt_jobj_new_uint64(area_offset));
 	json_object_object_add(jobj_area, "size", crypt_jobj_new_uint64(area_length));
@@ -540,6 +555,9 @@ static int luks2_keyslot_alloc(struct crypt_device *cd,
 	if (r)
 		json_object_object_del_by_uint(jobj_keyslots, keyslot);
 
+	return r;
+err:
+	json_object_put(jobj_keyslot);
 	return r;
 }
 
