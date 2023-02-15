@@ -94,16 +94,14 @@ cd ../..
 cd lvm2
 ./configure --prefix="$DEPS_PATH" --enable-static_link --disable-udev_sync --enable-pkgconfig --disable-selinux
 make -j libdm.device-mapper
-# build of dmsetup.static is broken
-# make install_device-mapper
-cp ./libdm/ioctl/libdevmapper.a "$DEPS_PATH"/lib/
-cp ./libdm/libdevmapper.h "$DEPS_PATH"/include/
-cp ./libdm/libdevmapper.pc "$PKG_CONFIG_PATH"
+make -C libdm install_static install_pkgconfig install_include
 cd ..
 
 cd popt
 # --no-undefined is incompatible with sanitizers
 sed -i -e 's/-Wl,--no-undefined //' src/CMakeLists.txt
+# force static build of popt
+sed -i 's/add_library(popt SHARED/add_library(popt STATIC/' src/CMakeLists.txt
 mkdir -p build
 rm -fr build/*
 cd build
