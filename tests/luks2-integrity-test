@@ -60,6 +60,11 @@ add_device() {
 	sync
 }
 
+set_LO_DEV() { # file
+	# support both /dev/loopX and /dev/loop/X
+	LO_DEV=$(losetup -l -O NAME -n -j $1 2>/dev/null | sed -e 's/loop\//loop/')
+}
+
 status_check() # name value [detached]
 {
 	if [ -n "$3" ]; then
@@ -122,10 +127,12 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 	dump_check "Key:" $(($4 + $5))
 	echo -n "[ACTIVATE]"
 	$CRYPTSETUP open -d $KEY_FILE $DEV $DEV_NAME || fail "Cannot activate device."
+	set_LO_DEV $DEV
 	status_check "cipher" $1
 	status_check "sector size" $6
 	status_check "integrity:" $3
 	status_check "keysize:" $(($4 + $5))
+	[ -n "$LO_DEV" ] && status_check "device:" $LO_DEV
 	[ $5 -gt 0 ] && status_check "integrity keysize:" $5
 	int_check_sum $1 $7
 	echo -n "[REMOVE]"
@@ -137,10 +144,12 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 		$CRYPTSETUP luksHeaderBackup -q --header-backup-file $HEADER_IMG $DEV || fail
 		wipefs -a $DEV >/dev/null 2>&1  || fail
 		$CRYPTSETUP open --header $HEADER_IMG -d $KEY_FILE $DEV $DEV_NAME || fail "Cannot activate device."
+		set_LO_DEV $DEV
 		status_check "cipher" $1 1
 		status_check "sector size" $6 1
 		status_check "integrity:" $3 1
 		status_check "keysize:" $(($4 + $5)) 1
+		[ -n "$LO_DEV" ] && status_check "device:" $LO_DEV 1
 		[ $5 -gt 0 ] && status_check "integrity keysize:" $5 1
 		int_check_sum $1 $7
 		$CRYPTSETUP close $DEV_NAME || fail "Cannot deactivate device."

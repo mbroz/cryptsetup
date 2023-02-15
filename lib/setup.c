@@ -1260,10 +1260,13 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			r = -EINVAL;
 			goto out;
 		}
-		if (!cd->metadata_device) {
-			device_free(cd, cd->device);
-			MOVE_REF(cd->device, tgti->data_device);
-		}
+
+		/*
+		 * Data device for crypt with integrity is not dm-integrity device,
+		 * but always the device underlying dm-integrity.
+		 */
+		device_free(cd, cd->device);
+		MOVE_REF(cd->device, tgti->data_device);
 	}
 
 	/* do not try to lookup LUKS2 header in detached header mode */
