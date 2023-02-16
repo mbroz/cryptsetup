@@ -125,6 +125,7 @@ struct crypt_device {
 		char integrity_spec[MAX_INTEGRITY_LEN];
 		const char *cipher_mode;
 		unsigned int key_size;
+		uint32_t sector_size;
 	} none;
 	} u;
 
@@ -1197,6 +1198,8 @@ static int _init_by_name_crypt_none(struct crypt_device *cd)
 		else
 			r = 0;
 	}
+
+	cd->u.none.sector_size = tgt->u.crypt.sector_size;
 
 	dm_targets_free(cd, &dmd);
 	return r;
@@ -5320,6 +5323,9 @@ int crypt_get_sector_size(struct crypt_device *cd)
 
 	if (isLUKS2(cd->type))
 		return LUKS2_get_sector_size(&cd->u.luks2.hdr);
+
+	if (!cd->type && cd->u.none.sector_size)
+		return cd->u.none.sector_size;
 
 	return SECTOR_SIZE;
 }

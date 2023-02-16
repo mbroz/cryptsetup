@@ -154,6 +154,7 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 		int_check_sum $1 $7
 		# check status returns values even if no --header is set
 		status_check "cipher" $1
+		status_check "sector size" $6
 		status_check "integrity:" $3
 		status_check "keysize:" $(($4 + $5))
 		[ -n "$LO_DEV" ] && status_check "device:" $LO_DEV
@@ -184,6 +185,7 @@ intformat aes-xts-plain64      hmac-sha256 hmac\(sha256\) 512 256  512 ee501705a
 intformat aes-xts-random       hmac-sha256 hmac\(sha256\) 512 256  512 492c2d1cc9e222a850c399bfef4ed5a86bf5afc59e54f0f0c7ba8e2a64548323
 intformat aes-cbc-essiv:sha256 hmac-sha256 hmac\(sha256\) 128 256 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
 intformat aes-xts-plain64      hmac-sha256 hmac\(sha256\) 256 256 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
+intformat aes-xts-plain64      hmac-sha256 hmac\(sha256\) 256 256 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b 1
 intformat aes-xts-random       hmac-sha256 hmac\(sha256\) 256 256 4096 8c0463f5ac09613674bdf40b0ff6f985edbc3de04e51fdc688873cb333ef3cda
 intformat aes-cbc-essiv:sha256 hmac-sha256 hmac\(sha256\) 256 256 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
 intformat aes-xts-plain64      hmac-sha256 hmac\(sha256\) 512 256 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
