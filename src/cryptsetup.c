@@ -939,6 +939,8 @@ static int action_status(void)
 			log_std("  integrity: %s\n", ip.integrity);
 		if (ip.integrity_key_size)
 			log_std("  integrity keysize: %d bits\n", ip.integrity_key_size * 8);
+		if (ip.tag_size)
+			log_std("  integrity tag size: %u bytes\n", ip.tag_size);
 		device = crypt_get_device_name(cd);
 		log_std("  device:  %s\n", device);
 		if ((backing_file = crypt_loop_backing_file(device))) {

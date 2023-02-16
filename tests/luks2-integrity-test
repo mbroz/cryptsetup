@@ -152,6 +152,12 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 		[ -n "$LO_DEV" ] && status_check "device:" $LO_DEV 1
 		[ $5 -gt 0 ] && status_check "integrity keysize:" $5 1
 		int_check_sum $1 $7
+		# check status returns values even if no --header is set
+		status_check "cipher" $1
+		status_check "integrity:" $3
+		status_check "keysize:" $(($4 + $5))
+		[ -n "$LO_DEV" ] && status_check "device:" $LO_DEV
+		[ $5 -gt 0 ] && status_check "integrity keysize:" $5
 		$CRYPTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 		$CRYPTSETUP luksHeaderRestore -q --header-backup-file $HEADER_IMG $DEV || fail
 		rm -f $HEADER_IMG

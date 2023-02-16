@@ -122,6 +122,7 @@ struct crypt_device {
 		/* buffers, must refresh from kernel on every query */
 		char cipher_spec[MAX_CIPHER_LEN*2+1];
 		char cipher[MAX_CIPHER_LEN];
+		char integrity_spec[MAX_INTEGRITY_LEN];
 		const char *cipher_mode;
 		unsigned int key_size;
 	} none;
@@ -1186,6 +1187,15 @@ static int _init_by_name_crypt_none(struct crypt_device *cd)
 			cd->u.none.key_size = tgt->u.crypt.vk->keylength;
 			r = 0;
 		}
+	}
+
+	if (!r && tgt->u.crypt.integrity) {
+		r = snprintf(cd->u.none.integrity_spec, sizeof(cd->u.none.integrity_spec),
+			 "%s", tgt->u.crypt.integrity);
+		if (r < 0 || (size_t)r >= sizeof(cd->u.none.integrity_spec))
+			r = -EINVAL;
+		else
+			r = 0;
 	}
 
 	dm_targets_free(cd, &dmd);
@@ -5267,6 +5277,9 @@ const char *crypt_get_integrity(struct crypt_device *cd)
 	if (isLUKS2(cd->type))
 		return LUKS2_get_integrity(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
 
+	if (!cd->type && *cd->u.none.integrity_spec)
+		return cd->u.none.integrity_spec;
+
 	return NULL;
 }
 
@@ -5275,10 +5288,7 @@ int crypt_get_integrity_key_size(struct crypt_device *cd)
 {
 	int key_size = 0;
 
-	if (isINTEGRITY(cd->type))
-		key_size = INTEGRITY_key_size(crypt_get_integrity(cd));
-
-	if (isLUKS2(cd->type))
+	if (isINTEGRITY(cd->type) || isLUKS2(cd->type) || !cd->type)
 		key_size = INTEGRITY_key_size(crypt_get_integrity(cd));
 
 	return key_size > 0 ? key_size : 0;
@@ -5290,7 +5300,7 @@ int crypt_get_integrity_tag_size(struct crypt_device *cd)
 	if (isINTEGRITY(cd->type))
 		return cd->u.integrity.params.tag_size;
 
-	if (isLUKS2(cd->type))
+	if (isLUKS2(cd->type) || !cd->type)
 		return INTEGRITY_tag_size(crypt_get_integrity(cd),
 					  crypt_get_cipher(cd),
 					  crypt_get_cipher_mode(cd));
@@ -5756,6 +5766,11 @@ int crypt_get_integrity_info(struct crypt_device *cd,
 		ip->journal_crypt_key_size = 0;
 		ip->journal_crypt_key = NULL;
 		return 0;
+	} else if (!cd->type) {
+		memset(ip, 0, sizeof(*ip));
+		ip->integrity = crypt_get_integrity(cd);
+		ip->integrity_key_size = crypt_get_integrity_key_size(cd);
+		ip->tag_size = crypt_get_integrity_tag_size(cd);
 	}
 
 	return -ENOTSUP;

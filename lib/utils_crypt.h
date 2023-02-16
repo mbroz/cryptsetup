@@ -33,6 +33,7 @@ struct crypt_device;
 #define MAX_CAPI_ONE_LEN     2 * MAX_CIPHER_LEN
 #define MAX_CAPI_ONE_LEN_STR "63"  /* for sscanf length + '\0' */
 #define MAX_CAPI_LEN         144   /* should be enough to fit whole capi string */
+#define MAX_INTEGRITY_LEN    64
 
 int crypt_parse_name_and_mode(const char *s, char *cipher,
 			      int *key_nums, char *cipher_mode);
