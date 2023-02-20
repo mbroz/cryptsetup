@@ -168,6 +168,8 @@ int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid);
 size_t crypt_getpagesize(void);
 unsigned crypt_cpusonline(void);
 uint64_t crypt_getphysmemory_kb(void);
+uint64_t crypt_getphysmemoryfree_kb(void);
+bool crypt_swapavailable(void);
 
 int init_crypto(struct crypt_device *ctx);
 

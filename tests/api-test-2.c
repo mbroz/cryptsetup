@@ -2802,7 +2802,8 @@ static void Pbkdf(void)
 	OK_(strcmp(pbkdf->type, default_luks2_pbkdf));
 	OK_(strcmp(pbkdf->hash, default_luks1_hash));
 	EQ_(pbkdf->time_ms, default_luks2_iter_time);
-	EQ_(pbkdf->max_memory_kb, adjusted_pbkdf_memory());
+	GE_(pbkdf->max_memory_kb, 64 * 1024);
+	GE_(adjusted_pbkdf_memory(), pbkdf->max_memory_kb);
 	EQ_(pbkdf->parallel_threads, _min(cpus_online(), default_luks2_parallel_threads));
 	// set and verify argon2 type
 	OK_(crypt_set_pbkdf_type(cd, &argon2));
@@ -2827,7 +2828,8 @@ static void Pbkdf(void)
 	OK_(strcmp(pbkdf->type, default_luks2_pbkdf));
 	OK_(strcmp(pbkdf->hash, default_luks1_hash));
 	EQ_(pbkdf->time_ms, default_luks2_iter_time);
-	EQ_(pbkdf->max_memory_kb, adjusted_pbkdf_memory());
+	GE_(pbkdf->max_memory_kb, 64 * 1024);
+	GE_(adjusted_pbkdf_memory(), pbkdf->max_memory_kb);
 	EQ_(pbkdf->parallel_threads, _min(cpus_online(), default_luks2_parallel_threads));
 	// try to pass illegal values
 	argon2.parallel_threads = 0;
@@ -2858,14 +2860,16 @@ static void Pbkdf(void)
 	OK_(strcmp(pbkdf->type, default_luks2_pbkdf));
 	OK_(strcmp(pbkdf->hash, default_luks1_hash));
 	EQ_(pbkdf->time_ms, default_luks2_iter_time);
-	EQ_(pbkdf->max_memory_kb, adjusted_pbkdf_memory());
+	GE_(pbkdf->max_memory_kb, 64 * 1024);
+	GE_(adjusted_pbkdf_memory(), pbkdf->max_memory_kb);
 	EQ_(pbkdf->parallel_threads, _min(cpus_online(), default_luks2_parallel_threads));
 	crypt_set_iteration_time(cd, 1);
 	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
 	OK_(strcmp(pbkdf->type, default_luks2_pbkdf));
 	OK_(strcmp(pbkdf->hash, default_luks1_hash));
 	EQ_(pbkdf->time_ms, 1);
-	EQ_(pbkdf->max_memory_kb, adjusted_pbkdf_memory());
+	GE_(pbkdf->max_memory_kb, 64 * 1024);
+	GE_(adjusted_pbkdf_memory(), pbkdf->max_memory_kb);
 	EQ_(pbkdf->parallel_threads, _min(cpus_online(), default_luks2_parallel_threads));
 	CRYPT_FREE(cd);
 

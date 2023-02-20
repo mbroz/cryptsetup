@@ -59,6 +59,53 @@ uint64_t crypt_getphysmemory_kb(void)
 	return phys_memory_kb;
 }
 
+uint64_t crypt_getphysmemoryfree_kb(void)
+{
+	long pagesize, phys_pages;
+	uint64_t phys_memoryfree_kb;
+
+	pagesize = sysconf(_SC_PAGESIZE);
+	phys_pages = sysconf(_SC_AVPHYS_PAGES);
+
+	if (pagesize < 0 || phys_pages < 0)
+		return 0;
+
+	phys_memoryfree_kb = pagesize / 1024;
+	phys_memoryfree_kb *= phys_pages;
+
+	return phys_memoryfree_kb;
+}
+
+bool crypt_swapavailable(void)
+{
+	int fd;
+	ssize_t size;
+	char buf[4096], *p;
+	uint64_t total;
+
+	if ((fd = open("/proc/meminfo", O_RDONLY)) < 0)
+		return true;
+
+	size = read(fd, buf, sizeof(buf));
+	close(fd);
+	if (size < 1)
+		return true;
+
+	if (size < (ssize_t)sizeof(buf))
+		buf[size] = 0;
+	else
+		buf[sizeof(buf) - 1] = 0;
+
+	p = strstr(buf, "SwapTotal:");
+	if (!p)
+		return true;
+
+	if (sscanf(p, "SwapTotal: %" PRIu64 " kB", &total) != 1)
+		return true;
+
+	return total > 0;
+}
+
 void crypt_process_priority(struct crypt_device *cd, int *priority, bool raise)
 {
 	int _priority, new_priority;

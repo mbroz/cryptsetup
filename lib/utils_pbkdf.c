@@ -63,7 +63,7 @@ const struct crypt_pbkdf_type *crypt_get_pbkdf_type_params(const char *pbkdf_typ
 
 static uint32_t adjusted_phys_memory(void)
 {
-	uint64_t memory_kb = crypt_getphysmemory_kb();
+	uint64_t free_kb, memory_kb = crypt_getphysmemory_kb();
 
 	/* Ignore bogus value */
 	if (memory_kb < (128 * 1024) || memory_kb > UINT32_MAX)
@@ -74,6 +74,15 @@ static uint32_t adjusted_phys_memory(void)
 	 * OOM killer is too clever...
 	 */
 	memory_kb /= 2;
+
+	/*
+	 * Never use more that available free space on system without swap.
+	 */
+	if (!crypt_swapavailable()) {
+		free_kb = crypt_getphysmemoryfree_kb();
+		if (free_kb > (64 * 1024) && free_kb < memory_kb)
+			return free_kb;
+	}
 
 	return memory_kb;
 }
