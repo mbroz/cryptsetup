@@ -1654,6 +1654,16 @@ static int action_open_luks(void)
 
 	set_activation_flags(&activate_flags);
 
+	if (ARG_SET(OPT_VOLUME_KEY_TYPE_ID)) {
+		r = crypt_set_vk_keyring_type(cd, ARG_STR(OPT_VOLUME_KEY_TYPE_ID));
+
+		if (r) {
+			log_err(_("The specified keyring key type %s is invalid."),
+				  ARG_STR(OPT_VOLUME_KEY_TYPE_ID));
+			goto out;
+		}
+	}
+
 	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID))
 		crypt_set_keyring_to_link(cd, ARG_INT32(OPT_LINK_VK_TO_KEYRING_ID));
 
@@ -2512,6 +2522,16 @@ static int action_luksResume(void)
 		return r;
 
 	r = -EINVAL;
+	if (ARG_SET(OPT_VOLUME_KEY_TYPE_ID)) {
+		r = crypt_set_vk_keyring_type(cd, ARG_STR(OPT_VOLUME_KEY_TYPE_ID));
+
+		if (r) {
+			log_err(_("The specified keyring key type %s is invalid."),
+				  ARG_STR(OPT_VOLUME_KEY_TYPE_ID));
+			goto out;
+		}
+	}
+
 	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID))
 		crypt_set_keyring_to_link(cd, ARG_INT32(OPT_LINK_VK_TO_KEYRING_ID));
 

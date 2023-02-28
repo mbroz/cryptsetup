@@ -24,9 +24,10 @@
 
 #include <stddef.h>
 
-typedef enum { LOGON_KEY = 0, USER_KEY } key_type_t;
+typedef enum { LOGON_KEY = 0, USER_KEY, BIG_KEY, TRUSTED_KEY, ENCRYPTED_KEY, INVALID_KEY } key_type_t;
 
 const char *key_type_name(key_type_t ktype);
+key_type_t key_type_by_name(const char *name);
 
 int keyring_check(void);
 

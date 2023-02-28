@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 
@@ -42,6 +43,9 @@ static const struct {
 } key_types[] = {
 	{ LOGON_KEY,	"logon" },
 	{ USER_KEY,	"user"	},
+	{ BIG_KEY,	"big_key"	},
+	{ TRUSTED_KEY,	"trusted"	},
+	{ ENCRYPTED_KEY,	"encrypted"	},
 };
 
 #include <linux/keyctl.h>
@@ -247,6 +251,18 @@ const char *key_type_name(key_type_t type)
 			return key_types[i].type_name;
 #endif
 	return NULL;
+}
+
+key_type_t key_type_by_name(const char *name)
+{
+#ifdef KERNEL_KEYRING
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(key_types); i++)
+		if (!strcmp(key_types[i].type_name, name))
+			return key_types[i].type;
+#endif
+	return INVALID_KEY;
 }
 
 int keyring_link_key_to_keyring(key_type_t ktype, const char *key_desc, key_serial_t keyring_to_link)

@@ -62,6 +62,7 @@ struct crypt_device {
 
 	bool link_vk_to_keyring;
 	int keyring_to_link_vk;
+	key_type_t keyring_key_type;
 
 	uint64_t data_offset;
 	uint64_t metadata_size; /* Used in LUKS2 format */
@@ -3939,7 +3940,7 @@ int crypt_suspend(struct crypt_device *cd,
 		goto out;
 	}
 
-	crypt_drop_keyring_key_by_description(cd, key_desc, LOGON_KEY);
+	crypt_drop_keyring_key_by_description(cd, key_desc, cd->keyring_key_type);
 
 	if (dm_opal_uuid && (!crypt_data_device(cd) || opal_lock(cd, crypt_data_device(cd), opal_segment_number)))
 		log_err(cd, _("Device %s was suspended but hardware OPAL device cannot be locked."), name);
@@ -7190,7 +7191,7 @@ int crypt_volume_key_keyring(struct crypt_device *cd __attribute__((unused)), in
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
 {
 	int r;
-	const char *type_name = key_type_name(LOGON_KEY);
+	const char *type_name = key_type_name(cd->keyring_key_type);
 
 	if (!vk || !cd || !type_name)
 		return -EINVAL;
@@ -7202,7 +7203,7 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 
 	log_dbg(cd, "Loading key (%zu bytes, type %s) in thread keyring.", vk->keylength, type_name);
 
-	r = keyring_add_key_in_thread_keyring(LOGON_KEY, vk->key_description, vk->key, vk->keylength);
+	r = keyring_add_key_in_thread_keyring(cd->keyring_key_type, vk->key_description, vk->key, vk->keylength);
 	if (r) {
 		log_dbg(cd, "keyring_add_key_in_thread_keyring failed (error %d)", r);
 		log_err(cd, _("Failed to load key in kernel keyring."));
@@ -7211,7 +7212,7 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 
 	if (!r && cd->link_vk_to_keyring) {
 		log_dbg(cd, "Linking volume key to the specified keyring");
-		r = keyring_link_key_to_keyring(LOGON_KEY, vk->key_description, cd->keyring_to_link_vk);
+		r = keyring_link_key_to_keyring(cd->keyring_key_type, vk->key_description, cd->keyring_to_link_vk);
 		if (r) {
 			log_err(cd, _("Failed to link key to the specified keyring."));
 			log_dbg(cd, "The keyring_link_key_to_keyring function failed (error %d).", r);
@@ -7259,6 +7260,24 @@ void crypt_set_keyring_to_link(struct crypt_device *cd, int keyring_to_link_vk)
 		cd->link_vk_to_keyring = true;
 		cd->keyring_to_link_vk = keyring_to_link_vk;
 	}
+}
+
+int crypt_set_vk_keyring_type(struct crypt_device *cd, const char *key_type_desc)
+{
+	if (!cd)
+		return -EINVAL;
+
+	key_type_t key_type = key_type_desc ? key_type_by_name(key_type_desc) : LOGON_KEY;
+	if (key_type != LOGON_KEY && key_type != USER_KEY)
+		return -EINVAL;
+
+	cd->keyring_key_type = key_type;
+	return 0;
+}
+
+const char *crypt_get_vk_keyring_type(struct crypt_device *cd)
+{
+	return key_type_name(cd ? cd->keyring_key_type : LOGON_KEY);
 }
 
 /* internal only */
