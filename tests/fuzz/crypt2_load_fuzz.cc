@@ -27,12 +27,14 @@ extern "C" {
 #include "crypto_backend/crypto_backend.h"
 #include "FuzzerInterface.h"
 
+#define CHKSUM_ALG "sha256"
+#define CHKSUM_SIZE 32
+
 static int calculate_checksum(const uint8_t* data, size_t size) {
 	struct crypt_hash *hd = NULL;
 	struct luks2_hdr_disk *hdr = NULL;
-	int hash_size;
 	uint64_t hdr_size1, hdr_size2;
-	int r = 0;
+	int r;
 
 	/* primary header */
 	if (sizeof(struct luks2_hdr_disk) > size)
@@ -40,42 +42,35 @@ static int calculate_checksum(const uint8_t* data, size_t size) {
 	hdr = CONST_CAST(struct luks2_hdr_disk *) data;
 
 	hdr_size1 = be64_to_cpu(hdr->hdr_size);
-	if (hdr_size1 > size)
+	if (hdr_size1 > size || hdr_size1 <= sizeof(struct luks2_hdr_disk))
 		return 0;
 	memset(&hdr->csum, 0, LUKS2_CHECKSUM_L);
-	if ((r = crypt_hash_init(&hd, "sha256")))
+	if ((r = crypt_hash_init(&hd, CHKSUM_ALG)))
 		goto out;
 	if ((r = crypt_hash_write(hd, CONST_CAST(char*) data, hdr_size1)))
 		goto out;
-	hash_size = crypt_hash_size("sha256");
-	if (hash_size <= 0) {
-		r = 1;
-		goto out;
-	}
-	if ((r = crypt_hash_final(hd, (char*)&hdr->csum, (size_t)hash_size)))
+	if ((r = crypt_hash_final(hd, (char*)&hdr->csum, CHKSUM_SIZE)))
 		goto out;
 	crypt_hash_destroy(hd);
+	hd = NULL;
 
 	/* secondary header */
-	if (hdr_size1 < sizeof(struct luks2_hdr_disk))
-		hdr_size1 = sizeof(struct luks2_hdr_disk);
-
 	if (hdr_size1 + sizeof(struct luks2_hdr_disk) > size)
 		return 0;
 	hdr = CONST_CAST(struct luks2_hdr_disk *) (data + hdr_size1);
 
 	hdr_size2 = be64_to_cpu(hdr->hdr_size);
-	if (hdr_size2 > size || (hdr_size1 + hdr_size2) > size)
+	if (hdr_size2 > size || (hdr_size1 + hdr_size2) > size ||
+	    hdr_size2 <= sizeof(struct luks2_hdr_disk))
 		return 0;
 
 	memset(&hdr->csum, 0, LUKS2_CHECKSUM_L);
-	if ((r = crypt_hash_init(&hd, "sha256")))
+	if ((r = crypt_hash_init(&hd, CHKSUM_ALG)))
 		goto out;
 	if ((r = crypt_hash_write(hd, (char*) hdr, hdr_size2)))
 		goto out;
-	if ((r = crypt_hash_final(hd, (char*)&hdr->csum, (size_t)hash_size)))
+	if ((r = crypt_hash_final(hd, (char*)&hdr->csum, CHKSUM_SIZE)))
 		goto out;
-
 out:
 	if (hd)
 		crypt_hash_destroy(hd);
