@@ -7,7 +7,6 @@ libutils_io = static_library('utils_io',
     ))
 
 libcryptsetup_sym_path = join_paths(meson.current_source_dir(), 'libcryptsetup.sym')
-libcryptsetup_version = '12.9.0'
 
 libcryptsetup_deps = [
     uuid,

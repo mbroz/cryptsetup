@@ -1,7 +1,9 @@
 project('cryptsetup',
     'c',
     meson_version: '>=0.53',
-    version: '2.6.1-rc0')
+    version: '2.7.0-git')
+
+libcryptsetup_version = '12.9.0'
 
 includes_root = include_directories('.')
 includes_lib = include_directories('lib')
@@ -17,7 +19,7 @@ cc = meson.get_compiler('c')
 nop_command = find_program('echo')
 conf = configuration_data()
 
-PACKAGE_VERSION = meson.project_version().split('-')[0]
+PACKAGE_VERSION = meson.project_version()
 conf.set_quoted('PACKAGE_VERSION', PACKAGE_VERSION)
 conf.set_quoted('PACKAGE_NAME', meson.project_name())
 conf.set_quoted('PACKAGE', meson.project_name())
