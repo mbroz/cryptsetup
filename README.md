@@ -21,13 +21,12 @@ block integrity kernel module.
 
 LUKS Design
 -----------
-**LUKS** is the standard for Linux disk encryption. By providing a standard on-disk format,
-it does not only facilitate compatibility among distributions, but also provides secure management
+**LUKS** is the standard for Linux disk encryption. By providing a standardized on-disk format,
+it not only facilitate compatibility among distributions, but also enables secure management
 of multiple user passwords. LUKS stores all necessary setup information in the partition header,
-enabling to transport or migrate data seamlessly.
+which enables users to transport or migrate data seamlessly.
 
 ### Specification and documentation
-
   * The latest version of the
   [LUKS2 format specification](https://gitlab.com/cryptsetup/LUKS2-docs).
   * The latest version of the
@@ -37,7 +36,7 @@ enabling to transport or migrate data seamlessly.
 
 Download
 --------
-All release tarballs and release notes are hosted on
+Release notes and tarballs are available at
 [kernel.org](https://www.kernel.org/pub/linux/utils/cryptsetup/).
 
 **The latest stable cryptsetup release version is 2.6.1**
@@ -56,27 +55,24 @@ Previous versions
 
 Source and API documentation
 ----------------------------
-For development version code, please refer to
-[source](https://gitlab.com/cryptsetup/cryptsetup/tree/master) page,
-mirror on [kernel.org](https://git.kernel.org/cgit/utils/cryptsetup/cryptsetup.git/) or
+For development version code, please refer to the
+[source](https://gitlab.com/cryptsetup/cryptsetup/tree/master) page, with mirrors
+at [kernel.org](https://git.kernel.org/cgit/utils/cryptsetup/cryptsetup.git/) and
 [GitHub](https://github.com/mbroz/cryptsetup).
 
 For libcryptsetup documentation see
 [libcryptsetup API](https://mbroz.fedorapeople.org/libcryptsetup_API/) page.
-
-The libcryptsetup API/ABI changes are tracked in
-[compatibility report](https://abi-laboratory.pro/tracker/timeline/cryptsetup/).
 
 NLS PO files are maintained by
 [TranslationProject](https://translationproject.org/domain/cryptsetup.html).
 
 Required packages
 -----------------
-All distributions provide cryptsetup as distro package. If you need to compile cryptsetup yourself,
-some packages are required for compilation.
-Please always prefer distro specific build tools to manually configuring cryptsetup.
+All major Linux distributions provide cryptsetup as a bundled package. If you need
+to compile cryptsetup yourself, various additional packages are required.
+Any distribution-specific build tools are preferred when manually configuring cryptsetup.
 
-Here is the list of packages needed for the compilation of project for particular distributions:
+Below are the packages needed to build for certain Linux distributions:
 
 **For Fedora**:
 ```
@@ -102,47 +98,48 @@ To run the internal testsuite (make check) you also need to install
 sharutils dmsetup jq xxd expect keyutils netcat passwd openssh-client sshpass
 ```
 
-Note that the list could change as the distributions evolve.
+Note that the list may change as Linux distributions evolve.
 
 Compilation
 -----------
-The cryptsetup project uses **automake** and **autoconf** system to generate all needed files
-for compilation. If you check it from the git snapshot, use **./autogen.sh && ./configure && make**
-to compile the project. If you use downloaded released **tar.xz** archive, the configure script
-is already pre-generated (no need to run **autoconf.sh**).
-See **./configure --help** and use **--disable-[feature]** and **--enable-[feature]** options.
+The cryptsetup project uses **automake** and **autoconf** system to generate all files needed to build.
+When building from a git snapshot,, use **./autogen.sh && ./configure && make**
+to compile the project. When building from a release **tar.xz** tarball, the configure script
+is pre-generated (no need to run **autoconf.sh**).
+See **./configure --help** and use the **--disable-[feature]** and **--enable-[feature]** options.
 
-For running the test suite that come with the project, type **make check**.
-Note that most tests will need root user privileges and run many dangerous storage fail simulations.
-Do **not** run tests with root privilege on production systems! Some tests will need scsi_debug
-kernel module to be available.
+To run the test suite that come with the project, type **make check**.
+Note that most tests will need root user privileges and will run dangerous storage failure simulations.
+Do **not** run tests with root privilege on production systems! Some tests will need the **scsi_debug**
+kernel module to be installed.
 
-For more details, please refer to [automake](https://www.gnu.org/software/automake/manual/automake.html)
-and [autoconf](https://www.gnu.org/savannah-checkouts/gnu/autoconf/manual/autoconf.html) manuals.
+For more details, please refer to the
+[automake](https://www.gnu.org/software/automake/manual/automake.html) and
+[autoconf](https://www.gnu.org/savannah-checkouts/gnu/autoconf/manual/autoconf.html) documentation.
 
 Help!
 -----
 ### Documentation
-Please read the following documentation before posting questions in the mailing list...
-You will be able to ask better questions and better understand the answers.
+Please read the following before posting questions to the mailing list so that
+you can ask better questions and better understand answers.
 
 * [Frequently asked questions (FAQ)](https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions),
 * [LUKS Specifications](#specification-and-documentation), and
 * manuals (aka man page, man pages, man-page) 
 
-The FAQ is online and in the source code for the project. The Specifications are referenced above
-in this document. The man pages are in source and should be available after installation using
-standard man commands, e.g. **man cryptsetup**.
+The FAQ is available online and in the source code for the project. The specifications are
+referenced above in this document. The man pages live within the source tree and should be
+available after installation using standard man commands, e.g. **man cryptsetup**.
 
 ### Mailing List
-
 For cryptsetup and LUKS related questions, please use the cryptsetup mailing list
 [cryptsetup@lists.linux.dev](mailto:cryptsetup@lists.linux.dev),
 hosted at [kernel.org subspace](https://subspace.kernel.org/lists.linux.dev.html).
-To subscribe send an empty mail to
+To subscribe send an empty email message to
 [cryptsetup+subscribe@lists.linux.dev](mailto:cryptsetup+subscribe@lists.linux.dev).
 
 You can also browse and/or search the mailing [list archive](https://lore.kernel.org/cryptsetup/).
-News (NNTP), Atom feed and git access to public inbox is available through [lore.kernel.org](https://lore.kernel.org) service.
+USEnet News (NNTP), Atom feed and git access to the public inbox is available through
+[lore.kernel.org](https://lore.kernel.org) service.
 
-The former dm-crypt [list archive](https://lore.kernel.org/dm-crypt/) is also available.
+The former **dm-crypt** [list archive](https://lore.kernel.org/dm-crypt/) is also available.
