@@ -3,6 +3,7 @@ test-clang-compilation:
     - .gitlab-shared-clang
   script:
     - export CFLAGS="-Wall -Werror"
+    - ./autogen.sh
     - ./configure
     - make -j
     - make -j check-programs
@@ -13,6 +14,7 @@ test-clang-Wall-script:
   script:
     - export CFLAGS="-g -O0"
     - export CC="$CI_PROJECT_DIR/.gitlab/ci/clang-Wall"
+    - ./autogen.sh
     - ./configure
     - make -j CFLAGS="-g -O0 -Werror"
     - make -j CFLAGS="-g -O0 -Werror" check-programs
@@ -21,6 +23,7 @@ test-scan-build:
   extends:
     - .gitlab-shared-clang
   script:
+    - ./autogen.sh
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -V ./configure CFLAGS="-g -O0"
     - make clean
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j

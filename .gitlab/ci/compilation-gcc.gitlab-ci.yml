@@ -3,6 +3,7 @@ test-gcc-compilation:
     - .gitlab-shared-gcc
   script:
     - export CFLAGS="-Wall -Werror"
+    - ./autogen.sh
     - ./configure
     - make -j
     - make -j check-programs
@@ -13,6 +14,7 @@ test-gcc-Wall-script:
   script:
     - export CFLAGS="-g -O0"
     - export CC="$CI_PROJECT_DIR/.gitlab/ci/gcc-Wall"
+    - ./autogen.sh
     - ./configure
     - make -j CFLAGS="-g -O0 -Werror"
     - make -j CFLAGS="-g -O0 -Werror" check-programs
@@ -22,6 +24,7 @@ test-gcc-fanalyzer:
     - .gitlab-shared-gcc
   script:
     - export CFLAGS="-Wall -Werror -g -O0 -fanalyzer -fdiagnostics-path-format=separate-events"
+    - ./autogen.sh
     - ./configure
     - make -j
     - make -j check-programs

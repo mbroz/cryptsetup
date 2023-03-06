@@ -12,7 +12,6 @@
     - .gitlab/ci/cibuild-setup-ubuntu.sh
     - export CC="${COMPILER}${COMPILER_VERSION:+-$COMPILER_VERSION}"
     - export CXX="${COMPILER}++${COMPILER_VERSION:+-$COMPILER_VERSION}"
-    - ./autogen.sh
 
 .gitlab-shared-gcc:
   extends:

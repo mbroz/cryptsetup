@@ -20,10 +20,13 @@ test-gcc-disable-compiles:
   script:
     - DEBIAN_FRONTEND=noninteractive apt-get -yq install meson ninja-build
     - export CFLAGS="-Wall -Werror"
+    - ./autogen.sh
+    - echo "Configuring with --disable-$DISABLE_FLAGS"
     - ./configure $(for i in $DISABLE_FLAGS; do echo "--disable-$i"; done)
     - make -j
     - make -j check-programs
     - git checkout -f && git clean -xdf
     - meson -v
+    - echo "Configuring with -D$DISABLE_FLAGS=false"
     - meson setup meson_builddir $(for i in $DISABLE_FLAGS; do echo "-D$i=false"; done)
     - ninja -C meson_builddir
