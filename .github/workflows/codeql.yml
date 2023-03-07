@@ -1,0 +1,53 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'wip-luks2'
+      - 'v2.3.x'
+      - 'v2.4.x'
+    paths-ignore:
+      - 'docs/**'
+      - 'lib/crypto_backend/argon2/**'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    if: github.repository == 'mbroz/cryptsetup'
+    concurrency:
+      group: ${{ github.workflow }}-${{ matrix.language }}-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      actions: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'cpp' ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          queries: +security-extended,security-and-quality
+          config-file: .codeql-config.yml
+
+      - name: Install dependencies
+        run: sudo -E .github/workflows/cibuild-setup-ubuntu.sh
+        env: { COMPILER: "gcc", COMPILER_VERSION: "11",  RUN_SSH_PLUGIN_TEST: "1" }
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2

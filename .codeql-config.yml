@@ -1,0 +1,31 @@
+name: "Cryptsetup CodeQL config"
+
+query-filters:
+- exclude:
+     id: cpp/fixme-comment
+- exclude:
+     id: cpp/empty-block
+- exclude:
+     id: cpp/poorly-documented-function
+- exclude:
+     id: cpp/loop-variable-changed
+- exclude:
+     id: cpp/empty-if
+- exclude:
+     id: cpp/long-switch
+- exclude:
+     id: cpp/complex-condition
+- exclude:
+     id: cpp/commented-out-code
+
+# These produce many false positives
+- exclude:
+     id: cpp/uninitialized-local
+- exclude:
+     id: cpp/path-injection
+- exclude:
+     id: cpp/missing-check-scanf
+
+# CodeQL should understand coverity [toctou] comments
+- exclude:
+     id: cpp/toctou-race-condition
