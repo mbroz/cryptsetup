@@ -1663,6 +1663,11 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 			log_err(cd, _("Requested sector_size option is not supported."));
 			r = -EINVAL;
 		}
+		if (dmd->segment.u.crypt.sector_size > SECTOR_SIZE &&
+		    dmd->size % dmd->segment.u.crypt.sector_size) {
+			log_err(cd, _("The device size is not multiple of the requested sector size."));
+			r = -EINVAL;
+		}
 	}
 
 	if (dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_RECALCULATE) &&
