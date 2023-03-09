@@ -196,7 +196,7 @@ static int get_luks2_offsets(int metadata_device,
 			    uint64_t *r_header_size,
 			    uint64_t *r_payload_offset)
 {
-	struct crypt_device *cd = NULL;
+	struct crypt_device *_cd = NULL;
 	static uint64_t default_header_size = 0;
 
 	if (r_header_size)
@@ -205,14 +205,14 @@ static int get_luks2_offsets(int metadata_device,
 		*r_payload_offset = 0;
 
 	if (!default_header_size) {
-		if (crypt_init(&cd, THE_LOOP_DEV))
+		if (crypt_init(&_cd, THE_LOOP_DEV))
 			return -EINVAL;
-		if (crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, NULL)) {
-			crypt_free(cd);
+		if (crypt_format(_cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, NULL)) {
+			crypt_free(_cd);
 			return -EINVAL;
 		}
 
-		default_header_size = crypt_get_data_offset(cd);
+		default_header_size = crypt_get_data_offset(_cd);
 
 		crypt_free(cd);
 	}
@@ -467,7 +467,7 @@ static int _setup(void)
 	return 0;
 }
 
-static int set_fast_pbkdf(struct crypt_device *cd)
+static int set_fast_pbkdf(struct crypt_device *_cd)
 {
 	const struct crypt_pbkdf_type *pbkdf = &min_argon2;
 
@@ -475,7 +475,7 @@ static int set_fast_pbkdf(struct crypt_device *cd)
 	if (_fips_mode)
 		pbkdf = &min_pbkdf2;
 
-	return crypt_set_pbkdf_type(cd, pbkdf);
+	return crypt_set_pbkdf_type(_cd, pbkdf);
 }
 
 #ifdef KERNEL_KEYRING
@@ -497,24 +497,24 @@ static key_serial_t request_key(const char *type,
 	return syscall(__NR_request_key, type, description, callout_info, keyring);
 }
 
-static key_serial_t _kernel_key_by_segment(struct crypt_device *cd, int segment)
+static key_serial_t _kernel_key_by_segment(struct crypt_device *_cd, int segment)
 {
 	char key_description[1024];
 
-	if (snprintf(key_description, sizeof(key_description), "cryptsetup:%s-d%u", crypt_get_uuid(cd), segment) < 1)
+	if (snprintf(key_description, sizeof(key_description), "cryptsetup:%s-d%u", crypt_get_uuid(_cd), segment) < 1)
 		return -1;
 
 	return request_key("logon", key_description, NULL, 0);
 }
 
-static int _volume_key_in_keyring(struct crypt_device *cd, int segment)
+static int _volume_key_in_keyring(struct crypt_device *_cd, int segment)
 {
-	return _kernel_key_by_segment(cd, segment) >= 0 ? 0 : -1;
+	return _kernel_key_by_segment(_cd, segment) >= 0 ? 0 : -1;
 }
 
-static int _drop_keyring_key(struct crypt_device *cd, int segment)
+static int _drop_keyring_key(struct crypt_device *_cd, int segment)
 {
-	key_serial_t kid = _kernel_key_by_segment(cd, segment);
+	key_serial_t kid = _kernel_key_by_segment(_cd, segment);
 
 	if (kid < 0)
 		return -1;
@@ -523,7 +523,7 @@ static int _drop_keyring_key(struct crypt_device *cd, int segment)
 }
 #endif
 
-static int test_open(struct crypt_device *cd __attribute__((unused)),
+static int test_open(struct crypt_device *_cd __attribute__((unused)),
 	int token __attribute__((unused)),
 	char **buffer,
 	size_t *buffer_len,
@@ -539,7 +539,7 @@ static int test_open(struct crypt_device *cd __attribute__((unused)),
 	return 0;
 }
 
-static int test_validate(struct crypt_device *cd __attribute__((unused)), const char *json)
+static int test_validate(struct crypt_device *_cd __attribute__((unused)), const char *json)
 {
 	return (strstr(json, "magic_string") == NULL);
 }
@@ -5009,10 +5009,10 @@ static void VolumeKeyGet(void)
 	_cleanup_dmdevices();
 }
 
-static int _crypt_load_check(struct crypt_device *cd)
+static int _crypt_load_check(struct crypt_device *_cd)
 {
 #ifdef HAVE_BLKID
-	return crypt_load(cd, CRYPT_LUKS, NULL);
+	return crypt_load(_cd, CRYPT_LUKS, NULL);
 #else
 	return -ENOTSUP;
 #endif
