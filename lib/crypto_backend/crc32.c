@@ -158,7 +158,7 @@ static const uint32_t crc32c_tab[] = {
  * whatever they need.
  */
 static uint32_t compute_crc32(
-	const uint32_t *crc32_tab,
+	const uint32_t *crc32_table,
 	uint32_t seed,
 	const unsigned char *buf,
 	size_t len)
@@ -167,7 +167,7 @@ static uint32_t compute_crc32(
 	const unsigned char *p = buf;
 
 	while(len-- > 0)
-		crc = crc32_tab[(crc ^ *p++) & 0xff] ^ (crc >> 8);
+		crc = crc32_table[(crc ^ *p++) & 0xff] ^ (crc >> 8);
 
 	return crc;
 }
