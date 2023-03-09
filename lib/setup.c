@@ -61,7 +61,7 @@ struct crypt_device {
 	unsigned key_in_keyring:1;
 
 	bool link_vk_to_keyring;
-	int keyring_to_link_vk;
+	int32_t keyring_to_link_vk;
 	key_type_t keyring_key_type;
 
 	uint64_t data_offset;
@@ -7254,12 +7254,25 @@ void crypt_drop_keyring_key_by_description(struct crypt_device *cd, const char *
 	crypt_set_key_in_keyring(cd, 0);
 }
 
-void crypt_set_keyring_to_link(struct crypt_device *cd, int keyring_to_link_vk)
+int crypt_set_keyring_to_link(struct crypt_device *cd, const char *keyring_to_link_vk)
 {
-	if (cd) {
-		cd->link_vk_to_keyring = true;
-		cd->keyring_to_link_vk = keyring_to_link_vk;
+	int32_t id = 0;
+
+	if (!cd)
+		return -EINVAL;
+
+	if (keyring_to_link_vk) {
+		id = keyring_by_name(keyring_to_link_vk);
+		if (id == 0) {
+			log_err(cd, _("Invalid keyring format \"%s\"."), keyring_to_link_vk);
+			return -EINVAL;
+		}
 	}
+
+	cd->keyring_to_link_vk = id;
+	cd->link_vk_to_keyring = id != 0;
+
+	return 0;
 }
 
 int crypt_set_vk_keyring_type(struct crypt_device *cd, const char *key_type_desc)

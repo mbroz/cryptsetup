@@ -1664,8 +1664,10 @@ static int action_open_luks(void)
 		}
 	}
 
-	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID))
-		crypt_set_keyring_to_link(cd, ARG_INT32(OPT_LINK_VK_TO_KEYRING_ID));
+	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID)) {
+		if ((r = crypt_set_keyring_to_link(cd, ARG_STR(OPT_LINK_VK_TO_KEYRING_ID))))
+			return r;
+	}
 
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
 		keysize = crypt_get_volume_key_size(cd);
@@ -2532,8 +2534,10 @@ static int action_luksResume(void)
 		}
 	}
 
-	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID))
-		crypt_set_keyring_to_link(cd, ARG_INT32(OPT_LINK_VK_TO_KEYRING_ID));
+	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID)) {
+		if ((r = crypt_set_keyring_to_link(cd, ARG_STR(OPT_LINK_VK_TO_KEYRING_ID))))
+			return r;
+	}
 
 	if (!isLUKS(crypt_get_type(cd))) {
 		log_err(_("%s is not active LUKS device name or header is missing."), action_argv[0]);

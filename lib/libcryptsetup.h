@@ -3032,9 +3032,11 @@ void crypt_safe_memzero(void *data, size_t size);
  * Link the volume key to the specified keyring.
  *
  * @param cd crypt device handle
- * @param keyring_to_link_vk the ID of the keyring in which volume key should be linked
+ * @param keyring_to_link_vk the ID of the keyring in which volume key should
+ * be linked, if @e NULL is specified, linking will be disabled (the key will
+ * be linked just to the thread keyring, which is destroyed on process exit)
  */
-void crypt_set_keyring_to_link(struct crypt_device *cd, int keyring_to_link_vk);
+int crypt_set_keyring_to_link(struct crypt_device *cd, const char *keyring_to_link_vk);
 
 /**
  * Set the type of volume key stored in keyring.
