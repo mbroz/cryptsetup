@@ -178,14 +178,6 @@ foreach tuple : manpage_tuples_all
     adocfiles_all += tuple[0]
 endforeach
 
-if meson.version().version_compare('>=0.55')
-    meson.add_dist_script(find_program('meson_dist_convert.sh'),
-        asciidoc, meson.project_version(), adocfiles_all)
-else
-    meson.add_dist_script('meson_dist_convert.sh',
-        asciidoc.path(), meson.project_version(), adocfiles_all)
-endif
-
 prebuilt_manpages_exist = true
 foreach manpage_tuple : manpage_tuples_to_build
     adocfile = manpage_tuple[0]
@@ -202,6 +194,14 @@ endforeach
 built_manpages = []
 
 if use_asciidoc
+    if meson.version().version_compare('>=0.55')
+        meson.add_dist_script(find_program('meson_dist_convert.sh'),
+            asciidoc, meson.project_version(), adocfiles_all)
+    else
+        meson.add_dist_script('meson_dist_convert.sh',
+            asciidoc.path(), meson.project_version(), adocfiles_all)
+    endif
+
     foreach manpage_tuple : manpage_tuples_to_build
         adocfile = manpage_tuple[0]
         aliases = manpage_tuple[1]
