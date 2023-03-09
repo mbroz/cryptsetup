@@ -1413,7 +1413,7 @@ static int reencrypt_init_storage_wrappers(struct crypt_device *cd,
 
 static int reencrypt_context_set_names(struct luks2_reencrypt *rh, const char *name)
 {
-	if (!rh | !name)
+	if (!rh || !name)
 		return -EINVAL;
 
 	if (*name == '/') {
