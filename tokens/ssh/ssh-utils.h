@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#ifndef SSH_UTILS_H
+#define SSH_UTILS_H
+
 #include <libssh/libssh.h>
 #include <libssh/sftp.h>
 #include <libcryptsetup.h>
@@ -27,3 +30,5 @@ int sshplugin_download_password(struct crypt_device *cd, ssh_session ssh,
 	const char *path, char **password, size_t *password_len);
 ssh_session sshplugin_session_init(struct crypt_device *cd, const char *host, const char *user);
 int sshplugin_public_key_auth(struct crypt_device *cd, ssh_session ssh, const ssh_key pkey);
+
+#endif /* SSH_UTILS_H */
