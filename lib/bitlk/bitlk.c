@@ -735,6 +735,7 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 {
 	struct volume_key *vk_p;
 	struct bitlk_vmk *vmk_p;
+	char time[32];
 	int next_id = 0;
 	int i = 0;
 
@@ -743,7 +744,8 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 	log_std(cd, "GUID:         \t%s\n", params->guid);
 	log_std(cd, "Sector size:  \t%u [bytes]\n", params->sector_size);
 	log_std(cd, "Volume size:  \t%" PRIu64 " [bytes]\n", params->volume_size);
-	log_std(cd, "Created:      \t%s", ctime((time_t *)&(params->creation_time)));
+	if (ctime_r((time_t *)&params->creation_time, time))
+		log_std(cd, "Created:      \t%s", time);
 	log_std(cd, "Description:  \t%s\n", params->description);
 	log_std(cd, "Cipher name:  \t%s\n", params->cipher);
 	log_std(cd, "Cipher mode:  \t%s\n", params->cipher_mode);
