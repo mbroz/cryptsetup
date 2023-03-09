@@ -134,7 +134,7 @@ static int open_resource(struct crypt_device *cd, const char *res)
 		return -EINVAL;
 
 	log_dbg(cd, "Opening lock resource file %s/%s", DEFAULT_LUKS2_LOCK_PATH, res);
-	r = openat(lockdir_fd, res, O_CREAT | O_NOFOLLOW | O_RDWR | O_CLOEXEC, 0777);
+	r = openat(lockdir_fd, res, O_CREAT|O_NOFOLLOW|O_RDWR|O_CLOEXEC, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 	err = errno;
 
 	close(lockdir_fd);
