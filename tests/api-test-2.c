@@ -225,7 +225,7 @@ static int get_luks2_offsets(int metadata_device,
 
 	if (r_payload_offset) {
 		if (metadata_device)
-			*r_payload_offset = alignpayload_sec * sector_size;
+			*r_payload_offset = (uint64_t)alignpayload_sec * sector_size;
 		else
 			*r_payload_offset = DIV_ROUND_UP_MODULO(default_header_size * 512, (alignpayload_sec ?: 1) * sector_size);
 
