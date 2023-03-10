@@ -51,5 +51,6 @@ int keyring_add_key_in_user_keyring(
 	size_t key_size);
 
 int keyring_revoke_and_unlink_key(key_type_t ktype, const char *key_desc);
+int keyring_link_key_to_keyring(key_type_t ktype, const char *key_desc, int keyring_to_link);
 
 #endif

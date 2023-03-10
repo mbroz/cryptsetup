@@ -60,6 +60,9 @@ struct crypt_device {
 	/* global context scope settings */
 	unsigned key_in_keyring:1;
 
+	bool link_vk_to_keyring;
+	int keyring_to_link_vk;
+
 	uint64_t data_offset;
 	uint64_t metadata_size; /* Used in LUKS2 format */
 	uint64_t keyslots_size; /* Used in LUKS2 format */
@@ -7206,6 +7209,15 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 	} else
 		crypt_set_key_in_keyring(cd, 1);
 
+	if (!r && cd->link_vk_to_keyring) {
+		log_dbg(cd, "Linking volume key to the specified keyring");
+		r = keyring_link_key_to_keyring(LOGON_KEY, vk->key_description, cd->keyring_to_link_vk);
+		if (r) {
+			log_err(cd, _("Failed to link key to the specified keyring."));
+			log_dbg(cd, "The keyring_link_key_to_keyring function failed (error %d).", r);
+		}
+	}
+
 	return r;
 }
 
@@ -7239,6 +7251,14 @@ void crypt_drop_keyring_key_by_description(struct crypt_device *cd, const char *
 	if (r)
 		log_dbg(cd, "keyring_revoke_and_unlink_key failed (error %d)", r);
 	crypt_set_key_in_keyring(cd, 0);
+}
+
+void crypt_set_keyring_to_link(struct crypt_device *cd, int keyring_to_link_vk)
+{
+	if (cd) {
+		cd->link_vk_to_keyring = true;
+		cd->keyring_to_link_vk = keyring_to_link_vk;
+	}
 }
 
 /* internal only */

@@ -3028,6 +3028,14 @@ void *crypt_safe_realloc(void *data, size_t size);
  */
 void crypt_safe_memzero(void *data, size_t size);
 
+/**
+ * Link the volume key to the specified keyring.
+ *
+ * @param cd crypt device handle
+ * @param keyring_to_link_vk the ID of the keyring in which volume key should be linked
+ */
+void crypt_set_keyring_to_link(struct crypt_device *cd, int keyring_to_link_vk);
+
 /** @} */
 
 #ifdef __cplusplus

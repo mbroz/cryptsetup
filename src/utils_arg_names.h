@@ -105,6 +105,7 @@
 #define OPT_NO_WIPE			"no-wipe"
 #define OPT_WIPE			"wipe"
 #define OPT_LABEL			"label"
+#define OPT_LINK_VK_TO_KEYRING		"link-vk-to-keyring"
 #define OPT_LUKS2_KEYSLOTS_SIZE		"luks2-keyslots-size"
 #define OPT_LUKS2_METADATA_SIZE		"luks2-metadata-size"
 #define OPT_MASTER_KEY_FILE		"master-key-file"

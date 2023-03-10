@@ -71,6 +71,12 @@ static long keyctl_read(key_serial_t key, char *buffer, size_t buflen)
 	return syscall(__NR_keyctl, KEYCTL_READ, key, buffer, buflen);
 }
 
+/* keyctl_link */
+static long keyctl_link(key_serial_t key, key_serial_t keyring)
+{
+	return syscall(__NR_keyctl, KEYCTL_LINK, key, keyring);
+}
+
 /* keyctl_unlink */
 static long keyctl_unlink(key_serial_t key, key_serial_t keyring)
 {
@@ -180,6 +186,33 @@ int keyring_get_passphrase(const char *key_desc,
 #endif
 }
 
+static int keyring_link_key_to_keyring_key_type(const char *type_name, const char *key_desc,
+						key_serial_t keyring_to_link)
+{
+#ifdef KERNEL_KEYRING
+	long r;
+	key_serial_t kid;
+
+	if (!type_name || !key_desc)
+		return -EINVAL;
+
+	do
+		kid = request_key(type_name, key_desc, NULL, 0);
+	while (kid < 0 && errno == EINTR);
+
+	if (kid < 0)
+		return 0;
+
+	r = keyctl_link(kid, keyring_to_link);
+	if (r < 0)
+		return -errno;
+
+	return 0;
+#else
+	return -ENOTSUP;
+#endif
+}
+
 static int keyring_revoke_and_unlink_key_type(const char *type_name, const char *key_desc)
 {
 #ifdef KERNEL_KEYRING
@@ -214,6 +247,11 @@ const char *key_type_name(key_type_t type)
 			return key_types[i].type_name;
 #endif
 	return NULL;
+}
+
+int keyring_link_key_to_keyring(key_type_t ktype, const char *key_desc, key_serial_t keyring_to_link)
+{
+	return keyring_link_key_to_keyring_key_type(key_type_name(ktype), key_desc, keyring_to_link);
 }
 
 int keyring_revoke_and_unlink_key(key_type_t ktype, const char *key_desc)

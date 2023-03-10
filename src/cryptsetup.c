@@ -1654,6 +1654,9 @@ static int action_open_luks(void)
 
 	set_activation_flags(&activate_flags);
 
+	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID))
+		crypt_set_keyring_to_link(cd, ARG_INT32(OPT_LINK_VK_TO_KEYRING_ID));
+
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
 		keysize = crypt_get_volume_key_size(cd);
 		if (!keysize && !ARG_SET(OPT_KEY_SIZE_ID)) {
@@ -2509,6 +2512,9 @@ static int action_luksResume(void)
 		return r;
 
 	r = -EINVAL;
+	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID))
+		crypt_set_keyring_to_link(cd, ARG_INT32(OPT_LINK_VK_TO_KEYRING_ID));
+
 	if (!isLUKS(crypt_get_type(cd))) {
 		log_err(_("%s is not active LUKS device name or header is missing."), action_argv[0]);
 		goto out;
@@ -3653,6 +3659,11 @@ int main(int argc, const char **argv)
 	if (ARG_SET(OPT_PBKDF_FORCE_ITERATIONS_ID) && ARG_SET(OPT_ITER_TIME_ID))
 		usage(popt_context, EXIT_FAILURE,
 		_("PBKDF forced iterations cannot be combined with iteration time option."),
+		poptGetInvocationName(popt_context));
+
+	if (ARG_SET(OPT_DISABLE_KEYRING_ID) && ARG_SET(OPT_LINK_VK_TO_KEYRING_ID))
+		usage(popt_context, EXIT_FAILURE,
+		_("Cannot link volume key to a keyring when keyring is disabled."),
 		poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_DEBUG_ID) || ARG_SET(OPT_DEBUG_JSON_ID)) {
