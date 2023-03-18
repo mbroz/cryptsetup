@@ -3852,6 +3852,11 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
 	if (params && (params->flags & CRYPT_REENCRYPT_INITIALIZE_ONLY) && (params->flags & CRYPT_REENCRYPT_RESUME_ONLY))
 		return -EINVAL;
 
+	if (device_is_dax(crypt_data_device(cd)) > 0) {
+		log_err(cd, _("Reencryption is not supported for DAX (persistent memory) devices."));
+		return -EINVAL;
+	}
+
 	r = keyring_get_passphrase(passphrase_description, &passphrase, &passphrase_size);
 	if (r < 0) {
 		log_err(cd, _("Failed to read passphrase from keyring (error %d)."), r);
@@ -3880,6 +3885,11 @@ int crypt_reencrypt_init_by_passphrase(struct crypt_device *cd,
 		return -EINVAL;
 	if (params && (params->flags & CRYPT_REENCRYPT_INITIALIZE_ONLY) && (params->flags & CRYPT_REENCRYPT_RESUME_ONLY))
 		return -EINVAL;
+
+	if (device_is_dax(crypt_data_device(cd)) > 0) {
+		log_err(cd, _("Reencryption is not supported for DAX (persistent memory) devices."));
+		return -EINVAL;
+	}
 
 	return reencrypt_init_by_passphrase(cd, name, passphrase, passphrase_size, keyslot_old, keyslot_new, cipher, cipher_mode, params);
 }
