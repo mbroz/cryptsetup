@@ -113,6 +113,7 @@ void device_release_excl(struct crypt_device *cd, struct device *device);
 void device_disable_direct_io(struct device *device);
 int device_is_identical(struct device *device1, struct device *device2);
 int device_is_rotational(struct device *device);
+int device_is_dax(struct device *device);
 size_t device_alignment(struct device *device);
 int device_direct_io(const struct device *device);
 int device_fallocate(struct device *device, uint64_t size);
@@ -157,6 +158,7 @@ int crypt_confirm(struct crypt_device *cd, const char *msg);
 
 char *crypt_lookup_dev(const char *dev_id);
 int crypt_dev_is_rotational(int major, int minor);
+int crypt_dev_is_dax(int major, int minor);
 int crypt_dev_is_partition(const char *dev_path);
 char *crypt_get_partition_device(const char *dev_path, uint64_t offset, uint64_t size);
 char *crypt_get_base_device(const char *dev_path);

@@ -1733,6 +1733,9 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 			return -ENOMEM;
 	}
 
+	if (device_is_dax(crypt_data_device(cd)) > 0)
+		log_std(cd, _("WARNING: DAX device can corrupt data as it does not guarantee atomic sector updates.\n"));
+
 	if (params && cd->metadata_device) {
 		/* For detached header the alignment is used directly as data offset */
 		if (!cd->data_offset)
@@ -1834,6 +1837,9 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		if (device_alloc(cd, &cd->device, params->data_device) < 0)
 			return -ENOMEM;
 	}
+
+	if (device_is_dax(crypt_data_device(cd)) > 0)
+		log_std(cd, _("WARNING: DAX device can corrupt data as it does not guarantee atomic sector updates.\n"));
 
 	if (sector_size_autodetect) {
 		sector_size = device_optimal_encryption_sector_size(cd, crypt_data_device(cd));

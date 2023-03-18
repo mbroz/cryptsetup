@@ -220,6 +220,16 @@ int crypt_dev_is_rotational(int major, int minor)
 	return val ? 1 : 0;
 }
 
+int crypt_dev_is_dax(int major, int minor)
+{
+	uint64_t val;
+
+	if (!_sysfs_get_uint64(major, minor, &val, "queue/dax"))
+		return 0; /* if failed, expect non-DAX device */
+
+	return val ? 1 : 0;
+}
+
 int crypt_dev_is_partition(const char *dev_path)
 {
 	uint64_t val;
