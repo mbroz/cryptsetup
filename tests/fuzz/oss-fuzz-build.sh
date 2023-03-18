@@ -76,7 +76,7 @@ make install
 cd ..
 
 cd xz
-./autogen.sh --no-po4a
+./autogen.sh --no-po4a --no-doxygen
 ./configure --prefix="$DEPS_PATH" --enable-static --disable-shared
 make -j
 make install
