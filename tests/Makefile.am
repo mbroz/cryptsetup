@@ -107,7 +107,8 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	fake_token_path.c \
 	fake_systemd_tpm_path.c \
 	unit-wipe-test \
-	systemd-test-plugin
+	systemd-test-plugin \
+	opal2-test
 
 CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_token_path.so fake_systemd_tpm_path.so
 clean-local:

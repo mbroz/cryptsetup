@@ -1,0 +1,58 @@
+#!/bin/bash
+
+PS4='$LINENO:'
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+
+PWD1="93R4P4pIqAH8"
+DEV_NAME=dummy
+
+FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
+
+function fail()
+{
+	[ -n "$1" ] && echo "$1"
+	remove_mapping
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
+	exit 2
+}
+
+function remove_mapping()
+{
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	remove_mapping
+	exit 77
+}
+
+# Do not run automatically.
+[ -z "$OPAL2_DEV" ] && skip "WARNING: Variable OPAL2_DEV must be defined (partition or block dev), test skipped."
+[ -z "$OPAL2_ADMIN_PIN" ] && skip "WARNING: Variable OPAL2_ADMIN_PIN must be defined, test skipped."
+
+echo "[1] OPAL2 simple test"
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 --hw-opal-only -q $FAST_PBKDF_OPT $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP close $DEV_NAME || fail
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
+
+echo "[2] OPAL2 + dmcrypt"
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 --hw-opal -q $FAST_PBKDF_OPT $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP close $DEV_NAME || fail
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
+
+echo "[3] OPAL2 + auth encryption"
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 --hw-opal -q $FAST_PBKDF_OPT $OPAL2_DEV -c aes-gcm-random --integrity aead --integrity-no-wipe  || fail
+echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP close $DEV_NAME || fail
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
+
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 --hw-opal -q $FAST_PBKDF_OPT $OPAL2_DEV -s 280 -c aes-ccm-random --integrity aead --integrity-no-wipe  || fail
+echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP close $DEV_NAME || fail
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
