@@ -213,7 +213,7 @@ int LUKS2_generate_hdr(
 	uint64_t metadata_size_bytes,
 	uint64_t keyslots_size_bytes)
 {
-	struct json_object *jobj_segment, *jobj_integrity, *jobj_keyslots, *jobj_segments, *jobj_config;
+	struct json_object *jobj_segment, *jobj_keyslots, *jobj_segments, *jobj_config;
 	char cipher[128];
 	uuid_t partitionUuid;
 	int r, digest;
@@ -293,23 +293,10 @@ int LUKS2_generate_hdr(
 		goto err;
 	}
 
-	jobj_segment = json_segment_create_crypt(data_offset, 0, NULL, cipher, sector_size, 0);
+	jobj_segment = json_segment_create_crypt(data_offset, 0, NULL, cipher, integrity, sector_size, 0);
 	if (!jobj_segment) {
 		r = -EINVAL;
 		goto err;
-	}
-
-	if (integrity) {
-		jobj_integrity = json_object_new_object();
-		if (!jobj_integrity) {
-			r = -ENOMEM;
-			goto err;
-		}
-
-		json_object_object_add(jobj_integrity, "type", json_object_new_string(integrity));
-		json_object_object_add(jobj_integrity, "journal_encryption", json_object_new_string("none"));
-		json_object_object_add(jobj_integrity, "journal_integrity", json_object_new_string("none"));
-		json_object_object_add(jobj_segment, "integrity", jobj_integrity);
 	}
 
 	if (json_object_object_add_by_uint(jobj_segments, 0, jobj_segment)) {

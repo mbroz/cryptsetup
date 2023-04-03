@@ -247,16 +247,31 @@ json_object *json_segment_create_linear(uint64_t offset, const uint64_t *length,
 
 json_object *json_segment_create_crypt(uint64_t offset,
 				  uint64_t iv_offset, const uint64_t *length,
-				  const char *cipher, uint32_t sector_size,
-				  unsigned reencryption)
+				  const char *cipher, const char *integrity,
+				  uint32_t sector_size, unsigned reencryption)
 {
-	json_object *jobj = _segment_create_generic("crypt", offset, length);
+	json_object *jobj_integrity, *jobj = _segment_create_generic("crypt", offset, length);
+
 	if (!jobj)
 		return NULL;
 
 	json_object_object_add(jobj, "iv_tweak",	crypt_jobj_new_uint64(iv_offset));
 	json_object_object_add(jobj, "encryption",	json_object_new_string(cipher));
 	json_object_object_add(jobj, "sector_size",	json_object_new_int(sector_size));
+
+	if (integrity) {
+		jobj_integrity = json_object_new_object();
+		if (!jobj_integrity) {
+			json_object_put(jobj);
+			return NULL;
+		}
+
+		json_object_object_add(jobj_integrity, "type", json_object_new_string(integrity));
+		json_object_object_add(jobj_integrity, "journal_encryption", json_object_new_string("none"));
+		json_object_object_add(jobj_integrity, "journal_integrity", json_object_new_string("none"));
+		json_object_object_add(jobj, "integrity", jobj_integrity);
+	}
+
 	if (reencryption)
 		LUKS2_segment_set_flag(jobj, "in-reencryption");
 
