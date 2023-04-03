@@ -89,6 +89,7 @@ int crypt_benchmark_pbkdf_internal(struct crypt_device *cd,
 				   struct crypt_pbkdf_type *pbkdf,
 				   size_t volume_key_size);
 const char *crypt_get_cipher_spec(struct crypt_device *cd);
+uint32_t pbkdf_adjusted_phys_memory_kb(void);
 
 /* Device backend */
 struct device;

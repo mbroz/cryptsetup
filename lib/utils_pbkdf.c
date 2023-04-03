@@ -61,7 +61,7 @@ const struct crypt_pbkdf_type *crypt_get_pbkdf_type_params(const char *pbkdf_typ
 	return NULL;
 }
 
-static uint32_t adjusted_phys_memory(void)
+uint32_t pbkdf_adjusted_phys_memory_kb(void)
 {
 	uint64_t free_kb, memory_kb = crypt_getphysmemory_kb();
 
@@ -258,7 +258,7 @@ int init_pbkdf_type(struct crypt_device *cd,
 	}
 
 	if (cd_pbkdf->max_memory_kb) {
-		memory_kb = adjusted_phys_memory();
+		memory_kb = pbkdf_adjusted_phys_memory_kb();
 		if (cd_pbkdf->max_memory_kb > memory_kb) {
 			log_dbg(cd, "Not enough physical memory detected, "
 				"PBKDF max memory decreased from %dkB to %dkB.",

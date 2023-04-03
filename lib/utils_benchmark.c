@@ -101,6 +101,7 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 {
 	int r, priority;
 	const char *kdf_opt;
+	uint32_t memory_kb;
 
 	if (!pbkdf || (!password && password_size))
 		return -EINVAL;
@@ -112,6 +113,14 @@ int crypt_benchmark_pbkdf(struct crypt_device *cd,
 	kdf_opt = !strcmp(pbkdf->type, CRYPT_KDF_PBKDF2) ? pbkdf->hash : "";
 
 	log_dbg(cd, "Running %s(%s) benchmark.", pbkdf->type, kdf_opt);
+
+	memory_kb = pbkdf_adjusted_phys_memory_kb();
+	if (memory_kb < pbkdf->max_memory_kb) {
+		log_dbg(cd, "Not enough physical memory detected, "
+			"PBKDF max memory decreased from %dkB to %dkB.",
+			pbkdf->max_memory_kb, memory_kb);
+		pbkdf->max_memory_kb = memory_kb;
+	}
 
 	crypt_process_priority(cd, &priority, true);
 	r = crypt_pbkdf_perf(pbkdf->type, pbkdf->hash, password, password_size,
