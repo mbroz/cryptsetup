@@ -565,6 +565,9 @@ bool crypt_fips_mode(void)
 	if (fips_checked)
 		return fips_mode;
 
+	if (crypt_backend_init(false /* ignored */))
+		return false;
+
 	fips_mode = gcry_fips_mode_active();
 	fips_checked = true;
 
