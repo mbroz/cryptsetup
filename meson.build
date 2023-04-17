@@ -481,7 +481,7 @@ if get_option('crypto-backend') == 'gcrypt'
         description: 'Requested gcrypt version')
 elif get_option('crypto-backend') == 'openssl'
     use_internal_pbkdf2 = false
-    crypto_backend_library = dependency('openssl',
+    crypto_backend_library = dependency('libcrypto',
         version: '>=0.9.8',
         static: enable_static)
 elif get_option('crypto-backend') == 'nss'
