@@ -76,10 +76,17 @@ uint32_t pbkdf_adjusted_phys_memory_kb(void)
 	memory_kb /= 2;
 
 	/*
-	 * Never use more that available free space on system without swap.
+	 * Never use more that half of available free memory on system without swap.
 	 */
 	if (!crypt_swapavailable()) {
 		free_kb = crypt_getphysmemoryfree_kb();
+
+		/*
+		 * Using exactly free memory causes OOM too, use only half of the value.
+		 * Ignore small values (< 64MB), user should use PBKDF2 in such environment.
+		 */
+		free_kb /= 2;
+
 		if (free_kb > (64 * 1024) && free_kb < memory_kb)
 			return free_kb;
 	}
