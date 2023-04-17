@@ -634,16 +634,16 @@ dnl Set Requires.private for libcryptsetup.pc
 dnl pwquality is used only by tools
 PKGMODULES="uuid devmapper json-c"
 case $with_crypto_backend in
-	gcrypt)  PKGMODULES+=" libgcrypt" ;;
-	openssl) PKGMODULES+=" openssl" ;;
-	nss)     PKGMODULES+=" nss" ;;
-	nettle)  PKGMODULES+=" nettle" ;;
+	gcrypt)  PKGMODULES="$PKGMODULES libgcrypt" ;;
+	openssl) PKGMODULES="$PKGMODULES openssl" ;;
+	nss)     PKGMODULES="$PKGMODULES nss" ;;
+	nettle)  PKGMODULES="$PKGMODULES nettle" ;;
 esac
 if test "x$enable_libargon2" = "xyes"; then
-	PKGMODULES+=" libargon2"
+	PKGMODULES="$PKGMODULES libargon2"
 fi
 if test "x$enable_blkid" = "xyes"; then
-	PKGMODULES+=" blkid"
+	PKGMODULES="$PKGMODULES blkid"
 fi
 AC_SUBST([PKGMODULES])
 dnl ==========================================================================
