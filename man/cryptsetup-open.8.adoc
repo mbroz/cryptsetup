@@ -150,6 +150,11 @@ Opens the BITLK (a BitLocker compatible) <device> and sets up a mapping
 --readonly, --test-passphrase, --allow-discards --volume-key-file, --tries,
 --timeout, --verify-passphrase].
 
+Note that *--test-passphrase* doesn't work with *--volume-key-file* because
+we cannot check whether the provided volume key is correct for this device
+or not. When using *--volume-key-file* the device will be opened even if
+the provided key is not correct.
+
 === FileVault2
 *open --type fvault2 <device> <name>* +
 fvault2Open <device> <name> (*old syntax*)

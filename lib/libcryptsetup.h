@@ -1553,6 +1553,9 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
  * 	 CRYPT_ACTIVATE_READONLY flag always.
  * @note For TCRYPT the volume key should be always NULL
  * 	 the key from decrypted header is used instead.
+ * @note For BITLK @name cannot be @e NULL checking volume key is not
+ *       supported for BITLK, the device will be activated even if the
+ *       provided key is not correct.
  */
 int crypt_activate_by_volume_key(struct crypt_device *cd,
 	const char *name,

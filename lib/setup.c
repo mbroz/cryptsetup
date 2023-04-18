@@ -4634,6 +4634,8 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 				       cd->u.integrity.journal_mac_key, flags,
 				       cd->u.integrity.sb_flags);
 	} else if (isBITLK(cd->type)) {
+		if (!name)
+			return -EINVAL;
 		r = BITLK_activate_by_volume_key(cd, name, volume_key, volume_key_size,
 						 &cd->u.bitlk.params, flags);
 	} else {

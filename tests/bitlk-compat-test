@@ -156,6 +156,9 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 	echo $PASSPHRASE | $CRYPTSETUP bitlkDump -r $file --dump-volume-key --volume-key-file $DUMP_VK_FILE >/dev/null 2>&1
 	ret=$?
 	[ $ret -eq 0 ] || fail " failed to dump volume key"
+	$CRYPTSETUP bitlkOpen -r $file $MAP --volume-key-file $DUMP_VK_FILE --test-passphrase >/dev/null 2>&1
+	ret=$?
+	[ $ret -eq 1 ] || fail " test passphrase with volume key unexpectedly succeeded"
 	$CRYPTSETUP bitlkOpen -r $file $MAP --volume-key-file $DUMP_VK_FILE >/dev/null 2>&1
 	ret=$?
 	[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "aes-cbc" ) && echo " [N/A]" && continue
