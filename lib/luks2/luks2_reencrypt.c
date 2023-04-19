@@ -1991,9 +1991,7 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 	crypt_reencrypt_direction_info di)
 {
 	int r;
-	uint64_t first_segment_offset, first_segment_length,
-		 second_segment_offset, second_segment_length,
-		 data_offset = LUKS2_get_data_offset(hdr) << SECTOR_SHIFT;
+	uint64_t data_offset = LUKS2_get_data_offset(hdr) << SECTOR_SHIFT;
 	json_object *jobj_segment_first = NULL, *jobj_segment_second = NULL, *jobj_segments;
 
 	if (di == CRYPT_REENCRYPT_BACKWARD)
@@ -2003,17 +2001,14 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 	 * future data_device layout:
 	 * [encrypted first segment (max data shift size)][gap (data shift size)][second encrypted data segment]
 	 */
-	first_segment_offset = 0;
-	first_segment_length = moved_segment_length;
-
 	jobj_segments = json_object_new_object();
 	if (!jobj_segments)
 		return -ENOMEM;
 
 	r = -EINVAL;
-	jobj_segment_first = json_segment_create_crypt(first_segment_offset,
-				crypt_get_iv_offset(cd), &first_segment_length,
-				crypt_get_cipher_spec(cd), crypt_get_sector_size(cd), 0);
+	jobj_segment_first = json_segment_create_crypt(0, crypt_get_iv_offset(cd),
+				&moved_segment_length, crypt_get_cipher_spec(cd),
+				crypt_get_sector_size(cd), 0);
 
 	if (!jobj_segment_first) {
 		log_dbg(cd, "Failed generate 1st segment.");
@@ -2025,11 +2020,9 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 		goto err;
 
 	if (dev_size > moved_segment_length) {
-		second_segment_offset = data_offset + first_segment_length;
-		second_segment_length = 0;
-		jobj_segment_second = json_segment_create_crypt(second_segment_offset,
-								crypt_get_iv_offset(cd) + (first_segment_length >> SECTOR_SHIFT),
-								second_segment_length ? &second_segment_length : NULL,
+		jobj_segment_second = json_segment_create_crypt(data_offset + moved_segment_length,
+								crypt_get_iv_offset(cd) + (moved_segment_length >> SECTOR_SHIFT),
+								NULL,
 								crypt_get_cipher_spec(cd),
 								crypt_get_sector_size(cd), 0);
 		if (!jobj_segment_second) {
