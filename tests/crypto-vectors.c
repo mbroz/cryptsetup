@@ -1024,6 +1024,7 @@ static int pbkdf_test_vectors(void)
 {
 	char result[256];
 	unsigned int i;
+	struct crypt_hash *h;
 	const struct kdf_test_vector *vec;
 
 	for (i = 0; i < ARRAY_SIZE(kdf_test_vectors); i++) {
@@ -1036,6 +1037,13 @@ static int pbkdf_test_vectors(void)
 		if (vec->hash && crypt_hmac_size(vec->hash) < 0) {
 			printf("[%s N/A]\n", vec->hash);
 			continue;
+		}
+		if (vec->hash) {
+			if (crypt_hash_init(&h, vec->hash) < 0) {
+				printf("[%s N/A (init)]\n", vec->hash);
+				continue;
+			}
+			crypt_hash_destroy(h);
 		}
 		if (crypt_pbkdf(vec->type, vec->hash,
 		    vec->password, vec->password_length,
