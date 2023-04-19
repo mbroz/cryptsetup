@@ -539,6 +539,39 @@ static int test_open(struct crypt_device *_cd __attribute__((unused)),
 	return 0;
 }
 
+static int test_open_pass(struct crypt_device *cd __attribute__((unused)),
+	int token __attribute__((unused)),
+	char **buffer,
+	size_t *buffer_len,
+	void *usrptr __attribute__((unused)))
+{
+	*buffer = strdup(PASSPHRASE);
+	if (!*buffer)
+		return -ENOMEM;
+	*buffer_len = strlen(*buffer);
+
+	return 0;
+}
+
+static int test_open_pass1(struct crypt_device *cd __attribute__((unused)),
+	int token __attribute__((unused)),
+	char **buffer,
+	size_t *buffer_len,
+	void *usrptr __attribute__((unused)))
+{
+	*buffer = strdup(PASSPHRASE1);
+	if (!*buffer)
+		return -ENOMEM;
+	*buffer_len = strlen(*buffer);
+
+	return 0;
+}
+
+static void test_token_free(void *ubffer __attribute__((unused)),
+		size_t buffer_len __attribute__((unused)))
+{
+}
+
 static int test_validate(struct crypt_device *_cd __attribute__((unused)), const char *json)
 {
 	return (strstr(json, "magic_string") == NULL);
@@ -1925,6 +1958,10 @@ static void Tokens(void)
 #define LUKS2_KEYRING_TOKEN_JSON_BAD(x, y) "{\"type\":\"luks2-keyring\",\"keyslots\":[" x "]," \
 			"\"key_description\":" y ", \"some_field\":\"some_value\"}"
 
+#define TEST_TOKEN2_JSON(x) "{\"type\":\"test_token2\",\"keyslots\":[" x "] }"
+
+#define TEST_TOKEN3_JSON(x) "{\"type\":\"test_token3\",\"keyslots\":[" x "] }"
+
 
 	int ks, token_max;
 	const char *dummy;
@@ -1933,6 +1970,7 @@ static void Tokens(void)
 	char passptr[] = PASSPHRASE;
 	char passptr1[] = PASSPHRASE1;
 	struct crypt_active_device cad;
+	struct crypt_keyslot_context *kc;
 
 	static const crypt_token_handler th = {
 		.name = "test_token",
@@ -1948,6 +1986,14 @@ static void Tokens(void)
 	}, th_reserved = {
 		.name = "luks2-prefix",
 		.open = test_open
+	}, th4 = {
+		.name = "test_token2",
+		.open = test_open_pass, // PASSPHRASE
+		.buffer_free = test_token_free
+	}, th5 = {
+		.name = "test_token3",
+		.open = test_open_pass1, // PASSPHRASE1
+		.buffer_free = test_token_free
 	};
 
 	struct crypt_token_params_luks2_keyring params = {
@@ -2151,6 +2197,60 @@ static void Tokens(void)
 	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
 	EQ_(0, cad.flags & CRYPT_ACTIVATE_SUSPENDED);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	CRYPT_FREE(cd);
+
+	// test token based API with keyslot parameter
+	OK_(crypt_token_register(&th4)); // PASSPHRASE
+	OK_(crypt_token_register(&th5)); // PASSPHRASE1
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
+	OK_(set_fast_pbkdf(cd));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, NULL));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 0,  NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 1,  NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 1);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 2,  NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 2);
+
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 3,  NULL, 32, PASSPHRASE1, strlen(PASSPHRASE1)), 3);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 4,  NULL, 32, PASSPHRASE1, strlen(PASSPHRASE1)), 4);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 5,  NULL, 32, PASSPHRASE1, strlen(PASSPHRASE1)), 5);
+
+	OK_(crypt_keyslot_set_priority(cd, 0, CRYPT_SLOT_PRIORITY_IGNORE));
+	OK_(crypt_keyslot_set_priority(cd, 3, CRYPT_SLOT_PRIORITY_IGNORE));
+
+	OK_(crypt_keyslot_set_priority(cd, 2, CRYPT_SLOT_PRIORITY_PREFER));
+	OK_(crypt_keyslot_set_priority(cd, 5, CRYPT_SLOT_PRIORITY_PREFER));
+
+	EQ_(crypt_keyslot_add_by_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 6);
+	EQ_(crypt_keyslot_add_by_key(cd, 7, NULL, 32, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 7);
+
+	OK_(crypt_keyslot_set_priority(cd, 6, CRYPT_SLOT_PRIORITY_PREFER));
+	OK_(crypt_keyslot_set_priority(cd, 7, CRYPT_SLOT_PRIORITY_PREFER));
+
+	EQ_(crypt_token_json_set(cd, 0, TEST_TOKEN2_JSON("\"0\", \"5\", \"1\", \"6\"")), 0); // PASSPHRASE
+	EQ_(crypt_token_json_set(cd, 1, TEST_TOKEN3_JSON("\"4\", \"6\", \"0\", \"5\"")), 1); // PASSPHRASE1
+
+	/* keyslots:
+	 *
+	 * 0 ingore (token 0)
+	 * 1 normal (token 0)
+	 * 2 prefer -
+	 * 3 ignore -
+	 * 4 normal (token 1)
+	 * 5 prefer (token 1, token 0 wrong passphrase)
+	 * 6 prefer (unbound, token 0, token 1 wrong passphrase)
+	 * 7 prefer (unbound)
+	 */
+
+	OK_(crypt_keyslot_context_init_by_token(cd, 0, NULL, NULL, 0, NULL, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, 0), 1);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), 6);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, 7, kc, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), -ENOENT);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, 5, kc, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), -EPERM);
+	crypt_keyslot_context_free(kc);
+
+	OK_(crypt_keyslot_context_init_by_token(cd, CRYPT_ANY_TOKEN, NULL, NULL, 0, NULL, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, 0), 5);
+	crypt_keyslot_context_free(kc);
+
 	CRYPT_FREE(cd);
 
 	EQ_(crypt_token_max(CRYPT_LUKS2), 32);
