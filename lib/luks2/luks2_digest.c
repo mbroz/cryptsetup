@@ -174,6 +174,18 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 	int segment,
 	const struct volume_key *vk)
 {
+	int r = -EINVAL;
+	unsigned s;
+
+	if (segment == CRYPT_ANY_SEGMENT) {
+		for (s = 0; s < json_segments_count(LUKS2_get_segments_jobj(hdr)); s++) {
+			if ((r = LUKS2_digest_verify_by_digest(cd, LUKS2_digest_by_segment(hdr, s), vk)) >= 0)
+				return r;
+		}
+
+		return -EPERM;
+	}
+
 	return LUKS2_digest_verify_by_digest(cd, LUKS2_digest_by_segment(hdr, segment), vk);
 }
 

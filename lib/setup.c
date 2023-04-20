@@ -5070,16 +5070,23 @@ out:
 
 static int _activate_loopaes(struct crypt_device *cd,
 	const char *name,
-	char *buffer,
+	const char *buffer,
 	size_t buffer_size,
 	uint32_t flags)
 {
 	int r;
 	unsigned int key_count = 0;
 	struct volume_key *vk = NULL;
+	char *buffer_copy;
+
+	buffer_copy = crypt_safe_alloc(buffer_size);
+	if (!buffer_copy)
+		return -ENOMEM;
+	memcpy(buffer_copy, buffer, buffer_size);
 
 	r = LOOPAES_parse_keyfile(cd, &vk, cd->u.loopaes.hdr.hash, &key_count,
-				  buffer, buffer_size);
+				  buffer_copy, buffer_size);
+	crypt_safe_free(buffer_copy);
 
 	if (!r && name)
 		r = LOOPAES_activate(cd, name, cd->u.loopaes.cipher, key_count,
@@ -5115,91 +5122,7 @@ static int _activate_check_status(struct crypt_device *cd, const char *name, uns
 }
 
 // activation/deactivation of device mapping
-int crypt_activate_by_passphrase(struct crypt_device *cd,
-	const char *name,
-	int keyslot,
-	const char *passphrase,
-	size_t passphrase_size,
-	uint32_t flags)
-{
-	int r;
-
-	if (!cd || !passphrase || (!name && (flags & CRYPT_ACTIVATE_REFRESH)))
-		return -EINVAL;
-
-	log_dbg(cd, "%s volume %s [keyslot %d] using passphrase.",
-		name ? "Activating" : "Checking", name ?: "passphrase",
-		keyslot);
-
-	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
-	if (r < 0)
-		return r;
-
-	return _activate_by_passphrase(cd, name, keyslot, passphrase, passphrase_size, flags);
-}
-
-int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
-	const char *name,
-	int keyslot,
-	const char *keyfile,
-	size_t keyfile_size,
-	uint64_t keyfile_offset,
-	uint32_t flags)
-{
-	char *passphrase_read = NULL;
-	size_t passphrase_size_read;
-	int r;
-
-	if (!cd || !keyfile ||
-	    ((flags & CRYPT_ACTIVATE_KEYRING_KEY) && !crypt_use_keyring_for_vk(cd)))
-		return -EINVAL;
-
-	log_dbg(cd, "%s volume %s [keyslot %d] using keyfile %s.",
-		name ? "Activating" : "Checking", name ?: "passphrase", keyslot, keyfile);
-
-	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
-	if (r < 0)
-		return r;
-
-	r = crypt_keyfile_device_read(cd, keyfile,
-				&passphrase_read, &passphrase_size_read,
-				keyfile_offset, keyfile_size, 0);
-	if (r < 0)
-		goto out;
-
-	if (isLOOPAES(cd->type))
-		r = _activate_loopaes(cd, name, passphrase_read, passphrase_size_read, flags);
-	else
-		r = _activate_by_passphrase(cd, name, keyslot, passphrase_read, passphrase_size_read, flags);
-
-out:
-	crypt_safe_free(passphrase_read);
-	return r;
-}
-
-int crypt_activate_by_keyfile(struct crypt_device *cd,
-	const char *name,
-	int keyslot,
-	const char *keyfile,
-	size_t keyfile_size,
-	uint32_t flags)
-{
-	return crypt_activate_by_keyfile_device_offset(cd, name, keyslot, keyfile,
-					keyfile_size, 0, flags);
-}
-
-int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
-	const char *name,
-	int keyslot,
-	const char *keyfile,
-	size_t keyfile_size,
-	size_t keyfile_offset,
-	uint32_t flags)
-{
-	return crypt_activate_by_keyfile_device_offset(cd, name, keyslot, keyfile,
-					keyfile_size, keyfile_offset, flags);
-}
-int crypt_activate_by_volume_key(struct crypt_device *cd,
+static int _activate_by_volume_key(struct crypt_device *cd,
 	const char *name,
 	const char *volume_key,
 	size_t volume_key_size,
@@ -5275,7 +5198,9 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 		if (!vk)
 			return -ENOMEM;
 
-		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
+		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr,
+			flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY ? CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT,
+			vk);
 		if (r == -EPERM || r == -ENOENT)
 			log_err(cd, _("Volume key does not match the volume."));
 		if (r > 0)
@@ -5349,6 +5274,164 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	crypt_free_volume_key(vk);
 	crypt_free_volume_key(crypt_key);
 	crypt_free_volume_key(opal_key);
+
+	return r;
+}
+
+int crypt_activate_by_keyslot_context(struct crypt_device *cd,
+	const char *name,
+	int keyslot,
+	struct crypt_keyslot_context *kc,
+	uint32_t flags)
+{
+	struct volume_key *vk = NULL;
+	size_t passphrase_size;
+	const char *passphrase = NULL;
+	int unlocked_keyslot, r = -EINVAL;
+
+	log_dbg(cd, "%s volume %s using %s.",
+		name ? "Activating" : "Checking", name ?: "passphrase", keyslot_context_type_string(kc));
+
+	if (!cd || !kc)
+		return -EINVAL;
+	if (!name && (flags & CRYPT_ACTIVATE_REFRESH))
+		return -EINVAL;
+	if ((flags & CRYPT_ACTIVATE_KEYRING_KEY) && !crypt_use_keyring_for_vk(cd))
+		return -EINVAL;
+	if ((flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) && name)
+		return -EINVAL;
+	r = _check_header_data_overlap(cd, name);
+	if (r < 0)
+		return r;
+	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
+	if (r < 0)
+		return r;
+
+	/* for TCRYPT and token skip passphrase activation */
+	if (kc->get_passphrase && kc->type != CRYPT_KC_TYPE_TOKEN && !isTCRYPT(cd->type)) {
+		r = kc->get_passphrase(cd, kc, &passphrase, &passphrase_size);
+		if (r < 0)
+			return r;
+		if (passphrase) {
+			if (isLOOPAES(cd->type))
+				return _activate_loopaes(cd, name, passphrase, passphrase_size, flags);
+			else
+				return _activate_by_passphrase(cd, name, keyslot, passphrase, passphrase_size, flags);
+		}
+	}
+	/* only passphrase unlock is supported with loopaes */
+	if (isLOOPAES(cd->type))
+		return -EINVAL;
+
+	/* activate by volume key */
+	r = -EINVAL;
+	if (isLUKS1(cd->type)){
+		if (kc->get_luks1_volume_key)
+			r = kc->get_luks1_volume_key(cd, kc, keyslot, &vk);
+	} else if (isLUKS2(cd->type)) {
+		if (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY && kc->get_luks2_key)
+			r = kc->get_luks2_key(cd, kc, keyslot, CRYPT_ANY_SEGMENT, &vk);
+		else if (kc->get_luks2_volume_key)
+			r = kc->get_luks2_volume_key(cd, kc, keyslot, &vk);
+	} else if (isTCRYPT(cd->type)) {
+		r = 0;
+	} else if (isPLAIN(cd->type)) {
+		r = kc->get_plain_volume_key(cd, kc, &vk);
+	} else if (isBITLK(cd->type)) {
+		r = kc->get_bitlk_volume_key(cd, kc, &vk);
+	} else if (isFVAULT2(cd->type)) {
+		r = kc->get_fvault2_volume_key(cd, kc, &vk);
+	} else if (isVERITY(cd->type)) {
+		r = kc->get_verity_volume_key(cd, kc, &vk);
+	} else if (isINTEGRITY(cd->type)) {
+		r = kc->get_integrity_volume_key(cd, kc, &vk);
+	}
+	if (r < 0 && (r != -ENOENT || kc->type == CRYPT_KC_TYPE_TOKEN))
+		goto out;
+	unlocked_keyslot = r;
+
+	if (r == -ENOENT) {
+		crypt_free_volume_key(vk);
+		vk = NULL;
+	}
+
+	if ((r = _activate_by_volume_key(cd, name, vk ? vk->key : NULL, vk ? vk->keylength : 0, flags)) >= 0)
+		r = unlocked_keyslot >= 0 ? unlocked_keyslot : r;
+out:
+	crypt_free_volume_key(vk);
+	return r;
+}
+
+int crypt_activate_by_passphrase(struct crypt_device *cd,
+	const char *name,
+	int keyslot,
+	const char *passphrase,
+	size_t passphrase_size,
+	uint32_t flags)
+{
+	int r;
+	struct crypt_keyslot_context kc;
+
+	crypt_keyslot_unlock_by_passphrase_init_internal(&kc, passphrase, passphrase_size);
+	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, flags);
+	crypt_keyslot_context_destroy_internal(&kc);
+
+	return r;
+}
+
+int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
+	const char *name,
+	int keyslot,
+	const char *keyfile,
+	size_t keyfile_size,
+	uint64_t keyfile_offset,
+	uint32_t flags)
+{
+	int r;
+	struct crypt_keyslot_context kc;
+
+	crypt_keyslot_unlock_by_keyfile_init_internal(&kc, keyfile, keyfile_size, keyfile_offset);
+	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, flags);
+	crypt_keyslot_context_destroy_internal(&kc);
+
+	return r;
+}
+
+int crypt_activate_by_keyfile(struct crypt_device *cd,
+	const char *name,
+	int keyslot,
+	const char *keyfile,
+	size_t keyfile_size,
+	uint32_t flags)
+{
+	return crypt_activate_by_keyfile_device_offset(cd, name, keyslot, keyfile,
+					keyfile_size, 0, flags);
+}
+
+int crypt_activate_by_keyfile_offset(struct crypt_device *cd,
+	const char *name,
+	int keyslot,
+	const char *keyfile,
+	size_t keyfile_size,
+	size_t keyfile_offset,
+	uint32_t flags)
+{
+	return crypt_activate_by_keyfile_device_offset(cd, name, keyslot, keyfile,
+					keyfile_size, keyfile_offset, flags);
+}
+
+int crypt_activate_by_volume_key(struct crypt_device *cd,
+	const char *name,
+	const char *volume_key,
+	size_t volume_key_size,
+	uint32_t flags)
+{
+	int r;
+	struct crypt_keyslot_context kc;
+
+	crypt_keyslot_unlock_by_key_init_internal(&kc, volume_key, volume_key_size);
+	r = crypt_activate_by_keyslot_context(cd, name, CRYPT_ANY_SLOT /* unused */, &kc, flags);
+	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
 }
@@ -6618,26 +6701,13 @@ int crypt_activate_by_token_pin(struct crypt_device *cd, const char *name,
 	void *usrptr, uint32_t flags)
 {
 	int r;
+	struct crypt_keyslot_context kc;
 
-	log_dbg(cd, "%s volume %s using token (%s type) %d.",
-		name ? "Activating" : "Checking", name ?: "passphrase",
-		type ?: "any", token);
+	crypt_keyslot_unlock_by_token_init_internal(&kc, token, type, pin, pin_size, usrptr);
+	r = crypt_activate_by_keyslot_context(cd, name, CRYPT_ANY_SLOT, &kc, flags);
+	crypt_keyslot_context_destroy_internal(&kc);
 
-	if ((r = _onlyLUKS2(cd, CRYPT_CD_QUIET | CRYPT_CD_UNRESTRICTED, 0)))
-		return r;
-
-	if ((flags & CRYPT_ACTIVATE_KEYRING_KEY) && !crypt_use_keyring_for_vk(cd))
-		return -EINVAL;
-
-	if ((flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) && name)
-		return -EINVAL;
-
-	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
-	if (r < 0)
-		return r;
-
-	return LUKS2_token_open_and_activate(cd, &cd->u.luks2.hdr, CRYPT_ANY_SLOT, token,
-					     name, type, pin, pin_size, flags, usrptr);
+	return r;
 }
 
 int crypt_activate_by_token(struct crypt_device *cd,

@@ -1542,6 +1542,25 @@ int crypt_persistent_flags_get(struct crypt_device *cd,
  */
 
 /**
+ * Activate device or check using keyslot context.
+ *
+ * @param cd crypt device handle
+ * @param name name of device to create, if @e NULL only check passphrase
+ * @param keyslot requested keyslot to check or @e CRYPT_ANY_SLOT, keyslot is
+ *        ignored for unlock methods not based on passphrase
+ * @param kc keyslot context providing volume key or passphrase.
+ * @param flags activation flags
+ *
+ * @return unlocked key slot number for passphrase-based unlock, zero for other
+ *         unlock methods (e.g. volume key context) or negative errno on error.
+ */
+int crypt_activate_by_keyslot_context(struct crypt_device *cd,
+	const char *name,
+	int keyslot,
+	struct crypt_keyslot_context *kc,
+	uint32_t flags);
+
+/**
  * Activate device or check passphrase.
  *
  * @param cd crypt device handle

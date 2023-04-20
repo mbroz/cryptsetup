@@ -40,6 +40,11 @@ typedef int (*keyslot_context_get_volume_key) (
 	int keyslot,
 	struct volume_key **r_vk);
 
+typedef int (*keyslot_context_get_generic_volume_key) (
+	struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	struct volume_key **r_vk);
+
 typedef int (*keyslot_context_get_passphrase) (
 	struct crypt_device *cd,
 	struct crypt_keyslot_context *kc,
@@ -78,10 +83,15 @@ struct crypt_keyslot_context {
 	char *i_passphrase;
 	size_t i_passphrase_size;
 
-	keyslot_context_get_key		get_luks2_key;
-	keyslot_context_get_volume_key	get_luks1_volume_key;
-	keyslot_context_get_volume_key	get_luks2_volume_key;
-	keyslot_context_get_passphrase	get_passphrase;
+	keyslot_context_get_key			get_luks2_key;
+	keyslot_context_get_volume_key		get_luks1_volume_key;
+	keyslot_context_get_volume_key		get_luks2_volume_key;
+	keyslot_context_get_generic_volume_key	get_plain_volume_key;
+	keyslot_context_get_generic_volume_key	get_bitlk_volume_key;
+	keyslot_context_get_generic_volume_key	get_fvault2_volume_key;
+	keyslot_context_get_generic_volume_key	get_verity_volume_key;
+	keyslot_context_get_generic_volume_key	get_integrity_volume_key;
+	keyslot_context_get_passphrase		get_passphrase;
 };
 
 void crypt_keyslot_context_destroy_internal(struct crypt_keyslot_context *method);

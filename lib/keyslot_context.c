@@ -204,6 +204,13 @@ static int get_volume_key_by_key(struct crypt_device *cd,
 	return get_key_by_key(cd, kc, -2 /* unused */, -2 /* unused */, r_vk);
 }
 
+static int get_generic_volume_key_by_key(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	struct volume_key **r_vk)
+{
+	return get_key_by_key(cd, kc, -2 /* unused */, -2 /* unused */, r_vk);
+}
+
 static int get_luks2_key_by_token(struct crypt_device *cd,
 	struct crypt_keyslot_context *kc,
 	int keyslot,
@@ -211,12 +218,17 @@ static int get_luks2_key_by_token(struct crypt_device *cd,
 	struct volume_key **r_vk)
 {
 	int r;
+	struct luks2_hdr *hdr;
 
 	assert(cd);
 	assert(kc && kc->type == CRYPT_KC_TYPE_TOKEN);
 	assert(r_vk);
 
-	r = LUKS2_token_unlock_key(cd, crypt_get_hdr(cd, CRYPT_LUKS2), keyslot, kc->u.t.id, kc->u.t.type,
+	hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+	if (!hdr)
+		return -EINVAL;
+
+	r = LUKS2_token_unlock_key(cd, hdr, keyslot, kc->u.t.id, kc->u.t.type,
 				   kc->u.t.pin, kc->u.t.pin_size, segment, kc->u.t.usrptr, r_vk);
 	if (r < 0)
 		kc->error = r;
@@ -283,6 +295,11 @@ void crypt_keyslot_unlock_by_key_init_internal(struct crypt_keyslot_context *kc,
 	kc->get_luks2_volume_key = get_volume_key_by_key;
 	kc->get_luks1_volume_key = get_volume_key_by_key;
 	kc->get_passphrase = NULL; /* keyslot key context does not provide passphrase */
+	kc->get_plain_volume_key = get_generic_volume_key_by_key;
+	kc->get_bitlk_volume_key = get_generic_volume_key_by_key;
+	kc->get_fvault2_volume_key = get_generic_volume_key_by_key;
+	kc->get_verity_volume_key = get_generic_volume_key_by_key;
+	kc->get_integrity_volume_key = get_generic_volume_key_by_key;
 	unlock_method_init_internal(kc);
 }
 
@@ -299,6 +316,11 @@ void crypt_keyslot_unlock_by_passphrase_init_internal(struct crypt_keyslot_conte
 	kc->get_luks2_volume_key = get_luks2_volume_key_by_passphrase;
 	kc->get_luks1_volume_key = get_luks1_volume_key_by_passphrase;
 	kc->get_passphrase = get_passphrase_by_passphrase;
+	kc->get_plain_volume_key = NULL;
+	kc->get_bitlk_volume_key = NULL;
+	kc->get_fvault2_volume_key = NULL;
+	kc->get_verity_volume_key = NULL;
+	kc->get_integrity_volume_key = NULL;
 	unlock_method_init_internal(kc);
 }
 
@@ -317,6 +339,11 @@ void crypt_keyslot_unlock_by_keyfile_init_internal(struct crypt_keyslot_context 
 	kc->get_luks2_volume_key = get_luks2_volume_key_by_keyfile;
 	kc->get_luks1_volume_key = get_luks1_volume_key_by_keyfile;
 	kc->get_passphrase = get_passphrase_by_keyfile;
+	kc->get_plain_volume_key = NULL;
+	kc->get_bitlk_volume_key = NULL;
+	kc->get_fvault2_volume_key = NULL;
+	kc->get_verity_volume_key = NULL;
+	kc->get_integrity_volume_key = NULL;
 	unlock_method_init_internal(kc);
 }
 
@@ -339,6 +366,11 @@ void crypt_keyslot_unlock_by_token_init_internal(struct crypt_keyslot_context *k
 	kc->get_luks2_volume_key = get_luks2_volume_key_by_token;
 	kc->get_luks1_volume_key = NULL; /* LUKS1 is not supported */
 	kc->get_passphrase = get_passphrase_by_token;
+	kc->get_plain_volume_key = NULL;
+	kc->get_bitlk_volume_key = NULL;
+	kc->get_fvault2_volume_key = NULL;
+	kc->get_verity_volume_key = NULL;
+	kc->get_integrity_volume_key = NULL;
 	unlock_method_init_internal(kc);
 }
 
