@@ -5289,8 +5289,8 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	const char *passphrase = NULL;
 	int unlocked_keyslot, r = -EINVAL;
 
-	log_dbg(cd, "%s volume %s using %s.",
-		name ? "Activating" : "Checking", name ?: "passphrase", keyslot_context_type_string(kc));
+	log_dbg(cd, "%s volume %s [keyslot %d] using %s.",
+		name ? "Activating" : "Checking", name ?: "passphrase", keyslot, keyslot_context_type_string(kc));
 
 	if (!cd || !kc)
 		return -EINVAL;
@@ -5300,6 +5300,10 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 		return -EINVAL;
 	if ((flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) && name)
 		return -EINVAL;
+	if (kc->type == CRYPT_KC_TYPE_KEYRING && !kernel_keyring_support()) {
+		log_err(cd, _("Kernel keyring is not supported by the kernel."));
+		return -EINVAL;
+	}
 	r = _check_header_data_overlap(cd, name);
 	if (r < 0)
 		return r;
@@ -7322,34 +7326,15 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 			      int keyslot,
 			      uint32_t flags)
 {
-	char *passphrase;
-	size_t passphrase_size;
 	int r;
+	struct crypt_keyslot_context kc;
 
 	if (!cd || !key_description)
 		return -EINVAL;
 
-	log_dbg(cd, "%s volume %s [keyslot %d] using passphrase in keyring.",
-		name ? "Activating" : "Checking", name ?: "passphrase", keyslot);
-
-	if (!kernel_keyring_support()) {
-		log_err(cd, _("Kernel keyring is not supported by the kernel."));
-		return -EINVAL;
-	}
-
-	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
-	if (r < 0)
-		return r;
-
-	r = keyring_get_passphrase(key_description, &passphrase, &passphrase_size);
-	if (r < 0) {
-		log_err(cd, _("Failed to read passphrase from keyring (error %d)."), r);
-		return -EINVAL;
-	}
-
-	r = _activate_by_passphrase(cd, name, keyslot, passphrase, passphrase_size, flags);
-
-	crypt_safe_free(passphrase);
+	crypt_keyslot_unlock_by_keyring_internal(&kc, key_description);
+	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, flags);
+	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
 }

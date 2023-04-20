@@ -5128,6 +5128,7 @@ static void KeyslotContext(void)
 	uint64_t r_payload_offset;
 	char key[128];
 	size_t key_size = 128;
+	key_serial_t kid;
 
 	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
@@ -5139,6 +5140,9 @@ static void KeyslotContext(void)
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 1, NULL, 32, KEY1, strlen(KEY1)), 1);
 	EQ_(0, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, NULL, 0));
+
+	kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE, strlen(PASSPHRASE), KEY_SPEC_THREAD_KEYRING);
+	NOTFAIL_(kid, "Test or kernel keyring are broken.");
 
 	// test passphrase
 	OK_(crypt_keyslot_context_init_by_passphrase(cd, PASSPHRASE, strlen(PASSPHRASE), &kc));
@@ -5156,6 +5160,10 @@ static void KeyslotContext(void)
 	OK_(prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
 	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE1, 0, 0, &kc));
 	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, 0), 1);
+	crypt_keyslot_context_free(kc);
+
+	OK_(crypt_keyslot_context_init_by_keyring(cd, KEY_DESC_TEST0, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, 0), 0);
 	crypt_keyslot_context_free(kc);
 
 	// test activation
@@ -5177,6 +5185,12 @@ static void KeyslotContext(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_keyslot_context_free(kc);
 
+	OK_(crypt_keyslot_context_init_by_keyring(cd, KEY_DESC_TEST0, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, 0), 0);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_keyslot_context_free(kc);
+
+	NOTFAIL_(keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING), "Test or kernel keyring are broken.");
 	CRYPT_FREE(cd);
 	_cleanup_dmdevices();
 }

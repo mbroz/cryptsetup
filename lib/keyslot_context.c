@@ -273,6 +273,95 @@ static int get_passphrase_by_token(struct crypt_device *cd,
 	return kc->u.t.id;
 }
 
+static int get_passphrase_by_keyring(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	const char **r_passphrase,
+	size_t *r_passphrase_size)
+{
+	int r;
+
+	assert(cd);
+	assert(kc && kc->type == CRYPT_KC_TYPE_KEYRING);
+	assert(r_passphrase);
+	assert(r_passphrase_size);
+
+	if (!kc->i_passphrase) {
+		r = keyring_get_passphrase(kc->u.kr.key_description, &kc->i_passphrase, &kc->i_passphrase_size);
+		if (r < 0) {
+			log_err(cd, _("Failed to read passphrase from keyring."));
+			kc->error = -EINVAL;
+			return -EINVAL;
+		}
+	}
+
+	*r_passphrase = kc->i_passphrase;
+	*r_passphrase_size = kc->i_passphrase_size;
+
+	return 0;
+}
+
+static int get_luks2_key_by_keyring(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	int keyslot,
+	int segment,
+	struct volume_key **r_vk)
+{
+	int r;
+
+	assert(cd);
+	assert(kc && kc->type == CRYPT_KC_TYPE_KEYRING);
+	assert(r_vk);
+
+	r = get_passphrase_by_keyring(cd, kc, CONST_CAST(const char **) &kc->i_passphrase,
+		&kc->i_passphrase_size);
+	if (r < 0) {
+		log_err(cd, _("Failed to read passphrase from keyring."));
+		kc->error = -EINVAL;
+		return -EINVAL;
+	}
+
+	r = LUKS2_keyslot_open(cd, keyslot, segment, kc->i_passphrase, kc->i_passphrase_size, r_vk);
+	if (r < 0)
+		kc->error = r;
+
+	return 0;
+}
+
+static int get_luks2_volume_key_by_keyring(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	int keyslot,
+	struct volume_key **r_vk)
+{
+	return get_luks2_key_by_passphrase(cd, kc, keyslot, CRYPT_DEFAULT_SEGMENT, r_vk);
+}
+
+static int get_luks1_volume_key_by_keyring(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	int keyslot,
+	struct volume_key **r_vk)
+{
+	int r;
+
+	assert(cd);
+	assert(kc && kc->type == CRYPT_KC_TYPE_PASSPHRASE);
+	assert(r_vk);
+
+	r = get_passphrase_by_keyring(cd, kc, CONST_CAST(const char **) &kc->i_passphrase,
+		&kc->i_passphrase_size);
+	if (r < 0) {
+		log_err(cd, _("Failed to read passphrase from keyring."));
+		kc->error = -EINVAL;
+		return -EINVAL;
+	}
+
+	r = LUKS_open_key_with_hdr(keyslot, kc->i_passphrase, kc->i_passphrase_size,
+				   crypt_get_hdr(cd, CRYPT_LUKS1), r_vk, cd);
+	if (r < 0)
+		kc->error = r;
+
+	return r;
+}
+
 static void unlock_method_init_internal(struct crypt_keyslot_context *kc)
 {
 	assert(kc);
@@ -280,6 +369,26 @@ static void unlock_method_init_internal(struct crypt_keyslot_context *kc)
 	kc->error = 0;
 	kc->i_passphrase = NULL;
 	kc->i_passphrase_size = 0;
+}
+
+void crypt_keyslot_unlock_by_keyring_internal(struct crypt_keyslot_context *kc,
+	const char *key_description)
+{
+	assert(kc);
+
+	kc->type = CRYPT_KC_TYPE_KEYRING;
+	kc->u.kr.key_description = key_description;
+
+	kc->get_luks2_key = get_luks2_key_by_keyring;
+	kc->get_luks2_volume_key = get_luks2_volume_key_by_keyring;
+	kc->get_luks1_volume_key = get_luks1_volume_key_by_keyring;
+	kc->get_passphrase = get_passphrase_by_keyring;
+	kc->get_plain_volume_key = NULL;
+	kc->get_bitlk_volume_key = NULL;
+	kc->get_fvault2_volume_key = NULL;
+	kc->get_verity_volume_key = NULL;
+	kc->get_integrity_volume_key = NULL;
+	unlock_method_init_internal(kc);
 }
 
 void crypt_keyslot_unlock_by_key_init_internal(struct crypt_keyslot_context *kc,
@@ -477,6 +586,26 @@ int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd,
 	return 0;
 }
 
+int crypt_keyslot_context_init_by_keyring(struct crypt_device *cd,
+	const char *key_description,
+	struct crypt_keyslot_context **kc)
+{
+	struct crypt_keyslot_context *tmp;
+
+	if (!kc)
+		return -EINVAL;
+
+	tmp = malloc(sizeof(*tmp));
+	if (!tmp)
+		return -ENOMEM;
+
+	crypt_keyslot_unlock_by_keyring_internal(tmp, key_description);
+
+	*kc = tmp;
+
+	return 0;
+}
+
 int crypt_keyslot_context_get_error(struct crypt_keyslot_context *kc)
 {
 	return kc ? kc->error : -EINVAL;
@@ -514,6 +643,8 @@ const char *keyslot_context_type_string(const struct crypt_keyslot_context *kc)
 		return "token";
 	case CRYPT_KC_TYPE_KEY:
 		return "key";
+	case CRYPT_KC_TYPE_KEYRING:
+		return "keyring";
 	default:
 		return "<unknown>";
 	}

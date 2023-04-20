@@ -1263,6 +1263,21 @@ int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd,
 	struct crypt_keyslot_context **kc);
 
 /**
+ * Initialize keyslot context via passphrase stored in a keyring.
+ *
+ * @param cd crypt device handle initialized to LUKS device context
+ *
+ * @param key_description kernel keyring key description library should look
+ *        for passphrase in
+ * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_KEYRING
+ *
+ * @return zero on success or negative errno otherwise.
+ */
+int crypt_keyslot_context_init_by_keyring(struct crypt_device *cd,
+	const char *key_description,
+	struct crypt_keyslot_context **kc);
+
+/**
  * Get error code per keyslot context from last failed call.
  *
  * @note If @link crypt_keyslot_add_by_keyslot_context @endlink passed with
@@ -1305,6 +1320,10 @@ int crypt_keyslot_context_set_pin(struct crypt_device *cd,
 #define CRYPT_KC_TYPE_TOKEN      INT16_C(3)
 /** keyslot context initialized by volume key or unbound key (@link crypt_keyslot_context_init_by_volume_key @endlink) */
 #define CRYPT_KC_TYPE_KEY        INT16_C(4)
+/** keyslot context initialized by description of a keyring key
+ * (@link crypt_keyslot_context_init_by_keyring @endlink)
+ */
+#define CRYPT_KC_TYPE_KEYRING    INT16_C(5)
 /** @} */
 
 /**

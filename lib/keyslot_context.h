@@ -76,6 +76,9 @@ struct crypt_keyslot_context {
 		const char *volume_key;
 		size_t volume_key_size;
 	} k;
+	struct {
+		const char *key_description;
+	} kr;
 	} u;
 
 	int error;
@@ -115,6 +118,9 @@ void crypt_keyslot_unlock_by_token_init_internal(struct crypt_keyslot_context *k
 	const char *pin,
 	size_t pin_size,
 	void *usrptr);
+
+void crypt_keyslot_unlock_by_keyring_internal(struct crypt_keyslot_context *kc,
+	const char *key_description);
 
 const char *keyslot_context_type_string(const struct crypt_keyslot_context *kc);
 
