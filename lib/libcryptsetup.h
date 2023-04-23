@@ -273,7 +273,7 @@ struct crypt_pbkdf_type {
 
 /** Iteration time set by crypt_set_iteration_time(), for compatibility only. */
 #define CRYPT_PBKDF_ITER_TIME_SET   (UINT32_C(1) << 0)
-/** Never run benchmarks, use pre-set value or defaults. */
+/** Never run benchmarks or limit by system resources, use pre-set values or defaults. */
 #define CRYPT_PBKDF_NO_BENCHMARK    (UINT32_C(1) << 1)
 
 /** PBKDF2 according to RFC2898, LUKS1 legacy */

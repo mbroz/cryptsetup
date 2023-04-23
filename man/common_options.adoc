@@ -476,7 +476,8 @@ You can see all PBKDF parameters for particular LUKS2 keyslot with
 *NOTE:* If you do not want to use benchmark and want to specify all
 parameters directly, use _--pbkdf-force-iterations_ with
 _--pbkdf-memory_ and _--pbkdf-parallel_. This will override the values
-without benchmarking. Note it can cause extremely long unlocking time.
+without benchmarking. Note it can cause extremely long unlocking time
+or cause out-of-memory conditions with unconditional process termination.
 Use only in specific cases, for example, if you know that the formatted
 device will be used on some small embedded system.
 +

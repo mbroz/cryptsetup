@@ -254,7 +254,8 @@ int init_pbkdf_type(struct crypt_device *cd,
 		cd_pbkdf->parallel_threads = pbkdf_limits.max_parallel;
 	}
 
-	if (cd_pbkdf->parallel_threads) {
+	/* Do not limit threads by online CPUs if user forced values (no benchmark). */
+	if (cd_pbkdf->parallel_threads && !(cd_pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK)) {
 		cpus = crypt_cpusonline();
 		if (cd_pbkdf->parallel_threads > cpus) {
 			log_dbg(cd, "Only %u active CPUs detected, "
@@ -264,7 +265,8 @@ int init_pbkdf_type(struct crypt_device *cd,
 		}
 	}
 
-	if (cd_pbkdf->max_memory_kb) {
+	/* Do not limit by available physical memory if user forced values (no benchmark). */
+	if (cd_pbkdf->max_memory_kb && !(cd_pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK)) {
 		memory_kb = pbkdf_adjusted_phys_memory_kb();
 		if (cd_pbkdf->max_memory_kb > memory_kb) {
 			log_dbg(cd, "Not enough physical memory detected, "

@@ -2917,6 +2917,17 @@ static void Pbkdf(void)
 	argon2.hash = NULL;
 	OK_(crypt_set_pbkdf_type(cd, &argon2));
 
+	argon2.flags = CRYPT_PBKDF_NO_BENCHMARK;
+	argon2.max_memory_kb = 2 * 1024 * 1024;
+	argon2.iterations = 6;
+	argon2.parallel_threads = 8;
+	OK_(crypt_set_pbkdf_type(cd, &argon2));
+	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
+	EQ_(pbkdf->iterations, 6);
+	EQ_(pbkdf->max_memory_kb, 2 * 1024 *1024);
+	EQ_(pbkdf->parallel_threads, 4); /* hard maximum*/
+	EQ_(pbkdf->flags, CRYPT_PBKDF_NO_BENCHMARK);
+
 	CRYPT_FREE(cd);
 
 	NOTNULL_(pbkdf = crypt_get_pbkdf_default(CRYPT_LUKS1));
