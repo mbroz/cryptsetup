@@ -43,7 +43,13 @@ int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
 		   cipher, cipher_mode) == 2) {
 		if (!strcmp(cipher_mode, "plain"))
 			strcpy(cipher_mode, "cbc-plain");
-		if (key_nums) {
+		if (!strncmp(cipher, "capi:", 5)) {
+			/* CAPI must not use internal cipher driver names with dash */
+			if (strchr(cipher_mode, ')'))
+				return -EINVAL;
+			if (key_nums)
+				*key_nums = 1;
+		} else if (key_nums) {
 			char *tmp = strchr(cipher, ':');
 			*key_nums = tmp ? atoi(++tmp) : 1;
 			if (!*key_nums)

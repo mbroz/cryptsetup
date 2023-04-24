@@ -184,4 +184,10 @@ done
 dmcrypt xchacha12,aes-adiantum-plain64
 dmcrypt xchacha20,aes-adiantum-plain64
 
+echo -n "CAPI format:"
+echo $PASSWORD | $CRYPTSETUP create -h sha256 -c 'capi:xts(aes)-plain64' -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME || fail
+$CRYPTSETUP close "$DEV_NAME"_tstdev || fail
+echo $PASSWORD | $CRYPTSETUP create -h sha256 -c 'capi:xts(ecb(aes-generic))-plain64' -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME 2>/dev/null && fail
+echo [OK]
+
 cleanup
