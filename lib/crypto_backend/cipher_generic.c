@@ -51,6 +51,7 @@ static const struct cipher_alg cipher_algs[] = {
 	{ "xchacha12,aes", "adiantum", 32, false },
 	{ "xchacha20,aes", "adiantum", 32, false },
 	{ "sm4",         NULL, 16, false },
+	{ "aria",        NULL, 16, false },
 	{ NULL,          NULL,  0, false }
 };
 
