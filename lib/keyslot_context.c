@@ -332,7 +332,7 @@ static int get_luks2_volume_key_by_keyring(struct crypt_device *cd,
 	int keyslot,
 	struct volume_key **r_vk)
 {
-	return get_luks2_key_by_passphrase(cd, kc, keyslot, CRYPT_DEFAULT_SEGMENT, r_vk);
+	return get_luks2_key_by_keyring(cd, kc, keyslot, CRYPT_DEFAULT_SEGMENT, r_vk);
 }
 
 static int get_luks1_volume_key_by_keyring(struct crypt_device *cd,

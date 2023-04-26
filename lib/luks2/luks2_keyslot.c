@@ -578,6 +578,8 @@ int LUKS2_keyslot_open(struct crypt_device *cd,
 	int r_prio, r = -EINVAL;
 
 	hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+	if (!hdr)
+		return -EINVAL;
 
 	if (keyslot == CRYPT_ANY_SLOT) {
 		r_prio = LUKS2_keyslot_open_priority(cd, hdr, CRYPT_SLOT_PRIORITY_PREFER,

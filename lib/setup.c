@@ -4078,21 +4078,19 @@ static int resume_by_volume_key(struct crypt_device *cd,
 	return -EINVAL;
 }
 
-int crypt_resume_by_passphrase(struct crypt_device *cd,
+int crypt_resume_by_keyslot_context(struct crypt_device *cd,
 			       const char *name,
 			       int keyslot,
-			       const char *passphrase,
-			       size_t passphrase_size)
+			       struct crypt_keyslot_context *kc)
 {
-	struct volume_key *vk = NULL;
 	int r;
+	struct volume_key *vk = NULL;
+	int unlocked_keyslot = -EINVAL;
 
-	/* FIXME: check context uuid matches the dm-crypt device uuid */
-
-	if (!passphrase || !name)
+	if (!name)
 		return -EINVAL;
 
-	log_dbg(cd, "Resuming volume %s.", name);
+	log_dbg(cd, "Resuming volume %s [keyslot %d] using %s.", name, keyslot, keyslot_context_type_string(kc));
 
 	if ((r = onlyLUKS(cd)))
 		return r;
@@ -4106,24 +4104,50 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (isLUKS1(cd->type) && kc->get_luks1_volume_key)
+		r = kc->get_luks1_volume_key(cd, kc, keyslot, &vk);
+	else if (isLUKS2(cd->type) && kc->get_luks2_volume_key)
+		r = kc->get_luks2_volume_key(cd, kc, keyslot, &vk);
+	else
+		r = -EINVAL;
+	if (r < 0)
+		goto out;
+	unlocked_keyslot = r;
+
 	if (isLUKS1(cd->type)) {
-		r = LUKS_open_key_with_hdr(keyslot, passphrase, passphrase_size,
-					   &cd->u.luks1.hdr, &vk, cd);
-		if (r >= 0)
-			crypt_volume_key_set_id(vk, 0);
-
+		r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
+		crypt_volume_key_set_id(vk, 0);
+	} else if (isLUKS2(cd->type)) {
+		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
+		crypt_volume_key_set_id(vk, 0);
 	} else
-		r = LUKS2_keyslot_open(cd, keyslot, CRYPT_DEFAULT_SEGMENT, passphrase, passphrase_size, &vk);
-
-	if  (r < 0)
-		return r;
-
-	keyslot = r;
+		r = -EINVAL;
+	if (r < 0)
+		goto out;
 
 	r = resume_by_volume_key(cd, vk, name);
 
 	crypt_free_volume_key(vk);
-	return r < 0 ? r : keyslot;
+	return r < 0 ? r : unlocked_keyslot;
+out:
+	crypt_free_volume_key(vk);
+	return r;
+}
+
+int crypt_resume_by_passphrase(struct crypt_device *cd,
+			       const char *name,
+			       int keyslot,
+			       const char *passphrase,
+			       size_t passphrase_size)
+{
+	int r;
+	struct crypt_keyslot_context kc;
+
+	crypt_keyslot_unlock_by_passphrase_init_internal(&kc, passphrase, passphrase_size);
+	r = crypt_resume_by_keyslot_context(cd, name, keyslot, &kc);
+	crypt_keyslot_context_destroy_internal(&kc);
+
+	return r;
 }
 
 int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
@@ -4133,55 +4157,14 @@ int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
 					  size_t keyfile_size,
 					  uint64_t keyfile_offset)
 {
-	struct volume_key *vk = NULL;
-	char *passphrase_read = NULL;
-	size_t passphrase_size_read;
 	int r;
+	struct crypt_keyslot_context kc;
 
-	/* FIXME: check context uuid matches the dm-crypt device uuid */
+	crypt_keyslot_unlock_by_keyfile_init_internal(&kc, keyfile, keyfile_size, keyfile_offset);
+	r = crypt_resume_by_keyslot_context(cd, name, keyslot, &kc);
+	crypt_keyslot_context_destroy_internal(&kc);
 
-	if (!name || !keyfile)
-		return -EINVAL;
-
-	log_dbg(cd, "Resuming volume %s.", name);
-
-	if ((r = onlyLUKS(cd)))
-		return r;
-
-	r = dm_status_suspended(cd, name);
-	if (r < 0)
-		return r;
-
-	if (!r) {
-		log_err(cd, _("Volume %s is not suspended."), name);
-		return -EINVAL;
-	}
-
-	r = crypt_keyfile_device_read(cd, keyfile,
-				      &passphrase_read, &passphrase_size_read,
-				      keyfile_offset, keyfile_size, 0);
-	if (r < 0)
-		return r;
-
-	if (isLUKS1(cd->type)) {
-		r = LUKS_open_key_with_hdr(keyslot, passphrase_read, passphrase_size_read,
-					   &cd->u.luks1.hdr, &vk, cd);
-		if (r >= 0)
-			crypt_volume_key_set_id(vk, 0);
-	} else
-		r = LUKS2_keyslot_open(cd, keyslot, CRYPT_DEFAULT_SEGMENT,
-				       passphrase_read, passphrase_size_read, &vk);
-
-	crypt_safe_free(passphrase_read);
-	if (r < 0)
-		return r;
-
-	keyslot = r;
-
-	r = resume_by_volume_key(cd, vk, name);
-
-	crypt_free_volume_key(vk);
-	return r < 0 ? r : keyslot;
+	return r;
 }
 
 int crypt_resume_by_keyfile(struct crypt_device *cd,
@@ -4210,46 +4193,16 @@ int crypt_resume_by_volume_key(struct crypt_device *cd,
 	const char *volume_key,
 	size_t volume_key_size)
 {
-	struct volume_key *vk = NULL;
 	int r;
+	struct crypt_keyslot_context kc;
 
-	if (!name || !volume_key)
-		return -EINVAL;
+	crypt_keyslot_unlock_by_key_init_internal(&kc, volume_key, volume_key_size);
+	r = crypt_resume_by_keyslot_context(cd, name, CRYPT_ANY_SLOT /* unused */, &kc);
+	crypt_keyslot_context_destroy_internal(&kc);
 
-	log_dbg(cd, "Resuming volume %s by volume key.", name);
-
-	if ((r = onlyLUKS(cd)))
-		return r;
-
-	r = dm_status_suspended(cd, name);
-	if (r < 0)
-		return r;
-
-	if (!r) {
-		log_err(cd, _("Volume %s is not suspended."), name);
-		return -EINVAL;
-	}
-
-	vk = crypt_alloc_volume_key(volume_key_size, volume_key);
-	if (!vk)
-		return -ENOMEM;
-
-	if (isLUKS1(cd->type)) {
-		r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
-		if (r >= 0)
-			crypt_volume_key_set_id(vk, 0);
-	} else if (isLUKS2(cd->type)) {
-		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
-		crypt_volume_key_set_id(vk, r);
-	} else
-		r = -EINVAL;
 	if (r == -EPERM || r == -ENOENT)
 		log_err(cd, _("Volume key does not match the volume."));
 
-	if (r >= 0)
-		r = resume_by_volume_key(cd, vk, name);
-
-	crypt_free_volume_key(vk);
 	return r;
 }
 
@@ -4257,35 +4210,14 @@ int crypt_resume_by_token_pin(struct crypt_device *cd, const char *name,
 	const char *type, int token, const char *pin, size_t pin_size,
 	void *usrptr)
 {
-	struct volume_key *vk = NULL;
-	int r, keyslot;
+	int r;
+	struct crypt_keyslot_context kc;
 
-	if (!name)
-		return -EINVAL;
+	crypt_keyslot_unlock_by_token_init_internal(&kc, token, type, pin, pin_size, usrptr);
+	r = crypt_resume_by_keyslot_context(cd, name, CRYPT_ANY_SLOT, &kc);
+	crypt_keyslot_context_destroy_internal(&kc);
 
-	log_dbg(cd, "Resuming volume %s by token (%s type) %d.",
-		name, type ?: "any", token);
-
-	if ((r = _onlyLUKS2(cd, CRYPT_CD_QUIET, 0)))
-		return r;
-
-	r = dm_status_suspended(cd, name);
-	if (r < 0)
-		return r;
-
-	if (!r) {
-		log_err(cd, _("Volume %s is not suspended."), name);
-		return -EINVAL;
-	}
-
-	r = LUKS2_token_unlock_key(cd, &cd->u.luks2.hdr, CRYPT_ANY_SLOT, token, type,
-				   pin, pin_size, CRYPT_DEFAULT_SEGMENT, usrptr, &vk);
-	keyslot = r;
-	if (r >= 0)
-		r = resume_by_volume_key(cd, vk, name);
-
-	crypt_free_volume_key(vk);
-	return r < 0 ? r : keyslot;
+	return r;
 }
 
 /*

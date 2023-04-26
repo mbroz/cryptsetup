@@ -5129,6 +5129,8 @@ static void KeyslotContext(void)
 	char key[128];
 	size_t key_size = 128;
 	key_serial_t kid;
+	int suspend_status;
+	struct crypt_active_device cad;
 
 	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
@@ -5187,6 +5189,51 @@ static void KeyslotContext(void)
 
 	OK_(crypt_keyslot_context_init_by_keyring(cd, KEY_DESC_TEST0, &kc));
 	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, 0), 0);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_keyslot_context_free(kc);
+
+	// test resume
+	OK_(crypt_keyslot_context_init_by_passphrase(cd, PASSPHRASE, strlen(PASSPHRASE), &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, 0), 0);
+	suspend_status = crypt_suspend(cd, CDEVICE_1);
+	if (suspend_status == -ENOTSUP) {
+		printf("WARNING: Suspend/Resume not supported, skipping test.\n");
+		OK_(crypt_deactivate(cd, CDEVICE_1));
+
+		NOTFAIL_(keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING), "Test or kernel keyring are broken.");
+		CRYPT_FREE(cd);
+		_cleanup_dmdevices();
+		return;
+	}
+	OK_(suspend_status);
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(CRYPT_ACTIVATE_SUSPENDED, cad.flags & CRYPT_ACTIVATE_SUSPENDED);
+	OK_(crypt_resume_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc));
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(0, cad.flags & CRYPT_ACTIVATE_SUSPENDED);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_keyslot_context_free(kc);
+
+	OK_(crypt_keyslot_context_init_by_volume_key(cd, key, key_size, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, 0), 0);
+	OK_(crypt_suspend(cd, CDEVICE_1));
+	EQ_(crypt_resume_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc), 0);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_keyslot_context_free(kc);
+
+	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE1, 0, 0, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, 0), 1);
+	OK_(crypt_suspend(cd, CDEVICE_1));
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(CRYPT_ACTIVATE_SUSPENDED, cad.flags & CRYPT_ACTIVATE_SUSPENDED);
+	EQ_(crypt_resume_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc), 1);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_keyslot_context_free(kc);
+
+	OK_(crypt_keyslot_context_init_by_keyring(cd, KEY_DESC_TEST0, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, 0), 0);
+	OK_(crypt_suspend(cd, CDEVICE_1));
+	EQ_(crypt_resume_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	crypt_keyslot_context_free(kc);
 

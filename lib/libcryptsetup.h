@@ -1009,6 +1009,23 @@ int crypt_resume_by_token_pin(struct crypt_device *cd,
 	const char *pin,
 	size_t pin_size,
 	void *usrptr);
+
+/**
+ * Resume crypt device using keyslot context.
+ *
+ * @param cd crypt device handle
+ * @param name name of device to resume
+ * @param keyslot requested keyslot to check or @e CRYPT_ANY_SLOT, keyslot is
+ *        ignored for unlock methods not based on passphrase
+ * @param kc keyslot context providing volume key or passphrase.
+ *
+ * @return unlocked key slot number for passphrase-based unlock, zero for other
+ *         unlock methods (e.g. volume key context) or negative errno on error.
+ */
+int crypt_resume_by_keyslot_context(struct crypt_device *cd,
+			       const char *name,
+			       int keyslot,
+			       struct crypt_keyslot_context *kc);
 /** @} */
 
 /**
