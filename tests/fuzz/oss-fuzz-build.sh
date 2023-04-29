@@ -49,7 +49,9 @@ in_oss_fuzz && apt-get update && apt-get install -y \
 [ ! -d json-c ] && git clone --depth 1 https://github.com/json-c/json-c.git
 [ ! -d lvm2 ]   && git clone --depth 1 https://sourceware.org/git/lvm2.git
 [ ! -d popt ]   && git clone --depth 1 https://github.com/rpm-software-management/popt.git
-[ ! -d libprotobuf-mutator ] && git clone --depth 1 https://github.com/google/libprotobuf-mutator.git \
+# FIXME: temporary fix until libprotobuf stops shuffling C++ requirements
+# [ ! -d libprotobuf-mutator ] && git clone --depth 1 https://github.com/google/libprotobuf-mutator.git \
+[ ! -d libprotobuf-mutator ] && git clone --depth 1 --branch v1.1 https://github.com/google/libprotobuf-mutator.git \
                              && [ "$SANITIZER" == "memory" ] && ( cd libprotobuf-mutator; patch -p1 < $LIBFUZZER_PATCH )
 [ ! -d openssl ]    && git clone --depth 1 https://github.com/openssl/openssl
 [ ! -d util-linux ] && git clone --depth 1 https://github.com/util-linux/util-linux
