@@ -5120,6 +5120,67 @@ static void VolumeKeyGet(void)
 	_cleanup_dmdevices();
 }
 
+static void KeyslotContext(void)
+{
+	const char *cipher = "aes";
+	const char *cipher_mode = "xts-plain64";
+	struct crypt_keyslot_context *kc;
+	uint64_t r_payload_offset;
+	char key[128];
+	size_t key_size = 128;
+
+	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
+	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
+
+	// prepare the device
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_1S));
+	OK_(set_fast_pbkdf(cd));
+	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, NULL));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 1, NULL, 32, KEY1, strlen(KEY1)), 1);
+	EQ_(0, crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key, &key_size, NULL, 0));
+
+	// test passphrase
+	OK_(crypt_keyslot_context_init_by_passphrase(cd, PASSPHRASE, strlen(PASSPHRASE), &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, 0), 0);
+	crypt_keyslot_context_free(kc);
+
+	OK_(crypt_keyslot_context_init_by_passphrase(cd, KEY1, strlen(KEY1), &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, 0), 1);
+	crypt_keyslot_context_free(kc);
+
+	OK_(crypt_keyslot_context_init_by_volume_key(cd, key, key_size, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, 0), 0);
+	crypt_keyslot_context_free(kc);
+
+	OK_(prepare_keyfile(KEYFILE1, KEY1, strlen(KEY1)));
+	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE1, 0, 0, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, 0), 1);
+	crypt_keyslot_context_free(kc);
+
+	// test activation
+	OK_(crypt_keyslot_context_init_by_passphrase(cd, PASSPHRASE, strlen(PASSPHRASE), &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, 0), 0);
+	FAIL_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, 0), "already active");
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_keyslot_context_free(kc);
+
+	OK_(crypt_keyslot_context_init_by_volume_key(cd, key, key_size, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, 0), 0);
+	FAIL_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, 0), "already active");
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_keyslot_context_free(kc);
+
+	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE1, 0, 0, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, 0), 1);
+	FAIL_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, 0), "already active");
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	crypt_keyslot_context_free(kc);
+
+	CRYPT_FREE(cd);
+	_cleanup_dmdevices();
+}
+
 static int _crypt_load_check(struct crypt_device *_cd)
 {
 #ifdef HAVE_BLKID
@@ -5247,6 +5308,7 @@ int main(int argc, char *argv[])
 #endif
 	RUN_(LuksKeyslotAdd, "Adding keyslot via new API");
 	RUN_(VolumeKeyGet, "Getting volume key via keyslot context API");
+	RUN_(KeyslotContext, "Activate via keyslot context API");
 	RUN_(Luks2Repair, "LUKS2 repair"); // test disables metadata locking. Run always last!
 
 	_cleanup();
