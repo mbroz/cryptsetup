@@ -214,7 +214,7 @@ static int get_luks2_offsets(int metadata_device,
 
 		default_header_size = crypt_get_data_offset(_cd);
 
-		crypt_free(cd);
+		crypt_free(_cd);
 	}
 
 	if (!sector_size)
