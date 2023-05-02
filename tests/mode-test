@@ -8,6 +8,7 @@ DEV_NAME=dmc_test
 HEADER_IMG=mode-test.img
 PASSWORD=3xrododenron
 PASSWORD1=$PASSWORD
+KEY="7c0dc5dfd0c9191381d92e6ebb3b29e7f0dba53b0de132ae23f5726727173540"
 FAST_PBKDF2="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
 # cipher-chainmode-ivopts:ivmode
@@ -188,6 +189,10 @@ echo -n "CAPI format:"
 echo $PASSWORD | $CRYPTSETUP create -h sha256 -c 'capi:xts(aes)-plain64' -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME || fail
 $CRYPTSETUP close "$DEV_NAME"_tstdev || fail
 echo $PASSWORD | $CRYPTSETUP create -h sha256 -c 'capi:xts(ecb(aes-generic))-plain64' -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME 2>/dev/null && fail
+dmsetup create "$DEV_NAME"_tstdev --table "0 8 crypt capi:xts(ecb(aes-generic))-plain64 $KEY 0 /dev/mapper/$DEV_NAME 0" || fail
+$CRYPTSETUP status "$DEV_NAME"_tstdev >/dev/null 2>&1 && fail
+$CRYPTSETUP close "$DEV_NAME"_tstdev 2>/dev/null && fail
+dmsetup remove "$DEV_NAME"_tstdev || fail
 echo [OK]
 
 cleanup

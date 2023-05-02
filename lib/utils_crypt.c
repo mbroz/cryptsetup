@@ -306,6 +306,15 @@ int crypt_capi_to_cipher(char **org_c, char **org_i, const char *c_dm, const cha
 	if (i != 2)
 		return -EINVAL;
 
+	/* non-cryptsetup compatible mode (generic driver with dash?) */
+	if (strrchr(iv, ')')) {
+		if (i_dm)
+			return -EINVAL;
+		if (!(*org_c = strdup(c_dm)))
+			return -ENOMEM;
+		return 0;
+	}
+
 	len = strlen(tmp);
 	if (len < 2)
 		return -EINVAL;
