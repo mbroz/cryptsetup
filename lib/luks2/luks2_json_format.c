@@ -210,70 +210,24 @@ int LUKS2_generate_hdr(
 	const char *uuid,
 	unsigned int sector_size,  /* in bytes */
 	uint64_t data_offset,      /* in bytes */
-	uint64_t align_offset,     /* in bytes */
-	uint64_t required_alignment,
-	uint64_t metadata_size,
-	uint64_t keyslots_size)
+	uint64_t metadata_size_bytes,
+	uint64_t keyslots_size_bytes)
 {
 	struct json_object *jobj_segment, *jobj_integrity, *jobj_keyslots, *jobj_segments, *jobj_config;
 	char cipher[128];
 	uuid_t partitionUuid;
 	int r, digest;
-	uint64_t mdev_size;
 
-	if (!metadata_size)
-		metadata_size = LUKS2_HDR_16K_LEN;
-	hdr->hdr_size = metadata_size;
-
-	if (data_offset && data_offset < get_min_offset(hdr)) {
-		log_err(cd, _("Requested data offset is too small."));
-		return -EINVAL;
-	}
-
-	/* Increase keyslot size according to data offset */
-	if (!keyslots_size && data_offset)
-		keyslots_size = data_offset - get_min_offset(hdr);
-
-	/* keyslots size has to be 4 KiB aligned */
-	keyslots_size -= (keyslots_size % 4096);
-
-	if (keyslots_size > LUKS2_MAX_KEYSLOTS_SIZE)
-		keyslots_size = LUKS2_MAX_KEYSLOTS_SIZE;
-
-	if (!keyslots_size) {
-		assert(LUKS2_DEFAULT_HDR_SIZE > 2 * LUKS2_HDR_OFFSET_MAX);
-		keyslots_size = LUKS2_DEFAULT_HDR_SIZE - get_min_offset(hdr);
-		/* Decrease keyslots_size due to metadata device being too small */
-		if (!device_size(crypt_metadata_device(cd), &mdev_size) &&
-		    ((keyslots_size + get_min_offset(hdr)) > mdev_size) &&
-		    device_fallocate(crypt_metadata_device(cd), keyslots_size + get_min_offset(hdr)) &&
-		    (get_min_offset(hdr) <= mdev_size))
-			keyslots_size = mdev_size - get_min_offset(hdr);
-	}
-
-	/* Decrease keyslots_size if we have smaller data_offset */
-	if (data_offset && (keyslots_size + get_min_offset(hdr)) > data_offset) {
-		keyslots_size = data_offset - get_min_offset(hdr);
-		log_dbg(cd, "Decreasing keyslot area size to %" PRIu64
-			" bytes due to the requested data offset %"
-			PRIu64 " bytes.", keyslots_size, data_offset);
-	}
-
-	/* Data offset has priority */
-	if (!data_offset && required_alignment) {
-		data_offset = size_round_up(get_min_offset(hdr) + keyslots_size,
-					    (size_t)required_alignment);
-		data_offset += align_offset;
-	}
+	hdr->hdr_size = metadata_size_bytes;
 
 	log_dbg(cd, "Formatting LUKS2 with JSON metadata area %" PRIu64
 		" bytes and keyslots area %" PRIu64 " bytes.",
-		metadata_size - LUKS2_HDR_BIN_LEN, keyslots_size);
+		metadata_size_bytes - LUKS2_HDR_BIN_LEN, keyslots_size_bytes);
 
-	if (keyslots_size < (LUKS2_HDR_OFFSET_MAX - 2*LUKS2_HDR_16K_LEN))
+	if (keyslots_size_bytes < (LUKS2_HDR_OFFSET_MAX - 2*LUKS2_HDR_16K_LEN))
 		log_std(cd, _("WARNING: keyslots area (%" PRIu64 " bytes) is very small,"
 			" available LUKS2 keyslot count is very limited.\n"),
-			keyslots_size);
+			keyslots_size_bytes);
 
 	hdr->seqid = 1;
 	hdr->version = 2;
@@ -364,8 +318,8 @@ int LUKS2_generate_hdr(
 		goto err;
 	}
 
-	json_object_object_add(jobj_config, "json_size", crypt_jobj_new_uint64(metadata_size - LUKS2_HDR_BIN_LEN));
-	json_object_object_add(jobj_config, "keyslots_size", crypt_jobj_new_uint64(keyslots_size));
+	json_object_object_add(jobj_config, "json_size", crypt_jobj_new_uint64(metadata_size_bytes - LUKS2_HDR_BIN_LEN));
+	json_object_object_add(jobj_config, "keyslots_size", crypt_jobj_new_uint64(keyslots_size_bytes));
 
 	JSON_DBG(cd, hdr->jobj, "Header JSON:");
 	return 0;
@@ -441,5 +395,82 @@ int LUKS2_set_keyslots_size(struct luks2_hdr *hdr, uint64_t data_offset)
 		return 1;
 
 	json_object_object_add(jobj_config, "keyslots_size", crypt_jobj_new_uint64(keyslots_size));
+	return 0;
+}
+
+int LUKS2_hdr_get_storage_params(struct crypt_device *cd,
+			    uint64_t alignment_offset_bytes,
+			    uint64_t alignment_bytes,
+			    uint64_t *ret_metadata_size_bytes,
+			    uint64_t *ret_keyslots_size_bytes,
+			    uint64_t *ret_data_offset_bytes)
+{
+	uint64_t data_offset_bytes, keyslots_size_bytes, metadata_size_bytes, mdev_size_bytes;
+
+	assert(cd);
+	assert(ret_metadata_size_bytes);
+	assert(ret_keyslots_size_bytes);
+	assert(ret_data_offset_bytes);
+
+	metadata_size_bytes = crypt_get_metadata_size_bytes(cd);
+	keyslots_size_bytes = crypt_get_keyslots_size_bytes(cd);
+	data_offset_bytes = crypt_get_data_offset_sectors(cd) * SECTOR_SIZE;
+
+	if (!metadata_size_bytes)
+		metadata_size_bytes = LUKS2_HDR_16K_LEN;
+
+	if (data_offset_bytes && data_offset_bytes < 2 * metadata_size_bytes) {
+		log_err(cd, _("Requested data offset is too small."));
+		return -EINVAL;
+	}
+
+	/* Increase keyslot size according to data offset */
+	if (!keyslots_size_bytes && data_offset_bytes)
+		keyslots_size_bytes = data_offset_bytes - 2 * metadata_size_bytes;
+
+	/* keyslots size has to be 4 KiB aligned */
+	keyslots_size_bytes -= (keyslots_size_bytes % 4096);
+
+	if (keyslots_size_bytes > LUKS2_MAX_KEYSLOTS_SIZE)
+		keyslots_size_bytes = LUKS2_MAX_KEYSLOTS_SIZE;
+
+	if (!keyslots_size_bytes) {
+		assert(LUKS2_DEFAULT_HDR_SIZE > 2 * LUKS2_HDR_OFFSET_MAX);
+		keyslots_size_bytes = LUKS2_DEFAULT_HDR_SIZE - 2 * metadata_size_bytes;
+		/* Decrease keyslots_size due to metadata device being too small */
+		if (!device_size(crypt_metadata_device(cd), &mdev_size_bytes) &&
+		    ((keyslots_size_bytes + 2 * metadata_size_bytes) > mdev_size_bytes) &&
+		    device_fallocate(crypt_metadata_device(cd), keyslots_size_bytes + 2 * metadata_size_bytes) &&
+		    ((2 * metadata_size_bytes) <= mdev_size_bytes))
+			keyslots_size_bytes = mdev_size_bytes - 2 * metadata_size_bytes;
+	}
+
+	/* Decrease keyslots_size if we have smaller data_offset */
+	if (data_offset_bytes && (keyslots_size_bytes + 2 * metadata_size_bytes) > data_offset_bytes) {
+		keyslots_size_bytes = data_offset_bytes - 2 * metadata_size_bytes;
+		log_dbg(cd, "Decreasing keyslot area size to %" PRIu64
+			" bytes due to the requested data offset %"
+			PRIu64 " bytes.", keyslots_size_bytes, data_offset_bytes);
+	}
+
+	/* Data offset has priority */
+	if (!data_offset_bytes && alignment_bytes) {
+		data_offset_bytes = size_round_up(2 * metadata_size_bytes + keyslots_size_bytes,
+					    (size_t)alignment_bytes);
+		data_offset_bytes += alignment_offset_bytes;
+	}
+
+	if (crypt_get_metadata_size_bytes(cd) && (crypt_get_metadata_size_bytes(cd) != metadata_size_bytes))
+		log_std(cd, _("WARNING: LUKS2 metadata size changed to %" PRIu64 " bytes.\n"),
+			metadata_size_bytes);
+
+	if (crypt_get_keyslots_size_bytes(cd) && (crypt_get_keyslots_size_bytes(cd) != keyslots_size_bytes))
+		log_std(cd, _("WARNING: LUKS2 keyslots area size changed to %" PRIu64 " bytes.\n"),
+			keyslots_size_bytes);
+
+	*ret_metadata_size_bytes = metadata_size_bytes;
+	*ret_keyslots_size_bytes = keyslots_size_bytes;
+	*ret_data_offset_bytes = data_offset_bytes;
+
 	return 0;
 }

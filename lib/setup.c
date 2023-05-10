@@ -223,6 +223,24 @@ struct device *crypt_data_device(struct crypt_device *cd)
 	return cd->device;
 }
 
+uint64_t crypt_get_metadata_size_bytes(struct crypt_device *cd)
+{
+	assert(cd);
+	return cd->metadata_size;
+}
+
+uint64_t crypt_get_keyslots_size_bytes(struct crypt_device *cd)
+{
+	assert(cd);
+	return cd->keyslots_size;
+}
+
+uint64_t crypt_get_data_offset_sectors(struct crypt_device *cd)
+{
+	assert(cd);
+	return cd->data_offset;
+}
+
 int init_crypto(struct crypt_device *ctx)
 {
 	struct utsname uts;
@@ -1805,7 +1823,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	unsigned long alignment_offset = 0;
 	unsigned int sector_size;
 	const char *integrity = params ? params->integrity : NULL;
-	uint64_t dev_size;
+	uint64_t data_offset_bytes, dev_size, metadata_size_bytes, keyslots_size_bytes;
 	uint32_t dmc_flags;
 
 	cd->u.luks2.hdr.jobj = NULL;
@@ -1956,24 +1974,19 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			goto out;
 	}
 
+	r = LUKS2_hdr_get_storage_params(cd, alignment_offset, required_alignment,
+			     &metadata_size_bytes, &keyslots_size_bytes, &data_offset_bytes);
+	if (r < 0)
+		goto out;
+
 	r = LUKS2_generate_hdr(cd, &cd->u.luks2.hdr, cd->volume_key,
 			       cipher, cipher_mode,
 			       integrity, uuid,
 			       sector_size,
-			       cd->data_offset * SECTOR_SIZE,
-			       alignment_offset,
-			       required_alignment,
-			       cd->metadata_size, cd->keyslots_size);
+			       data_offset_bytes,
+			       metadata_size_bytes, keyslots_size_bytes);
 	if (r < 0)
 		goto out;
-
-	if (cd->metadata_size && (cd->metadata_size != LUKS2_metadata_size(&cd->u.luks2.hdr)))
-		log_std(cd, _("WARNING: LUKS2 metadata size changed to %" PRIu64 " bytes.\n"),
-			LUKS2_metadata_size(&cd->u.luks2.hdr));
-
-	if (cd->keyslots_size && (cd->keyslots_size != LUKS2_keyslots_size(&cd->u.luks2.hdr)))
-		log_std(cd, _("WARNING: LUKS2 keyslots area size changed to %" PRIu64 " bytes.\n"),
-			LUKS2_keyslots_size(&cd->u.luks2.hdr));
 
 	if (!integrity && sector_size > SECTOR_SIZE) {
 		dev_size -= (crypt_get_data_offset(cd) * SECTOR_SIZE);

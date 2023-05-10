@@ -384,10 +384,15 @@ int LUKS2_generate_hdr(
 	const char *uuid,
 	unsigned int sector_size,
 	uint64_t data_offset,
-	uint64_t align_offset,
-	uint64_t required_alignment,
-	uint64_t metadata_size,
-	uint64_t keyslots_size);
+	uint64_t metadata_size_bytes,
+	uint64_t keyslots_size_bytes);
+
+int LUKS2_hdr_get_storage_params(struct crypt_device *cd,
+			    uint64_t alignment_offset_bytes,
+			    uint64_t alignment_bytes,
+			    uint64_t *ret_metadata_size_bytes,
+			    uint64_t *ret_keyslots_size_bytes,
+			    uint64_t *ret_data_offset_bytes);
 
 int LUKS2_check_metadata_area_size(uint64_t metadata_size);
 int LUKS2_check_keyslots_area_size(uint64_t keyslots_size);

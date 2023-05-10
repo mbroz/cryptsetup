@@ -155,6 +155,10 @@ int create_or_reload_device_with_integrity(struct crypt_device *cd, const char *
 struct device *crypt_metadata_device(struct crypt_device *cd);
 struct device *crypt_data_device(struct crypt_device *cd);
 
+uint64_t crypt_get_metadata_size_bytes(struct crypt_device *cd);
+uint64_t crypt_get_keyslots_size_bytes(struct crypt_device *cd);
+uint64_t crypt_get_data_offset_sectors(struct crypt_device *cd);
+
 int crypt_confirm(struct crypt_device *cd, const char *msg);
 
 char *crypt_lookup_dev(const char *dev_id);
