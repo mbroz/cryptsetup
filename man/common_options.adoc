@@ -235,6 +235,17 @@ partially predictable volume key which will compromise security.
 endif::[]
 endif::[]
 
+ifdef::ACTION_OPEN,ACTION_LUKSRESUME,ACTION_LUKSADDKEY[]
+*--volume-key-keyring* _<key description>_::
+Use a volume key stored in a keyring.
+This allows one to open _luks_ and device types without giving a passphrase.
+The volume key has to be of user type, in order to validate the digest.
++
+The _<key description>_ uses keyctl-compatible syntax. This can either be a
+numeric key ID or a string name in the format _%<key type>:<key name>_. See
+also *KEY IDENTIFIERS* section of *keyctl*(1).
+endif::[]
+
 ifdef::ACTION_LUKSDUMP[]
 *--dump-json-metadata*::
 For _luksDump_ (LUKS2 only) this option prints content of LUKS2 header

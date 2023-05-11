@@ -1616,6 +1616,7 @@ static int action_open_luks(void)
 	char *password = NULL;
 	size_t passwordLen;
 	struct stat st;
+	struct crypt_keyslot_context *kc = NULL;
 
 	if (ARG_SET(OPT_REFRESH_ID)) {
 		activated_name = action_argc > 1 ? action_argv[1] : action_argv[0];
@@ -1683,6 +1684,13 @@ static int action_open_luks(void)
 			goto out;
 		r = crypt_activate_by_volume_key(cd, activated_name,
 						 key, keysize, activate_flags);
+	} else if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
+		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &kc);
+		if (r)
+			goto out;
+		r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT, kc, activate_flags);
+		if (r)
+			goto out;
 	} else {
 		r = crypt_activate_by_token_pin(cd, activated_name, ARG_STR(OPT_TOKEN_TYPE_ID),
 						ARG_INT32(OPT_TOKEN_ID_ID), NULL, 0, NULL, activate_flags);
@@ -1719,6 +1727,7 @@ out:
 	    (crypt_get_active_device(cd, activated_name, &cad) ||
 	     crypt_persistent_flags_set(cd, CRYPT_FLAGS_ACTIVATION, cad.flags & activate_flags)))
 		log_err(_("Device activated but cannot make flags persistent."));
+	crypt_keyslot_context_free(kc);
 
 	crypt_safe_free(key);
 	crypt_safe_free(password);
@@ -2082,6 +2091,8 @@ static int action_luksAddKey(void)
 				ARG_UINT32(OPT_KEYFILE_SIZE_ID),
 				ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
 				&kc);
+	else if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID))
+		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &kc);
 	else if (ARG_SET(OPT_TOKEN_ID_ID) || ARG_SET(OPT_TOKEN_TYPE_ID) || ARG_SET(OPT_TOKEN_ONLY_ID)) {
 		r = crypt_keyslot_context_init_by_token(cd,
 				ARG_INT32(OPT_TOKEN_ID_ID),
@@ -2516,6 +2527,7 @@ static int action_luksResume(void)
 	int r, tries;
 	struct crypt_active_device cad;
 	const char *req_type = luksType(device_type);
+	struct crypt_keyslot_context *kc = NULL;
 
 	if (req_type && !isLUKS(req_type))
 		return -EINVAL;
@@ -2573,6 +2585,14 @@ static int action_luksResume(void)
 	if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
 		goto out;
 
+	if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
+		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &kc);
+		if (r)
+			goto out;
+		r = crypt_resume_by_keyslot_context(cd, action_argv[0], CRYPT_ANY_SLOT, kc);
+		goto out;
+	}
+
 	tries = set_tries_tty();
 	do {
 		r = tools_get_key(NULL, &password, &passwordLen,
@@ -2591,6 +2611,7 @@ static int action_luksResume(void)
 		password = NULL;
 	} while ((r == -EPERM || r == -ERANGE) && (--tries > 0));
 out:
+	crypt_keyslot_context_free(kc);
 	crypt_safe_free(password);
 	crypt_free(cd);
 	return r;

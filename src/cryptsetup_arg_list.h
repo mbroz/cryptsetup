@@ -119,6 +119,8 @@ ARG(OPT_LUKS2_METADATA_SIZE, '\0', POPT_ARG_STRING, N_("LUKS2 header metadata ar
 
 ARG(OPT_VOLUME_KEY_FILE, '\0', POPT_ARG_STRING, N_("Use the volume key from file."), NULL, CRYPT_ARG_STRING, {}, {})
 
+ARG(OPT_VOLUME_KEY_KEYRING, '\0', POPT_ARG_STRING, N_("Use the specified keyring key as a volume key."), NULL, CRYPT_ARG_STRING, {}, {})
+
 ARG(OPT_VOLUME_KEY_TYPE, '\0', POPT_ARG_STRING, N_("Specify the type of the volume key stored in keyring"), NULL, CRYPT_ARG_STRING, {}, {})
 
 ARG(OPT_NEW_KEYFILE, '\0', POPT_ARG_STRING, N_("Read the key for a new slot from a file"), NULL, CRYPT_ARG_STRING, {}, OPT_NEW_KEYFILE_ACTIONS)

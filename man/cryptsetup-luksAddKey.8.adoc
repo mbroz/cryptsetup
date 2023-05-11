@@ -19,9 +19,9 @@ cryptsetup-luksAddKey - add a new passphrase
 Adds a keyslot protected by a new passphrase. An existing passphrase
 must be supplied interactively, via --key-file or LUKS2 token (plugin).
 Alternatively to existing passphrase user may pass directly volume key
-(via --volume-key-file). The new passphrase to be added can be specified
-interactively, read from the file given as the positional argument (also
-via --new-keyfile parameter) or via LUKS2 token.
+(via --volume-key-file or --volume-key-keyring). The new passphrase to be added
+can be specified interactively, read from the file given as the positional
+argument (also via --new-keyfile parameter) or via LUKS2 token.
 
 *NOTE:* with --unbound option the action creates new unbound LUKS2
 keyslot. The keyslot cannot be used for device activation. If you don't
@@ -34,11 +34,11 @@ algorithm is always the same for all keyslots.
 
 *<options>* can be [--key-file, --keyfile-offset, --keyfile-size,
 --new-keyfile, --new-keyfile-offset, --new-keyfile-size, --key-slot,
---new-key-slot, --volume-key-file, --force-password, --hash, --header,
---disable-locks, --iter-time, --pbkdf, --pbkdf-force-iterations,
---pbkdf-memory, --pbkdf-parallel, --unbound, --type, --keyslot-cipher,
---keyslot-key-size, --key-size, --timeout, --token-id, --token-type,
---token-only, --new-token-id, --verify-passphrase].
+--new-key-slot, --volume-key-file, --volume-key-keyring, --force-password,
+--hash, --header, --disable-locks, --iter-time, --pbkdf,
+--pbkdf-force-iterations, --pbkdf-memory, --pbkdf-parallel, --unbound, --type,
+--keyslot-cipher, --keyslot-key-size, --key-size, --timeout, --token-id,
+--token-type, --token-only, --new-token-id, --verify-passphrase].
 
 include::man/common_options.adoc[]
 

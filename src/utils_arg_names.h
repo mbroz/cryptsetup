@@ -110,6 +110,7 @@
 #define OPT_LUKS2_METADATA_SIZE		"luks2-metadata-size"
 #define OPT_MASTER_KEY_FILE		"master-key-file"
 #define OPT_VOLUME_KEY_FILE		"volume-key-file"
+#define OPT_VOLUME_KEY_KEYRING		"volume-key-keyring"
 #define OPT_VOLUME_KEY_TYPE		"volume-key-type"
 #define OPT_NEW				"new"
 #define OPT_NEW_KEY_SLOT		"new-key-slot"
