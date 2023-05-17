@@ -1822,6 +1822,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	unsigned long required_alignment = DEFAULT_DISK_ALIGNMENT;
 	unsigned long alignment_offset = 0;
 	unsigned int sector_size;
+	char cipher_spec[128];
 	const char *integrity = params ? params->integrity : NULL;
 	uint64_t data_offset_bytes, dev_size, metadata_size_bytes, keyslots_size_bytes;
 	uint32_t dmc_flags;
@@ -1974,13 +1975,22 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			goto out;
 	}
 
+	if (*cipher_mode != '\0')
+		r = snprintf(cipher_spec, sizeof(cipher_spec), "%s-%s", cipher, cipher_mode);
+	else
+		r = snprintf(cipher_spec, sizeof(cipher_spec), "%s", cipher);
+	if (r < 0 || (size_t)r >= sizeof(cipher_spec)) {
+		r = -EINVAL;
+		goto out;
+	}
+
 	r = LUKS2_hdr_get_storage_params(cd, alignment_offset, required_alignment,
 			     &metadata_size_bytes, &keyslots_size_bytes, &data_offset_bytes);
 	if (r < 0)
 		goto out;
 
 	r = LUKS2_generate_hdr(cd, &cd->u.luks2.hdr, cd->volume_key,
-			       cipher, cipher_mode,
+			       cipher_spec,
 			       integrity, uuid,
 			       sector_size,
 			       data_offset_bytes,

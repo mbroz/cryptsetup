@@ -204,8 +204,7 @@ int LUKS2_generate_hdr(
 	struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const struct volume_key *vk,
-	const char *cipherName,
-	const char *cipherMode,
+	const char *cipher_spec,
 	const char *integrity,
 	const char *uuid,
 	unsigned int sector_size,  /* in bytes */
@@ -214,7 +213,6 @@ int LUKS2_generate_hdr(
 	uint64_t keyslots_size_bytes)
 {
 	struct json_object *jobj_segment, *jobj_keyslots, *jobj_segments, *jobj_config;
-	char cipher[128];
 	uuid_t partitionUuid;
 	int r, digest;
 
@@ -244,13 +242,6 @@ int LUKS2_generate_hdr(
 		uuid_generate(partitionUuid);
 
 	uuid_unparse(partitionUuid, hdr->uuid);
-
-	if (*cipherMode != '\0')
-		r = snprintf(cipher, sizeof(cipher), "%s-%s", cipherName, cipherMode);
-	else
-		r = snprintf(cipher, sizeof(cipher), "%s", cipherName);
-	if (r < 0 || (size_t)r >= sizeof(cipher))
-		return -EINVAL;
 
 	hdr->jobj = json_object_new_object();
 	if (!hdr->jobj) {
@@ -293,7 +284,7 @@ int LUKS2_generate_hdr(
 		goto err;
 	}
 
-	jobj_segment = json_segment_create_crypt(data_offset, 0, NULL, cipher, integrity, sector_size, 0);
+	jobj_segment = json_segment_create_crypt(data_offset, 0, NULL, cipher_spec, integrity, sector_size, 0);
 	if (!jobj_segment) {
 		r = -EINVAL;
 		goto err;
