@@ -1809,6 +1809,116 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	return 0;
 }
 
+static int LUKS2_check_encryption_params(struct crypt_device *cd,
+	const char *cipher,
+	const char *cipher_mode,
+	const char *integrity,
+	size_t volume_key_size,
+	const struct crypt_params_luks2 *params,
+	const char **ret_integrity)
+{
+	int r, integrity_key_size = 0;
+
+	assert(cipher);
+	assert(cipher_mode);
+	assert(ret_integrity);
+
+	if (integrity) {
+		if (params->integrity_params) {
+			/* Standalone dm-integrity must not be used */
+			if (params->integrity_params->integrity ||
+			    params->integrity_params->integrity_key_size)
+				return -EINVAL;
+			/* FIXME: journal encryption and MAC is here not yet supported */
+			if (params->integrity_params->journal_crypt ||
+			params->integrity_params->journal_integrity)
+				return -ENOTSUP;
+		}
+		if (!INTEGRITY_tag_size(integrity, cipher, cipher_mode)) {
+			/* merge "none" string into NULL to make branching logic is easier */
+			if (!strcmp(integrity, "none"))
+				integrity = NULL;
+			else
+				return -EINVAL;
+		}
+		integrity_key_size = INTEGRITY_key_size(integrity);
+		if ((integrity_key_size < 0) || (integrity_key_size >= (int)volume_key_size)) {
+			log_err(cd, _("Volume key is too small for encryption with integrity extensions."));
+			return -EINVAL;
+		}
+	}
+
+	/* FIXME: allow this later also for normal ciphers (check AF_ALG availability. */
+	if (integrity && !integrity_key_size) {
+		r = crypt_cipher_check_kernel(cipher, cipher_mode, integrity, volume_key_size);
+		if (r < 0) {
+			log_err(cd, _("Cipher %s-%s (key size %zd bits) is not available."),
+				cipher, cipher_mode, volume_key_size * 8);
+			return r;
+		}
+	}
+
+	if ((!integrity || integrity_key_size) && !crypt_cipher_wrapped_key(cipher, cipher_mode) &&
+	    !INTEGRITY_tag_size(NULL, cipher, cipher_mode)) {
+		r = LUKS_check_cipher(cd, volume_key_size - integrity_key_size,
+				      cipher, cipher_mode);
+		if (r < 0)
+			return r;
+	}
+
+	*ret_integrity = integrity;
+
+	return 0;
+}
+
+static int LUKS2_check_encryption_sector(struct crypt_device *cd, uint64_t device_size_bytes,
+		uint64_t data_offset_bytes, uint32_t sector_size, bool modify_sector_size,
+		bool verify_data_area_alignment, uint32_t *ret_sector_size)
+{
+	uint32_t dmc_flags;
+
+	assert(ret_sector_size);
+
+	if (sector_size < SECTOR_SIZE || sector_size > MAX_SECTOR_SIZE ||
+	    NOTPOW2(sector_size)) {
+		log_err(cd, _("Unsupported encryption sector size."));
+		return -EINVAL;
+	}
+
+	if (sector_size != SECTOR_SIZE && !dm_flags(cd, DM_CRYPT, &dmc_flags) &&
+	    !(dmc_flags & DM_SECTOR_SIZE_SUPPORTED)) {
+		if (modify_sector_size) {
+			log_dbg(cd, "dm-crypt does not support encryption sector size option. Reverting to 512 bytes.");
+			sector_size = SECTOR_SIZE;
+		} else
+			log_std(cd, _("WARNING: The device activation will fail, dm-crypt is missing "
+				      "support for requested encryption sector size.\n"));
+	}
+
+	if (modify_sector_size) {
+		if (data_offset_bytes && MISALIGNED(data_offset_bytes, sector_size)) {
+			log_dbg(cd, "Data offset not aligned to sector size. Reverting to 512 bytes.");
+			sector_size = SECTOR_SIZE;
+		} else if (MISALIGNED(device_size_bytes - data_offset_bytes, sector_size)) {
+			/* underflow does not affect misalignment checks */
+			log_dbg(cd, "Device size is not aligned to sector size. Reverting to 512 bytes.");
+			sector_size = SECTOR_SIZE;
+		}
+	}
+
+	/* underflow does not affect misalignment checks */
+	if (verify_data_area_alignment &&
+	    sector_size > SECTOR_SIZE &&
+	    MISALIGNED(device_size_bytes - data_offset_bytes, sector_size)) {
+	       log_err(cd, _("Device size is not aligned to requested sector size."));
+	       return -EINVAL;
+	}
+
+	*ret_sector_size = sector_size;
+
+	return 0;
+}
+
 static int _crypt_format_luks2(struct crypt_device *cd,
 			       const char *cipher,
 			       const char *cipher_mode,
@@ -1818,14 +1928,13 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       struct crypt_params_luks2 *params,
 			       bool sector_size_autodetect)
 {
-	int r, integrity_key_size = 0;
+	int r;
 	unsigned long required_alignment = DEFAULT_DISK_ALIGNMENT;
 	unsigned long alignment_offset = 0;
 	unsigned int sector_size;
 	char cipher_spec[2*MAX_CAPI_ONE_LEN];
 	const char *integrity = params ? params->integrity : NULL;
 	uint64_t data_offset_bytes, dev_size, metadata_size_bytes, keyslots_size_bytes;
-	uint32_t dmc_flags;
 
 	cd->u.luks2.hdr.jobj = NULL;
 	cd->u.luks2.keyslot_cipher = NULL;
@@ -1867,45 +1976,6 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	} else
 		sector_size = params ? params->sector_size : SECTOR_SIZE;
 
-	if (sector_size < SECTOR_SIZE || sector_size > MAX_SECTOR_SIZE ||
-	    NOTPOW2(sector_size)) {
-		log_err(cd, _("Unsupported encryption sector size."));
-		return -EINVAL;
-	}
-	if (sector_size != SECTOR_SIZE && !dm_flags(cd, DM_CRYPT, &dmc_flags) &&
-	    !(dmc_flags & DM_SECTOR_SIZE_SUPPORTED)) {
-		if (sector_size_autodetect) {
-			log_dbg(cd, "dm-crypt does not support encryption sector size option. Reverting to 512 bytes.");
-			sector_size = SECTOR_SIZE;
-		} else
-			log_std(cd, _("WARNING: The device activation will fail, dm-crypt is missing "
-				      "support for requested encryption sector size.\n"));
-	}
-
-	if (integrity) {
-		if (params->integrity_params) {
-			/* Standalone dm-integrity must not be used */
-			if (params->integrity_params->integrity ||
-			    params->integrity_params->integrity_key_size)
-				return -EINVAL;
-			/* FIXME: journal encryption and MAC is here not yet supported */
-			if (params->integrity_params->journal_crypt ||
-			params->integrity_params->journal_integrity)
-				return -ENOTSUP;
-		}
-		if (!INTEGRITY_tag_size(integrity, cipher, cipher_mode)) {
-			if (!strcmp(integrity, "none"))
-				integrity = NULL;
-			else
-				return -EINVAL;
-		}
-		integrity_key_size = INTEGRITY_key_size(integrity);
-		if ((integrity_key_size < 0) || (integrity_key_size >= (int)volume_key_size)) {
-			log_err(cd, _("Volume key is too small for encryption with integrity extensions."));
-			return -EINVAL;
-		}
-	}
-
 	r = device_check_access(cd, crypt_metadata_device(cd), DEV_EXCL);
 	if (r < 0)
 		return r;
@@ -1942,38 +2012,25 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
+	r = LUKS2_check_encryption_params(cd, cipher, cipher_mode, integrity,
+					  volume_key_size, params, &integrity);
+	if (r < 0)
+		goto out;
+
 	r = device_size(crypt_data_device(cd), &dev_size);
 	if (r < 0)
 		goto out;
 
-	if (sector_size_autodetect) {
-		if (cd->data_offset && MISALIGNED(cd->data_offset, sector_size)) {
-			log_dbg(cd, "Data offset not aligned to sector size. Reverting to 512 bytes.");
-			sector_size = SECTOR_SIZE;
-		} else if (MISALIGNED(dev_size - (uint64_t)required_alignment - (uint64_t)alignment_offset, sector_size)) {
-			/* underflow does not affect misalignment checks */
-			log_dbg(cd, "Device size is not aligned to sector size. Reverting to 512 bytes.");
-			sector_size = SECTOR_SIZE;
-		}
-	}
+	r = LUKS2_hdr_get_storage_params(cd, alignment_offset, required_alignment,
+					 &metadata_size_bytes, &keyslots_size_bytes, &data_offset_bytes);
+	if (r < 0)
+		goto out;
 
-	/* FIXME: allow this later also for normal ciphers (check AF_ALG availability. */
-	if (integrity && !integrity_key_size) {
-		r = crypt_cipher_check_kernel(cipher, cipher_mode, integrity, volume_key_size);
-		if (r < 0) {
-			log_err(cd, _("Cipher %s-%s (key size %zd bits) is not available."),
-				cipher, cipher_mode, volume_key_size * 8);
-			goto out;
-		}
-	}
-
-	if ((!integrity || integrity_key_size) && !crypt_cipher_wrapped_key(cipher, cipher_mode) &&
-	    !INTEGRITY_tag_size(NULL, cipher, cipher_mode)) {
-		r = LUKS_check_cipher(cd, volume_key_size - integrity_key_size,
-				      cipher, cipher_mode);
-		if (r < 0)
-			goto out;
-	}
+	r = LUKS2_check_encryption_sector(cd, dev_size, data_offset_bytes, sector_size,
+					  sector_size_autodetect, integrity == NULL,
+					  &sector_size);
+	if (r < 0)
+		goto out;
 
 	if (*cipher_mode != '\0')
 		r = snprintf(cipher_spec, sizeof(cipher_spec), "%s-%s", cipher, cipher_mode);
@@ -1984,11 +2041,6 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = LUKS2_hdr_get_storage_params(cd, alignment_offset, required_alignment,
-			     &metadata_size_bytes, &keyslots_size_bytes, &data_offset_bytes);
-	if (r < 0)
-		goto out;
-
 	r = LUKS2_generate_hdr(cd, &cd->u.luks2.hdr, cd->volume_key,
 			       cipher_spec,
 			       integrity, uuid,
@@ -1997,15 +2049,6 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       metadata_size_bytes, keyslots_size_bytes);
 	if (r < 0)
 		goto out;
-
-	if (!integrity && sector_size > SECTOR_SIZE) {
-		dev_size -= (crypt_get_data_offset(cd) * SECTOR_SIZE);
-		if (dev_size % sector_size) {
-			log_err(cd, _("Device size is not aligned to requested sector size."));
-			r = -EINVAL;
-			goto out;
-		}
-	}
 
 	if (params && (params->label || params->subsystem)) {
 		r = LUKS2_hdr_labels(cd, &cd->u.luks2.hdr,
