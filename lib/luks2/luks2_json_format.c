@@ -360,6 +360,7 @@ int LUKS2_generate_hdr(
 
 	if (json_object_object_add_by_uint(jobj_segments, 0, jobj_segment)) {
 		json_object_put(jobj_segment);
+		r = -ENOMEM;
 		goto err;
 	}
 
