@@ -2,6 +2,7 @@
   extends:
     - .dump_kernel_log
   before_script:
+    - sudo apt-get -y update
     - >
       [ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] ||
       sudo apt-get -y install -y -qq swtpm meson ninja-build python3-jinja2
