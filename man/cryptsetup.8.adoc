@@ -21,7 +21,8 @@ features than plain dm-crypt. On the other hand, the header is visible
 and vulnerable to damage.
 
 In addition, cryptsetup provides limited support for the use of loop-AES
-volumes, TrueCrypt, VeraCrypt, BitLocker and FileVault2 compatible volumes.
+volumes, TrueCrypt, VeraCrypt, BitLocker and FileVault2 compatible volumes,
+and for hardware-based encryption on OPAL capable drives.
 
 For more information about specific cryptsetup action see
 *cryptsetup-<action>*(8), where *<action>* is the name of the
@@ -423,15 +424,44 @@ Opens the FVAULT2 (a FileVault2-compatible) <device> (usually the second
 partition on the device) and sets up a mapping <name>. +
 See *cryptsetup-open*(8).
 
-=== DUMP
-*fvault2Dump <device>*
+== SED (Self Encrypting Drive) OPAL EXTENSION
 
-Dump the header information of an FVAULT2 device. +
-See *cryptsetup-fvault2Dump*(8).
+cryptsetup supports using native hardware encryption on drives that provide an
+*OPAL* interface, both nested with *dm-crypt* and standalone. Passphrases,
+tokens and metadata are stored using the LUKS2 header format, and are thus
+compatible with any software or system that uses LUKS2 (e.g.: tokens).
 
-Note that cryptsetup does not use any macOS code or proprietary
-specifications. Please report all problems related to this compatibility
-extension to the cryptsetup project.
+*WARNING:* this support is new and experimental, and requires at least kernel
+v6.4. Resizing devices is not supported.
+
+*--hw-opal* can be specified for OPAL + dm-crypt, and
+*--hw-opal-only* can be specified to use OPAL only, without a dm-crypt layer.
+
+Opening, closing and enrolling tokens work in the same way as with LUKS2 and
+dm-crypt. The new parameters are only necessary when formatting, the LUKS2
+metadata will ensure the right setup is performed when opening or closing. If
+no *subsystem* is specified, it will be automatically set to *HW-OPAL* so that
+it is immediately apparent when a device uses OPAL.
+
+=== FORMAT
+*luksFormat --type luks2 --hw-opal <device> [<key file>]*
+
+Additionally specify *--hw-opal-only* instead of *--hw-opal* to avoid the
+dm-crypt layer. Other than the usual passphrase, an admin password will have
+to be specified when formatting the first partition of the drive, and will have
+to be re-supplied when formatting any other partition until a factory reset
+is performed.
+
+=== ERASE
+*erase <device>*
+
+Securely erase a partition or device. Requires admin password.
+Additionally specify *--hw-opal-factory-reset* for a FULL factory reset of the
+drive, using the drive's *PSID* (typically printed on the label) instead of the
+admin password.
+*WARNING*: a factory reset will cause ALL data on the device to be lost,
+regardless of the partition it is ran on, if any, and regardless of any LUKS2
+header backup.
 
 == MISCELLANEOUS ACTIONS
 

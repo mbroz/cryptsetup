@@ -29,6 +29,8 @@ in use, e.g., mounted filesystem, used in LVM, active RAID member, etc. The
 device or filesystem has to be un-mounted in order to call luksFormat.
 
 To use specific version of LUKS format, use _--type luks1_ or _type luks2_.
+To use OPAL hardware encryption on a self-encrypting drive, use
+_--hw-opal_ or _--hw-opal-only_.
 
 *<options>* can be [--hash, --cipher, --verify-passphrase, --key-size,
 --key-slot, --key-file (takes precedence over optional second argument),
@@ -41,7 +43,7 @@ For LUKS2, additional *<options>* can be [--integrity,
 --integrity-no-wipe, --sector-size, --label, --subsystem, --pbkdf,
 --pbkdf-memory, --pbkdf-parallel, --disable-locks, --disable-keyring,
 --luks2-metadata-size, --luks2-keyslots-size, --keyslot-cipher,
---keyslot-key-size, --integrity-legacy-padding].
+--keyslot-key-size, --integrity-legacy-padding, --hw-opal, --hw-opal-only].
 
 *WARNING:* Doing a luksFormat on an existing LUKS container will make
 all data in the old container permanently irretrievable unless you have a
