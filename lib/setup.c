@@ -1822,7 +1822,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	unsigned long required_alignment = DEFAULT_DISK_ALIGNMENT;
 	unsigned long alignment_offset = 0;
 	unsigned int sector_size;
-	char cipher_spec[128];
+	char cipher_spec[2*MAX_CAPI_ONE_LEN];
 	const char *integrity = params ? params->integrity : NULL;
 	uint64_t data_offset_bytes, dev_size, metadata_size_bytes, keyslots_size_bytes;
 	uint32_t dmc_flags;
