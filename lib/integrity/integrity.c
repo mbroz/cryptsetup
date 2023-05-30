@@ -335,13 +335,62 @@ int INTEGRITY_activate(struct crypt_device *cd,
 	return r;
 }
 
+static int _create_reduced_device(struct crypt_device *cd,
+				  const char *name,
+				  uint64_t device_size_sectors,
+				  struct device **ret_device)
+{
+	int r;
+	char path[PATH_MAX];
+	struct device *dev;
+
+	assert(cd);
+	assert(name);
+	assert(device_size_sectors);
+	assert(ret_device);
+
+	struct crypt_dm_active_device dmd = {
+		.size = device_size_sectors,
+		.flags = CRYPT_ACTIVATE_PRIVATE,
+	};
+
+	r = snprintf(path, sizeof(path), "%s/%s", dm_get_dir(), name);
+	if (r < 0 || (size_t)r >= sizeof(path))
+		return -EINVAL;
+
+	r = device_block_adjust(cd, crypt_data_device(cd), DEV_OK,
+				crypt_get_data_offset(cd), &device_size_sectors, &dmd.flags);
+	if (r)
+		return r;
+
+	log_dbg(cd, "Activating reduced helper device %s.", name);
+
+	r = dm_linear_target_set(&dmd.segment, 0, dmd.size, crypt_data_device(cd), crypt_get_data_offset(cd));
+	if (!r)
+		r = dm_create_device(cd, name, CRYPT_SUBDEV, &dmd);
+	dm_targets_free(cd, &dmd);
+	if (r < 0)
+		return r;
+
+	r = device_alloc(cd, &dev, path);
+	if (!r) {
+		*ret_device = dev;
+		return 0;
+	}
+
+	dm_remove_device(cd, name, CRYPT_DEACTIVATE_FORCE);
+
+	return r;
+}
+
 int INTEGRITY_format(struct crypt_device *cd,
 		     const struct crypt_params_integrity *params,
 		     struct volume_key *journal_crypt_key,
-		     struct volume_key *journal_mac_key)
+		     struct volume_key *journal_mac_key,
+		     uint64_t backing_device_sectors)
 {
 	uint32_t dmi_flags;
-	char tmp_name[64], tmp_uuid[40];
+	char reduced_device_name[70], tmp_name[64], tmp_uuid[40];
 	struct crypt_dm_active_device dmdi = {
 		.size = 8,
 		.flags = CRYPT_ACTIVATE_PRIVATE, /* We always create journal but it can be unused later */
@@ -349,6 +398,8 @@ int INTEGRITY_format(struct crypt_device *cd,
 	struct dm_target *tgt = &dmdi.segment;
 	int r;
 	uuid_t tmp_uuid_bin;
+	uint64_t data_offset_sectors;
+	struct device *p_metadata_device, *p_data_device, *reduced_device = NULL;
 	struct volume_key *vk = NULL;
 
 	uuid_generate(tmp_uuid_bin);
@@ -358,18 +409,42 @@ int INTEGRITY_format(struct crypt_device *cd,
 	if (r < 0 || (size_t)r >= sizeof(tmp_name))
 		return -EINVAL;
 
+	p_metadata_device = INTEGRITY_metadata_device(cd);
+
+	if (backing_device_sectors) {
+		r = snprintf(reduced_device_name, sizeof(reduced_device_name),
+			     "temporary-cryptsetup-reduced-%s", tmp_uuid);
+		if (r < 0 || (size_t)r >= sizeof(reduced_device_name))
+			return -EINVAL;
+
+		/*
+		 * Creates reduced dm-linear maping over data device starting at
+		 * crypt_data_offset(cd) and backing_device_sectors in size.
+		 */
+		r = _create_reduced_device(cd, reduced_device_name,
+					   backing_device_sectors, &reduced_device);
+		if (r < 0)
+			return r;
+
+		data_offset_sectors = 0;
+		p_data_device = reduced_device;
+		if (p_metadata_device == crypt_data_device(cd))
+			p_metadata_device = reduced_device;
+	} else {
+		data_offset_sectors = crypt_get_data_offset(cd);
+		p_data_device = crypt_data_device(cd);
+	}
+
 	/* There is no data area, we can actually use fake zeroed key */
 	if (params && params->integrity_key_size)
 		vk = crypt_alloc_volume_key(params->integrity_key_size, NULL);
 
-	r = dm_integrity_target_set(cd, tgt, 0, dmdi.size, INTEGRITY_metadata_device(cd),
-			crypt_data_device(cd), crypt_get_integrity_tag_size(cd),
-			crypt_get_data_offset(cd), crypt_get_sector_size(cd), vk,
+	r = dm_integrity_target_set(cd, tgt, 0, dmdi.size, p_metadata_device,
+			p_data_device, crypt_get_integrity_tag_size(cd),
+			data_offset_sectors, crypt_get_sector_size(cd), vk,
 			journal_crypt_key, journal_mac_key, params);
-	if (r < 0) {
-		crypt_free_volume_key(vk);
-		return r;
-	}
+	if (r < 0)
+		goto err;
 
 	log_dbg(cd, "Trying to format INTEGRITY device on top of %s, tmp name %s, tag size %d.",
 		device_path(tgt->data_device), tmp_name, tgt->u.integrity.tag_size);
@@ -379,24 +454,26 @@ int INTEGRITY_format(struct crypt_device *cd,
 		log_err(cd, _("Kernel does not support dm-integrity mapping."));
 		r = -ENOTSUP;
 	}
-	if (r) {
-		dm_targets_free(cd, &dmdi);
-		return r;
-	}
+	if (r)
+		goto err;
 
 	if (tgt->u.integrity.meta_device) {
 		r = device_block_adjust(cd, tgt->u.integrity.meta_device, DEV_EXCL, 0, NULL, NULL);
-		if (r) {
-			dm_targets_free(cd, &dmdi);
-			return r;
-		}
+		if (r)
+			goto err;
 	}
 
 	r = dm_create_device(cd, tmp_name, CRYPT_INTEGRITY, &dmdi);
-	crypt_free_volume_key(vk);
-	dm_targets_free(cd, &dmdi);
 	if (r)
-		return r;
+		goto err;
 
-	return dm_remove_device(cd, tmp_name, CRYPT_DEACTIVATE_FORCE);
+	r = dm_remove_device(cd, tmp_name, CRYPT_DEACTIVATE_FORCE);
+err:
+	dm_targets_free(cd, &dmdi);
+	crypt_free_volume_key(vk);
+	if (reduced_device) {
+		dm_remove_device(cd, reduced_device_name, CRYPT_DEACTIVATE_FORCE);
+		device_free(cd, reduced_device);
+	}
+	return r;
 }

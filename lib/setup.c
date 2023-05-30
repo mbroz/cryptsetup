@@ -2094,7 +2094,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			goto out;
 		}
 
-		r = INTEGRITY_format(cd, params ? params->integrity_params : NULL, NULL, NULL);
+		r = INTEGRITY_format(cd, params ? params->integrity_params : NULL, NULL, NULL, 0);
 		if (r)
 			log_err(cd, _("Cannot format integrity for device %s."),
 				data_device_path(cd));
@@ -2423,7 +2423,7 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 	cd->u.integrity.params.journal_integrity = journal_integrity;
 	cd->u.integrity.params.journal_crypt = journal_crypt;
 
-	r = INTEGRITY_format(cd, params, cd->u.integrity.journal_crypt_key, cd->u.integrity.journal_mac_key);
+	r = INTEGRITY_format(cd, params, cd->u.integrity.journal_crypt_key, cd->u.integrity.journal_mac_key, 0);
 	if (r)
 		log_err(cd, _("Cannot format integrity for device %s."),
 			mdata_device_path(cd));
