@@ -341,6 +341,10 @@ uint64_t LUKS2_segment_size(struct luks2_hdr *hdr,
 	int segment,
 	unsigned blockwise);
 
+bool LUKS2_segment_set_size(struct luks2_hdr *hdr,
+	int segment,
+	const uint64_t *segment_size_bytes);
+
 int LUKS2_segment_is_type(struct luks2_hdr *hdr,
 	int segment,
 	const char *type);

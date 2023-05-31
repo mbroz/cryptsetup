@@ -91,6 +91,22 @@ uint64_t json_segment_get_size(json_object *jobj_segment, unsigned blockwise)
 	return blockwise ? crypt_jobj_get_uint64(jobj) >> SECTOR_SHIFT : crypt_jobj_get_uint64(jobj);
 }
 
+static bool json_segment_set_size(json_object *jobj_segment, const uint64_t *size_bytes)
+{
+	json_object *jobj;
+
+	if (!jobj_segment)
+		return false;
+
+	jobj = size_bytes ? crypt_jobj_new_uint64(*size_bytes) : json_object_new_string("dynamic");
+	if (!jobj)
+		return false;
+
+	json_object_object_add(jobj_segment, "size", jobj);
+
+	return true;
+}
+
 const char *json_segment_get_cipher(json_object *jobj_segment)
 {
 	json_object *jobj;
@@ -314,6 +330,11 @@ int json_segments_segment_in_reencrypt(json_object *jobj_segments)
 uint64_t LUKS2_segment_size(struct luks2_hdr *hdr, int segment, unsigned blockwise)
 {
 	return json_segment_get_size(LUKS2_get_segment_jobj(hdr, segment), blockwise);
+}
+
+bool LUKS2_segment_set_size(struct luks2_hdr *hdr, int segment, const uint64_t *segment_size_bytes)
+{
+	return json_segment_set_size(LUKS2_get_segment_jobj(hdr, segment), segment_size_bytes);
 }
 
 int LUKS2_segment_is_type(struct luks2_hdr *hdr, int segment, const char *type)
