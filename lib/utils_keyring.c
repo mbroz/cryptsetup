@@ -71,12 +71,6 @@ static long keyctl_read(key_serial_t key, char *buffer, size_t buflen)
 	return syscall(__NR_keyctl, KEYCTL_READ, key, buffer, buflen);
 }
 
-/* keyctl_revoke */
-static long keyctl_revoke(key_serial_t key)
-{
-	return syscall(__NR_keyctl, KEYCTL_REVOKE, key);
-}
-
 /* keyctl_unlink */
 static long keyctl_unlink(key_serial_t key, key_serial_t keyring)
 {
@@ -201,17 +195,8 @@ static int keyring_revoke_and_unlink_key_type(const char *type_name, const char 
 	if (kid < 0)
 		return 0;
 
-	if (keyctl_revoke(kid))
+	if (keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING))
 		return -errno;
-
-	/*
-	 * best effort only. the key could have been linked
-	 * in some other keyring and its payload is now
-	 * revoked anyway.
-	 */
-	keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING);
-	keyctl_unlink(kid, KEY_SPEC_PROCESS_KEYRING);
-	keyctl_unlink(kid, KEY_SPEC_USER_KEYRING);
 
 	return 0;
 #else
