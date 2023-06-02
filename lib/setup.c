@@ -2278,8 +2278,9 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	const char *integrity = params ? params->integrity : NULL;
 	uint32_t sector_size, opal_block_bytes, opal_segment_number = 1; /* We'll use the partition number if available later */
 	uint64_t alignment_offset_bytes, data_offset_bytes, device_size_bytes, opal_alignment_granularity_blocks,
-		 partition_offset_sectors, range_offset_blocks, range_length_blocks,
-		 required_alignment_bytes, metadata_size_bytes, keyslots_size_bytes;
+		 partition_offset_sectors, range_offset_blocks, range_size_bytes,
+		 required_alignment_bytes, metadata_size_bytes, keyslots_size_bytes,
+		 provided_data_sectors;
 	struct volume_key *user_key = NULL;
 
 	if (!cd || !params || !opal_params ||
@@ -2418,14 +2419,13 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	}
 
 	device_size_bytes -= data_offset_bytes;
-	if (MISALIGNED(device_size_bytes, opal_block_bytes * opal_alignment_granularity_blocks)) {
-		log_err(cd, _("Compensating device size by %" PRIu64 " sectors to align it with OPAL alignment granularity."),
-			(device_size_bytes % (opal_alignment_granularity_blocks * opal_block_bytes)) / SECTOR_SIZE);
-		device_size_bytes -= (device_size_bytes % (opal_block_bytes * opal_alignment_granularity_blocks));
-	}
-
-	if (!device_size_bytes)
+	range_size_bytes = device_size_bytes - (device_size_bytes % (opal_block_bytes * opal_alignment_granularity_blocks));
+	if (!range_size_bytes)
 		goto out;
+
+	if (device_size_bytes != range_size_bytes)
+		log_err(cd, _("Compensating device size by %" PRIu64 " sectors to align it with OPAL alignment granularity."),
+			(device_size_bytes - range_size_bytes) / SECTOR_SIZE);
 
 	if (cipher) {
 		r = LUKS2_check_encryption_sector(cd, device_size_bytes, data_offset_bytes, sector_size,
@@ -2475,10 +2475,8 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 
 	range_offset_blocks = (data_offset_bytes + partition_offset_sectors * SECTOR_SIZE) / opal_block_bytes;
 
-	range_length_blocks = device_size_bytes / opal_block_bytes;
-
 	r = opal_setup_ranges(cd, crypt_data_device(cd), user_key ?: cd->volume_key,
-					range_offset_blocks, range_length_blocks,
+					range_offset_blocks, range_size_bytes / opal_block_bytes,
 					opal_segment_number, opal_params->admin_key, opal_params->admin_key_size);
 	if (r < 0) {
 		if (r == -EPERM)
@@ -2514,12 +2512,29 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 			goto out;
 		}
 
-		r = INTEGRITY_format(cd, params->integrity_params, NULL, NULL, 0);
+		r = INTEGRITY_format(cd, params->integrity_params, NULL, NULL,
+				     /*
+				      * Create reduced dm-integrity device only if locking range size does
+				      * not match device size.
+				      */
+				     device_size_bytes != range_size_bytes ? range_size_bytes / SECTOR_SIZE : 0);
 		if (r)
 			log_err(cd, _("Cannot format integrity for device %s."),
 				data_device_path(cd));
 		if (r < 0)
 			goto out;
+
+		r = INTEGRITY_data_sectors(cd, crypt_data_device(cd),
+					   crypt_get_data_offset(cd) * SECTOR_SIZE,
+					   &provided_data_sectors);
+		if (r < 0)
+			goto out;
+
+		if (!LUKS2_segment_set_size(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT,
+					    &(uint64_t) {provided_data_sectors * SECTOR_SIZE})) {
+			r = -EINVAL;
+			goto out;
+		}
 
 		r = opal_lock(cd, crypt_data_device(cd), opal_segment_number);
 		if (r < 0)

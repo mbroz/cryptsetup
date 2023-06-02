@@ -91,6 +91,17 @@ uint64_t json_segment_get_size(json_object *jobj_segment, unsigned blockwise)
 	return blockwise ? crypt_jobj_get_uint64(jobj) >> SECTOR_SHIFT : crypt_jobj_get_uint64(jobj);
 }
 
+static uint64_t json_segment_get_opal_size(json_object *jobj_segment, unsigned blockwise)
+{
+	json_object *jobj;
+
+	if (!jobj_segment ||
+	    !json_object_object_get_ex(jobj_segment, "opal_segment_size", &jobj))
+		return 0;
+
+	return blockwise ? crypt_jobj_get_uint64(jobj) >> SECTOR_SHIFT : crypt_jobj_get_uint64(jobj);
+}
+
 static bool json_segment_set_size(json_object *jobj_segment, const uint64_t *size_bytes)
 {
 	json_object *jobj;
@@ -338,6 +349,17 @@ json_object *json_segment_create_crypt(uint64_t offset,
 	return NULL;
 }
 
+static void json_add_opal_fields(json_object *jobj_segment, const uint64_t *length,
+				 uint32_t segment_number, uint32_t key_size)
+{
+	assert(jobj_segment);
+	assert(length);
+
+	json_object_object_add(jobj_segment, "opal_segment_number", json_object_new_int(segment_number));
+	json_object_object_add(jobj_segment, "opal_key_size", json_object_new_int(key_size));
+	json_object_object_add(jobj_segment, "opal_segment_size", crypt_jobj_new_uint64(*length));
+}
+
 json_object *json_segment_create_opal(uint64_t offset, const uint64_t *length,
 				      uint32_t segment_number, uint32_t key_size)
 {
@@ -345,8 +367,7 @@ json_object *json_segment_create_opal(uint64_t offset, const uint64_t *length,
 	if (!jobj)
 		return NULL;
 
-	json_object_object_add(jobj, "opal_segment_number", json_object_new_int(segment_number));
-	json_object_object_add(jobj, "opal_key_size", json_object_new_int(key_size));
+	json_add_opal_fields(jobj, length, segment_number, key_size);
 
 	return jobj;
 }
@@ -361,8 +382,7 @@ json_object *json_segment_create_opal_crypt(uint64_t offset, const uint64_t *len
 	if (!jobj)
 		return NULL;
 
-	json_object_object_add(jobj, "opal_segment_number", json_object_new_int(segment_number));
-	json_object_object_add(jobj, "opal_key_size", json_object_new_int(key_size));
+	json_add_opal_fields(jobj, length, segment_number, key_size);
 
 	if (json_add_crypt_fields(jobj, iv_offset, cipher, integrity, sector_size, reencryption))
 		return jobj;
@@ -394,6 +414,11 @@ int json_segments_segment_in_reencrypt(json_object *jobj_segments)
 uint64_t LUKS2_segment_size(struct luks2_hdr *hdr, int segment, unsigned blockwise)
 {
 	return json_segment_get_size(LUKS2_get_segment_jobj(hdr, segment), blockwise);
+}
+
+uint64_t LUKS2_opal_segment_size(struct luks2_hdr *hdr, int segment, unsigned blockwise)
+{
+	return json_segment_get_opal_size(LUKS2_get_segment_jobj(hdr, segment), blockwise);
 }
 
 bool LUKS2_segment_set_size(struct luks2_hdr *hdr, int segment, const uint64_t *segment_size_bytes)

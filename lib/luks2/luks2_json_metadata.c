@@ -704,7 +704,7 @@ static int validate_reencrypt_segments(struct crypt_device *cd, json_object *hdr
 static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 {
 	json_object *jobj_segments, *jobj_digests, *jobj_offset, *jobj_size, *jobj_type, *jobj_flags, *jobj;
-	uint64_t offset, size;
+	uint64_t offset, size, opal_segment_size;
 	int i, r, count, first_backup = -1;
 	struct interval *intervals = NULL;
 
@@ -787,9 +787,25 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 
 		/* opal */
 		if (!strncmp(json_object_get_string(jobj_type), "hw-opal", 7)) {
-			if (!json_contains(cd, val, key, "Segment", "opal_segment_number", json_type_int) ||
-			    !json_contains(cd, val, key, "Segment", "opal_key_size", json_type_int))
+			if (!size) {
+				log_dbg(cd, "segment type %s does not support dynamic size.",
+					json_object_get_string(jobj_type));
 				return 1;
+			}
+			if (!json_contains(cd, val, key, "Segment", "opal_segment_number", json_type_int) ||
+			    !json_contains(cd, val, key, "Segment", "opal_key_size", json_type_int) ||
+			    !(jobj_size = json_contains_string(cd, val, key, "Segment", "opal_segment_size")))
+				return 1;
+			if (!numbered(cd, "opal_segment_size", json_object_get_string(jobj_size)))
+				return 1;
+			if (!json_str_to_uint64(jobj_size, &opal_segment_size) || !opal_segment_size) {
+				log_dbg(cd, "Illegal opal segment size value.");
+				return 1;
+			}
+			if (size > opal_segment_size) {
+				log_dbg(cd, "segment size overflows opal locking range size.");
+				return 1;
+			}
 			if (!strcmp(json_object_get_string(jobj_type), "hw-opal-crypt") &&
 			    hdr_validate_crypt_segment(cd, val, key, jobj_digests, size))
 				return 1;
@@ -2100,6 +2116,9 @@ static void hdr_dump_segments(struct crypt_device *cd, json_object *hdr_jobj)
 			log_std(cd, "\tsegment number: %" PRIu32 "\n", crypt_jobj_get_uint32(jobj1));
 			json_object_object_get_ex(jobj_segment, "opal_key_size", &jobj1);
 			log_std(cd, "\topal key size: %" PRIu32 "\n", crypt_jobj_get_uint32(jobj1));
+			json_object_object_get_ex(jobj_segment, "opal_segment_size", &jobj1);
+			json_str_to_uint64(jobj1, &value);
+			log_std(cd, "\topal length: %" PRIu64 " [bytes]\n", value);
 		}
 
 		json_object_object_get_ex(jobj_segment, "offset", &jobj1);
@@ -2617,7 +2636,7 @@ int LUKS2_activate(struct crypt_device *cd,
 	int r;
 	bool dynamic;
 	uint32_t opal_segment_number;
-	uint64_t range_offset_sectors, device_length_bytes;
+	uint64_t range_offset_sectors, range_length_sectors, device_length_bytes;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 	struct crypt_dm_active_device dmdi = {}, dmd = {
 		.uuid   = crypt_get_uuid(cd)
@@ -2636,6 +2655,11 @@ int LUKS2_activate(struct crypt_device *cd,
 	if ((r = LUKS2_get_data_size(hdr, &device_length_bytes, &dynamic)))
 		return r;
 
+	if (dynamic && opal_key) {
+		log_err(cd, _("OPAL device must have static device size."));
+		return -EINVAL;
+	}
+
 	if (!dynamic)
 		dmd.size = device_length_bytes / SECTOR_SIZE;
 
@@ -2648,9 +2672,23 @@ int LUKS2_activate(struct crypt_device *cd,
 		if (r < 0)
 			return -EINVAL;
 
+		range_length_sectors = LUKS2_opal_segment_size(hdr, CRYPT_DEFAULT_SEGMENT, 1);
+
+		if (crypt_get_integrity_tag_size(cd)) {
+			if (dmd.size >= range_length_sectors) {
+				log_err(cd, _("Encrypted OPAL device with integrity must be smaller than locking range."));
+				return -EINVAL;
+			}
+		} else {
+			if (range_length_sectors != dmd.size) {
+				log_err(cd, _("OPAL device must have same size as locking range."));
+				return -EINVAL;
+			}
+		}
+
 		range_offset_sectors = crypt_get_data_offset(cd) + crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
 		r = opal_range_check_attributes(cd, crypt_data_device(cd), opal_segment_number,
-						opal_key, &range_offset_sectors, &dmd.size,
+						opal_key, &range_offset_sectors, &range_length_sectors,
 						NULL /* read locked */, NULL /* write locked */);
 		if (r < 0)
 			return r;
@@ -2659,10 +2697,6 @@ int LUKS2_activate(struct crypt_device *cd,
 		if (r < 0)
 			return r;
 	}
-
-	/* FIXME: temporary workaround for dm-integrity */
-	if (crypt_get_integrity_tag_size(cd))
-		dmd.size = 0;
 
 	if (LUKS2_segment_is_type(hdr, CRYPT_DEFAULT_SEGMENT, "crypt") ||
 	    LUKS2_segment_is_type(hdr, CRYPT_DEFAULT_SEGMENT, "hw-opal-crypt")) {
@@ -2704,10 +2738,17 @@ int LUKS2_activate(struct crypt_device *cd,
 		if (r)
 			goto out;
 
+		if (!dynamic && dmdi.size != dmd.size) {
+			log_err(cd, _("Underlying dm-integrity device with unexpected provided data sectors."));
+			r = -EINVAL;
+			goto out;
+		}
+
 		dmdi.flags |= CRYPT_ACTIVATE_PRIVATE;
 		dmdi.uuid = dmd.uuid;
 		dmd.segment.u.crypt.offset = 0;
-		dmd.segment.size = dmdi.segment.size;
+		if (dynamic)
+			dmd.segment.size = dmdi.segment.size;
 
 		r = create_or_reload_device_with_integrity(cd, name, CRYPT_LUKS2, &dmd, &dmdi);
 	} else
