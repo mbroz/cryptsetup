@@ -41,7 +41,7 @@ function add_device()
 	if [ $? -ne 0 ] ; then
 		skip "This kernel seems to not support proper scsi_debug module."
 	fi
-	grep -q scsi_debug /sys/block/*/device/model || sleep 2
+	sleep 1
 	DEV=$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
 	DEV="/dev/$DEV"
 	[ -b $DEV ] || fail "Cannot find $DEV."

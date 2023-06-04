@@ -75,7 +75,7 @@ test-mergerq-job-debian-meson:
     - sudo apt-get -y install -y -qq meson ninja-build
     - meson setup build
     - ninja -C build
-    - cd build && sudo -E meson test --verbose
+    - cd build && sudo -E meson test --verbose --print-errorlogs
 
 test-main-commit-job-debian-meson:
   extends:
@@ -95,4 +95,4 @@ test-main-commit-job-debian-meson:
     - sudo apt-get -y install -y -qq meson ninja-build
     - meson setup build
     - ninja -C build
-    - cd build && sudo -E meson test --verbose
+    - cd build && sudo -E meson test --verbose --print-errorlogs

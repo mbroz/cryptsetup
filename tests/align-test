@@ -92,7 +92,7 @@ add_device() {
 		exit 77
 	fi
 
-	sleep 2
+	sleep 1
 	DEV=$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
 
 	if [ ! -e /sys/block/$DEV/alignment_offset ] ; then

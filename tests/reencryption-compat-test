@@ -33,7 +33,7 @@ function fips_mode()
 function del_scsi_device()
 {
 	rmmod scsi_debug >/dev/null 2>&1
-	sleep 2
+	sleep 1
 }
 
 function remove_mapping()
@@ -88,7 +88,7 @@ function add_scsi_device() {
 		exit 77
 	fi
 
-	sleep 2
+	sleep 1
 	SCSI_DEV="/dev/"$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
 	[ -b $SCSI_DEV ] || fail "Cannot find $SCSI_DEV."
 }
