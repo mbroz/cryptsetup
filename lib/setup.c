@@ -1276,6 +1276,12 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 	r = crypt_parse_name_and_mode(tgt->type == DM_LINEAR ? "null" : tgt->u.crypt.cipher, cipher,
 				      &key_nums, cipher_mode);
 	if (r < 0) {
+		/* Allow crypt null context with unknown cipher string */
+		if (tgt->type == DM_CRYPT && !tgt->u.crypt.integrity) {
+			crypt_set_null_type(cd);
+			r = 0;
+			goto out;
+		}
 		log_err(cd, _("No known cipher specification pattern detected for active device %s."), name);
 		goto out;
 	}
