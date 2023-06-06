@@ -572,7 +572,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 		pwd[i] += params->passphrase[i];
 
 	for (i = 0; tcrypt_kdf[i].name; i++) {
-		if (params->hash_name && strcmp(params->hash_name, tcrypt_kdf[i].hash))
+		if (params->hash_name && !strstr(tcrypt_kdf[i].hash, params->hash_name))
 			continue;
 		if (!(params->flags & CRYPT_TCRYPT_LEGACY_MODES) && tcrypt_kdf[i].legacy)
 			continue;
