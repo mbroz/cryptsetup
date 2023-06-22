@@ -54,12 +54,12 @@ function test_one() # cipher mode keysize rm_pattern
 	fi
 }
 
-function test_kdf() # hash
+function test_kdf() # hash img_hash
 {
 	$CRYPTSETUP benchmark -h "$1" >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
 		echo "pbkdf2-$1 [N/A]"
-		IMGS=$(ls $TST_DIR/[tv]c* | grep "$1")
+		IMGS=$(ls $TST_DIR/[tv]c* | grep "$2")
 		[ -n "$IMGS" ] && rm $IMGS
 	else
 		echo "pbkdf2-$1 [OK]"
@@ -78,12 +78,12 @@ function test_required()
 	command -v blkid >/dev/null || skip "blkid tool required, test skipped."
 
 	echo "REQUIRED KDF TEST"
-	test_kdf sha256
-	test_kdf sha512
-	test_kdf blake2s-256
-	test_kdf ripemd160
-	test_kdf whirlpool
-	test_kdf stribog512
+	test_kdf sha256      sha256
+	test_kdf sha512      sha512
+	test_kdf blake2s-256 blake2
+	test_kdf ripemd160   ripemd160
+	test_kdf whirlpool   whirlpool
+	test_kdf stribog512  stribog
 
 	echo "REQUIRED CIPHERS TEST"
 	test_one aes cbc 256 cbc-aes
