@@ -2605,6 +2605,11 @@ int LUKS2_activate(struct crypt_device *cd,
 	if ((r = LUKS2_unmet_requirements(cd, hdr, 0, 0)))
 		return r;
 
+	/* Check that cipher is in compatible format */
+	if (!crypt_get_cipher(cd)) {
+		log_err(cd, _("No known cipher specification pattern detected in LUKS2 header."));
+		return -EINVAL;
+	}
 	r = dm_crypt_target_set(&dmd.segment, 0, dmd.size, crypt_data_device(cd),
 			vk, crypt_get_cipher_spec(cd), crypt_get_iv_offset(cd),
 			crypt_get_data_offset(cd), crypt_get_integrity(cd) ?: "none",

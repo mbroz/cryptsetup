@@ -21,6 +21,7 @@ test_files_to_copy = [
     'luks2_keyslot_unassigned.img.xz',
     'luks2_mda_images.tar.xz',
     'luks2_valid_hdr.img.xz',
+    'luks2_invalid_cipher.img.xz',
     'tcrypt-images.tar.xz',
     'valid_header_file.xz',
     'xfs_512_block_size.img.xz',

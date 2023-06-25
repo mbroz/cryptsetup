@@ -16,6 +16,7 @@ IMG10=luks-test-v10
 HEADER_IMG=luks-header
 HEADER_KEYU=luks2_keyslot_unassigned.img
 HEADER_LUKS2_PV=blkid-luks2-pv.img
+HEADER_LUKS2_INV=luks2_invalid_cipher.img
 KEY1=key1
 KEY2=key2
 KEY5=key5
@@ -50,7 +51,9 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE $HEADER_LUKS2_PV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* $KEY_FILE0 $KEY_FILE1 >/dev/null 2>&1
+	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE \
+	$HEADER_LUKS2_PV $HEADER_LUKS2_INV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* \
+	$KEY_FILE0 $KEY_FILE1 >/dev/null 2>&1
 
 	# unlink whole test keyring
 	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
@@ -1199,6 +1202,18 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 	echo $PWD1 | $CRYPTSETUP luksKillSlot $IMG 9 || fail
 	$CRYPTSETUP open -q --test-passphrase --token-only --token-id 0 -q $IMG || fail
 fi
+
+prepare "[44] LUKS2 invalid cipher (kernel cipher driver name)" wipe
+xz -dk $HEADER_LUKS2_INV.xz
+dd if=$HEADER_LUKS2_INV of=$IMG conv=notrunc >/dev/null 2>&1
+$CRYPTSETUP -q luksDump $LOOPDEV | grep -q "capi:xts(ecb(aes-generic))-plain64" || fail
+echo $PWD1 | $CRYPTSETUP open $LOOPDEV --test-passphrase || fail
+echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME 2>&1 | grep -q "No known cipher specification pattern" || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $LOOPDEV >/dev/null 2>&1 && fail
+dmsetup create $DEV_NAME --uuid CRYPT-LUKS2-3d20686f551748cb89911ad32379821b-test --table \
+  "0 8 crypt capi:xts(ecb(aes-generic))-plain64 edaa40709797973715e572bf7d86fcbb9cfe2051083c33c28d58fe4e1e7ff642 0 $LOOPDEV 32768"
+$CRYPTSETUP status $DEV_NAME | grep -q "n/a" || fail
+$CRYPTSETUP close $DEV_NAME ||fail
 
 remove_mapping
 exit 0

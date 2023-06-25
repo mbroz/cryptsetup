@@ -68,6 +68,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	luks2_valid_hdr.img.xz \
 	luks2_header_requirements.tar.xz \
 	luks2_mda_images.tar.xz \
+	luks2_invalid_cipher.img.xz \
 	evil_hdr-payload_overwrite.xz \
 	evil_hdr-stripes_payload_dmg.xz \
 	evil_hdr-luks_hdr_damage.xz \
@@ -110,7 +111,8 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 
 CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_token_path.so fake_systemd_tpm_path.so
 clean-local:
-	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images fvault2-images conversion_imgs luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp external-tokens
+	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images fvault2-images conversion_imgs \
+	luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp external-tokens luks2_invalid_cipher.img
 
 differ_SOURCES = differ.c
 differ_CFLAGS = $(AM_CFLAGS) -Wall -O2
