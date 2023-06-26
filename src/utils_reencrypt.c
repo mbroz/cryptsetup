@@ -419,6 +419,12 @@ static bool luks2_reencrypt_eligible(struct crypt_device *cd)
 		return false;
 	}
 
+	/* Check that cipher is in compatible format */
+	if (!crypt_get_cipher(cd)) {
+		log_err(_("No known cipher specification pattern detected in LUKS2 header."));
+		return false;
+	}
+
 	return true;
 }
 
