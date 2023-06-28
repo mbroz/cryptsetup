@@ -3065,7 +3065,7 @@ static const char *verify_resize(void)
 static const char *verify_reencrypt(void)
 {
 	if (ARG_SET(OPT_REDUCE_DEVICE_SIZE_ID) && ARG_SET(OPT_DEVICE_SIZE_ID))
-		return _("Options --reduce-device-size and --data-size cannot be combined.");
+		return _("Options --reduce-device-size and --device-size cannot be combined.");
 
 	if (isLUKS1(luksType(device_type)) && ARG_SET(OPT_ACTIVE_NAME_ID))
 		return _("Option --active-name can be set only for LUKS2 device.");
