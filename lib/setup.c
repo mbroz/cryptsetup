@@ -2374,6 +2374,8 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 		sector_size = device_optimal_encryption_sector_size(cd, crypt_data_device(cd));
 		if ((opal_block_bytes * opal_alignment_granularity_blocks) > sector_size)
 			sector_size = opal_block_bytes * opal_alignment_granularity_blocks;
+		if (sector_size > MAX_SECTOR_SIZE)
+			sector_size = MAX_SECTOR_SIZE;
 		log_dbg(cd, "Auto-detected optimal encryption sector size for device %s is %d bytes.",
 			device_path(crypt_data_device(cd)), sector_size);
 	} else
