@@ -459,6 +459,17 @@ int LUKS2_get_opal_segment_number(struct luks2_hdr *hdr, int segment, uint32_t *
 	return json_segment_get_opal_segment_id(jobj_segment, ret_opal_segment_number);
 }
 
+int LUKS2_get_opal_key_size(struct luks2_hdr *hdr, int segment)
+{
+	size_t key_size = 0;
+	json_object *jobj_segment = LUKS2_get_segment_jobj(hdr, segment);
+
+	if (json_segment_get_opal_key_size(jobj_segment, &key_size) < 0)
+		return 0;
+
+	return key_size;
+}
+
 int LUKS2_last_segment_by_type(struct luks2_hdr *hdr, const char *type)
 {
 	json_object *jobj_segments;

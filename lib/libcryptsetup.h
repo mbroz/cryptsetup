@@ -464,12 +464,19 @@ const char *crypt_get_default_type(void);
 /** @} */
 
 /**
- * Get OPAL HW encryption type
+ * Get HW encryption type
  *
  * @return HW encryption type (see @link crypt-hw-encryption-types @endlink)
  *         or negative errno otherwise.
  */
 int crypt_get_hw_encryption_type(struct crypt_device *cd);
+
+/**
+ * Get HW encryption (like OPAL) key size (in bytes)
+ *
+ * @return key size or 0 if no HW encryption is used.
+ */
+int crypt_get_hw_encryption_key_size(struct crypt_device *cd);
 
 /**
  *

@@ -5997,6 +5997,14 @@ int crypt_get_volume_key_size(struct crypt_device *cd)
 	return 0;
 }
 
+int crypt_get_hw_encryption_key_size(struct crypt_device *cd)
+{
+	if (!cd || !isLUKS2(cd->type))
+		return 0;
+
+	return LUKS2_get_opal_key_size(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
+}
+
 int crypt_keyslot_get_key_size(struct crypt_device *cd, int keyslot)
 {
 	if (!cd || !isLUKS(cd->type))

@@ -2111,16 +2111,6 @@ static void hdr_dump_segments(struct crypt_device *cd, json_object *hdr_jobj)
 		json_object_object_get_ex(jobj_segment, "type", &jobj1);
 		log_std(cd, "  %s: %s\n", segment, json_object_get_string(jobj1));
 
-		if (!strncmp(json_object_get_string(jobj1), "hw-opal", 7)) {
-			json_object_object_get_ex(jobj_segment, "opal_segment_number", &jobj1);
-			log_std(cd, "\tsegment number: %" PRIu32 "\n", crypt_jobj_get_uint32(jobj1));
-			json_object_object_get_ex(jobj_segment, "opal_key_size", &jobj1);
-			log_std(cd, "\topal key size: %" PRIu32 "\n", crypt_jobj_get_uint32(jobj1));
-			json_object_object_get_ex(jobj_segment, "opal_segment_size", &jobj1);
-			json_str_to_uint64(jobj1, &value);
-			log_std(cd, "\topal length: %" PRIu64 " [bytes]\n", value);
-		}
-
 		json_object_object_get_ex(jobj_segment, "offset", &jobj1);
 		json_str_to_uint64(jobj1, &value);
 		log_std(cd, "\toffset: %" PRIu64 " [bytes]\n", value);
@@ -2135,6 +2125,8 @@ static void hdr_dump_segments(struct crypt_device *cd, json_object *hdr_jobj)
 
 		if (json_object_object_get_ex(jobj_segment, "encryption", &jobj1))
 			log_std(cd, "\tcipher: %s\n", json_object_get_string(jobj1));
+		else
+			log_std(cd, "\tcipher: (no SW encryption)\n");
 
 		if (json_object_object_get_ex(jobj_segment, "sector_size", &jobj1))
 			log_std(cd, "\tsector: %" PRIu32 " [bytes]\n", crypt_jobj_get_uint32(jobj1));
@@ -2152,6 +2144,18 @@ static void hdr_dump_segments(struct crypt_device *cd, json_object *hdr_jobj)
 				log_std(cd, ", %s", json_object_get_string(jobj2));
 			}
 			log_std(cd, "\n");
+		}
+
+		json_object_object_get_ex(jobj_segment, "type", &jobj1);
+		if (!strncmp(json_object_get_string(jobj1), "hw-opal", 7)) {
+			log_std(cd, "\tHW OPAL encryption:\n");
+			json_object_object_get_ex(jobj_segment, "opal_segment_number", &jobj1);
+			log_std(cd, "\t\tOPAL segment number: %" PRIu32 "\n", crypt_jobj_get_uint32(jobj1));
+			json_object_object_get_ex(jobj_segment, "opal_key_size", &jobj1);
+			log_std(cd, "\t\tOPAL key size: %" PRIu32 " [bytes]\n", crypt_jobj_get_uint32(jobj1));
+			json_object_object_get_ex(jobj_segment, "opal_segment_size", &jobj1);
+			json_str_to_uint64(jobj1, &value);
+			log_std(cd, "\t\tOPAL segment length: %" PRIu64 " [bytes]\n", value);
 		}
 
 		log_std(cd, "\n");

@@ -366,6 +366,7 @@ bool LUKS2_segment_is_hw_opal(struct luks2_hdr *hdr, int segment);
 
 int LUKS2_get_opal_segment_number(struct luks2_hdr *hdr, int segment,
 				  uint32_t *ret_opal_segment_number);
+int LUKS2_get_opal_key_size(struct luks2_hdr *hdr, int segment);
 
 int LUKS2_segment_by_type(struct luks2_hdr *hdr,
 	const char *type);
