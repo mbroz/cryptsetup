@@ -451,6 +451,27 @@ const char *crypt_get_type(struct crypt_device *cd);
 const char *crypt_get_default_type(void);
 
 /**
+ * @defgroup crypt-hw-encryption-types HW encryption type
+ * @addtogroup crypt-hw-encryption-types
+ * @{
+ */
+/** SW encryption, no OPAL encryption in place (default) */
+#define CRYPT_SW_ONLY        INT16_C(0)
+/** OPAL HW encryption only (no SW encryption!) */
+#define CRYPT_OPAL_HW_ONLY   INT16_C(1)
+/** SW encryption stacked over OPAL HW encryption  */
+#define CRYPT_SW_AND_OPAL_HW INT16_C(2)
+/** @} */
+
+/**
+ * Get OPAL HW encryption type
+ *
+ * @return HW encryption type (see @link crypt-hw-encryption-types @endlink)
+ *         or negative errno otherwise.
+ */
+int crypt_get_hw_encryption_type(struct crypt_device *cd);
+
+/**
  *
  * Structure used as parameter for PLAIN device type.
  *
