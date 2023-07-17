@@ -4586,7 +4586,7 @@ static int _open_and_activate(struct crypt_device *cd,
 {
 	bool use_keyring;
 	int r;
-	struct volume_key *p_crypt, *p_opal, *crypt_key = NULL, *opal_key = NULL, *vk = NULL;
+	struct volume_key *p_crypt = NULL, *p_opal = NULL, *crypt_key = NULL, *opal_key = NULL, *vk = NULL;
 
 	r = LUKS2_keyslot_open(cd, keyslot,
 			       (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ?
@@ -4601,7 +4601,7 @@ static int _open_and_activate(struct crypt_device *cd,
 						    vk, &crypt_key,
 						    &opal_key);
 		if (r < 0)
-			return r;
+			goto out;
 
 		p_crypt = crypt_key;
 		p_opal = opal_key ?: vk;
