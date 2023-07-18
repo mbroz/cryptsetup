@@ -3830,11 +3830,13 @@ static char *crypt_get_device_key_description(struct crypt_device *cd, const cha
 int crypt_suspend(struct crypt_device *cd,
 		  const char *name)
 {
-	char *key_desc;
+	bool dm_opal_uuid;
 	crypt_status_info ci;
 	int r;
 	struct crypt_dm_active_device dmd;
-	uint32_t dmflags = DM_SUSPEND_WIPE_KEY;
+	uint32_t opal_segment_number = 1, dmflags = DM_SUSPEND_WIPE_KEY;
+	struct dm_target *tgt = &dmd.segment;
+	char *key_desc = NULL;
 
 	if (!cd || !name)
 		return -EINVAL;
@@ -3877,6 +3879,13 @@ int crypt_suspend(struct crypt_device *cd,
 		goto out;
 	}
 
+	/* check if active device has LUKS2-OPAL dm uuid prefix */
+	dm_opal_uuid = !crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2_HW_OPAL);
+
+	if (!dm_opal_uuid && isLUKS2(cd->type) &&
+	    LUKS2_segment_is_hw_opal(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT))
+		goto out;
+
 	if (cd->type && (r = crypt_uuid_cmp(dmd.uuid, LUKS_UUID(cd))) < 0) {
 		log_dbg(cd, "LUKS device header uuid: %s mismatches DM returned uuid %s",
 			LUKS_UUID(cd), dmd.uuid);
@@ -3895,45 +3904,59 @@ int crypt_suspend(struct crypt_device *cd,
 
 	key_desc = crypt_get_device_key_description(cd, name);
 
-	/* we can't simply wipe wrapped keys */
-	if (crypt_cipher_wrapped_key(crypt_get_cipher(cd), crypt_get_cipher_mode(cd)))
+	if (dm_opal_uuid && crypt_data_device(cd)) {
+		if (isLUKS2(cd->type)) {
+			r = LUKS2_get_opal_segment_number(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, &opal_segment_number);
+			if (r < 0)
+				goto out;
+		} else {
+			 /* Guess OPAL range number for LUKS2-OPAL device with missing header */
+			r = crypt_dev_get_partition_number(device_path(crypt_data_device(cd)));
+			if (r > 0)
+				opal_segment_number = r;
+		}
+	}
+
+	/* we can't simply wipe wrapped keys. HW OPAL only encryption does not use dm-crypt target */
+	if (crypt_cipher_wrapped_key(crypt_get_cipher(cd), crypt_get_cipher_mode(cd)) ||
+	    (dm_opal_uuid && tgt->type == DM_LINEAR))
 		dmflags &= ~DM_SUSPEND_WIPE_KEY;
 
 	r = dm_suspend_device(cd, name, dmflags);
-	if (r == -ENOTSUP)
-		log_err(cd, _("Suspend is not supported for device %s."), name);
-	else if (r)
-		log_err(cd, _("Error during suspending device %s."), name);
-	else
-		crypt_drop_keyring_key_by_description(cd, key_desc, LOGON_KEY);
-	free(key_desc);
+	if (r) {
+		if (r == -ENOTSUP)
+			log_err(cd, _("Suspend is not supported for device %s."), name);
+		else
+			log_err(cd, _("Error during suspending device %s."), name);
+		goto out;
+	}
+
+	crypt_drop_keyring_key_by_description(cd, key_desc, LOGON_KEY);
+
+	if (dm_opal_uuid && (!crypt_data_device(cd) || opal_lock(cd, crypt_data_device(cd), opal_segment_number)))
+		log_err(cd, _("Device %s was suspended but hardware OPAL device cannot be locked."), name);
 out:
+	free(key_desc);
 	dm_targets_free(cd, &dmd);
 	free(CONST_CAST(void*)dmd.uuid);
 	return r;
 }
 
-/* key must be properly verified */
-static int resume_by_volume_key(struct crypt_device *cd,
+static int resume_luks1_by_volume_key(struct crypt_device *cd,
 		struct volume_key *vk,
 		const char *name)
 {
-	int digest, r;
+	int r;
 	struct volume_key *zerokey = NULL;
+
+	assert(vk && crypt_volume_key_get_id(vk) == 0);
+	assert(name);
 
 	if (crypt_is_cipher_null(crypt_get_cipher_spec(cd))) {
 		zerokey = crypt_alloc_volume_key(0, NULL);
 		if (!zerokey)
 			return -ENOMEM;
 		vk = zerokey;
-	} else if (crypt_use_keyring_for_vk(cd)) {
-		/* LUKS2 path only */
-		digest = LUKS2_digest_by_segment(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
-		if (digest < 0)
-			return -EINVAL;
-		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, vk, digest);
-		if (r < 0)
-			return r;
 	}
 
 	r = dm_resume_and_reinstate_key(cd, name, vk);
@@ -3943,12 +3966,111 @@ static int resume_by_volume_key(struct crypt_device *cd,
 	else if (r)
 		log_err(cd, _("Error during resuming device %s."), name);
 
-	if (r < 0)
-		crypt_drop_keyring_key(cd, vk);
-
 	crypt_free_volume_key(zerokey);
 
 	return r;
+}
+
+static int resume_luks2_by_volume_key(struct crypt_device *cd,
+		int digest,
+		struct volume_key *vk,
+		const char *name)
+{
+	bool use_keyring;
+	int r, enc_type;
+	uint32_t opal_segment_number;
+	struct volume_key *p_crypt = vk, *p_opal = NULL, *zerokey = NULL, *crypt_key = NULL, *opal_key = NULL;
+
+	assert(digest >= 0);
+	assert(vk && crypt_volume_key_get_id(vk) == digest);
+	assert(name);
+
+	enc_type = crypt_get_hw_encryption_type(cd);
+	if (enc_type < 0)
+		return enc_type;
+
+	use_keyring = crypt_use_keyring_for_vk(cd);
+
+	if (enc_type == CRYPT_OPAL_HW_ONLY || enc_type == CRYPT_SW_AND_OPAL_HW) {
+		r = LUKS2_get_opal_segment_number(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT,
+						  &opal_segment_number);
+		if (r < 0)
+			return r;
+
+		r = LUKS2_split_crypt_and_opal_keys(cd, &cd->u.luks2.hdr,
+						    vk, &crypt_key,
+						    &opal_key);
+		if (r < 0)
+			return r;
+
+		p_crypt = crypt_key;
+		p_opal = opal_key ?: vk;
+	}
+
+	if (enc_type != CRYPT_OPAL_HW_ONLY && crypt_is_cipher_null(crypt_get_cipher_spec(cd))) {
+		zerokey = crypt_alloc_volume_key(0, NULL);
+		if (!zerokey) {
+			r = -ENOMEM;
+			goto out;
+		}
+		p_crypt = zerokey;
+		use_keyring = false;
+	}
+
+	if (use_keyring && p_crypt) {
+		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, p_crypt, digest);
+		if (r < 0)
+			goto out;
+	}
+
+	if (p_opal) {
+		r = opal_unlock(cd, crypt_data_device(cd), opal_segment_number, p_opal);
+		if (r < 0) {
+			p_opal = NULL; /* do not lock on error path */
+			goto out;
+		}
+	}
+
+	if (enc_type == CRYPT_OPAL_HW_ONLY)
+		r = dm_resume_device(cd, name, 0);
+	else
+		r = dm_resume_and_reinstate_key(cd, name, p_crypt);
+
+	if (r == -ENOTSUP)
+		log_err(cd, _("Resume is not supported for device %s."), name);
+	else if (r)
+		log_err(cd, _("Error during resuming device %s."), name);
+
+out:
+	if (r < 0)
+		crypt_drop_keyring_key(cd, p_crypt);
+
+	if (r < 0 && p_opal)
+		opal_lock(cd, crypt_data_device(cd), opal_segment_number);
+
+	crypt_free_volume_key(zerokey);
+	crypt_free_volume_key(opal_key);
+	crypt_free_volume_key(crypt_key);
+
+	return r;
+}
+
+/* key must be properly verified */
+static int resume_by_volume_key(struct crypt_device *cd,
+		struct volume_key *vk,
+		const char *name)
+{
+	assert(cd);
+
+	if (isLUKS2(cd->type))
+		return resume_luks2_by_volume_key(cd,
+				LUKS2_digest_by_segment(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT),
+				vk, name);
+
+	if (isLUKS1(cd->type))
+		return resume_luks1_by_volume_key(cd, vk, name);
+
+	return -EINVAL;
 }
 
 int crypt_resume_by_passphrase(struct crypt_device *cd,
@@ -3979,10 +4101,13 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (isLUKS1(cd->type))
+	if (isLUKS1(cd->type)) {
 		r = LUKS_open_key_with_hdr(keyslot, passphrase, passphrase_size,
 					   &cd->u.luks1.hdr, &vk, cd);
-	else
+		if (r >= 0)
+			crypt_volume_key_set_id(vk, 0);
+
+	} else
 		r = LUKS2_keyslot_open(cd, keyslot, CRYPT_DEFAULT_SEGMENT, passphrase, passphrase_size, &vk);
 
 	if  (r < 0)
@@ -4033,10 +4158,12 @@ int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	if (isLUKS1(cd->type))
+	if (isLUKS1(cd->type)) {
 		r = LUKS_open_key_with_hdr(keyslot, passphrase_read, passphrase_size_read,
 					   &cd->u.luks1.hdr, &vk, cd);
-	else
+		if (r >= 0)
+			crypt_volume_key_set_id(vk, 0);
+	} else
 		r = LUKS2_keyslot_open(cd, keyslot, CRYPT_DEFAULT_SEGMENT,
 				       passphrase_read, passphrase_size_read, &vk);
 
@@ -4102,11 +4229,14 @@ int crypt_resume_by_volume_key(struct crypt_device *cd,
 	if (!vk)
 		return -ENOMEM;
 
-	if (isLUKS1(cd->type))
+	if (isLUKS1(cd->type)) {
 		r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
-	else if (isLUKS2(cd->type))
+		if (r >= 0)
+			crypt_volume_key_set_id(vk, 0);
+	} else if (isLUKS2(cd->type)) {
 		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
-	else
+		crypt_volume_key_set_id(vk, r);
+	} else
 		r = -EINVAL;
 	if (r == -EPERM || r == -ENOENT)
 		log_err(cd, _("Volume key does not match the volume."));
