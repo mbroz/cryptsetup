@@ -363,6 +363,8 @@ int LUKS2_segment_is_type(struct luks2_hdr *hdr,
 	const char *type);
 
 bool LUKS2_segment_is_hw_opal(struct luks2_hdr *hdr, int segment);
+bool LUKS2_segment_is_hw_opal_crypt(struct luks2_hdr *hdr, int segment);
+bool LUKS2_segment_is_hw_opal_only(struct luks2_hdr *hdr, int segment);
 
 int LUKS2_get_opal_segment_number(struct luks2_hdr *hdr, int segment,
 				  uint32_t *ret_opal_segment_number);

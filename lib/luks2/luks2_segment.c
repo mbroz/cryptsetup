@@ -431,15 +431,40 @@ int LUKS2_segment_is_type(struct luks2_hdr *hdr, int segment, const char *type)
 	return !strcmp(json_segment_type(LUKS2_get_segment_jobj(hdr, segment)) ?: "", type);
 }
 
-static bool json_segment_is_hw_opal(json_object *jobj_segment)
+static bool json_segment_is_hw_opal_only(json_object *jobj_segment)
 {
 	const char *type = json_segment_type(jobj_segment);
 
 	if (!type)
 		return false;
 
-	/* hw-opal, hw-opal-crypt */
-	return !strcmp(type, "hw-opal") || !strcmp(type, "hw-opal-crypt");
+	return !strcmp(type, "hw-opal");
+}
+
+static bool json_segment_is_hw_opal_crypt(json_object *jobj_segment)
+{
+	const char *type = json_segment_type(jobj_segment);
+
+	if (!type)
+		return false;
+
+	return !strcmp(type, "hw-opal-crypt");
+}
+
+static bool json_segment_is_hw_opal(json_object *jobj_segment)
+{
+	return json_segment_is_hw_opal_crypt(jobj_segment) ||
+	       json_segment_is_hw_opal_only(jobj_segment);
+}
+
+bool LUKS2_segment_is_hw_opal_only(struct luks2_hdr *hdr, int segment)
+{
+	return json_segment_is_hw_opal_only(LUKS2_get_segment_jobj(hdr, segment));
+}
+
+bool LUKS2_segment_is_hw_opal_crypt(struct luks2_hdr *hdr, int segment)
+{
+	return json_segment_is_hw_opal_crypt(LUKS2_get_segment_jobj(hdr, segment));
 }
 
 bool LUKS2_segment_is_hw_opal(struct luks2_hdr *hdr, int segment)

@@ -6294,18 +6294,14 @@ const char *crypt_get_default_type(void)
 
 int crypt_get_hw_encryption_type(struct crypt_device *cd)
 {
-	uint32_t opal_segment_number;
-	const char *cipher;
-
 	if (!cd)
 		return -EINVAL;
 
-	if (isLUKS2(cd->type) &&
-	    !LUKS2_get_opal_segment_number(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, &opal_segment_number)) {
-		cipher = crypt_get_cipher(cd);
-		if (!cipher || !strcmp(cipher, "cipher_null"))
+	if (isLUKS2(cd->type)) {
+		if (LUKS2_segment_is_hw_opal_crypt(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT))
+			return CRYPT_SW_AND_OPAL_HW;
+		else if (LUKS2_segment_is_hw_opal_only(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT))
 			return CRYPT_OPAL_HW_ONLY;
-		return CRYPT_SW_AND_OPAL_HW;
 	}
 
 	return CRYPT_SW_ONLY;
