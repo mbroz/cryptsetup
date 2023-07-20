@@ -211,6 +211,48 @@ static int get_generic_volume_key_by_key(struct crypt_device *cd,
 	return get_key_by_key(cd, kc, -2 /* unused */, -2 /* unused */, r_vk);
 }
 
+static int get_generic_signed_key_by_key(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	struct volume_key **r_vk,
+	struct volume_key **r_signature)
+{
+	struct volume_key *vk, *vk_sig;
+
+	assert(kc && ((kc->type == CRYPT_KC_TYPE_KEY) ||
+		      (kc->type == CRYPT_KC_TYPE_SIGNED_KEY)));
+	assert(r_vk);
+	assert(r_signature);
+
+	/* return key with no signature */
+	if (kc->type == CRYPT_KC_TYPE_KEY) {
+		*r_signature = NULL;
+		return get_key_by_key(cd, kc, -2 /* unused */, -2 /* unused */, r_vk);
+	}
+
+	if (!kc->u.ks.volume_key || !kc->u.ks.signature) {
+		kc->error = -EINVAL;
+		return kc->error;
+	}
+
+	vk = crypt_alloc_volume_key(kc->u.ks.volume_key_size, kc->u.ks.volume_key);
+	if (!vk) {
+		kc->error = -ENOMEM;
+		return kc->error;
+	}
+
+	vk_sig = crypt_alloc_volume_key(kc->u.ks.signature_size, kc->u.ks.signature);
+	if (!vk_sig) {
+		crypt_free_volume_key(vk);
+		kc->error = -ENOMEM;
+		return kc->error;
+	}
+
+	*r_vk = vk;
+	*r_signature = vk_sig;
+
+	return 0;
+}
+
 static int get_luks2_key_by_token(struct crypt_device *cd,
 	struct crypt_keyslot_context *kc,
 	int keyslot,
@@ -445,8 +487,33 @@ void crypt_keyslot_unlock_by_key_init_internal(struct crypt_keyslot_context *kc,
 	kc->get_plain_volume_key = get_generic_volume_key_by_key;
 	kc->get_bitlk_volume_key = get_generic_volume_key_by_key;
 	kc->get_fvault2_volume_key = get_generic_volume_key_by_key;
-	kc->get_verity_volume_key = get_generic_volume_key_by_key;
+	kc->get_verity_volume_key = get_generic_signed_key_by_key;
 	kc->get_integrity_volume_key = get_generic_volume_key_by_key;
+	unlock_method_init_internal(kc);
+}
+
+void crypt_keyslot_unlock_by_signed_key_init_internal(struct crypt_keyslot_context *kc,
+	const char *volume_key,
+	size_t volume_key_size,
+	const char *signature,
+	size_t signature_size)
+{
+	assert(kc);
+
+	kc->type = CRYPT_KC_TYPE_SIGNED_KEY;
+	kc->u.ks.volume_key = volume_key;
+	kc->u.ks.volume_key_size = volume_key_size;
+	kc->u.ks.signature = signature;
+	kc->u.ks.signature_size = signature_size;
+	kc->get_luks2_key = NULL;
+	kc->get_luks2_volume_key = NULL;
+	kc->get_luks1_volume_key = NULL;
+	kc->get_passphrase = NULL;
+	kc->get_plain_volume_key = NULL;
+	kc->get_bitlk_volume_key = NULL;
+	kc->get_fvault2_volume_key = NULL;
+	kc->get_verity_volume_key = get_generic_signed_key_by_key;
+	kc->get_integrity_volume_key = NULL;
 	unlock_method_init_internal(kc);
 }
 
@@ -648,6 +715,30 @@ int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd,
 	return 0;
 }
 
+int crypt_keyslot_context_init_by_signed_key(struct crypt_device *cd,
+	const char *volume_key,
+	size_t volume_key_size,
+	const char *signature,
+	size_t signature_size,
+	struct crypt_keyslot_context **kc)
+{
+	struct crypt_keyslot_context *tmp;
+
+	if (!kc)
+		return -EINVAL;
+
+	tmp = malloc(sizeof(*tmp));
+	if (!tmp)
+		return -ENOMEM;
+
+	crypt_keyslot_unlock_by_signed_key_init_internal(tmp, volume_key, volume_key_size,
+		signature, signature_size);
+
+	*kc = tmp;
+
+	return 0;
+}
+
 int crypt_keyslot_context_init_by_keyring(struct crypt_device *cd,
 	const char *key_description,
 	struct crypt_keyslot_context **kc)
@@ -729,6 +820,8 @@ const char *keyslot_context_type_string(const struct crypt_keyslot_context *kc)
 		return "keyring";
 	case CRYPT_KC_TYPE_VK_KEYRING:
 		return "volume key in keyring";
+	case CRYPT_KC_TYPE_SIGNED_KEY:
+		return "signed key";
 	default:
 		return "<unknown>";
 	}

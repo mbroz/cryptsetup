@@ -1280,6 +1280,28 @@ int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd,
 	struct crypt_keyslot_context **kc);
 
 /**
+ * Initialize keyslot context via signed key.
+ *
+ * @param cd crypt device handle initialized to device context
+ *
+ * @param volume_key provided volume key
+ * @param volume_key_size size of volume_key
+ * @param signature buffer with signature for the key
+ * @param signature_size bsize of signature buffer
+ * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_SIGNED_KEY
+ *
+ * @return zero on success or negative errno otherwise.
+ *
+ * @note currently supported only with VERITY devices.
+ */
+int crypt_keyslot_context_init_by_signed_key(struct crypt_device *cd,
+	const char *volume_key,
+	size_t volume_key_size,
+	const char *signature,
+	size_t signature_size,
+	struct crypt_keyslot_context **kc);
+
+/**
  * Initialize keyslot context via passphrase stored in a keyring.
  *
  * @param cd crypt device handle initialized to LUKS device context
@@ -1361,6 +1383,8 @@ int crypt_keyslot_context_set_pin(struct crypt_device *cd,
  * (@link crypt_keyslot_context_init_by_vk_in_keyring @endlink)
  */
 #define CRYPT_KC_TYPE_VK_KEYRING    INT16_C(6)
+/** keyslot context initialized by signed key (@link crypt_keyslot_context_init_by_signed_key @endlink) */
+#define CRYPT_KC_TYPE_SIGNED_KEY    INT16_C(7)
 /** @} */
 
 /**

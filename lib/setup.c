@@ -5130,9 +5130,9 @@ static int _activate_by_volume_key(struct crypt_device *cd,
 		assert(crypt_volume_key_get_id(vk) == LUKS2_digest_by_segment(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT));
 		r = LUKS2_activate(cd, name, vk, external_key, flags);
 	} else if (isVERITY(cd->type)) {
-		assert(!external_key);
 		assert(crypt_volume_key_get_id(vk) == KEY_VERIFIED);
-		r = crypt_activate_by_signed_key(cd, name, vk->key, vk->keylength, NULL, 0, flags);
+		r = VERITY_activate(cd, name, vk, external_key, cd->u.verity.fec_device,
+				    &cd->u.verity.hdr, flags);
 	} else if (isTCRYPT(cd->type)) {
 		assert(!external_key);
 		r = TCRYPT_activate(cd, name, &cd->u.tcrypt.hdr,
@@ -5163,7 +5163,8 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	uint32_t flags)
 {
 	bool use_keyring;
-	struct volume_key *p_ext_key, *crypt_key = NULL, *opal_key = NULL, *vk = NULL, *p_crypt = NULL;
+	struct volume_key *p_ext_key, *crypt_key = NULL, *opal_key = NULL, *vk = NULL,
+		*vk_sign = NULL, *p_crypt = NULL;
 	size_t passphrase_size;
 	const char *passphrase = NULL;
 	int unlocked_keyslot, r = -EINVAL;
@@ -5179,8 +5180,12 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 		return -EINVAL;
 	if ((flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) && name)
 		return -EINVAL;
-	if (kc->type == CRYPT_KC_TYPE_KEYRING && !kernel_keyring_support()) {
+	if ((kc->type == CRYPT_KC_TYPE_KEYRING) && !kernel_keyring_support()) {
 		log_err(cd, _("Kernel keyring is not supported by the kernel."));
+		return -EINVAL;
+	}
+	if ((kc->type == CRYPT_KC_TYPE_SIGNED_KEY) && !kernel_keyring_support()) {
+		log_err(cd, _("Kernel keyring missing: required for passing signature to kernel."));
 		return -EINVAL;
 	}
 	r = _check_header_data_overlap(cd, name);
@@ -5195,6 +5200,7 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 		r = kc->get_passphrase(cd, kc, &passphrase, &passphrase_size);
 		if (r < 0)
 			return r;
+		/* TODO: Only loopaes should by activated by passphrase method */
 		if (passphrase) {
 			if (isLOOPAES(cd->type))
 				return _activate_loopaes(cd, name, passphrase, passphrase_size, flags);
@@ -5227,9 +5233,16 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	} else if (isFVAULT2(cd->type)) {
 		if (kc->get_fvault2_volume_key)
 			r = kc->get_fvault2_volume_key(cd, kc, &vk);
-	} else if (isVERITY(cd->type)) {
+	} else if (isVERITY(cd->type) && (name || kc->type != CRYPT_KC_TYPE_SIGNED_KEY)) {
 		if (kc->get_verity_volume_key)
-			r = kc->get_verity_volume_key(cd, kc, &vk);
+			r = kc->get_verity_volume_key(cd, kc, &vk, &vk_sign);
+		if (r >= 0)
+			r = VERITY_verify_params(cd, &cd->u.verity.hdr, vk_sign != NULL,
+						 cd->u.verity.fec_device, vk);
+
+		free(CONST_CAST(void*)cd->u.verity.root_hash);
+		cd->u.verity.root_hash = NULL;
+		flags |= CRYPT_ACTIVATE_READONLY;
 	} else if (isINTEGRITY(cd->type)) {
 		if (kc->get_integrity_volume_key)
 			r = kc->get_integrity_volume_key(cd, kc, &vk);
@@ -5254,12 +5267,6 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 
 	if (r < 0)
 		goto out;
-
-	if (!name && isVERITY(cd->type)) {
-		r = crypt_activate_by_signed_key(cd, name, vk->key, vk->keylength, NULL, 0, flags);
-		if (r < 0)
-			goto out;
-	}
 
 	if (isLUKS2(cd->type)) {
 		if (LUKS2_segment_is_hw_opal(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT)) {
@@ -5296,7 +5303,7 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 		}
 	} else {
 		p_crypt = vk;
-		p_ext_key = NULL;
+		p_ext_key = vk_sign;
 	}
 
 	if (name)
@@ -5311,6 +5318,7 @@ out:
 	crypt_free_volume_key(vk);
 	crypt_free_volume_key(crypt_key);
 	crypt_free_volume_key(opal_key);
+	crypt_free_volume_key(vk_sign);
 	return r;
 }
 
@@ -5396,8 +5404,8 @@ int crypt_activate_by_signed_key(struct crypt_device *cd,
 	size_t signature_size,
 	uint32_t flags)
 {
-	char description[512];
 	int r;
+	struct crypt_keyslot_context kc;
 
 	if (!cd || !isVERITY(cd->type))
 		return -EINVAL;
@@ -5407,57 +5415,13 @@ int crypt_activate_by_signed_key(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (name)
-		log_dbg(cd, "Activating volume %s by %skey.", name, signature ? "signed " : "");
-	else
-		log_dbg(cd, "Checking volume by key.");
-
-	if (cd->u.verity.hdr.flags & CRYPT_VERITY_ROOT_HASH_SIGNATURE && !signature) {
-		log_err(cd, _("Root hash signature required."));
-		return -EINVAL;
-	}
-
-	r = _activate_check_status(cd, name, flags & CRYPT_ACTIVATE_REFRESH);
-	if (r < 0)
-		return r;
-
-	if (signature && !kernel_keyring_support()) {
-		log_err(cd, _("Kernel keyring missing: required for passing signature to kernel."));
-		return -EINVAL;
-	}
-
-	/* volume_key == root hash */
-	free(CONST_CAST(void*)cd->u.verity.root_hash);
-	cd->u.verity.root_hash = NULL;
-
-	if (signature) {
-		r = snprintf(description, sizeof(description)-1, "cryptsetup:%s%s%s",
-			     crypt_get_uuid(cd) ?: "", crypt_get_uuid(cd) ? "-" : "", name);
-		if (r < 0)
-			return -EINVAL;
-
-		log_dbg(cd, "Adding signature into keyring %s", description);
-		r = keyring_add_key_in_thread_keyring(USER_KEY, description, signature, signature_size);
-		if (r) {
-			log_err(cd, _("Failed to load key in kernel keyring."));
-			return r;
-		}
-	}
-
-	r = VERITY_activate(cd, name, volume_key, volume_key_size,
-			    signature ? description : NULL,
-			    cd->u.verity.fec_device,
-			    &cd->u.verity.hdr, flags | CRYPT_ACTIVATE_READONLY);
-
-	if (!r) {
-		cd->u.verity.root_hash_size = volume_key_size;
-		cd->u.verity.root_hash = malloc(volume_key_size);
-		if (cd->u.verity.root_hash)
-			memcpy(CONST_CAST(void*)cd->u.verity.root_hash, volume_key, volume_key_size);
-	}
-
 	if (signature)
-		crypt_drop_keyring_key_by_description(cd, description, USER_KEY);
+		crypt_keyslot_unlock_by_signed_key_init_internal(&kc, volume_key, volume_key_size,
+			signature, signature_size);
+	else
+		crypt_keyslot_unlock_by_key_init_internal(&kc, volume_key, volume_key_size);
+	r = crypt_activate_by_keyslot_context(cd, name, -2 /* unused */, &kc, flags);
+	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
 }

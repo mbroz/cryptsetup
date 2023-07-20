@@ -23,6 +23,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #define VERITY_MAX_HASH_TYPE 1
 #define VERITY_BLOCK_SIZE_OK(x)	((x) % 512 || (x) < 512 || \
@@ -31,6 +32,7 @@
 struct crypt_device;
 struct crypt_params_verity;
 struct device;
+struct volume_key;
 
 int VERITY_read_sb(struct crypt_device *cd,
 		   uint64_t sb_offset,
@@ -44,12 +46,17 @@ int VERITY_write_sb(struct crypt_device *cd,
 
 int VERITY_activate(struct crypt_device *cd,
 		     const char *name,
-		     const char *root_hash,
-		     size_t root_hash_size,
-		     const char *signature_description,
+		     struct volume_key *root_hash,
+		     struct volume_key *signature,
 		     struct device *fec_device,
 		     struct crypt_params_verity *verity_hdr,
 		     uint32_t activation_flags);
+
+int VERITY_verify_params(struct crypt_device *cd,
+	struct crypt_params_verity *hdr,
+	bool signed_root_hash,
+	struct device *fec_device,
+	struct volume_key *root_hash);
 
 int VERITY_verify(struct crypt_device *cd,
 		struct crypt_params_verity *verity_hdr,
