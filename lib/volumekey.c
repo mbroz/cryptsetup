@@ -39,7 +39,7 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 
 	vk->key_description = NULL;
 	vk->keylength = keylength;
-	vk->id = -1;
+	vk->id = KEY_NOT_VERIFIED;
 	vk->next = NULL;
 
 	/* keylength 0 is valid => no key */

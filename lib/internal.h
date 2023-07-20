@@ -263,4 +263,8 @@ static inline bool uint64_mult_overflow(uint64_t *u, uint64_t b, size_t size)
 	return false;
 }
 
+#define KEY_NOT_VERIFIED -2
+#define KEY_EXTERNAL_VERIFICATION -1
+#define KEY_VERIFIED 0
+
 #endif /* INTERNAL_H */
