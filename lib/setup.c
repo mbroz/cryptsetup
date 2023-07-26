@@ -524,33 +524,20 @@ int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
 }
 
 /*
- * compares type of active device to provided string (only if there is no explicit type)
+ * compares type of active device to provided string
  */
-static int crypt_uuid_type_cmp(struct crypt_device *cd, const char *type)
+int crypt_uuid_type_cmp(const char *dm_uuid, const char *type)
 {
-	struct crypt_dm_active_device dmd;
 	size_t len;
-	int r;
 
-	/* Must use header-on-disk if we know the type here */
-	if (cd->type || !cd->u.none.active_name)
-		return -EINVAL;
+	assert(type);
 
-	log_dbg(cd, "Checking if active device %s without header has UUID type %s.",
-		cd->u.none.active_name, type);
-
-	r = dm_query_device(cd, cd->u.none.active_name, DM_ACTIVE_UUID, &dmd);
-	if (r < 0)
-		return r;
-
-	r = -ENODEV;
 	len = strlen(type);
-	if (dmd.uuid && strlen(dmd.uuid) > len &&
-	    !strncmp(dmd.uuid, type, len) && dmd.uuid[len] == '-')
-		r = 0;
+	if (dm_uuid && strlen(dm_uuid) > len &&
+	    !strncmp(dm_uuid, type, len) && dm_uuid[len] == '-')
+		return 0;
 
-	free(CONST_CAST(void*)dmd.uuid);
-	return r;
+	return -ENODEV;
 }
 
 int PLAIN_activate(struct crypt_device *cd,
@@ -3842,32 +3829,54 @@ int crypt_suspend(struct crypt_device *cd,
 	char *key_desc;
 	crypt_status_info ci;
 	int r;
+	struct crypt_dm_active_device dmd;
 	uint32_t dmflags = DM_SUSPEND_WIPE_KEY;
-
-	/* FIXME: check context uuid matches the dm-crypt device uuid (onlyLUKS branching) */
 
 	if (!cd || !name)
 		return -EINVAL;
 
 	log_dbg(cd, "Suspending volume %s.", name);
 
-	if (cd->type)
-		r = onlyLUKS(cd);
-	else {
-		r = crypt_uuid_type_cmp(cd, CRYPT_LUKS1);
-		if (r < 0)
-			r = crypt_uuid_type_cmp(cd, CRYPT_LUKS2);
-		if (r < 0)
-			log_err(cd, _("This operation is supported only for LUKS device."));
-	}
-
-	if (r < 0)
+	if (cd->type && ((r = onlyLUKS(cd)) < 0))
 		return r;
 
 	ci = crypt_status(cd, name);
 	if (ci < CRYPT_ACTIVE) {
 		log_err(cd, _("Volume %s is not active."), name);
 		return -EINVAL;
+	}
+
+	r = dm_query_device(cd, name, DM_ACTIVE_UUID, &dmd);
+	if (r < 0)
+		return r;
+
+	log_dbg(cd, "Checking if active device %s has UUID type LUKS.", name);
+
+	r = crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2);
+	if (r < 0)
+		r = crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS1);
+
+	if (r < 0) {
+		log_err(cd, _("This operation is supported only for LUKS device."));
+		goto out;
+	}
+
+	r = -EINVAL;
+
+	if (isLUKS2(cd->type) && crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2)) {
+		log_dbg(cd, "LUKS device header type: %s mismatches DM device type.", cd->type);
+		goto out;
+	}
+
+	if (isLUKS1(cd->type) && crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS1)) {
+		log_dbg(cd, "LUKS device header type: %s mismatches DM device type.", cd->type);
+		goto out;
+	}
+
+	if (cd->type && (r = crypt_uuid_cmp(dmd.uuid, LUKS_UUID(cd))) < 0) {
+		log_dbg(cd, "LUKS device header uuid: %s mismatches DM returned uuid %s",
+			LUKS_UUID(cd), dmd.uuid);
+		goto out;
 	}
 
 	r = dm_status_suspended(cd, name);
@@ -3895,6 +3904,8 @@ int crypt_suspend(struct crypt_device *cd,
 		crypt_drop_keyring_key_by_description(cd, key_desc, LOGON_KEY);
 	free(key_desc);
 out:
+	dm_targets_free(cd, &dmd);
+	free(CONST_CAST(void*)dmd.uuid);
 	return r;
 }
 
