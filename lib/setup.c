@@ -3864,13 +3864,11 @@ int crypt_suspend(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	ci = crypt_status(NULL, name);
+	ci = crypt_status(cd, name);
 	if (ci < CRYPT_ACTIVE) {
 		log_err(cd, _("Volume %s is not active."), name);
 		return -EINVAL;
 	}
-
-	dm_backend_init(cd);
 
 	r = dm_status_suspended(cd, name);
 	if (r < 0)
@@ -3897,7 +3895,6 @@ int crypt_suspend(struct crypt_device *cd,
 		crypt_drop_keyring_key_by_description(cd, key_desc, LOGON_KEY);
 	free(key_desc);
 out:
-	dm_backend_exit(cd);
 	return r;
 }
 
