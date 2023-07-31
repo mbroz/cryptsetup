@@ -2202,7 +2202,11 @@ static int opal_topology_alignment(struct crypt_device *cd,
 	}
 
 	if (!opal_align) {
-		*ret_alignment_bytes = required_alignment_sectors ? (required_alignment_sectors * SECTOR_SIZE) : default_alignment_bytes;
+		/* For detached header the alignment is used directly as data offset */
+		if (required_alignment_sectors || cd->metadata_device)
+			*ret_alignment_bytes = required_alignment_sectors * SECTOR_SIZE;
+		else
+			*ret_alignment_bytes = default_alignment_bytes;
 		*ret_alignment_offset_bytes = 0;
 		*ret_opal_block_bytes = opal_block_bytes;
 		*ret_opal_alignment_granularity_blocks = 1;
@@ -2230,7 +2234,8 @@ static int opal_topology_alignment(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (required_alignment_sectors)
+	/* For detached header the alignment is used directly as data offset */
+	if (required_alignment_sectors || cd->metadata_device)
 		*ret_alignment_bytes = required_alignment_sectors * SECTOR_SIZE;
 	else
 		*ret_alignment_bytes = size_round_up(default_alignment_bytes, opal_block_bytes * opal_alignment_granularity_blocks);
