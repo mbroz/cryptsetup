@@ -504,6 +504,10 @@ int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
 	if (!dm_uuid || !hdr_uuid)
 		return -EINVAL;
 
+	/* skip beyond LUKS2_HW_OPAL prefix */
+	if (!strncmp(dm_uuid, CRYPT_LUKS2_HW_OPAL, strlen(CRYPT_LUKS2_HW_OPAL)))
+		dm_uuid = dm_uuid + strlen(CRYPT_LUKS2_HW_OPAL);
+
 	str = strchr(dm_uuid, '-');
 	if (!str)
 		return -EINVAL;

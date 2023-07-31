@@ -2754,9 +2754,13 @@ int LUKS2_activate(struct crypt_device *cd,
 		if (dynamic)
 			dmd.segment.size = dmdi.segment.size;
 
-		r = create_or_reload_device_with_integrity(cd, name, CRYPT_LUKS2, &dmd, &dmdi);
+		r = create_or_reload_device_with_integrity(cd, name,
+							   opal_key ? CRYPT_LUKS2_HW_OPAL : CRYPT_LUKS2,
+							   &dmd, &dmdi);
 	} else
-		r = create_or_reload_device(cd, name, CRYPT_LUKS2, &dmd);
+		r = create_or_reload_device(cd, name,
+					    opal_key ? CRYPT_LUKS2_HW_OPAL : CRYPT_LUKS2,
+					    &dmd);
 
 	dm_targets_free(cd, &dmd);
 	dm_targets_free(cd, &dmdi);

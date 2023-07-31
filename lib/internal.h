@@ -53,6 +53,7 @@
 #define MAX_DM_DEPS		32
 
 #define CRYPT_SUBDEV           "SUBDEV" /* prefix for sublayered devices underneath public crypt types */
+#define CRYPT_LUKS2_HW_OPAL    "LUKS2-OPAL" /* dm uuid prefix used for any HW OPAL enabled LUKS2 device */
 
 #ifndef O_CLOEXEC
 #define O_CLOEXEC 0
