@@ -2722,8 +2722,8 @@ static int action_luksErase(void)
 	char *msg = NULL;
 	int i, max, r, hw_enc;
 
-	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
-		goto out;
+	if ((r = crypt_init_data_device(&cd, uuid_or_device(ARG_STR(OPT_HEADER_ID) ?: action_argv[0]), action_argv[0])))
+		return r;
 
 	/* Allow factory reset even if there's no LUKS header, as long as OPAL is enabled on the device */
 	if (ARG_SET(OPT_HW_OPAL_FACTORY_RESET_ID)) {
