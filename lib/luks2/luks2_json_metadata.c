@@ -2796,6 +2796,7 @@ static bool contains_reencryption_helper(char **names)
 
 int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr *hdr, struct crypt_dm_active_device *dmd, uint32_t flags)
 {
+	bool dm_opal_uuid;
 	int r, ret;
 	struct dm_target *tgt;
 	crypt_status_info ci;
@@ -2814,6 +2815,11 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 
 	r = snprintf(deps_uuid_prefix, sizeof(deps_uuid_prefix), CRYPT_SUBDEV "-%.32s", dmd->uuid + 6);
 	if (r < 0 || (size_t)r != (sizeof(deps_uuid_prefix) - 1))
+		return -EINVAL;
+
+	/* check if active device has LUKS2-OPAL dm uuid prefix */
+	dm_opal_uuid = !crypt_uuid_type_cmp(dmd->uuid, CRYPT_LUKS2_HW_OPAL);
+	if (dm_opal_uuid && hdr && !LUKS2_segment_is_hw_opal(hdr, CRYPT_DEFAULT_SEGMENT))
 		return -EINVAL;
 
 	tgt = &dmd->segment;
@@ -2905,11 +2911,24 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 		r = ret;
 	}
 
-	if (!r && !LUKS2_get_opal_segment_number(hdr, CRYPT_DEFAULT_SEGMENT, &opal_segment_number)) {
-		r = opal_lock(cd, crypt_data_device(cd), opal_segment_number);
-		if (r)
-			log_err(cd, _("Failed to lock OPAL device %s."),
-				device_path(crypt_data_device(cd)));
+	if (!r && dm_opal_uuid) {
+		if (hdr) {
+			if (LUKS2_get_opal_segment_number(hdr, CRYPT_DEFAULT_SEGMENT, &opal_segment_number)) {
+				log_err(cd, _("Device %s was deactivated but hardware OPAL device cannot be locked."),
+					name);
+				r = -EINVAL;
+				goto out;
+			}
+		} else {
+			/* Guess OPAL range number for LUKS2-OPAL device with missing header */
+			opal_segment_number = 1;
+			ret = crypt_dev_get_partition_number(device_path(crypt_data_device(cd)));
+			if (ret > 0)
+				opal_segment_number = ret;
+		}
+
+		if (!crypt_data_device(cd) || opal_lock(cd, crypt_data_device(cd), opal_segment_number))
+			log_err(cd, _("Device %s was deactivated but hardware OPAL device cannot be locked."), name);
 	}
 out:
 	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
