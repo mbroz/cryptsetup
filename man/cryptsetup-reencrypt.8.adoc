@@ -31,7 +31,7 @@ which otherwise require full on-disk data change (re-encryption). The
 _reencrypt_ action reencrypts data on LUKS device in-place.
 
 You can regenerate *volume key* (the real key used in on-disk encryption
-unclocked by passphrase), *cipher*, *cipher mode* or *encryption sector size*
+unlocked by passphrase), *cipher*, *cipher mode* or *encryption sector size*
 (LUKS2 only).
 
 Reencryption process may be safely interrupted by a user via SIGINT
@@ -43,7 +43,7 @@ options available for _luksFormat_ action for respective LUKS version (see
 cryptsetup-luksFormat man page for more details). See *cryptsetup-luksFormat*(8).
 
 *NOTE* that for encrypt and decrypt mode, the whole device must be
-treated as unencrypted -- there are no quarantees of confidentiality as
+treated as unencrypted -- there are no guarantees of confidentiality as
 part of the device contains plaintext.
 
 *ALWAYS BE SURE YOU HAVE RELIABLE BACKUP BEFORE USING THIS ACTION ON LUKS DEVICE.*
