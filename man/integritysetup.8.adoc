@@ -44,6 +44,10 @@ create <name> <device> (*OBSOLETE syntax*)
 
 Open a mapping with <name> backed by device <device>.
 
+If the integrity algorithm of the device is non-default,
+then the algorithm should be specified with the *--integrity* option.
+This will not be detected from the device.
+
 *<options>* can be [--data-device, --batch-mode, --journal-watermark,
 --journal-commit-time, --buffer-sectors, --integrity,
 --integrity-key-size, --integrity-key-file, --integrity-no-journal,
