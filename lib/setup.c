@@ -2331,6 +2331,20 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 
 	partition_offset_sectors = crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
 
+	r = device_check_access(cd, crypt_metadata_device(cd), DEV_EXCL);
+	if (r < 0)
+		return r;
+
+	/*
+	 * Check both data and metadata devices for exclusive access since
+	 * we don't want to setup locking range on already used partition.
+	 */
+	if (crypt_metadata_device(cd) != crypt_data_device(cd)) {
+		r = device_check_access(cd, crypt_data_device(cd), DEV_EXCL);
+		if (r < 0)
+			return r;
+	}
+
 	if (!(cd->type = strdup(CRYPT_LUKS2)))
 		return -ENOMEM;
 
