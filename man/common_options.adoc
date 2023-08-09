@@ -131,8 +131,14 @@ ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY[]
 The passphrase supplied via --key-file is always the passphrase for existing
 keyslot requested by the command.
 +
+ifdef::ACTION_LUKSADDKEY[]
 If you want to set a new passphrase via key file, you have to use a
 positional argument or parameter --new-keyfile.
+endif::[]
+ifdef::ACTION_LUKSCHANGEKEY[]
+If you want to set a new passphrase via key file, you have to use a
+positional argument.
+endif::[]
 +
 endif::[]
 ifdef::ACTION_OPEN[]
