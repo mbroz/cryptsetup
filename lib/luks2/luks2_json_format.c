@@ -363,6 +363,14 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 	offset = get_min_offset(hdr);
 	length = LUKS2_keyslots_size(hdr);
 
+	/*
+	 * Skip keyslots area wipe in case it is not defined.
+	 * Otherwise we would wipe whole data device (length == 0)
+	 * starting at offset get_min_offset(hdr).
+	 */
+	if (!length)
+		return 0;
+
 	log_dbg(cd, "Wiping keyslots area (0x%06" PRIx64 " - 0x%06" PRIx64") with random data.",
 		offset, length + offset);
 
