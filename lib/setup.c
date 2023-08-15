@@ -4060,10 +4060,12 @@ static int resume_luks2_by_volume_key(struct crypt_device *cd,
 		use_keyring = false;
 	}
 
-	if (use_keyring && p_crypt) {
-		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, p_crypt, digest);
-		if (r < 0)
-			goto out;
+	if (use_keyring) {
+		if (p_crypt) {
+			r = LUKS2_volume_key_load_in_keyring_by_digest(cd, p_crypt, digest);
+			if (r < 0)
+				goto out;
+		}
 
 		/* upload volume key in custom keyring if requested */
 		if (cd->link_vk_to_keyring) {
@@ -4725,7 +4727,8 @@ static int _open_and_activate(struct crypt_device *cd,
 		return r;
 	keyslot = r;
 
-	if (LUKS2_segment_is_hw_opal(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT)) {
+	/* split the key only if we do activation */
+	if (name && LUKS2_segment_is_hw_opal(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT)) {
 		r = LUKS2_split_crypt_and_opal_keys(cd, &cd->u.luks2.hdr,
 						    vk, &crypt_key,
 						    &opal_key);
@@ -4740,18 +4743,21 @@ static int _open_and_activate(struct crypt_device *cd,
 	} else
 		p_crypt = vk;
 
-	if (!crypt_use_keyring_for_vk(cd) || !p_crypt)
+	if (!crypt_use_keyring_for_vk(cd))
 		use_keyring = false;
 	else
 		use_keyring = ((name && !crypt_is_cipher_null(crypt_get_cipher(cd))) ||
 			       (flags & CRYPT_ACTIVATE_KEYRING_KEY));
 
 	if (use_keyring) {
-		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, p_crypt,
-							       crypt_volume_key_get_id(p_crypt));
-		if (r < 0)
-			goto out;
-		flags |= CRYPT_ACTIVATE_KEYRING_KEY;
+		/* upload dm-crypt part of volume key in thread keyring if requested */
+		if (p_crypt) {
+			r = LUKS2_volume_key_load_in_keyring_by_digest(cd, p_crypt,
+								       crypt_volume_key_get_id(p_crypt));
+			if (r < 0)
+				goto out;
+			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
+		}
 
 		/* upload the volume key in custom user keyring if requested */
 		if (cd->link_vk_to_keyring) {
@@ -5324,7 +5330,8 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 		goto out;
 
 	if (isLUKS2(cd->type)) {
-		if (LUKS2_segment_is_hw_opal(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT)) {
+		/* split the key only if we do activation */
+		if (name && LUKS2_segment_is_hw_opal(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT)) {
 			r = LUKS2_split_crypt_and_opal_keys(cd, &cd->u.luks2.hdr,
 							    vk, &crypt_key,
 							    &opal_key);
@@ -5341,17 +5348,20 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 			p_ext_key = NULL;
 		}
 
-		if (!crypt_use_keyring_for_vk(cd) || !p_crypt)
+		if (!crypt_use_keyring_for_vk(cd))
 			use_keyring = false;
 		else
 			use_keyring = (name && !crypt_is_cipher_null(crypt_get_cipher(cd))) ||
 				      (flags & CRYPT_ACTIVATE_KEYRING_KEY);
 
 		if (use_keyring) {
-			r = LUKS2_volume_key_load_in_keyring_by_digest(cd, p_crypt, crypt_volume_key_get_id(p_crypt));
-			if (r < 0)
-				goto out;
-			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
+			/* upload dm-crypt part of volume key in thread keyring if requested */
+			if (p_crypt) {
+				r = LUKS2_volume_key_load_in_keyring_by_digest(cd, p_crypt, crypt_volume_key_get_id(p_crypt));
+				if (r < 0)
+					goto out;
+				flags |= CRYPT_ACTIVATE_KEYRING_KEY;
+			}
 
 			/* upload the volume key in custom user keyring if requested */
 			if (cd->link_vk_to_keyring) {
