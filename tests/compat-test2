@@ -287,6 +287,23 @@ function add_scsi_device() {
 	[ -b $DEV ] || fail "Cannot find $DEV."
 }
 
+# $1 key name
+# $2 keyring to link VK to
+# $3 key type (optional)
+test_vk_link() {
+	KEY_TYPE=${3:-logon}
+	KEY_TYPE_ARG=""
+	if [ ! -z "$3" ]; then
+		KEY_TYPE_ARG="--volume-key-type $3"
+	fi
+
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "$2" $KEY_TYPE_ARG || fail
+	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after activation."
+	$CRYPTSETUP close $DEV_NAME
+	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after deactivation."
+	keyctl unlink "%$KEY_TYPE:$1" "$2" || fail
+}
+
 export LANG=C
 
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
@@ -1214,6 +1231,50 @@ dmsetup create $DEV_NAME --uuid CRYPT-LUKS2-3d20686f551748cb89911ad32379821b-tes
   "0 8 crypt capi:xts(ecb(aes-generic))-plain64 edaa40709797973715e572bf7d86fcbb9cfe2051083c33c28d58fe4e1e7ff642 0 $LOOPDEV 32768"
 $CRYPTSETUP status $DEV_NAME | grep -q "n/a" || fail
 $CRYPTSETUP close $DEV_NAME ||fail
+
+if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
+	prepare "[45] Link VK to a keyring and use custom VK type." wipe
+
+	echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV 2> /dev/null || fail
+	UUID=$($CRYPTSETUP luksDump $LOOPDEV | grep 'UUID:' | awk '{print $2}')
+	KEY_NAME="cryptsetup:$UUID-d0"
+	test_and_prepare_keyring
+	KID=$(echo -n test | keyctl padd user my_token @s)
+	keyctl unlink $KID >/dev/null 2>&1 @s && SESSION_KEYRING_WORKS=1
+	KID=$(echo -n test | keyctl padd user my_token @us)
+	keyctl unlink $KID >/dev/null 2>&1 @us && USER_SESSION_KEYRING_WORKS=1
+
+
+	test_vk_link $KEY_NAME "@u"
+	test_vk_link $KEY_NAME "@u" "user"
+	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@s"
+	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@s" "user"
+	[[ ! -z "$USER_SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@us"
+	[[ ! -z "$USER_SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@us" "user"
+	test_vk_link $KEY_NAME "%:$TEST_KEYRING_NAME"
+	test_vk_link $KEY_NAME "%:$TEST_KEYRING_NAME" "user"
+	# explicitly specify keyring key type
+	test_vk_link $KEY_NAME "%keyring:$TEST_KEYRING_NAME"
+
+	# test numeric keyring name -5 is user session (@us) keyring
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring -5 --volume-key-type logon || fail
+	keyctl search @us logon $KEY_NAME > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after activation."
+	$CRYPTSETUP close $DEV_NAME
+	keyctl search @us logon $KEY_NAME > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after deactivation."
+	keyctl unlink "%logon:$KEY_NAME" @us || fail
+
+	# test malformed keyring descriptions and key types
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "%user:$TEST_KEYRING_NAME" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "$TEST_KEYRING_NAME" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "%$TEST_KEYRING_NAME" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring ":$TEST_KEYRING_NAME" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "@uuu" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "@usu" > /dev/null 2>&1 && fail
+
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-type 0 > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-type blah > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-type userlogon > /dev/null 2>&1 && fail
+fi
 
 remove_mapping
 exit 0
