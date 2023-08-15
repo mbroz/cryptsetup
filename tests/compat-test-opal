@@ -1,0 +1,1312 @@
+#!/bin/bash
+
+PS4='$LINENO:'
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+
+CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+CRYPTSETUP_LIB_VALGRIND=../.libs
+
+DEV_NAME=dummy
+DEV_NAME2=dummy2
+NO_HEADER_IMG=missing-header
+HEADER_IMG=luks-header
+HEADER_LUKS2_INV=luks2_invalid_cipher.img
+KEY1=key1
+KEY2=key2
+KEY5=key5
+KEYE=keye
+KEY_PWD1=key_pwd1
+OPAL2_ADMIN_PIN="adminPin01"
+PWD1="93R4P4pIqAH8"
+PWD2="mymJeD8ivEhE"
+PWD3="ocMakf3fAcQO"
+PWD4="Qx3qn46vq0v"
+PWDW="rUkL4RUryBom"
+TEST_KEYRING_NAME="compattest2_keyring"
+TEST_TOKEN0="compattest2_desc0"
+TEST_TOKEN1="compattest2_desc1"
+VK_FILE="compattest2_vkfile"
+IMPORT_TOKEN="{\"type\":\"some_type\",\"keyslots\":[],\"base64_data\":\"zxI7vKB1Qwl4VPB4D-N-OgcC14hPCG0IDu8O7eCqaQ\"}"
+TOKEN_FILE0=test-token-file0
+TOKEN_FILE1=test-token-file1
+KEY_FILE0=test-key-file0
+KEY_FILE1=test-key-file1
+
+FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
+
+TEST_UUID="12345678-1234-1234-1234-123456789abc"
+
+FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
+
+function remove_mapping()
+{
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
+	rm -f $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $VK_FILE \
+	$HEADER_LUKS2_INV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* \
+	$KEY_FILE0 $KEY_FILE1 $KEY_PWD1 $NO_HEADER_IMG >/dev/null 2>&1
+
+	# unlink whole test keyring
+	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
+	unset TEST_KEYRING
+}
+
+function fail()
+{
+	[ -n "$1" ] && echo "$1"
+	remove_mapping_and_reset
+	echo "FAILED backtrace:"
+	while caller $frame; do ((frame++)); done
+	exit 2
+}
+
+function fips_mode()
+{
+	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
+}
+
+function can_fail_fips()
+{
+	# Ignore this fail if running in FIPS mode
+	fips_mode || fail $1
+}
+
+function skip()
+{
+	[ -n "$1" ] && echo "$1"
+	remove_mapping
+	exit 77
+}
+
+function remove_mapping_and_reset()
+{
+	remove_mapping
+	$CRYPTSETUP luksErase --hw-opal-factory-reset --key-file $OPAL2_PSID_FILE $OPAL2_DEV -q
+}
+
+function prepare()
+{
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
+
+	case "$2" in
+	reset)
+		remove_mapping_and_reset
+		;;
+	wipe)
+		$CRYPTSETUP isLuks --type luks2 $HEADER_IMG -q 2>/dev/null
+		if [ $? -eq 0 ]; then
+			echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q --header $HEADER_IMG 
+		else
+			echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q 2>/dev/null
+		fi
+		remove_mapping
+		;;
+	new)
+		remove_mapping
+		;;
+	reuse | *)
+		;;
+	esac
+
+	if [ ! -e $KEY1 ]; then
+		echo -n $'\x48\xc6\x74\x4f\x41\x4e\x50\xc0\x79\xc2\x2d\x5b\x5f\x68\x84\x17' >$KEY1
+		echo -n $'\x9c\x03\x5e\x1b\x4d\x0f\x9a\x75\xb3\x90\x70\x32\x0a\xf8\xae\xc4'>>$KEY1
+	fi
+
+	if [ ! -e $KEY2 ]; then
+		dd if=/dev/urandom of=$KEY2 count=1 bs=64 >/dev/null 2>&1
+	fi
+
+	if [ ! -e $KEY5 ]; then
+		dd if=/dev/urandom of=$KEY5 count=1 bs=16 >/dev/null 2>&1
+	fi
+
+	if [ ! -e $KEY_PWD1 ]; then
+		echo -n "$PWD1" > $KEY_PWD1
+	fi
+
+	if [ ! -e $KEYE ]; then
+		touch $KEYE
+	fi
+
+	[ -n "$1" ] && echo "CASE: $1"
+}
+
+function check_exists()
+{
+	[ -b /dev/mapper/$DEV_NAME ] || fail
+}
+
+function valgrind_setup()
+{
+	command -v valgrind >/dev/null || fail "Cannot find valgrind."
+	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
+	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+}
+
+function valgrind_run()
+{
+	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
+}
+
+function dm_crypt_keyring_support()
+{
+	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
+	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
+
+	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+	VER_PTC=$(echo $VER_STR | cut -f 3 -d.)
+
+	test -d /proc/sys/kernel/keys || return 1
+
+	[ $VER_MAJ -gt 1 ] && return 0
+	[ $VER_MAJ -eq 1 -a $VER_MIN -gt 18 ] && return 0
+	[ $VER_MAJ -eq 1 -a $VER_MIN -eq 18 -a $VER_PTC -ge 1 ] && return 0
+	return 1
+}
+
+function dm_crypt_keyring_new_kernel()
+{
+	KER_STR=$(uname -r)
+	[ -z "$KER_STR" ] && fail "Failed to parse kernel version."
+	KER_MAJ=$(echo $KER_STR | cut -f 1 -d.)
+	KER_MIN=$(echo $KER_STR | cut -f 2 -d.)
+
+	[ $KER_MAJ -ge 5 ] && return 0
+	[ $KER_MAJ -eq 4 -a $KER_MIN -ge 15 ] && return 0
+	return 1
+}
+
+function test_and_prepare_keyring() {
+	command -v keyctl >/dev/null || skip "Cannot find keyctl, test skipped"
+	keyctl list "@s" > /dev/null || skip "Current session keyring is unreachable, test skipped"
+	TEST_KEYRING=$(keyctl newring $TEST_KEYRING_NAME "@u" 2> /dev/null)
+	test -n "$TEST_KEYRING" || skip "Failed to create keyring in user keyring"
+	keyctl search "@s" keyring "$TEST_KEYRING" > /dev/null 2>&1 || keyctl link "@u" "@s" > /dev/null 2>&1
+	load_key user test_key test_data "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
+}
+
+# $1 type
+# $2 description
+# $3 payload
+# $4 keyring
+function load_key()
+{
+	keyctl add $@ >/dev/null
+}
+
+function setup_luks2_env() {
+	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $OPAL2_DEV || fail
+	$CRYPTSETUP luksDump $OPAL2_DEV >/dev/null || fail
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
+	HAVE_KEYRING=$($CRYPTSETUP status $DEV_NAME | grep "keyring")
+	if [ -n "$HAVE_KEYRING" ]; then
+		HAVE_KEYRING=1
+	else
+		HAVE_KEYRING=0
+	fi
+	if $($CRYPTSETUP --version | grep -q "BLKID"); then
+		HAVE_BLKID=1
+	else
+		HAVE_BLKID=0
+	fi
+	$CRYPTSETUP close $DEV_NAME || fail
+}
+
+# $1 key name
+# $2 keyring to link VK to
+# $3 key type (optional)
+test_vk_link() {
+	KEY_TYPE=${3:-user}
+	if [ -z "$3" ]; then
+		KEY_DESC=$1
+	else
+		KEY_DESC="%$3:$1"
+	fi
+
+	KEYCTL_KEY_NAME="%$KEY_TYPE:$1"
+
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring "$2"::"$KEY_DESC" || fail
+	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after activation."
+	$CRYPTSETUP close $DEV_NAME
+	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after deactivation."
+	keyctl unlink "$KEYCTL_KEY_NAME" "$2" || fail
+}
+
+# $1 key name
+# $2 keyring to link VK to
+# $3 key type (optional)
+test_vk_link_and_reactivate() {
+	KEY_TYPE=${3:-user}
+	if [ -z "$3" ]; then
+		KEY_DESC=$1
+	else
+		KEY_DESC="%$3:$1"
+	fi
+
+	KEYCTL_KEY_NAME="%$KEY_TYPE:$1"
+
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring "$2"::"$KEY_DESC" || fail
+	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after activation."
+	$CRYPTSETUP close $DEV_NAME || fail
+	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after deactivation."
+	$CRYPTSETUP open $OPAL2_DEV $DEV_NAME --volume-key-keyring $KEY_DESC <&-|| fail "Failed to unlock volume via a VK in keyring."
+	$CRYPTSETUP luksSuspend $DEV_NAME || fail "Failed to suspend device."
+	$CRYPTSETUP luksResume $DEV_NAME --volume-key-keyring $KEY_DESC <&- || fail "Failed to resume via a VK in keyring."
+
+	echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV --test-passphrase 2>/dev/null || fail
+	echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV --test-passphrase 2>/dev/null && fail
+	echo $PWD2 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --volume-key-keyring $KEY_DESC $OPAL2_DEV --new-key-slot 1 || fail "Failed to add passphrase by VK in keyring."
+	echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV --test-passphrase 2>/dev/null || fail
+	$CRYPTSETUP luksKillSlot -q $OPAL2_DEV 1 2>/dev/null || fail
+
+	$CRYPTSETUP close $DEV_NAME || fail
+	# zero-out the key in keyring
+	keyctl pipe $KEYCTL_KEY_NAME | tr -c '\0' '\0' | keyctl pupdate $KEYCTL_KEY_NAME
+	$CRYPTSETUP open $OPAL2_DEV $DEV_NAME --volume-key-keyring $KEY_DESC <&- > /dev/null 2>&1 && fail "Unlocked volume via a bad VK in keyring."
+	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after bad activation."
+	keyctl unlink $KEYCTL_KEY_NAME "$2" || fail
+}
+
+function test_reencryption_does_not_init()
+{
+	local _hdr=""
+	local _hdrdev=$NO_HEADER_IMG
+	if [ -n "$1" ]; then
+		_hdr="--header $1"
+		_hdrdev=$1
+	fi
+	local _dumpdev=${1:-$OPAL2_DEV}
+
+	# store sequence id to check if reencryption was aborted without metadata modifications
+	OLD_SEQID=0"$($CRYPTSETUP luksDump $_dumpdev | grep "Epoch:" | cut -d: -f 2 | sed -e 's/[[:space:]]*//g')"
+	[ 0$OLD_SEQID -gt 0 ] || fail
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $_hdr -q --init-only $OPAL2_DEV 2>/dev/null && fail
+	NEW_SEQID=0"$($CRYPTSETUP luksDump $_dumpdev | grep "Epoch:" | cut -d: -f 2 | sed -e 's/[[:space:]]*//g')"
+	[ 0$NEW_SEQID -gt 0 ] || fail
+	test $OLD_SEQID -eq $NEW_SEQID || fail "LUKS2 metadata was modified."
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $_hdr -q $OPAL2_DEV 2>/dev/null && fail
+	NEW_SEQID=0"$($CRYPTSETUP luksDump $_dumpdev | grep "Epoch:" | cut -d: -f 2 | sed -e 's/[[:space:]]*//g')"
+	[ 0$NEW_SEQID -gt 0 ] || fail
+	test $OLD_SEQID -eq $NEW_SEQID || fail "LUKS2 metadata was modified."
+
+	echo $PWD1 |$CRYPTSETUP reencrypt -q --decrypt --header $_hdrdev --init-only $OPAL2_DEV 2>/dev/null && fail
+	if [ $_hdrdev = $NO_HEADER_IMG ]; then
+		test -e $_hdrdev && fail "Decryption header was created."
+	fi
+	NEW_SEQID=0"$($CRYPTSETUP luksDump $_dumpdev | grep "Epoch:" | cut -d: -f 2 | sed -e 's/[[:space:]]*//g')"
+	[ 0$NEW_SEQID -gt 0 ] || fail
+	test $OLD_SEQID -eq $NEW_SEQID || fail "LUKS2 metadata was modified."
+
+	echo $PWD1 |$CRYPTSETUP reencrypt -q --decrypt --header $_hdrdev $OPAL2_DEV 2>/dev/null && fail
+	if [ $_hdrdev = $NO_HEADER_IMG ]; then
+		test -e $_hdrdev && fail "Decryption header was created."
+	fi
+	NEW_SEQID=0"$($CRYPTSETUP luksDump $_dumpdev | grep "Epoch:" | cut -d: -f 2 | sed -e 's/[[:space:]]*//g')"
+	[ 0$NEW_SEQID -gt 0 ] || fail
+	test $OLD_SEQID -eq $NEW_SEQID || fail "LUKS2 metadata was modified."
+
+	# repeat the test with active device
+	echo $PWD1 | $CRYPTSETUP open $_hdr $OPAL2_DEV $DEV_NAME -q || fail
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $_hdr -q --init-only --active-name $DEV_NAME 2>/dev/null && fail
+	NEW_SEQID=0"$($CRYPTSETUP luksDump $_dumpdev | grep "Epoch:" | cut -d: -f 2 | sed -e 's/[[:space:]]*//g')"
+	[ 0$NEW_SEQID -gt 0 ] || fail
+	test $OLD_SEQID -eq $NEW_SEQID || fail "LUKS2 metadata was modified."
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $_hdr -q --active-name $DEV_NAME 2>/dev/null && fail
+	NEW_SEQID=0"$($CRYPTSETUP luksDump $_dumpdev | grep "Epoch:" | cut -d: -f 2 | sed -e 's/[[:space:]]*//g')"
+	[ 0$NEW_SEQID -gt 0 ] || fail
+	test $OLD_SEQID -eq $NEW_SEQID || fail "LUKS2 metadata was modified."
+
+	echo $PWD1 |$CRYPTSETUP reencrypt -q --decrypt --header $_hdrdev --init-only --active-name $DEV_NAME 2>/dev/null && fail
+	if [ $_hdrdev = $NO_HEADER_IMG ]; then
+		test -e $_hdrdev && fail "Decryption header was created."
+	fi
+	NEW_SEQID=0"$($CRYPTSETUP luksDump $_dumpdev | grep "Epoch:" | cut -d: -f 2 | sed -e 's/[[:space:]]*//g')"
+	[ 0$NEW_SEQID -gt 0 ] || fail
+	test $OLD_SEQID -eq $NEW_SEQID || fail "LUKS2 metadata was modified."
+
+	echo $PWD1 |$CRYPTSETUP reencrypt -q --decrypt --header $_hdrdev --active-name $DEV_NAME 2>/dev/null && fail
+	if [ $_hdrdev = $NO_HEADER_IMG ]; then
+		test -e $_hdrdev && fail "Decryption header was created."
+	fi
+	NEW_SEQID=0"$($CRYPTSETUP luksDump $_dumpdev | grep "Epoch:" | cut -d: -f 2 | sed -e 's/[[:space:]]*//g')"
+	[ 0$NEW_SEQID -gt 0 ] || fail
+	test $OLD_SEQID -eq $NEW_SEQID || fail "LUKS2 metadata was modified."
+
+	$CRYPTSETUP close $DEV_NAME || fail
+}
+
+function test_device() #opal_mode, #format_params, #--integrity-no-wipe
+{
+	echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 $1 $2 $3 -q $FAST_PBKDF_OPT $OPAL2_DEV || fail
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
+	test -z "$3" ||	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M count=1 oflag=direct >/dev/null 2>&1 || fail
+	$CRYPTSETUP luksSuspend $DEV_NAME || fail
+	dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME || fail
+	dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
+	echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
+}
+
+function test_device_detached_header() #hdr, #opal_mode, #format_params, #--integrity-no-wipe
+{
+	echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 --header $1 $2 $3 $4 -q $FAST_PBKDF_OPT $OPAL2_DEV || fail
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --header $1 || fail
+	test -z "$4" ||	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M count=1 oflag=direct >/dev/null 2>&1 || fail
+	$CRYPTSETUP luksSuspend $DEV_NAME || fail
+	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
+	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $1 || fail
+	dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --header $1 || fail
+	$CRYPTSETUP close $DEV_NAME --header $1 || fail
+	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && fail
+	echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q --header $1 || fail
+	rm -f $1
+}
+
+export LANG=C
+
+[ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+
+# Do not run automatically.
+[ -z "$OPAL2_DEV" ] && skip "WARNING: Variable OPAL2_DEV must be defined (partition or block dev), test skipped."
+[ -z "$OPAL2_PSID_FILE" ] && skip "WARNING: Variable OPAL2_PSID_FILE must be defined, test skipped."
+[ -f "$OPAL2_PSID_FILE" ] || skip "WARNING: $OPAL2_PSID_FILE is not reachable, test skipped."
+
+prepare "[0] Detect LUKS2 environment" reset
+setup_luks2_env
+
+[ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
+
+prepare "[1] Data offset"
+echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV -q --offset 1 2>/dev/null && fail
+
+prepare "[2] Sector size and old payload alignment" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV -q --sector-size  511 2>/dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV -q --sector-size  256 2>/dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV -q --sector-size 8192 2>/dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV -q --sector-size  512 || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV -q --sector-size 4096 >/dev/null || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV -q --sector-size 2048 >/dev/null || fail
+
+prepare "[3] format" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q $FAST_PBKDF_OPT -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 --hw-opal $OPAL2_DEV || fail
+# FIXME: BUG (--hw-opal-only should reject --cipher, --key-size & co)
+#echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q $FAST_PBKDF_OPT --hw-opal-only -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 $OPAL2_DEV 2> /dev/null && fail
+prepare "[4] format using hash sha512" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP $FAST_PBKDF_OPT -h sha512 -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 --hw-opal $OPAL2_DEV || fail
+$CRYPTSETUP -q luksDump  $OPAL2_DEV | grep "0: pbkdf2" -A2 | grep "Hash:" | grep -qe sha512 || fail
+# Check JSON dump for some mandatory section
+$CRYPTSETUP -q luksDump  $OPAL2_DEV --dump-json-metadata | grep -q '"tokens":' || fail
+
+prepare "[5] open" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q $FAST_PBKDF_OPT luksFormat --type luks2 --hw-opal $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME --test-passphrase || fail
+echo $PWDW | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME --test-passphrase 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+check_exists
+
+prepare "" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q $FAST_PBKDF_OPT luksFormat --type luks2 --hw-opal-only $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME --test-passphrase || fail
+echo $PWDW | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME --test-passphrase 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+check_exists
+
+# Key Slot 1 and key material section 1 must change, the rest must not.
+prepare "[6] add key" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q $FAST_PBKDF_OPT luksFormat --type luks2 --hw-opal $OPAL2_DEV || fail
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $OPAL2_DEV $FAST_PBKDF_OPT || fail
+echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+
+# Unsuccessful Key Delete - nothing may change
+prepare "[7] unsuccessful delete" new
+echo $PWDW | $CRYPTSETUP luksKillSlot $OPAL2_DEV 1 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksKillSlot should return EPERM exit code"
+
+# Delete Key Test
+# Key Slot 1 and key material section 1 must change, the rest must not
+prepare "[8] successful delete"
+$CRYPTSETUP -q luksKillSlot $OPAL2_DEV 1 || fail
+echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME 2> /dev/null && fail
+[ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+
+# Key Slot 1 and key material section 1 must change, the rest must not
+prepare "[9] add key test for key files" new
+echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $OPAL2_DEV $KEY1 || fail
+$CRYPTSETUP -d $KEY1 luksOpen $OPAL2_DEV $DEV_NAME || fail
+
+# Key Slot 1 and key material section 1 must change, the rest must not
+prepare "[10] delete key test with key1 as remaining key" new
+$CRYPTSETUP -d $KEY1 luksKillSlot $OPAL2_DEV 0 || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP luksOpen -d $KEY1 $OPAL2_DEV $DEV_NAME || fail
+
+# Delete last slot
+prepare "[11] delete last key" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 --hw-opal $OPAL2_DEV $FAST_PBKDF_OPT || fail
+echo $PWD1 | $CRYPTSETUP luksKillSlot $OPAL2_DEV 0 || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+
+prepare	"[12] open/close - stacked devices" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat --type luks2 --hw-opal $OPAL2_DEV $FAST_PBKDF_OPT || fail
+echo $PWD1 | $CRYPTSETUP -q luksOpen $OPAL2_DEV $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 /dev/mapper/$DEV_NAME $FAST_PBKDF_OPT || fail
+echo $PWD1 | $CRYPTSETUP -q luksOpen /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME2 || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+
+prepare "[13] UUID - use and report provided UUID" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --uuid blah --type luks2 --hw-opal $OPAL2_DEV 2>/dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --uuid $TEST_UUID --type luks2 --hw-opal $OPAL2_DEV || fail
+tst=$($CRYPTSETUP -q luksUUID $OPAL2_DEV)
+[ "$tst"x = "$TEST_UUID"x ] || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+$CRYPTSETUP -q luksUUID --uuid $TEST_UUID $OPAL2_DEV || fail
+tst=$($CRYPTSETUP -q luksUUID $OPAL2_DEV)
+[ "$tst"x = "$TEST_UUID"x ] || fail
+
+prepare "[14] luksFormat" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --volume-key-file /dev/urandom --type luks2 --hw-opal $OPAL2_DEV || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --volume-key-file /dev/urandom -s 512 --uuid $TEST_UUID --type luks2 --hw-opal $OPAL2_DEV || fail
+$CRYPTSETUP luksOpen -d $KEY_PWD1 $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+# open by UUID
+if [ -d /dev/disk/by-uuid ] ; then
+	$CRYPTSETUP luksOpen -d $KEY_PWD1 UUID=X$TEST_UUID $DEV_NAME 2>/dev/null && fail
+	$CRYPTSETUP luksOpen -d $KEY_PWD1 UUID=$TEST_UUID $DEV_NAME || fail
+	$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+fi
+# skip tests using empty passphrases
+if [ ! fips_mode ]; then
+# empty passphrase (OPAL admin pin cannot be empty)
+echo -e "\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+$CRYPTSETUP luksOpen -d $KEYE $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+fi
+
+# format hw-opal-only
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --volume-key-file /dev/urandom --type luks2 --hw-opal-only $OPAL2_DEV || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --volume-key-file /dev/urandom -s 512 --uuid $TEST_UUID --type luks2 --hw-opal-only $OPAL2_DEV || fail
+$CRYPTSETUP luksOpen -d $KEY_PWD1 $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+# open by UUID
+if [ -d /dev/disk/by-uuid ] ; then
+	$CRYPTSETUP luksOpen -d $KEY_PWD1 UUID=X$TEST_UUID $DEV_NAME 2>/dev/null && fail
+	$CRYPTSETUP luksOpen -d $KEY_PWD1 UUID=$TEST_UUID $DEV_NAME || fail
+	$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+fi
+# skip tests using empty passphrases
+if [ ! fips_mode ]; then
+# empty passphrase (OPAL admin pin cannot be empty)
+echo -e "\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV || fail
+$CRYPTSETUP luksOpen -d $KEYE $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+fi
+
+# open by volume key
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT -s 256 --volume-key-file $KEY2 --type luks2 --hw-opal $OPAL2_DEV || fail
+$CRYPTSETUP luksOpen --volume-key-file /dev/urandom $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP luksOpen --volume-key-file $KEY2 $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP -q luksClose  $DEV_NAME || fail
+
+prepare "[15] AddKey volume key, passphrase and keyfile" wipe
+# volumekey
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --volume-key-file /dev/zero --key-slot 3 || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV --test-passphrase || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "3: luks2" || fail
+echo $PWD2 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $OPAL2_DEV --volume-key-file /dev/zero --key-slot 4 || fail
+echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV --test-passphrase --key-slot 4 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "4: luks2" || fail
+echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $OPAL2_DEV --volume-key-file /dev/null --key-slot 5 2>/dev/null && fail
+$CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $OPAL2_DEV --volume-key-file /dev/zero --key-slot 5 $KEY1 || fail
+$CRYPTSETUP luksOpen $OPAL2_DEV --test-passphrase --key-slot 5 -d $KEY1 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "5: luks2" || fail
+
+# special "-" handling
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --key-slot 3 || fail
+echo $PWD2 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $OPAL2_DEV -d $KEY_PWD1 - || fail
+echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV --test-passphrase 2>/dev/null && fail
+echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV -d - --test-passphrase || fail
+echo $PWD2 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $OPAL2_DEV -d - $KEY2 || fail
+$CRYPTSETUP luksOpen $OPAL2_DEV -d $KEY2 --test-passphrase || fail
+echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV -d - -d $KEY1 --test-passphrase 2>/dev/null && fail
+echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV -d $KEY1 -d $KEY1 --test-passphrase 2>/dev/null && fail
+
+# [0]PWD3 [1]PWD2 [3]PWD1 [4]KEY2
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --key-slot 3 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "3: luks2" || fail
+$CRYPTSETUP luksAddKey -q $OPAL2_DEV $FAST_PBKDF_OPT -d $KEY_PWD1 $KEY2 --key-slot 3 2>/dev/null && fail
+# keyfile/keyfile
+$CRYPTSETUP luksAddKey -q $OPAL2_DEV $FAST_PBKDF_OPT -d $KEY_PWD1 $KEY2 --key-slot 4 || fail
+$CRYPTSETUP luksOpen $OPAL2_DEV -d $KEY2 --test-passphrase --key-slot 4 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "4: luks2" || fail
+# passphrase/keyfile
+echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $OPAL2_DEV -d $KEY_PWD1 --key-slot 0 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "0: luks2" || fail
+echo $PWD3 | $CRYPTSETUP luksOpen $OPAL2_DEV --test-passphrase --key-slot 0 || fail
+# passphrase/passphrase
+echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $OPAL2_DEV --key-slot 1 || fail
+echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV --test-passphrase --key-slot 1 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "1: luks2" || fail
+# keyfile/passphrase
+echo -e "$PWD2\n" | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $OPAL2_DEV $KEY_PWD1 --key-slot 2 --new-keyfile-size 8 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "2: luks2" || fail
+
+prepare "[16] RemoveKey passphrase and keyfile" reuse
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "3: luks2" || fail
+$CRYPTSETUP luksRemoveKey $OPAL2_DEV $KEY_PWD1 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "3: luks2" && fail
+$CRYPTSETUP luksRemoveKey $OPAL2_DEV $KEY_PWD1 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksRemoveKey should return EPERM exit code"
+$CRYPTSETUP luksRemoveKey $OPAL2_DEV $KEY2 --keyfile-size 1 2>/dev/null && fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "4: luks2" || fail
+$CRYPTSETUP luksRemoveKey $OPAL2_DEV $KEY2 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "4: luks2" && fail
+# if password or keyfile is provided, batch mode must not suppress it
+echo "badpw" | $CRYPTSETUP luksKillSlot $OPAL2_DEV 2 2>/dev/null && fail
+echo "badpw" | $CRYPTSETUP luksKillSlot $OPAL2_DEV 2 -q 2>/dev/null && fail
+echo "badpw" | $CRYPTSETUP luksKillSlot $OPAL2_DEV 2 --key-file=- 2>/dev/null && fail
+echo "badpw" | $CRYPTSETUP luksKillSlot $OPAL2_DEV 2 --key-file=- -q 2>/dev/null && fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "2: luks2" || fail
+# kill slot using passphrase from 1
+echo $PWD2 | $CRYPTSETUP luksKillSlot $OPAL2_DEV 2 2>/dev/null || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "2: luks2" && fail
+# remove key0 / slot 0
+echo $PWD3 | $CRYPTSETUP luksRemoveKey $OPAL2_DEV || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "0: luks2" && fail
+# last keyslot, in batch mode no passphrase needed...
+$CRYPTSETUP luksKillSlot -q $OPAL2_DEV 1 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "1: luks2" && fail
+
+prepare "[17] create & resize" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+# OPAL2 devices cannot be resized
+$CRYPTSETUP -q resize --size 99 $DEV_NAME <&- 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q resize --size 99 $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP close $DEV_NAME || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT -q --type luks2 --hw-opal-only $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+# OPAL2 devices cannot be resized
+$CRYPTSETUP -q resize --size 99 $DEV_NAME <&- 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q resize --size 99 $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP close $DEV_NAME || fail
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
+
+prepare "[18] Disallow open/create if already mapped." wipe
+$CRYPTSETUP create -q $DEV_NAME $OPAL2_DEV -d $KEY1 2>/dev/null || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV 2>/dev/null && fail
+$CRYPTSETUP remove  $DEV_NAME || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME2 2>/dev/null && fail
+$CRYPTSETUP  luksClose  $DEV_NAME || fail
+
+prepare "[19] luksDump" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat --key-size 256 $FAST_PBKDF_OPT --uuid $TEST_UUID --type luks2 --hw-opal $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $OPAL2_DEV -d $KEY_PWD1 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "0: luks2" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q $TEST_UUID || fail
+echo $PWDW | $CRYPTSETUP luksDump $OPAL2_DEV --dump-volume-key 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksDump $OPAL2_DEV --dump-volume-key | grep -q "MK dump:" || fail
+$CRYPTSETUP luksDump -q $OPAL2_DEV --dump-volume-key -d $KEY_PWD1 | grep -q "MK dump:" || fail
+echo $PWD1 | $CRYPTSETUP luksDump -q $OPAL2_DEV --dump-master-key --master-key-file $VK_FILE >/dev/null || fail
+rm -f $VK_FILE
+echo $PWD1 | $CRYPTSETUP luksDump -q $OPAL2_DEV --dump-volume-key --volume-key-file $VK_FILE >/dev/null || fail
+echo $PWD1 | $CRYPTSETUP luksDump -q $OPAL2_DEV --dump-volume-key --volume-key-file $VK_FILE 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --volume-key-file $VK_FILE $OPAL2_DEV || fail
+# Use volume key file without keyslots
+echo $PWD1 | $CRYPTSETUP luksRemoveKey -q $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP luksRemoveKey -q $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP luksRemoveKey -q $OPAL2_DEV || fail
+$CRYPTSETUP luksOpen --volume-key-file $VK_FILE --key-size 512 --test-passphrase $OPAL2_DEV  || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --volume-key-file $VK_FILE --key-size 512 $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP luksOpen --test-passphrase $OPAL2_DEV || fail
+
+prepare "[20] ChangeKey passphrase and keyfile" wipe
+# [0]PWD1 [1]PWD2
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat --type luks2 --hw-opal $OPAL2_DEV $FAST_PBKDF_OPT --key-slot 0 --key-size 256 --luks2-keyslots-size 756k >/dev/null || fail
+echo $PWD2 | $CRYPTSETUP luksAddKey -q $OPAL2_DEV $FAST_PBKDF_OPT -d $KEY_PWD1 --key-slot 1 || fail
+# [0]KEY2 [1]PWD2
+$CRYPTSETUP luksChangeKey $OPAL2_DEV $FAST_PBKDF_OPT -d $KEY_PWD1 $KEY2 --key-slot 0 || fail
+# [0]KEY2 [1]PWD1
+echo -e "$PWD2\n$PWD1" | $CRYPTSETUP luksChangeKey $OPAL2_DEV $FAST_PBKDF_OPT --key-slot 1 || fail
+# [0]KEY1 [1]PWD1 - with LUKS2 it should stay
+$CRYPTSETUP luksChangeKey $OPAL2_DEV $FAST_PBKDF_OPT -d $KEY2 $KEY1 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "0: luks2" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "2: luks2" && fail
+# [0]KEY1 [1]PWD2
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksChangeKey $FAST_PBKDF_OPT $OPAL2_DEV || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "1: luks2" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "2: luks2" && fail
+# test out of raw area, change in-place (space only for 2 keyslots)
+$CRYPTSETUP luksChangeKey $OPAL2_DEV $FAST_PBKDF_OPT -d $KEY1 $KEY2 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "0: luks2" || fail
+$CRYPTSETUP luksChangeKey $OPAL2_DEV $FAST_PBKDF_OPT -d $KEY1 $KEY2 2>/dev/null && fail
+# make a free space in keyslot area
+echo $PWD2 | $CRYPTSETUP luksKillSlot -q $OPAL2_DEV 0 || fail
+
+# assert LUKS2 does not overwrite existing area with specific keyslot id
+AREA_OFFSET_OLD=$($CRYPTSETUP luksDump $OPAL2_DEV | grep -e "1: luks2" -A12 | grep -e "Area offset:" | cut -d: -f 2 | sed -e 's/[[:space:]]*\[bytes\]//g')
+[ 0$AREA_OFFSET_OLD -gt 0 ] || fail
+echo -e "$PWD2\n$PWD1\n" | $CRYPTSETUP luksChangeKey --key-slot 1 $OPAL2_DEV $FAST_PBKDF_OPT || fail
+AREA_OFFSET_NEW=$($CRYPTSETUP luksDump $OPAL2_DEV | grep -e "1: luks2" -A12 | grep -e "Area offset:" | cut -d: -f 2 | sed -e 's/[[:space:]]*\[bytes\]//g')
+[ 0$AREA_OFFSET_NEW -gt 0 ] || fail
+[ $AREA_OFFSET_OLD -ne $AREA_OFFSET_NEW ] || fail "Area offsets remained same: old area $AREA_OFFSET_OLD, new area $AREA_OFFSET_NEW"
+
+# assert LUKS2 does not overwrite existing area with any sklot
+AREA_OFFSET_OLD=$($CRYPTSETUP luksDump $OPAL2_DEV | grep -e "1: luks2" -A12 | grep -e "Area offset:" | cut -d: -f 2 | sed -e 's/[[:space:]]*\[bytes\]//g')
+[ 0$AREA_OFFSET_OLD -gt 0 ] || fail
+echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksChangeKey $OPAL2_DEV $FAST_PBKDF_OPT || fail
+AREA_OFFSET_NEW=$($CRYPTSETUP luksDump $OPAL2_DEV | grep -e "1: luks2" -A12 | grep -e "Area offset:" | cut -d: -f 2 | sed -e 's/[[:space:]]*\[bytes\]//g')
+[ 0$AREA_OFFSET_NEW -gt 0 ] || fail
+[ $AREA_OFFSET_OLD -ne $AREA_OFFSET_NEW ] || fail "Area offsets remained same: old area $AREA_OFFSET_OLD, new area $AREA_OFFSET_NEW"
+
+prepare "[21] Keyfile limit" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --key-slot 0 || fail
+echo $PWD1 | $CRYPTSETUP luksChangeKey $OPAL2_DEV $KEY1 --new-keyfile-size 13 $FAST_PBKDF_OPT || fail
+echo $PWD1 | $CRYPTSETUP open --test-passphrase $OPAL2_DEV -q 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 luksOpen $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l 0 luksOpen $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l -1 luksOpen $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l 14 luksOpen $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l 13 --keyfile-offset 1 luksOpen $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l 13 --keyfile-offset -1 luksOpen $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l 13 luksOpen $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP luksClose  $DEV_NAME || fail
+$CRYPTSETUP luksAddKey $OPAL2_DEV -d $KEY1 $KEY2 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $OPAL2_DEV -d $KEY1 $KEY2 -l 14 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $OPAL2_DEV -d $KEY1 $KEY2 -l -1 2>/dev/null && fail
+$CRYPTSETUP luksAddKey $OPAL2_DEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT -l 13 --new-keyfile-size 12 || fail
+$CRYPTSETUP luksRemoveKey $OPAL2_DEV $KEY2 2>/dev/null && fail
+$CRYPTSETUP luksRemoveKey $OPAL2_DEV $KEY2 -l 12 || fail
+$CRYPTSETUP luksChangeKey $OPAL2_DEV -d $KEY1 $KEY2 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksChangeKey should return EPERM exit code"
+$CRYPTSETUP luksChangeKey $OPAL2_DEV -d $KEY1 $KEY2 -l 14 2>/dev/null && fail
+$CRYPTSETUP luksChangeKey $OPAL2_DEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT -l 13 || fail
+# -l is ignored for stdin if _only_ passphrase is used
+echo $PWD1 | $CRYPTSETUP luksAddKey $OPAL2_DEV -d $KEY2 $FAST_PBKDF_OPT || fail
+# this is stupid, but expected
+echo $PWD1 | $CRYPTSETUP luksRemoveKey $OPAL2_DEV -l 11 2>/dev/null && fail
+echo $PWDW"0" | $CRYPTSETUP luksRemoveKey $OPAL2_DEV -l 12 2>/dev/null && fail
+echo -e "$PWD1\n" | $CRYPTSETUP luksRemoveKey $OPAL2_DEV -d- -l 12 || fail
+# offset
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --key-slot 0 || fail
+echo $PWD1 | $CRYPTSETUP luksChangeKey $OPAL2_DEV $KEY1 --new-keyfile-offset 16 --new-keyfile-size 13 $FAST_PBKDF_OPT || fail
+$CRYPTSETUP --key-file=$KEY1 -l 13 --keyfile-offset 15 luksOpen $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY1 -l 13 --keyfile-offset 16 luksOpen $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP luksClose  $DEV_NAME || fail
+$CRYPTSETUP luksAddKey $OPAL2_DEV $FAST_PBKDF_OPT -d $KEY1 -l 13 --keyfile-offset 16 $KEY2 --new-keyfile-offset 1 || fail
+$CRYPTSETUP --key-file=$KEY2 --keyfile-offset 11 luksOpen $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP --key-file=$KEY2 --keyfile-offset 1 luksOpen $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP luksClose  $DEV_NAME || fail
+$CRYPTSETUP luksChangeKey $OPAL2_DEV $FAST_PBKDF_OPT -d $KEY2 --keyfile-offset 1 $KEY2 --new-keyfile-offset 0 || fail
+$CRYPTSETUP luksOpen -d $KEY2 $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP luksClose $DEV_NAME || fail
+
+prepare "[22] Suspend/Resume" wipe
+# OPAL+dm-crypt
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksOpen $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep -q "(suspended)" || fail
+dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
+$CRYPTSETUP -q resize  $DEV_NAME 2>/dev/null && fail
+echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksResume should return EPERM exit code"
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
+dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 || fail
+$CRYPTSETUP -q luksClose $DEV_NAME || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat -c null $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksOpen $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep -q "(suspended)" || fail
+dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
+dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 || fail
+$CRYPTSETUP -q luksClose $DEV_NAME || fail
+
+# OPAL only
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksOpen $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep -q "(suspended)" || fail
+dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
+$CRYPTSETUP -q resize  $DEV_NAME 2>/dev/null && fail
+echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksResume should return EPERM exit code"
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
+dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 || fail
+$CRYPTSETUP -q luksClose $DEV_NAME || fail
+
+prepare "[23] luksOpen/Resume with specified key slot number" wipe
+# first, let's try passphrase option
+echo -e "$PWD3\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT -S 5 --type luks2 --hw-opal $OPAL2_DEV || fail
+echo $PWD3 | $CRYPTSETUP luksOpen -S 4 $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+[ -b /dev/mapper/$DEV_NAME ] && fail
+echo $PWD3 | $CRYPTSETUP luksOpen -S 5 $OPAL2_DEV $DEV_NAME || fail
+check_exists
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+echo $PWD3 | $CRYPTSETUP luksResume -S 4 $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP -q status $DEV_NAME | grep -q "(suspended)" || fail
+dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
+echo $PWD3 | $CRYPTSETUP luksResume -S 5 $DEV_NAME || fail
+dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 || fail
+$CRYPTSETUP luksClose $DEV_NAME || fail
+echo -e "$PWD3\n$PWD1" | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S 0 $OPAL2_DEV || fail
+echo $PWD3 | $CRYPTSETUP luksOpen -S 0 $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+[ -b /dev/mapper/$DEV_NAME ] && fail
+echo $PWD1 | $CRYPTSETUP luksOpen -S 5 $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+[ -b /dev/mapper/$DEV_NAME ] && fail
+# second, try it with keyfiles
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat -q -S 5 $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+echo "$PWD1" | $CRYPTSETUP luksChangeKey -q -S 5 $FAST_PBKDF_OPT $OPAL2_DEV $KEY5 || fail
+$CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S 1 -d $KEY5 $OPAL2_DEV $KEY1 || fail
+$CRYPTSETUP luksOpen -S 5 -d $KEY5 $OPAL2_DEV $DEV_NAME || fail
+check_exists
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
+$CRYPTSETUP luksResume -S 1 -d $KEY5 $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP -q status $DEV_NAME | grep -q "(suspended)" || fail
+$CRYPTSETUP luksResume -S 5 -d $KEY5 $DEV_NAME || fail
+dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 || fail
+$CRYPTSETUP luksClose $DEV_NAME || fail
+$CRYPTSETUP luksOpen -S 1 -d $KEY5 $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+[ -b /dev/mapper/$DEV_NAME ] && fail
+$CRYPTSETUP luksOpen -S 5 -d $KEY1 $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+[ -b /dev/mapper/$DEV_NAME ] && fail
+
+prepare "[24] Detached LUKS header" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --header $HEADER_IMG || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --header $HEADER_IMG --align-payload 1 >/dev/null 2>&1 && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --header $HEADER_IMG --align-payload 8192 || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --header $HEADER_IMG --align-payload 4096 >/dev/null || fail
+$CRYPTSETUP luksDump $HEADER_IMG | grep -e "0: hw-opal-crypt" -A1 | grep -qe $((4096*512)) || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --header $HEADER_IMG --align-payload 0 --sector-size 512 || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV-missing --header $HEADER_IMG $DEV_NAME 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV --header $HEADER_IMG $DEV_NAME || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "type:" | grep -q "n/a" || fail
+$CRYPTSETUP luksSuspend $DEV_NAME --header $HEADER_IMG || fail
+dd if=$OPAL2_DEV of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 && fail
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
+dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 || fail
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+dd if=$OPAL2_DEV of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 && fail
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
+dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 || fail
+$CRYPTSETUP luksClose $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S 5 _fakedev_ --header $HEADER_IMG $KEY5 || fail
+$CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "5: luks2" || fail
+$CRYPTSETUP luksKillSlot -q _fakedev_ --header $HEADER_IMG 5 || fail
+$CRYPTSETUP luksDump _fakedev_ --header $HEADER_IMG | grep -q "5: luks2" && fail
+echo $PWD1 | $CRYPTSETUP open --test-passphrase $HEADER_IMG || fail
+rm $HEADER_IMG || fail
+# create exactly 16 MiBs LUKS2 header
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --header $HEADER_IMG --luks2-keyslots-size 16352k --luks2-metadata-size 16k --offset 131072 >/dev/null || fail
+SIZE=$(stat --printf=%s $HEADER_IMG)
+test $SIZE -eq 16777216 || fail
+$CRYPTSETUP -q luksDump  $HEADER_IMG | grep -q "offset: $((512 * 131072)) \[bytes\]" || fail
+
+prepare "[25] LUKS erase" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase -q $OPAL2_DEV || fail
+$CRYPTSETUP isLuks -q $OPAL2_DEV && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV || fail
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase -q $OPAL2_DEV || fail
+$CRYPTSETUP isLuks -q $OPAL2_DEV && fail
+
+# FIXME: Bug to be fixed with OPAL requirement flag
+if false; then
+prepare "[26] LUKS convert" wipe
+# create almost compatible LUKS2 device except OPAL segment
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --sector-size 512 -s256 --hw-opal $OPAL2_DEV || fail
+$CRYPTSETUP -q convert --type luks1 $OPAL2_DEV >/dev/null 2>&1 && fail
+$CRYPTSETUP isLuks --type luks2 $OPAL2_DEV || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --sector-size 512 -s256 --hw-opal-only $OPAL2_DEV || fail
+$CRYPTSETUP -q convert --type luks1 $OPAL2_DEV >/dev/null 2>&1 && fail
+$CRYPTSETUP isLuks --type luks2 $OPAL2_DEV || fail
+fi
+
+if dm_crypt_keyring_support && dm_crypt_keyring_new_kernel; then
+	prepare "[27] LUKS2 key in keyring" wipe
+	echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --header $HEADER_IMG || fail
+
+	# check keyring support detection works as expected
+	rmmod dm-crypt >/dev/null 2>&1 || true
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV --header $HEADER_IMG $DEV_NAME || fail
+	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "keyring" || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	echo $PWD1 | $CRYPTSETUP open  $OPAL2_DEV --disable-keyring --header $HEADER_IMG $DEV_NAME || fail
+	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "dm-crypt" || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV --disable-keyring --header $HEADER_IMG $DEV_NAME || fail
+	$CRYPTSETUP luksSuspend $DEV_NAME || fail
+	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
+	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "keyring" || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV --header $HEADER_IMG $DEV_NAME || fail
+	$CRYPTSETUP luksSuspend $DEV_NAME || fail
+	echo $PWD1 | $CRYPTSETUP luksResume --disable-keyring $DEV_NAME --header $HEADER_IMG || fail
+	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "dm-crypt" || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+fi
+
+prepare "[28] tokens" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
+
+	test_and_prepare_keyring
+
+	$CRYPTSETUP token add $OPAL2_DEV --key-description $TEST_TOKEN0 --token-id 3 || fail
+	$CRYPTSETUP luksDump $OPAL2_DEV | grep -q -e "3: luks2-keyring" || fail
+	# keyslot 5 is inactive
+	$CRYPTSETUP token add $OPAL2_DEV --key-description $TEST_TOKEN1 --key-slot 5 2> /dev/null && fail
+	# key description is not reachable
+	$CRYPTSETUP open --token-only $OPAL2_DEV --test-passphrase && fail
+	# wrong passphrase
+	load_key user $TEST_TOKEN0 "blabla" "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+	$CRYPTSETUP open --token-only $OPAL2_DEV --test-passphrase 2>/dev/null && fail
+	load_key user $TEST_TOKEN0 $PWD1 "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+	$CRYPTSETUP open --token-only $OPAL2_DEV --test-passphrase || fail
+	$CRYPTSETUP open --token-only $OPAL2_DEV $DEV_NAME || fail
+	$CRYPTSETUP status $DEV_NAME > /dev/null || fail
+	$CRYPTSETUP luksSuspend $DEV_NAME || fail
+	$CRYPTSETUP luksResume $DEV_NAME <&- || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep -q "(suspended)" && fail
+	$CRYPTSETUP luksSuspend $DEV_NAME || fail
+	$CRYPTSETUP luksResume $DEV_NAME --token-type luks2-keyring <&- || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	# check --token-type sort of works (TODO: extend tests when native systemd tokens are available)
+	echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $OPAL2_DEV --token-id 22 || fail
+	# this excludes keyring tokens from unlocking device
+	$CRYPTSETUP open --token-only --token-type some_type $OPAL2_DEV --test-passphrase && fail
+	$CRYPTSETUP open --token-only --token-type some_type $OPAL2_DEV $DEV_NAME && fail
+	$CRYPTSETUP status $DEV_NAME > /dev/null && fail
+
+	$CRYPTSETUP token remove --token-id 3 $OPAL2_DEV || fail
+	$CRYPTSETUP luksDump $OPAL2_DEV | grep -q -e "3: luks2-keyring" && fail
+
+	# test we can remove keyslot with token
+	echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey -q -S4 $FAST_PBKDF_OPT $OPAL2_DEV || fail
+	$CRYPTSETUP token add $OPAL2_DEV --key-description $TEST_TOKEN1 --key-slot 4 --token-id 0 || fail
+	$CRYPTSETUP -q luksKillSlot $OPAL2_DEV 4 || fail
+	$CRYPTSETUP token remove --token-id 0 $OPAL2_DEV || fail
+
+	# test we can add unassigned token
+	$CRYPTSETUP token add $OPAL2_DEV --key-description $TEST_TOKEN0 --unbound --token-id 0 || fail
+	$CRYPTSETUP open --token-only --token-id 0 --test-passphrase $OPAL2_DEV && fail
+	$CRYPTSETUP token remove --token-id 0 $OPAL2_DEV || fail
+
+	# test token unassign works
+	$CRYPTSETUP token add $OPAL2_DEV --key-description $TEST_TOKEN0 -S0 --token-id 0 || fail
+	$CRYPTSETUP open --token-only --token-id 0 --test-passphrase $OPAL2_DEV || fail
+	$CRYPTSETUP token unassign --token-id 0 $OPAL2_DEV 2>/dev/null && fail
+	$CRYPTSETUP token unassign -S0 $OPAL2_DEV 2>/dev/null && fail
+	$CRYPTSETUP token unassign --token-id 0 -S0 $OPAL2_DEV || fail
+	$CRYPTSETUP open --token-only --token-id 0 --test-passphrase $OPAL2_DEV && fail
+	$CRYPTSETUP token unassign --token-id 0 -S0 $OPAL2_DEV 2>/dev/null && fail
+	$CRYPTSETUP token unassign --token-id 0 -S44 $OPAL2_DEV 2>/dev/null && fail
+	$CRYPTSETUP token unassign --token-id 44 -S0 $OPAL2_DEV 2>/dev/null && fail
+fi
+echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $OPAL2_DEV --token-id 10 || fail
+echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $OPAL2_DEV --token-id 11 --json-file - || fail
+echo -n "$IMPORT_TOKEN" > $TOKEN_FILE0
+$CRYPTSETUP token import $OPAL2_DEV --token-id 12 --json-file $TOKEN_FILE0 || fail
+$CRYPTSETUP token import $OPAL2_DEV --token-id 12 --json-file $TOKEN_FILE0 2>/dev/null && fail
+$CRYPTSETUP token export $OPAL2_DEV --token-id 10 >$TOKEN_FILE1 || fail
+diff $TOKEN_FILE0 $TOKEN_FILE1 || fail
+$CRYPTSETUP token export $OPAL2_DEV --token-id 11 >$TOKEN_FILE1 || fail
+diff $TOKEN_FILE0 $TOKEN_FILE1 || fail
+$CRYPTSETUP token export $OPAL2_DEV --token-id 12 >$TOKEN_FILE1 || fail
+diff $TOKEN_FILE0 $TOKEN_FILE1 || fail
+$CRYPTSETUP token export $OPAL2_DEV --token-id 12 --json-file $TOKEN_FILE1 || fail
+diff $TOKEN_FILE0 $TOKEN_FILE1 || fail
+$CRYPTSETUP token export $OPAL2_DEV --token-id 12 > $TOKEN_FILE1 || fail
+diff $TOKEN_FILE0 $TOKEN_FILE1 || fail
+
+prepare "[29] LUKS keyslot priority" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV -S 1 || fail
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey -q $OPAL2_DEV $FAST_PBKDF_OPT -S 5 || fail
+$CRYPTSETUP config $OPAL2_DEV -S 0 --priority prefer && fail
+$CRYPTSETUP config $OPAL2_DEV -S 1 --priority bla >/dev/null 2>&1 && fail
+$CRYPTSETUP config $OPAL2_DEV -S 1 --priority ignore || fail
+echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV --test-passphrase 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV --test-passphrase -S 1 || fail
+echo $PWD2 | $CRYPTSETUP open $OPAL2_DEV --test-passphrase || fail
+$CRYPTSETUP config $OPAL2_DEV -S 1 --priority normal || fail
+echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV --test-passphrase || fail
+$CRYPTSETUP config $OPAL2_DEV -S 1 --priority ignore || fail
+echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV --test-passphrase 2>/dev/null && fail
+
+prepare "[30] LUKS label and subsystem" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Subsystem:" | grep -q "HW-OPAL" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Label:" | grep -q "(no label)" || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --subsystem SatelliteTwo --label TheLabel || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Subsystem:" | grep -q "SatelliteTwo" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Label:" | grep -q "TheLabel" || fail
+$CRYPTSETUP config $OPAL2_DEV --subsystem SatelliteThree
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Subsystem:" | grep -q "SatelliteThree" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Label:" | grep -q "(no label)" || fail
+$CRYPTSETUP config $OPAL2_DEV --subsystem SatelliteThree --label TheLabel
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Subsystem:" | grep -q "SatelliteThree" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Label:" | grep -q "TheLabel" || fail
+
+prepare "[31] LUKS PBKDF setting" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 --hw-opal --pbkdf bla $OPAL2_DEV >/dev/null 2>&1 && fail
+# Force setting, no benchmark. PBKDF2 has 1000 iterations as a minimum
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" |$CRYPTSETUP luksFormat --type luks2 --hw-opal --pbkdf pbkdf2 --pbkdf-force-iterations 999 $OPAL2_DEV 2>/dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat --type luks2 --hw-opal --pbkdf pbkdf2 --pbkdf-force-iterations 1234 $OPAL2_DEV || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Iterations:" | grep -q "1234" || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat --type luks2 --hw-opal --pbkdf argon2id --pbkdf-force-iterations 3 $OPAL2_DEV 2>/dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat --type luks2 --hw-opal --pbkdf argon2id --pbkdf-force-iterations 4 --pbkdf-memory 100000 $OPAL2_DEV || can_fail_fips
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "PBKDF:" | grep -q "argon2id" || can_fail_fips
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat --type luks2 --hw-opal --pbkdf argon2i --pbkdf-force-iterations 4 \
+	--pbkdf-memory 1234 --pbkdf-parallel 1 $OPAL2_DEV || can_fail_fips
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "PBKDF:" | grep -q "argon2i" || can_fail_fips
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Time cost:" | grep -q "4" || can_fail_fips
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Memory:" | grep -q "1234" || can_fail_fips
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Threads:" | grep -q "1" || can_fail_fips
+# Benchmark
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat --type luks2 --hw-opal --pbkdf argon2i -i 500 --pbkdf-memory 1234 --pbkdf-parallel 1 $OPAL2_DEV || can_fail_fips
+[ 0"$($CRYPTSETUP luksDump $OPAL2_DEV | grep "Time cost:" | cut -d: -f 2 | sed -e 's/\ //g')" -gt 0 ] || can_fail_fips
+[ 0"$($CRYPTSETUP luksDump $OPAL2_DEV | grep "Memory:" | cut -d: -f 2 | sed -e 's/\ //g')" -gt 0 ] || can_fail_fips
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat --type luks2 --hw-opal --pbkdf pbkdf2 -i 500 $OPAL2_DEV || fail
+[ 0"$($CRYPTSETUP luksDump $OPAL2_DEV | grep -m1 "Iterations:" | cut -d' ' -f 2 | sed -e 's/\ //g')" -gt 1000 ] || fail
+
+prepare "[32] LUKS Keyslot convert" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --key-slot 0 || fail
+echo "$PWD1" | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S0 --new-key-slot 5 $OPAL2_DEV $KEY5 || fail
+$CRYPTSETUP -q luksKillSlot $OPAL2_DEV 0 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "5: luks2" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "PBKDF:" | grep -q "pbkdf2" || fail
+$CRYPTSETUP -q luksConvertKey $OPAL2_DEV -S 5 --key-file $KEY5 --pbkdf argon2i -i1 --pbkdf-memory 32 || can_fail_fips
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "5: luks2" || can_fail_fips
+echo $PWD1 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $OPAL2_DEV -S 1 --key-file $KEY5 || fail
+$CRYPTSETUP -q luksKillSlot $OPAL2_DEV 5 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "1: luks2" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "PBKDF:" | grep -q "pbkdf2" || fail
+echo $PWD1 | $CRYPTSETUP -q luksConvertKey $OPAL2_DEV -S 1 --pbkdf argon2i -i1 --pbkdf-memory 32 || can_fail_fips
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "1: luks2" || can_fail_fips
+echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S 21 --unbound -s 72 $OPAL2_DEV || fail
+echo $PWD3 | $CRYPTSETUP luksConvertKey --pbkdf-force-iterations 1001 --pbkdf pbkdf2 -S 21 $OPAL2_DEV || fail
+
+prepare "[33] luksAddKey unbound tests" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --key-slot 5 || fail
+# unbound key may have arbitrary size
+echo $PWD1 | $CRYPTSETUP luksChangeKey -q $OPAL2_DEV $FAST_PBKDF_OPT -S5 $KEY5 || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --unbound -s 72 $OPAL2_DEV || fail
+echo $PWD2 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --unbound -s 72 -S 2 $OPAL2_DEV || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "2: luks2 (unbound)" || fail
+dd if=/dev/urandom of=$KEY_FILE0 bs=64 count=1 > /dev/null 2>&1 || fail
+echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --unbound -s 512 -S 3 --volume-key-file $KEY_FILE0 $OPAL2_DEV || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "3: luks2 (unbound)" || fail
+# unbound key size is required
+echo $PWD1 | $CRYPTSETUP -q luksAddKey --unbound $OPAL2_DEV 2>/dev/null && fail
+echo $PWD3 | $CRYPTSETUP -q luksAddKey --unbound --volume-key-file /dev/urandom $OPAL2_DEV 2> /dev/null && fail
+# do not allow one to replace keyslot by unbound slot
+echo $PWD1 | $CRYPTSETUP -q luksAddKey -S5 --unbound -s 32 $OPAL2_DEV 2>/dev/null && fail
+echo $PWD2 | $CRYPTSETUP -q open $OPAL2_DEV $DEV_NAME 2> /dev/null && fail
+echo $PWD2 | $CRYPTSETUP -q open -S2 $OPAL2_DEV $DEV_NAME 2> /dev/null && fail
+echo $PWD2 | $CRYPTSETUP -q open -S2 $OPAL2_DEV --test-passphrase || fail
+echo $PWD1 | $CRYPTSETUP -q open $OPAL2_DEV $DEV_NAME 2> /dev/null && fail
+# check we're able to change passphrase for unbound keyslot
+echo -e "$PWD2\n$PWD3" | $CRYPTSETUP luksChangeKey $FAST_PBKDF_OPT -S 2 $OPAL2_DEV || fail
+echo $PWD3 | $CRYPTSETUP open --test-passphrase -S 2 $OPAL2_DEV || fail
+echo $PWD3 | $CRYPTSETUP -q open -S 2 $OPAL2_DEV $DEV_NAME 2> /dev/null && fail
+# do not allow adding keyslot by unbound keyslot
+echo -e "$PWD3\n$PWD1" | $CRYPTSETUP -q luksAddKey $OPAL2_DEV 2> /dev/null && fail
+# check adding keyslot works when there's unbound keyslot
+echo $PWD1 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT $OPAL2_DEV --key-file $KEY5 -S8 || fail
+echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP close $DEV_NAME || fail
+$CRYPTSETUP luksKillSlot -q $OPAL2_DEV 2
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "2: luks2 (unbound)" && fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound --volume-key-file $KEY_FILE1 $OPAL2_DEV 2> /dev/null && fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound 2> /dev/null $OPAL2_DEV 2> /dev/null && fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound --volume-key-file $KEY_FILE1 -S3 $OPAL2_DEV > /dev/null || fail
+diff $KEY_FILE0 $KEY_FILE1 || fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound --volume-key-file $KEY_FILE1 -S3 $OPAL2_DEV 2> /dev/null && fail
+diff $KEY_FILE0 $KEY_FILE1 || fail
+rm $KEY_FILE1 || fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound --volume-key-file $KEY_FILE1 -S3 $OPAL2_DEV | grep -q "Unbound Key:" && fail
+echo $PWD3 | $CRYPTSETUP luksDump --unbound -S3 $OPAL2_DEV | grep -q "Unbound Key:" || fail
+$CRYPTSETUP luksKillSlot -q $OPAL2_DEV 3 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep -q "3: luks2 (unbound)" && fail
+
+prepare "[34] LUKS2 metadata areas" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV 2> /dev/null || fail
+DEFAULT_OFFSET=$($CRYPTSETUP luksDump $OPAL2_DEV | grep "offset: " | cut -f 2 -d ' ')
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=128k --luks2-keyslots-size=127k 2> /dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=127k --luks2-keyslots-size=128k 2> /dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=128k --luks2-keyslots-size=128M >/dev/null 2>&1 && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=128k --luks2-keyslots-size=128k >/dev/null || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Metadata area:" | grep -q "131072 \[bytes\]" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Keyslots area:" | grep -q "131072 \[bytes\]" || fail
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --key-size 256 --luks2-metadata-size=128k || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Metadata area:" | grep -q "131072 \[bytes\]" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Keyslots area:" | grep -q "$((DEFAULT_OFFSET-2*131072)) \[bytes\]" || fail
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-keyslots-size=128k >/dev/null || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Metadata area:" | grep -q "16384 \[bytes\]" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Keyslots area:" | grep -q "131072 \[bytes\]" || fail
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --offset 16384 || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Metadata area:" | grep -q "16384 \[bytes\]" || fail
+$CRYPTSETUP luksDump $OPAL2_DEV | grep "Keyslots area:" | grep -q "8355840 \[bytes\]" || fail
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
+# data offset vs area size
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --offset 64 --luks2-keyslots-size=8192 >/dev/null 2>&1 && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --offset $((256+56)) >/dev/null 2>&1 && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --offset $((256+64)) >/dev/null || fail
+
+prepare "[35] Per-keyslot encryption parameters" wipe
+KEYSLOT_CIPHER="aes-cbc-plain64"
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat --type luks2 --hw-opal-only $OPAL2_DEV $FAST_PBKDF_OPT --key-slot 0 --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 || fail
+echo $PWD1 | $CRYPTSETUP luksChangeKey $OPAL2_DEV $FAST_PBKDF_OPT --key-slot 0 --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 $KEY1 || fail
+[ "$($CRYPTSETUP luksDump $OPAL2_DEV | grep -A8 -m1 "0: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
+[ "$($CRYPTSETUP luksDump $OPAL2_DEV | grep -A8 -m1 "0: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
+$CRYPTSETUP luksAddKey -q $OPAL2_DEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT --key-slot 1 --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 || fail
+[ "$($CRYPTSETUP luksDump $OPAL2_DEV | grep -A8 -m1 "1: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
+[ "$($CRYPTSETUP luksDump $OPAL2_DEV | grep -A8 -m1 "1: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
+$CRYPTSETUP luksAddKey -q $OPAL2_DEV -d $KEY1 $KEY2 $FAST_PBKDF_OPT --key-slot 2 || fail
+$CRYPTSETUP luksChangeKey $OPAL2_DEV $FAST_PBKDF_OPT -d $KEY2 $KEY1 --key-slot 2 --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 || fail
+[ "$($CRYPTSETUP luksDump $OPAL2_DEV | grep -A8 -m1 "2: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
+[ "$($CRYPTSETUP luksDump $OPAL2_DEV | grep -A8 -m1 "2: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
+# unbound keyslot
+echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --key-slot 21 --unbound -s 72 --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 $OPAL2_DEV || fail
+[ "$($CRYPTSETUP luksDump $OPAL2_DEV | grep -A8 -m1 "21: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
+[ "$($CRYPTSETUP luksDump $OPAL2_DEV | grep -A8 -m1 "21: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
+echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --key-slot 22 --unbound -s 72 $OPAL2_DEV || fail
+echo $PWD3 | $CRYPTSETUP luksConvertKey --key-slot 22 $OPAL2_DEV --keyslot-cipher $KEYSLOT_CIPHER --keyslot-key-size 128 $OPAL2_DEV || fail
+[ "$($CRYPTSETUP luksDump $OPAL2_DEV | grep -A8 -m1 "22: luks2" | grep "Cipher:"    | sed -e 's/[[:space:]]\+Cipher:\ \+//g')" = $KEYSLOT_CIPHER ] || fail
+[ "$($CRYPTSETUP luksDump $OPAL2_DEV | grep -A8 -m1 "22: luks2" | grep "Cipher key:"| sed -e 's/[[:space:]]\+Cipher\ key:\ \+//g')" = "128 bits" ] || fail
+
+prepare "[36] Some encryption compatibility mode tests" wipe
+CIPHERS="aes-ecb aes-cbc-null aes-cbc-plain64 aes-cbc-essiv:sha256 aes-xts-plain64"
+key_size=256
+for cipher in $CIPHERS ; do
+	echo -n "[$cipher/$key_size]"
+	echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat --type luks2 --hw-opal $OPAL2_DEV $FAST_PBKDF_OPT --cipher $cipher --key-size $key_size || fail
+done
+echo
+
+prepare "[37] New luksAddKey options." wipe
+rm -f $VK_FILE
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat -q --type luks2 --hw-opal-only $FAST_PBKDF_OPT $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP luksDump -q $OPAL2_DEV --dump-volume-key --volume-key-file $VK_FILE >/dev/null || fail
+
+# pass pass
+echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey -q -S1 $FAST_PBKDF_OPT $OPAL2_DEV || fail
+echo $PWD2 | $CRYPTSETUP open -q --test-passphrase -S1 $OPAL2_DEV || fail
+
+# pass file
+echo "$PWD2" | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S1 --new-key-slot 2 $OPAL2_DEV $KEY1 || fail
+$CRYPTSETUP open --test-passphrase -q -S2 -d $KEY1 $OPAL2_DEV || fail
+
+# file pass
+echo "$PWD3" | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S2 -d $KEY1 --new-key-slot 3 $OPAL2_DEV || fail
+echo $PWD3 | $CRYPTSETUP open -q --test-passphrase -S3 $OPAL2_DEV || fail
+
+# file file
+$CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S2 --new-key-slot 4 -d $KEY1 --new-keyfile $KEY2 $OPAL2_DEV || fail
+$CRYPTSETUP open --test-passphrase -q -S4 -d $KEY2 $OPAL2_DEV || fail
+
+# vk pass
+echo $PWD4 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S5 --volume-key-file $VK_FILE $OPAL2_DEV || fail
+echo $PWD4 | $CRYPTSETUP open -q --test-passphrase -S5 $OPAL2_DEV || fail
+
+# vk file
+$CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S6 --volume-key-file $VK_FILE --new-keyfile $KEY5 $OPAL2_DEV || fail
+$CRYPTSETUP open --test-passphrase -q -S6 -d $KEY5 $OPAL2_DEV || fail
+
+if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
+	test_and_prepare_keyring
+	load_key user $TEST_TOKEN0 $PWD1 "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+	load_key user $TEST_TOKEN1 $PWDW "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+	$CRYPTSETUP token add $OPAL2_DEV --key-description $TEST_TOKEN0 --token-id 0 -S0 || fail
+	$CRYPTSETUP token add $OPAL2_DEV --key-description $TEST_TOKEN1 --token-id 1 --unbound || fail
+
+	# pass token
+	echo -e "$PWD1" | $CRYPTSETUP luksAddKey -q -S7 --new-token-id 1 $FAST_PBKDF_OPT $OPAL2_DEV || fail
+	$CRYPTSETUP open -q --test-passphrase --token-only --token-id 1 -q $OPAL2_DEV || fail
+	echo $PWD1 | $CRYPTSETUP luksKillSlot $OPAL2_DEV 7 || fail
+	$CRYPTSETUP open -q --test-passphrase --token-only --token-id 1 -q $OPAL2_DEV && fail
+
+	# file token
+	$CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S2 --new-key-slot 7 --new-token-id 1 -d $KEY1 $OPAL2_DEV || fail
+	$CRYPTSETUP open -q --test-passphrase --token-only --token-id 1 -q $OPAL2_DEV || fail
+	echo $PWD1 | $CRYPTSETUP luksKillSlot $OPAL2_DEV 7 || fail
+	$CRYPTSETUP open -q --test-passphrase --token-only --token-id 1 -q $OPAL2_DEV && fail
+
+	# vk token
+	$CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S7 --volume-key-file $VK_FILE --new-token-id 1 $OPAL2_DEV || fail
+	$CRYPTSETUP open -q --test-passphrase --token-only --token-id 1 -q $OPAL2_DEV || fail
+	echo $PWD1 | $CRYPTSETUP luksKillSlot $OPAL2_DEV 7 || fail
+	$CRYPTSETUP open -q --test-passphrase --token-only --token-id 1 -q $OPAL2_DEV && fail
+
+	# token pass
+	echo $PWD4 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S7 --token-id 0 $OPAL2_DEV || fail
+	echo $PWD4 | $CRYPTSETUP open -q --test-passphrase -S7 $OPAL2_DEV || fail
+
+	# token file
+	echo $PWD4 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S8 --token-id 0 $OPAL2_DEV $KEY2 || fail
+	$CRYPTSETUP open -q --test-passphrase -S8 --key-file $KEY2 $OPAL2_DEV || fail
+
+	# token token
+	$CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S9 --token-id 0 --new-token-id 1 $OPAL2_DEV || fail
+	$CRYPTSETUP open -q --test-passphrase --token-only --token-id 1 -q $OPAL2_DEV || fail
+	echo $PWD1 | $CRYPTSETUP luksKillSlot $OPAL2_DEV 9 || fail
+	$CRYPTSETUP open -q --test-passphrase --token-only --token-id 1 -q $OPAL2_DEV && fail
+
+	# reuse same token
+	$CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S0 --new-key-slot 9 --token-id 0 --new-token-id 0 $OPAL2_DEV || fail
+	$CRYPTSETUP open -q --test-passphrase --token-only --token-id 0 -q $OPAL2_DEV || fail
+	echo $PWD1 | $CRYPTSETUP luksKillSlot $OPAL2_DEV 9 || fail
+
+	# reuse same token
+	$CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --token-id 0 --new-token-id 0 $OPAL2_DEV || fail
+	echo $PWD1 | $CRYPTSETUP luksKillSlot $OPAL2_DEV 9 || fail
+	$CRYPTSETUP open -q --test-passphrase --token-only --token-id 0 -q $OPAL2_DEV || fail
+fi
+
+if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
+	prepare "[38] Link VK to a keyring and use custom VK type." wipe
+
+	echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $OPAL2_DEV 2> /dev/null || fail
+	KEY_NAME="cryptsetup:test_volume_key_id"
+	test_and_prepare_keyring
+	KID=$(echo -n test | keyctl padd user my_token @s)
+	keyctl unlink $KID >/dev/null 2>&1 @s && SESSION_KEYRING_WORKS=1
+	KID=$(echo -n test | keyctl padd user my_token @us)
+	keyctl unlink $KID >/dev/null 2>&1 @us && USER_SESSION_KEYRING_WORKS=1
+
+	test_vk_link $KEY_NAME "@u"
+	test_vk_link $KEY_NAME "@u" "user"
+	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@s"
+	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@s" "logon"
+	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@s" "user"
+	test_vk_link $KEY_NAME "%:$TEST_KEYRING_NAME"
+	test_vk_link $KEY_NAME "%:$TEST_KEYRING_NAME" "user"
+	test_vk_link $KEY_NAME "%:$TEST_KEYRING_NAME" "logon"
+	# explicitly specify keyring key type
+	test_vk_link $KEY_NAME "%keyring:$TEST_KEYRING_NAME"
+
+	test_vk_link_and_reactivate $KEY_NAME "@u" "user"
+	test_vk_link_and_reactivate $KEY_NAME "@u"
+	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link_and_reactivate $KEY_NAME "@s" "user"
+	test_vk_link_and_reactivate $KEY_NAME "%:$TEST_KEYRING_NAME" "user"
+	# explicitly specify keyring key type
+	test_vk_link_and_reactivate $KEY_NAME "%keyring:$TEST_KEYRING_NAME" "user"
+	test_vk_link_and_reactivate $KEY_NAME "%keyring:$TEST_KEYRING_NAME"
+
+	# test numeric keyring name -5 is user session (@us) keyring
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring -5::%logon:$KEY_NAME || fail
+	keyctl search @us logon $KEY_NAME > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after activation."
+	$CRYPTSETUP close $DEV_NAME
+	keyctl search @us logon $KEY_NAME > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after deactivation."
+	keyctl unlink "%logon:$KEY_NAME" @us || fail
+
+	# test malformed keyring descriptions and key types
+	# missing key description
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring "%$TEST_KEYRING_NAME::" > /dev/null 2>&1 && fail
+	# malformed keyring description
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring ":$TEST_KEYRING_NAME::$KEY_NAME" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring "@uuu::$KEY_NAME" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring "@usu::$KEY_NAME" > /dev/null 2>&1 && fail
+
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring "$TEST_KEYRING_NAME::%user" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring "$TEST_KEYRING_NAME::%user:" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring "%user:$KEY_NAME" > /dev/null 2>&1 && fail
+
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring "@t::%0:$KEY_NAME" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring "@t::%blah:$KEY_NAME" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --link-vk-to-keyring "@t::%userlogon:$KEY_NAME" > /dev/null 2>&1 && fail
+
+fi
+
+# FIXME: Bug to be fixed with OPAL requirement flag
+if false; then
+if ! fips_mode; then
+prepare "[39] LUKS2 reencryption/decryption blocked" wipe
+
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal $OPAL2_DEV || fail
+test_reencryption_does_not_init
+
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal-only $OPAL2_DEV || fail
+test_reencryption_does_not_init
+
+prepare "[40] LUKS2 reencryption/decryption blocked (detached header)" wipe
+
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --header $HEADER_IMG --type luks2 -s256 --hw-opal $OPAL2_DEV || fail
+test_reencryption_does_not_init $HEADER_IMG
+
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --header $HEADER_IMG --type luks2 -s256 --hw-opal-only $OPAL2_DEV || fail
+test_reencryption_does_not_init $HEADER_IMG
+
+prepare "[41] LUKS2 encryption blocked" wipe
+
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --init-only --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal $OPAL2_DEV 2>/dev/null && fail
+$CRYPTSETUP isLuks $OPAL2_DEV && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --init-only --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP isLuks $OPAL2_DEV && fail
+test -b $DEV_NAME && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal $OPAL2_DEV 2>/dev/null && fail
+$CRYPTSETUP isLuks $OPAL2_DEV && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --init-only --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal-only $OPAL2_DEV 2>/dev/null && fail
+$CRYPTSETUP isLuks $OPAL2_DEV && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --init-only --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal-only $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+$CRYPTSETUP isLuks $OPAL2_DEV && fail
+test -b $DEV_NAME && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal-only $OPAL2_DEV 2>/dev/null && fail
+$CRYPTSETUP isLuks $OPAL2_DEV && fail
+
+fi
+fi
+
+prepare "[42] OPAL2 HW only test." wipe
+test_device --hw-opal-only
+
+prepare "[43] OPAL2 + dmcrypt test." wipe
+test_device --hw-opal
+
+prepare "[44] OPAL2 + auth encryption" wipe
+test_device --hw-opal "-c aes-gcm-random --integrity aead" --integrity-no-wipe
+test_device --hw-opal "-s 280 -c aes-ccm-random --integrity aead" --integrity-no-wipe
+
+prepare "[45] OPAL2 HW only test (detached header)" wipe
+test_device_detached_header $HEADER_IMG --hw-opal-only
+
+prepare "[46] OPAL2 + dmcrypt test (detached header)" wipe
+test_device_detached_header $HEADER_IMG --hw-opal
+
+prepare "[47] OPAL2 + auth encryption test (detached header)" wipe
+test_device_detached_header $HEADER_IMG --hw-opal "-c aes-gcm-random --integrity aead" --integrity-no-wipe
+test_device_detached_header $HEADER_IMG --hw-opal "-s 280 -c aes-ccm-random --integrity aead" --integrity-no-wipe
+
+# FIXME: Add partition based tests
+
+remove_mapping_and_reset
+exit 0

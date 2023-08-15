@@ -4,6 +4,7 @@ TESTS = 00modules-test \
 	compat-args-test \
 	compat-test \
 	compat-test2 \
+	compat-test-opal \
 	loopaes-test \
 	align-test \
 	align-test2 \
@@ -80,6 +81,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	compat-args-test \
 	compat-test \
 	compat-test2 \
+	compat-test-opal \
 	loopaes-test align-test discards-test mode-test password-hash-test \
 	align-test2 verity-compat-test \
 	reencryption-compat-test \
@@ -180,6 +182,7 @@ valgrind-check: api-test api-test-2 differ
 	@VALG=1 ./compat-args-test
 	@VALG=1 ./compat-test
 	@VALG=1 ./compat-test2
+	@VALG=1 ./compat-test-opal
 	@VALG=1 ./luks2-validation-test
 	@VALG=1 ./verity-compat-test
 	@VALG=1 ./integrity-compat-test
