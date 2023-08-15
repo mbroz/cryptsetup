@@ -79,12 +79,17 @@ struct crypt_keyslot_context {
 	struct {
 		const char *key_description;
 	} kr;
+	struct {
+		const char *key_description;
+	} vk_kr;
 	} u;
 
 	int error;
 
 	char *i_passphrase;
 	size_t i_passphrase_size;
+	char *i_volume_key;
+	size_t i_volume_key_size;
 
 	keyslot_context_get_key			get_luks2_key;
 	keyslot_context_get_volume_key		get_luks1_volume_key;
@@ -120,6 +125,9 @@ void crypt_keyslot_unlock_by_token_init_internal(struct crypt_keyslot_context *k
 	void *usrptr);
 
 void crypt_keyslot_unlock_by_keyring_internal(struct crypt_keyslot_context *kc,
+	const char *key_description);
+
+void crypt_keyslot_unlock_by_vk_in_keyring_internal(struct crypt_keyslot_context *kc,
 	const char *key_description);
 
 const char *keyslot_context_type_string(const struct crypt_keyslot_context *kc);

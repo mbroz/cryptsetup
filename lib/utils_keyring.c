@@ -162,6 +162,7 @@ static key_serial_t keyring_process_proc_keys_line(char *line, const char *type,
 }
 
 /* inspired by keyutils written by David Howells (dhowells@redhat.com), returns 0 ID on failure */
+
 static key_serial_t find_key_by_type_and_desc(const char *type, const char *desc, key_serial_t destringid)
 {
 	key_serial_t id;
@@ -262,6 +263,54 @@ int keyring_get_key(const char *key_desc,
 		    size_t *key_size)
 {
 	return keyring_get_passphrase(key_desc, key, key_size);
+}
+
+int keyring_read_by_id(const char *key_desc,
+		      char **passphrase,
+		      size_t *passphrase_len)
+{
+#ifdef KERNEL_KEYRING
+	int err;
+	key_serial_t kid;
+	long ret;
+	char *buf = NULL;
+	size_t len = 0;
+
+	do
+		kid = request_key(key_type_name(USER_KEY), key_desc, NULL, 0);
+	while (kid < 0 && errno == EINTR);
+
+	kid = keyring_by_name(key_desc);
+	if (kid < 0)
+		return kid;
+	else if (kid == 0)
+		return -ENOENT;
+
+	/* just get payload size */
+	ret = keyctl_read(kid, NULL, 0);
+	if (ret > 0) {
+		len = ret;
+		buf = crypt_safe_alloc(len);
+		if (!buf)
+			return -ENOMEM;
+
+		/* retrieve actual payload data */
+		ret = keyctl_read(kid, buf, len);
+	}
+
+	if (ret < 0) {
+		err = errno;
+		crypt_safe_free(buf);
+		return -err;
+	}
+
+	*passphrase = buf;
+	*passphrase_len = len;
+
+	return 0;
+#else
+	return -ENOTSUP;
+#endif
 }
 
 int keyring_get_passphrase(const char *key_desc,

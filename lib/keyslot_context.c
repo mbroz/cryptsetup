@@ -362,6 +362,42 @@ static int get_luks1_volume_key_by_keyring(struct crypt_device *cd,
 	return r;
 }
 
+static int get_key_by_vk_in_keyring(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	int keyslot __attribute__((unused)),
+	int segment __attribute__((unused)),
+	struct volume_key **r_vk)
+{
+	int r;
+
+	assert(cd);
+	assert(kc && kc->type == CRYPT_KC_TYPE_VK_KEYRING);
+	assert(r_vk);
+
+	r = keyring_read_by_id(kc->u.vk_kr.key_description, &kc->i_volume_key, &kc->i_volume_key_size);
+	if (r < 0) {
+		log_err(cd, _("Failed to read volume key from keyring."));
+		kc->error = -EINVAL;
+		return -EINVAL;
+	}
+
+	*r_vk = crypt_alloc_volume_key(kc->i_volume_key_size, kc->i_volume_key);
+	if (!*r_vk) {
+		kc->error = -ENOMEM;
+		return kc->error;
+	}
+
+	return 0;
+}
+
+static int get_volume_key_by_vk_in_keyring(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	int keyslot __attribute__((unused)),
+	struct volume_key **r_vk)
+{
+	return get_key_by_vk_in_keyring(cd, kc, -2 /* unused */, -2 /* unused */, r_vk);
+}
+
 static void unlock_method_init_internal(struct crypt_keyslot_context *kc)
 {
 	assert(kc);
@@ -369,6 +405,8 @@ static void unlock_method_init_internal(struct crypt_keyslot_context *kc)
 	kc->error = 0;
 	kc->i_passphrase = NULL;
 	kc->i_passphrase_size = 0;
+	kc->i_volume_key = NULL;
+	kc->i_volume_key_size = 0;
 }
 
 void crypt_keyslot_unlock_by_keyring_internal(struct crypt_keyslot_context *kc,
@@ -483,6 +521,27 @@ void crypt_keyslot_unlock_by_token_init_internal(struct crypt_keyslot_context *k
 	unlock_method_init_internal(kc);
 }
 
+void crypt_keyslot_unlock_by_vk_in_keyring_internal(struct crypt_keyslot_context *kc,
+	const char *key_description)
+{
+	assert(kc);
+
+	kc->type = CRYPT_KC_TYPE_VK_KEYRING;
+	kc->u.vk_kr.key_description = key_description;
+
+	kc->get_luks2_key = get_key_by_vk_in_keyring;
+	kc->get_luks2_volume_key = get_volume_key_by_vk_in_keyring;
+	kc->get_luks1_volume_key = NULL;
+	kc->get_passphrase = NULL; /* keyslot key context does not provide passphrase */
+	kc->get_plain_volume_key = NULL;
+	kc->get_bitlk_volume_key = NULL;
+	kc->get_fvault2_volume_key = NULL;
+	kc->get_verity_volume_key = NULL;
+	kc->get_integrity_volume_key = NULL;
+	unlock_method_init_internal(kc);
+}
+
+
 void crypt_keyslot_context_destroy_internal(struct crypt_keyslot_context *kc)
 {
 	if (!kc)
@@ -491,6 +550,9 @@ void crypt_keyslot_context_destroy_internal(struct crypt_keyslot_context *kc)
 	crypt_safe_free(kc->i_passphrase);
 	kc->i_passphrase = NULL;
 	kc->i_passphrase_size = 0;
+	crypt_safe_free(kc->i_volume_key);
+	kc->i_volume_key = NULL;
+	kc->i_volume_key_size = 0;
 }
 
 void crypt_keyslot_context_free(struct crypt_keyslot_context *kc)
@@ -606,6 +668,26 @@ int crypt_keyslot_context_init_by_keyring(struct crypt_device *cd,
 	return 0;
 }
 
+int crypt_keyslot_context_init_by_vk_in_keyring(struct crypt_device *cd,
+	const char *key_description,
+	struct crypt_keyslot_context **kc)
+{
+	struct crypt_keyslot_context *tmp;
+
+	if (!kc)
+		return -EINVAL;
+
+	tmp = malloc(sizeof(*tmp));
+	if (!tmp)
+		return -ENOMEM;
+
+	crypt_keyslot_unlock_by_vk_in_keyring_internal(tmp, key_description);
+
+	*kc = tmp;
+
+	return 0;
+}
+
 int crypt_keyslot_context_get_error(struct crypt_keyslot_context *kc)
 {
 	return kc ? kc->error : -EINVAL;
@@ -645,6 +727,8 @@ const char *keyslot_context_type_string(const struct crypt_keyslot_context *kc)
 		return "key";
 	case CRYPT_KC_TYPE_KEYRING:
 		return "keyring";
+	case CRYPT_KC_TYPE_VK_KEYRING:
+		return "volume key in keyring";
 	default:
 		return "<unknown>";
 	}

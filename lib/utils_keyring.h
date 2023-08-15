@@ -37,6 +37,10 @@ int keyring_get_key(const char *key_desc,
 		    char **key,
 		    size_t *key_size);
 
+int keyring_read_by_id(const char *key_desc,
+		      char **passphrase,
+		      size_t *passphrase_len);
+
 int keyring_get_passphrase(const char *key_desc,
 		      char **passphrase,
 		      size_t *passphrase_len);
