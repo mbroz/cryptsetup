@@ -878,7 +878,7 @@ void LUKS2_reencrypt_free(struct crypt_device *cd, struct luks2_reencrypt *rh)
 	free(rh);
 }
 
-int LUKS2_reencrypt_max_hotzone_size(struct crypt_device *cd,
+int LUKS2_reencrypt_max_hotzone_size(struct crypt_device *cd __attribute__((unused)),
 	struct luks2_hdr *hdr,
 	const struct reenc_protection *rp,
 	int reencrypt_keyslot,
@@ -1002,7 +1002,6 @@ static int reencrypt_offset_backward_moved(struct luks2_hdr *hdr, json_object *j
 }
 
 static int reencrypt_offset_forward_moved(struct luks2_hdr *hdr,
-	json_object *jobj_segments,
 	uint64_t data_shift,
 	uint64_t *offset)
 {
@@ -1080,7 +1079,7 @@ static int reencrypt_offset(struct luks2_hdr *hdr,
 	if (di == CRYPT_REENCRYPT_FORWARD) {
 		if (reencrypt_mode(hdr) == CRYPT_REENCRYPT_DECRYPT &&
 		    LUKS2_get_segment_id_by_flag(hdr, "backup-moved-segment") >= 0) {
-			r = reencrypt_offset_forward_moved(hdr, jobj_segments, data_shift, offset);
+			r = reencrypt_offset_forward_moved(hdr, data_shift, offset);
 			if (!r && *offset > device_size)
 				*offset = device_size;
 			return r;
@@ -2639,7 +2638,6 @@ static int reencrypt_verify_keys(struct crypt_device *cd,
 }
 
 static int reencrypt_upload_single_key(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
 	int digest,
 	struct volume_key *vks)
 {
@@ -2664,11 +2662,11 @@ static int reencrypt_upload_keys(struct crypt_device *cd,
 		return 0;
 
 	if (digest_new >= 0 && !crypt_is_cipher_null(reencrypt_segment_cipher_new(hdr)) &&
-	    (r = reencrypt_upload_single_key(cd, hdr, digest_new, vks)))
+	    (r = reencrypt_upload_single_key(cd, digest_new, vks)))
 		return r;
 
 	if (digest_old >= 0 && !crypt_is_cipher_null(reencrypt_segment_cipher_old(hdr)) &&
-	    (r = reencrypt_upload_single_key(cd, hdr, digest_old, vks))) {
+	    (r = reencrypt_upload_single_key(cd, digest_old, vks))) {
 		crypt_drop_keyring_key(cd, vks);
 		return r;
 	}

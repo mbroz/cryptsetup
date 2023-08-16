@@ -912,7 +912,7 @@ int LUKS2_keyslots_validate(struct crypt_device *cd, json_object *hdr_jobj)
 	return 0;
 }
 
-void LUKS2_keyslots_repair(struct crypt_device *cd, json_object *jobj_keyslots)
+void LUKS2_keyslots_repair(struct crypt_device *cd __attribute__((unused)), json_object *jobj_keyslots)
 {
 	const keyslot_handler *h;
 	json_object *jobj_type;

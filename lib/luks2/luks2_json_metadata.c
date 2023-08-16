@@ -1742,7 +1742,7 @@ int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint8_t *version)
 	return -ENOENT;
 }
 
-static const struct requirement_flag *stored_requirement_name_by_id(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t req_id)
+static const struct requirement_flag *stored_requirement_name_by_id(struct luks2_hdr *hdr, uint32_t req_id)
 {
 	json_object *jobj_mandatory, *jobj;
 	int i, len;
@@ -1821,7 +1821,7 @@ int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 		req_id = reqs & requirements_flags[i].flag;
 		if (req_id) {
 			/* retain already stored version of requirement flag */
-			req = stored_requirement_name_by_id(cd, hdr, req_id);
+			req = stored_requirement_name_by_id(hdr, req_id);
 			if (req)
 				jobj = json_object_new_string(req->description);
 			else
@@ -3046,7 +3046,7 @@ int json_object_copy(json_object *jobj_src, json_object **jobj_dst)
 #endif
 }
 
-int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd,
+int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd __attribute__((unused)),
 		struct luks2_hdr *hdr,
 		const struct volume_key *vk,
 		struct volume_key **ret_crypt_key,

@@ -47,8 +47,9 @@ static char backend_version[256] = "OpenSSL";
 
 #define MAX_THREADS 8
 #if !HAVE_DECL_OSSL_GET_MAX_THREADS
-static int OSSL_set_max_threads(OSSL_LIB_CTX *ctx, uint64_t max_threads) { return 0; }
-static uint64_t OSSL_get_max_threads(OSSL_LIB_CTX *ctx) { return 0; }
+static int OSSL_set_max_threads(OSSL_LIB_CTX *ctx __attribute__((unused)),
+				uint64_t max_threads __attribute__((unused))) { return 0; }
+static uint64_t OSSL_get_max_threads(OSSL_LIB_CTX *ctx __attribute__((unused))) { return 0; }
 #else
 #include <openssl/thread.h>
 #endif

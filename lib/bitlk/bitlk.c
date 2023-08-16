@@ -984,8 +984,7 @@ static int get_startup_key(struct crypt_device *cd,
 	}
 }
 
-static int bitlk_kdf(struct crypt_device *cd,
-		     const char *password,
+static int bitlk_kdf(const char *password,
 		     size_t passwordLen,
 		     bool recovery,
 		     const uint8_t *salt,
@@ -1122,7 +1121,7 @@ int BITLK_get_volume_key(struct crypt_device *cd,
 	next_vmk = params->vmks;
 	while (next_vmk) {
 		if (next_vmk->protection == BITLK_PROTECTION_PASSPHRASE) {
-			r = bitlk_kdf(cd, password, passwordLen, false, next_vmk->salt, &vmk_dec_key);
+			r = bitlk_kdf(password, passwordLen, false, next_vmk->salt, &vmk_dec_key);
 			if (r) {
 				/* something wrong happened, but we still want to check other key slots */
 				next_vmk = next_vmk->next;
@@ -1142,7 +1141,7 @@ int BITLK_get_volume_key(struct crypt_device *cd,
 				continue;
 			}
 			log_dbg(cd, "Trying to use given password as a recovery key.");
-			r = bitlk_kdf(cd, recovery_key->key, recovery_key->keylength,
+			r = bitlk_kdf(recovery_key->key, recovery_key->keylength,
 				      true, next_vmk->salt, &vmk_dec_key);
 			crypt_free_volume_key(recovery_key);
 			if (r)

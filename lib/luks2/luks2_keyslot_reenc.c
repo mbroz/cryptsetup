@@ -376,8 +376,7 @@ static int reenc_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 	return 0;
 }
 
-static int reenc_keyslot_update_needed(struct crypt_device *cd,
-	json_object *jobj_keyslot,
+static int reenc_keyslot_update_needed(json_object *jobj_keyslot,
 	const struct crypt_params_reencrypt *params,
 	size_t alignment)
 {
@@ -542,8 +541,7 @@ static int reenc_keyslot_load_resilience(struct crypt_device *cd,
 		return reenc_keyslot_load_resilience_secondary(cd, type, jobj_area, area_length, rp);
 }
 
-static bool reenc_keyslot_update_is_valid(struct crypt_device *cd,
-	json_object *jobj_area,
+static bool reenc_keyslot_update_is_valid(json_object *jobj_area,
 	const struct crypt_params_reencrypt *params)
 {
 	const char *type;
@@ -594,7 +592,7 @@ static int reenc_keyslot_update(struct crypt_device *cd,
 	if (!params || !params->resilience)
 		jobj_area_new = reencrypt_keyslot_area_jobj_update_block_size(cd, jobj_area, alignment);
 	else {
-		if (!reenc_keyslot_update_is_valid(cd, jobj_area, params)) {
+		if (!reenc_keyslot_update_is_valid(jobj_area, params)) {
 			log_err(cd, _("Invalid reencryption resilience mode change requested."));
 			return -EINVAL;
 		}
@@ -666,7 +664,7 @@ int LUKS2_keyslot_reencrypt_update_needed(struct crypt_device *cd,
 	    strcmp(json_object_get_string(jobj_type), "reencrypt"))
 		return -EINVAL;
 
-	r = reenc_keyslot_update_needed(cd, jobj_keyslot, params, alignment);
+	r = reenc_keyslot_update_needed(jobj_keyslot, params, alignment);
 	if (!r)
 		log_dbg(cd, "No update of reencrypt keyslot needed.");
 

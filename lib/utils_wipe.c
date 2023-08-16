@@ -322,6 +322,8 @@ int crypt_wipe_hw_opal(struct crypt_device *cd,
 	struct luks2_hdr *hdr;
 	uint32_t opal_segment_number;
 
+	UNUSED(flags);
+
 	if (!cd)
 		return -EINVAL;
 

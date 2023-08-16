@@ -4720,7 +4720,7 @@ out:
 }
 
 #if USE_LUKS2_REENCRYPTION
-static int load_all_keys(struct crypt_device *cd, struct luks2_hdr *hdr, struct volume_key *vks)
+static int load_all_keys(struct crypt_device *cd, struct volume_key *vks)
 {
 	int r;
 	struct volume_key *vk = vks;
@@ -4771,7 +4771,7 @@ static int _open_all_keys(struct crypt_device *cd,
 		keyslot = r;
 
 	if (r >= 0 && (flags & CRYPT_ACTIVATE_KEYRING_KEY))
-		r = load_all_keys(cd, hdr, _vks);
+		r = load_all_keys(cd, _vks);
 
 	if (r >= 0 && vks)
 		MOVE_REF(*vks, _vks);
@@ -5768,6 +5768,9 @@ int crypt_get_rng_type(struct crypt_device *cd)
 
 int crypt_memory_lock(struct crypt_device *cd, int lock)
 {
+	UNUSED(cd);
+	UNUSED(lock);
+
 	return 0;
 }
 

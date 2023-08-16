@@ -173,7 +173,7 @@ static int get_luks1_volume_key_by_keyfile(struct crypt_device *cd,
 	return r;
 }
 
-static int get_key_by_key(struct crypt_device *cd,
+static int get_key_by_key(struct crypt_device *cd __attribute__((unused)),
 	struct crypt_keyslot_context *kc,
 	int keyslot __attribute__((unused)),
 	int segment __attribute__((unused)),
@@ -628,7 +628,7 @@ void crypt_keyslot_context_free(struct crypt_keyslot_context *kc)
 	free(kc);
 }
 
-int crypt_keyslot_context_init_by_passphrase(struct crypt_device *cd,
+int crypt_keyslot_context_init_by_passphrase(struct crypt_device *cd __attribute__((unused)),
 	const char *passphrase,
 	size_t passphrase_size,
 	struct crypt_keyslot_context **kc)
@@ -649,7 +649,7 @@ int crypt_keyslot_context_init_by_passphrase(struct crypt_device *cd,
 	return 0;
 }
 
-int crypt_keyslot_context_init_by_keyfile(struct crypt_device *cd,
+int crypt_keyslot_context_init_by_keyfile(struct crypt_device *cd __attribute__((unused)),
 	const char *keyfile,
 	size_t keyfile_size,
 	uint64_t keyfile_offset,
@@ -671,7 +671,7 @@ int crypt_keyslot_context_init_by_keyfile(struct crypt_device *cd,
 	return 0;
 }
 
-int crypt_keyslot_context_init_by_token(struct crypt_device *cd,
+int crypt_keyslot_context_init_by_token(struct crypt_device *cd __attribute__((unused)),
 	int token,
 	const char *type,
 	const char *pin, size_t pin_size,
@@ -694,7 +694,7 @@ int crypt_keyslot_context_init_by_token(struct crypt_device *cd,
 	return 0;
 }
 
-int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd,
+int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd __attribute__((unused)),
 	const char *volume_key,
 	size_t volume_key_size,
 	struct crypt_keyslot_context **kc)
@@ -715,7 +715,7 @@ int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd,
 	return 0;
 }
 
-int crypt_keyslot_context_init_by_signed_key(struct crypt_device *cd,
+int crypt_keyslot_context_init_by_signed_key(struct crypt_device *cd __attribute__((unused)),
 	const char *volume_key,
 	size_t volume_key_size,
 	const char *signature,
@@ -739,7 +739,7 @@ int crypt_keyslot_context_init_by_signed_key(struct crypt_device *cd,
 	return 0;
 }
 
-int crypt_keyslot_context_init_by_keyring(struct crypt_device *cd,
+int crypt_keyslot_context_init_by_keyring(struct crypt_device *cd __attribute__((unused)),
 	const char *key_description,
 	struct crypt_keyslot_context **kc)
 {
@@ -759,7 +759,7 @@ int crypt_keyslot_context_init_by_keyring(struct crypt_device *cd,
 	return 0;
 }
 
-int crypt_keyslot_context_init_by_vk_in_keyring(struct crypt_device *cd,
+int crypt_keyslot_context_init_by_vk_in_keyring(struct crypt_device *cd __attribute__((unused)),
 	const char *key_description,
 	struct crypt_keyslot_context **kc)
 {
@@ -784,7 +784,7 @@ int crypt_keyslot_context_get_error(struct crypt_keyslot_context *kc)
 	return kc ? kc->error : -EINVAL;
 }
 
-int crypt_keyslot_context_set_pin(struct crypt_device *cd,
+int crypt_keyslot_context_set_pin(struct crypt_device *cd __attribute__((unused)),
 	const char *pin, size_t pin_size,
 	struct crypt_keyslot_context *kc)
 {
