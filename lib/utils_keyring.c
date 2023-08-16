@@ -206,21 +206,15 @@ static key_serial_t find_key_by_type_and_desc(const char *type, const char *desc
 	close(f);
 	return 0;
 }
-#endif
 
 int keyring_check(void)
 {
-#ifdef KERNEL_KEYRING
 	/* logon type key descriptions must be in format "prefix:description" */
 	return syscall(__NR_request_key, "logon", "dummy", NULL, 0) == -1l && errno != ENOSYS;
-#else
-	return 0;
-#endif
 }
 
 int keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
 {
-#ifdef KERNEL_KEYRING
 	key_serial_t kid;
 	const char *type_name = key_type_name(ktype);
 
@@ -232,15 +226,11 @@ int keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, co
 		return -errno;
 
 	return 0;
-#else
-	return -ENOTSUP;
-#endif
 }
 
 /* currently used in client utilities only */
 int keyring_add_key_in_user_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
 {
-#ifdef KERNEL_KEYRING
 	const char *type_name = key_type_name(ktype);
 	key_serial_t kid;
 
@@ -252,9 +242,6 @@ int keyring_add_key_in_user_keyring(key_type_t ktype, const char *key_desc, cons
 		return -errno;
 
 	return 0;
-#else
-	return -ENOTSUP;
-#endif
 }
 
 /* alias for the same code */
@@ -269,7 +256,6 @@ int keyring_read_by_id(const char *key_desc,
 		      char **passphrase,
 		      size_t *passphrase_len)
 {
-#ifdef KERNEL_KEYRING
 	int err;
 	key_serial_t kid;
 	long ret;
@@ -308,16 +294,12 @@ int keyring_read_by_id(const char *key_desc,
 	*passphrase_len = len;
 
 	return 0;
-#else
-	return -ENOTSUP;
-#endif
 }
 
 int keyring_get_passphrase(const char *key_desc,
 		      char **passphrase,
 		      size_t *passphrase_len)
 {
-#ifdef KERNEL_KEYRING
 	int err;
 	key_serial_t kid;
 	long ret;
@@ -353,15 +335,11 @@ int keyring_get_passphrase(const char *key_desc,
 	*passphrase_len = len;
 
 	return 0;
-#else
-	return -ENOTSUP;
-#endif
 }
 
 static int keyring_link_key_to_keyring_key_type(const char *type_name, const char *key_desc,
 						key_serial_t keyring_to_link)
 {
-#ifdef KERNEL_KEYRING
 	long r;
 	key_serial_t kid;
 
@@ -383,14 +361,10 @@ static int keyring_link_key_to_keyring_key_type(const char *type_name, const cha
 		return -errno;
 
 	return 0;
-#else
-	return -ENOTSUP;
-#endif
 }
 
 static int keyring_revoke_and_unlink_key_type(const char *type_name, const char *key_desc)
 {
-#ifdef KERNEL_KEYRING
 	key_serial_t kid;
 
 	if (!type_name || !key_desc)
@@ -407,27 +381,22 @@ static int keyring_revoke_and_unlink_key_type(const char *type_name, const char 
 		return -errno;
 
 	return 0;
-#else
-	return -ENOTSUP;
-#endif
 }
 
 const char *key_type_name(key_type_t type)
 {
-#ifdef KERNEL_KEYRING
 	unsigned int i;
 
 	for (i = 0; i < ARRAY_SIZE(key_types); i++)
 		if (type == key_types[i].type)
 			return key_types[i].type_name;
-#endif
+
 	return NULL;
 }
 
 int32_t keyring_by_name(const char *name)
 {
 	int32_t id = 0;
-#ifdef KERNEL_KEYRING
 	char *end;
 	char *name_copy, *name_copy_p;
 
@@ -481,19 +450,18 @@ int32_t keyring_by_name(const char *name)
 out:
 	if (name_copy)
 		free(name_copy);
-#endif
+
 	return id;
 }
 
 key_type_t key_type_by_name(const char *name)
 {
-#ifdef KERNEL_KEYRING
 	unsigned int i;
 
 	for (i = 0; i < ARRAY_SIZE(key_types); i++)
 		if (!strcmp(key_types[i].type_name, name))
 			return key_types[i].type;
-#endif
+
 	return INVALID_KEY;
 }
 
@@ -506,3 +474,62 @@ int keyring_revoke_and_unlink_key(key_type_t ktype, const char *key_desc)
 {
 	return keyring_revoke_and_unlink_key_type(key_type_name(ktype), key_desc);
 }
+
+#else /* KERNEL_KEYRING */
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+int keyring_check(void)
+{
+	return 0;
+}
+
+int keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
+{
+	return -ENOTSUP;
+}
+
+int keyring_add_key_in_user_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
+{
+	return -ENOTSUP;
+}
+
+int keyring_read_by_id(const char *key_desc, char **passphrase, size_t *passphrase_len)
+{
+	return -ENOTSUP;
+}
+
+int keyring_get_passphrase(const char *key_desc, char **passphrase, size_t *passphrase_len)
+{
+	return -ENOTSUP;
+}
+
+int keyring_get_key(const char *key_desc, char **key, size_t *key_size)
+{
+	return -ENOTSUP;
+}
+
+const char *key_type_name(key_type_t type)
+{
+	return NULL;
+}
+
+int32_t keyring_by_name(const char *name)
+{
+	return 0;
+}
+
+key_type_t key_type_by_name(const char *name)
+{
+	return INVALID_KEY;
+}
+
+int keyring_link_key_to_keyring(key_type_t ktype, const char *key_desc, key_serial_t keyring_to_link)
+{
+	return -ENOTSUP;
+}
+
+int keyring_revoke_and_unlink_key(key_type_t ktype, const char *key_desc)
+{
+	return -ENOTSUP;
+}
+#endif
