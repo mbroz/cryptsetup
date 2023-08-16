@@ -54,6 +54,24 @@ const char *crypt_token_external_path(void)
 	return external_tokens_enabled ? EXTERNAL_LUKS2_TOKENS_PATH : NULL;
 }
 
+static bool token_validate_v1(struct crypt_device *cd, const crypt_token_handler *h)
+{
+	if (!h)
+		return false;
+
+	if (!h->name) {
+		log_dbg(cd, "Error: token handler does not provide name attribute.");
+		return false;
+	}
+
+	if (!h->open) {
+		log_dbg(cd, "Error: token handler does not provide open function.");
+		return false;
+	}
+
+	return true;
+}
+
 #if USE_EXTERNAL_TOKENS
 static void *token_dlvsym(struct crypt_device *cd,
 		void *handle,
@@ -77,27 +95,7 @@ static void *token_dlvsym(struct crypt_device *cd,
 
 	return sym;
 }
-#endif
 
-static bool token_validate_v1(struct crypt_device *cd, const crypt_token_handler *h)
-{
-	if (!h)
-		return false;
-
-	if (!h->name) {
-		log_dbg(cd, "Error: token handler does not provide name attribute.");
-		return false;
-	}
-
-	if (!h->open) {
-		log_dbg(cd, "Error: token handler does not provide open function.");
-		return false;
-	}
-
-	return true;
-}
-
-#if USE_EXTERNAL_TOKENS
 static bool token_validate_v2(struct crypt_device *cd, const struct crypt_token_handler_internal *h)
 {
 	if (!h)
@@ -127,12 +125,10 @@ static bool external_token_name_valid(const char *name)
 
 	return true;
 }
-#endif
 
 static int
 crypt_token_load_external(struct crypt_device *cd, const char *name, struct crypt_token_handler_internal *ret)
 {
-#if USE_EXTERNAL_TOKENS
 	struct crypt_token_handler_v2 *token;
 	void *h;
 	char buf[PATH_MAX];
@@ -192,10 +188,39 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 	ret->version = 2;
 
 	return 0;
-#else
-	return -ENOTSUP;
-#endif
 }
+
+void crypt_token_unload_external_all(struct crypt_device *cd)
+{
+	int i;
+
+	for (i = LUKS2_TOKENS_MAX - 1; i >= 0; i--) {
+		if (token_handlers[i].version < 2)
+			continue;
+
+		log_dbg(cd, "Unloading %s token handler.", token_handlers[i].u.v2.name);
+
+		free(CONST_CAST(void *)token_handlers[i].u.v2.name);
+
+		if (dlclose(CONST_CAST(void *)token_handlers[i].u.v2.dlhandle))
+			log_dbg(cd, "%s", dlerror());
+	}
+}
+
+#else /* USE_EXTERNAL_TOKENS */
+
+static int crypt_token_load_external(struct crypt_device *cd __attribute__((unused)),
+				     const char *name __attribute__((unused)),
+				     struct crypt_token_handler_internal *ret __attribute__((unused)))
+{
+	return -ENOTSUP;
+}
+
+void crypt_token_unload_external_all(struct crypt_device *cd __attribute__((unused)))
+{
+}
+
+#endif
 
 static int is_builtin_candidate(const char *type)
 {
@@ -241,25 +266,6 @@ int crypt_token_register(const crypt_token_handler *handler)
 	token_handlers[i].version = 1;
 	token_handlers[i].u.v1 = *handler;
 	return 0;
-}
-
-void crypt_token_unload_external_all(struct crypt_device *cd)
-{
-#if USE_EXTERNAL_TOKENS
-	int i;
-
-	for (i = LUKS2_TOKENS_MAX - 1; i >= 0; i--) {
-		if (token_handlers[i].version < 2)
-			continue;
-
-		log_dbg(cd, "Unloading %s token handler.", token_handlers[i].u.v2.name);
-
-		free(CONST_CAST(void *)token_handlers[i].u.v2.name);
-
-		if (dlclose(CONST_CAST(void *)token_handlers[i].u.v2.dlhandle))
-			log_dbg(cd, "%s", dlerror());
-	}
-#endif
 }
 
 static const void
