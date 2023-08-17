@@ -414,7 +414,7 @@ static void *gcrypt_job_thread(void *p)
 
 static int gcrypt_wait_all_jobs(void *ctx)
 {
-	int i;
+	unsigned int i;
 	struct gcrypt_threads *threads = ctx;
 
 	for (i = 0; i < threads->num_threads; i++) {
