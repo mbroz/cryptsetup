@@ -85,6 +85,10 @@ static int check_dlvsym(void *h, const char *symbol, const char *version)
 	}
 
 	log_dbg("OK\n");
+#else
+	UNUSED(h);
+	UNUSED(symbol);
+	UNUSED(version);
 #endif
 	return 0;
 }

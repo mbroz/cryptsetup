@@ -520,7 +520,7 @@ static key_serial_t _kernel_key_by_segment_and_type(struct crypt_device *_cd, in
 
 static key_serial_t _kernel_key_by_segment(struct crypt_device *_cd, int segment)
 {
-	return _kernel_key_by_segment_and_type(cd, segment, "logon");
+	return _kernel_key_by_segment_and_type(_cd, segment, "logon");
 }
 
 static int _volume_key_in_keyring(struct crypt_device *_cd, int segment)
@@ -541,7 +541,7 @@ static int _drop_keyring_key_from_keyring_type(struct crypt_device *_cd, int seg
 
 static int _drop_keyring_key(struct crypt_device *_cd, int segment)
 {
-	return _drop_keyring_key_from_keyring_type(cd, segment, KEY_SPEC_THREAD_KEYRING, "logon");
+	return _drop_keyring_key_from_keyring_type(_cd, segment, KEY_SPEC_THREAD_KEYRING, "logon");
 }
 #endif
 
@@ -561,7 +561,7 @@ static int test_open(struct crypt_device *_cd __attribute__((unused)),
 	return 0;
 }
 
-static int test_open_pass(struct crypt_device *cd __attribute__((unused)),
+static int test_open_pass(struct crypt_device *_cd __attribute__((unused)),
 	int token __attribute__((unused)),
 	char **buffer,
 	size_t *buffer_len,
@@ -575,7 +575,7 @@ static int test_open_pass(struct crypt_device *cd __attribute__((unused)),
 	return 0;
 }
 
-static int test_open_pass1(struct crypt_device *cd __attribute__((unused)),
+static int test_open_pass1(struct crypt_device *_cd __attribute__((unused)),
 	int token __attribute__((unused)),
 	char **buffer,
 	size_t *buffer_len,
