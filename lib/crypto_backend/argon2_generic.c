@@ -29,14 +29,12 @@
 
 #define CONST_CAST(x) (x)(uintptr_t)
 
+#if USE_INTERNAL_ARGON2 || HAVE_ARGON2_H
 int argon2(const char *type, const char *password, size_t password_length,
 	   const char *salt, size_t salt_length,
 	   char *key, size_t key_length,
 	   uint32_t iterations, uint32_t memory, uint32_t parallel)
 {
-#if !USE_INTERNAL_ARGON2 && !HAVE_ARGON2_H
-	return -EINVAL;
-#else
 	argon2_type atype;
 	argon2_context context = {
 		.flags = ARGON2_DEFAULT_FLAGS,
@@ -75,5 +73,17 @@ int argon2(const char *type, const char *password, size_t password_length,
 	}
 
 	return r;
-#endif
 }
+
+#else /* USE_INTERNAL_ARGON2 || HAVE_ARGON2_H */
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+int argon2(const char *type, const char *password, size_t password_length,
+	   const char *salt, size_t salt_length,
+	   char *key, size_t key_length,
+	   uint32_t iterations, uint32_t memory, uint32_t parallel)
+{
+	return -EINVAL;
+}
+
+#endif

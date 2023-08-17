@@ -312,6 +312,8 @@ int crypt_bitlk_decrypt_key_kernel(const void *key, size_t key_length,
 }
 
 #else /* ENABLE_AF_ALG */
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 int crypt_cipher_init_kernel(struct crypt_cipher_kernel *ctx, const char *name,
 			     const char *mode, const void *key, size_t key_length)
 {

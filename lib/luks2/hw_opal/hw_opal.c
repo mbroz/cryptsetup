@@ -771,6 +771,7 @@ int opal_range_check_attributes(struct crypt_device *cd,
 }
 
 #else
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 int opal_setup_ranges(struct crypt_device *cd,
 		      struct device *dev,

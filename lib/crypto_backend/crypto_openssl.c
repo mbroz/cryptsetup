@@ -57,6 +57,7 @@ static uint64_t OSSL_get_max_threads(OSSL_LIB_CTX *ctx __attribute__((unused))) 
 #endif
 
 #define CONST_CAST(x) (x)(uintptr_t)
+#define UNUSED(x) (void)(x)
 
 static int crypto_backend_initialised = 0;
 
@@ -207,6 +208,8 @@ static int openssl_backend_init(bool fips)
 		openssl_backend_exit();
 		return -EINVAL;
 	}
+#else
+	UNUSED(fips);
 #endif
 	return 0;
 }
@@ -297,6 +300,8 @@ static void hash_id_free(const EVP_MD *hash_id)
 {
 #if OPENSSL_VERSION_MAJOR >= 3
 	EVP_MD_free(CONST_CAST(EVP_MD*)hash_id);
+#else
+	UNUSED(hash_id);
 #endif
 }
 
@@ -313,6 +318,8 @@ static void cipher_type_free(const EVP_CIPHER *cipher_type)
 {
 #if OPENSSL_VERSION_MAJOR >= 3
 	EVP_CIPHER_free(CONST_CAST(EVP_CIPHER*)cipher_type);
+#else
+	UNUSED(cipher_type);
 #endif
 }
 
