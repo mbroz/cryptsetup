@@ -98,6 +98,7 @@ static int tools_check_password(const char *password)
 #elif defined ENABLE_PASSWDQC
 	return tools_check_passwdqc(password);
 #else
+	UNUSED(password);
 	return 0;
 #endif
 }
