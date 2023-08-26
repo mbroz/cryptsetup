@@ -109,7 +109,7 @@ static long keyctl_unlink(key_serial_t key, key_serial_t keyring)
 static key_serial_t keyring_process_proc_keys_line(char *line, const char *type, const char *desc,
 						   key_serial_t destringid)
 {
-	char typebuf[40], rdesc[1024], *kdesc, *cp;
+	char typebuf[41], rdesc[1024], *kdesc, *cp;
 	int ndesc, n;
 	key_serial_t id;
 	int dlen;
@@ -119,7 +119,7 @@ static key_serial_t keyring_process_proc_keys_line(char *line, const char *type,
 	cp = line + strlen(line);
 
 	ndesc = 0;
-	n = sscanf(line, "%x %*s %*u %*s %*x %*d %*d %s %n",
+	n = sscanf(line, "%x %*s %*u %*s %*x %*d %*d %40s %n",
 			&id, typebuf, &ndesc);
 	if (n == 2 && ndesc > 0 && ndesc <= cp - line) {
 		if (strcmp(typebuf, type) != 0)
