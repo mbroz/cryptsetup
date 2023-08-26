@@ -2551,6 +2551,10 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 			log_err(cd, _("Cannot format device %s, permission denied."),
 				mdata_device_path(cd));
 			r = -EINVAL;
+		} else if (r == -EIO) {
+			log_err(cd, _("Cannot format device %s, OPAL device seems to be fully write-protected now."),
+				mdata_device_path(cd));
+			log_err(cd, _("This is perhaps a bug in firmware. Run OPAL PSID reset and reconnect for recovery."));
 		} else
 			log_err(cd, _("Cannot format device %s."),
 				mdata_device_path(cd));
