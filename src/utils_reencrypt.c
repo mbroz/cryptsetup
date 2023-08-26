@@ -1329,8 +1329,11 @@ static int check_broken_luks_signature(const char *device)
 	size_t count;
 
 	r = tools_detect_signatures(device, PRB_ONLY_LUKS, &count, ARG_SET(OPT_BATCH_MODE_ID));
-	if (r < 0)
+	if (r < 0) {
+		if (r == -EIO)
+			log_err(_("Blkid scan failed for %s."), device);
 		return -EINVAL;
+	}
 	if (count) {
 		log_err(_("Device %s contains broken LUKS metadata. Aborting operation."), device);
 		return -EINVAL;

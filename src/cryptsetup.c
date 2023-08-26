@@ -207,8 +207,11 @@ static int action_open_plain(void)
 		if (!ARG_UINT64(OPT_OFFSET_ID)) {
 			/* Print all present signatures in read-only mode */
 			r = tools_detect_signatures(action_argv[0], PRB_FILTER_NONE, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
-			if (r < 0)
+			if (r < 0) {
+				if (r == -EIO)
+					log_err(_("Blkid scan failed for %s."), action_argv[0]);
 				goto out;
+			}
 		}
 
 		if (signatures && !ARG_SET(OPT_BATCH_MODE_ID)) {
@@ -1303,8 +1306,11 @@ static int action_luksRepair(void)
 	}
 
 	r = tools_detect_signatures(action_argv[0], PRB_FILTER_LUKS, NULL, ARG_SET(OPT_BATCH_MODE_ID));
-	if (r < 0)
+	if (r < 0) {
+		if (r == -EIO)
+			log_err(_("Blkid scan failed for %s."), action_argv[0]);
 		goto out;
+	}
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID) &&
 	    !yesDialog(_("Really try to repair LUKS device header?"),
@@ -1490,8 +1496,11 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 
 	/* Print all present signatures in read-only mode */
 	r = tools_detect_signatures(header_device, PRB_FILTER_NONE, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
-	if (r < 0)
+	if (r < 0) {
+		if (r == -EIO)
+			log_err(_("Blkid scan failed for %s."), header_device);
 		goto out;
+	}
 
 	if (!created && !ARG_SET(OPT_BATCH_MODE_ID)) {
 		r = asprintf(&msg, _("This will overwrite data on %s irrevocably."), header_device);

@@ -222,17 +222,22 @@ int tools_detect_signatures(const char *device, tools_probe_filter_info filter,
 
 	switch (filter) {
 	case PRB_FILTER_LUKS:
+		log_dbg("Blkid check (filter LUKS).");
 		if (blk_superblocks_filter_luks(h)) {
 			r = -EINVAL;
+			log_dbg("Blkid filter LUKS probe failed.");
 			goto out;
 		}
 		/* fall-through */
 	case PRB_FILTER_NONE:
+		log_dbg("Blkid check (filter none).");
 		blk_set_chains_for_full_print(h);
 		break;
 	case PRB_ONLY_LUKS:
+		log_dbg("Blkid check (LUKS only).");
 		blk_set_chains_for_fast_detection(h);
 		if (blk_superblocks_only_luks(h)) {
+			log_dbg("Blkid only LUKS probe failed.");
 			r = -EINVAL;
 			goto out;
 		}
@@ -251,8 +256,11 @@ int tools_detect_signatures(const char *device, tools_probe_filter_info filter,
 		(*count)++;
 	}
 
-	if (pr == PRB_FAIL)
-		r = -EINVAL;
+	if (pr == PRB_FAIL) {
+		/* Expect device cannot be read */
+		r = -EIO;
+		log_dbg("Blkid probe failed.");
+	}
 out:
 	blk_free(h);
 	return r;
@@ -301,6 +309,8 @@ int tools_wipe_all_signatures(const char *path, bool exclusive, bool only_luks)
 		r = -EINVAL;
 		goto out;
 	}
+
+	log_dbg("Blkid wipe.");
 
 	while ((pr = blk_probe(h)) < PRB_EMPTY) {
 		if (blk_is_partition(h))
