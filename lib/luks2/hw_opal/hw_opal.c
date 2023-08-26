@@ -241,7 +241,7 @@ int opal_setup_ranges(struct crypt_device *cd,
 	if (admin_key_len > OPAL_KEY_MAX)
 		return -EINVAL;
 
-	fd = device_open(cd, dev, O_RDWR);
+	fd = device_open(cd, dev, O_RDONLY);
 	if (fd < 0)
 		return -EIO;
 
@@ -507,7 +507,7 @@ static int opal_lock_unlock(struct crypt_device *cd,
 	if (!lock && !vk)
 		return -EINVAL;
 
-	fd = device_open(cd, dev, O_RDWR);
+	fd = device_open(cd, dev, O_RDONLY);
 	if (fd < 0)
 		return -EIO;
 
@@ -587,7 +587,7 @@ int opal_factory_reset(struct crypt_device *cd,
 	if (password_len > OPAL_KEY_MAX)
 		return -EINVAL;
 
-	fd = device_open(cd, dev, O_RDWR);
+	fd = device_open(cd, dev, O_RDONLY);
 	if (fd < 0)
 		return -EIO;
 
@@ -649,7 +649,7 @@ int opal_reset_segment(struct crypt_device *cd,
 	};
 	memcpy(user_session->opal_key.key, password, password_len);
 
-	fd = device_open(cd, dev, O_RDWR);
+	fd = device_open(cd, dev, O_RDONLY);
 	if (fd < 0) {
 		r = -EIO;
 		goto out;
@@ -707,7 +707,7 @@ static int opal_query_status(struct crypt_device *cd, struct device *dev, unsign
 	assert(cd);
 	assert(dev);
 
-	fd = device_open(cd, dev, O_RDWR);
+	fd = device_open(cd, dev, O_RDONLY);
 	if (fd < 0)
 		return -EIO;
 
@@ -738,7 +738,7 @@ int opal_geometry(struct crypt_device *cd,
 	assert(cd);
 	assert(dev);
 
-	fd = device_open(cd, dev, O_RDWR);
+	fd = device_open(cd, dev, O_RDONLY);
 	if (fd < 0)
 		return -EIO;
 
@@ -761,7 +761,7 @@ int opal_range_check_attributes(struct crypt_device *cd,
 	assert(dev);
 	assert(vk);
 
-	fd = device_open(cd, dev, O_RDWR);
+	fd = device_open(cd, dev, O_RDONLY);
 	if (fd < 0)
 		return -EIO;
 
