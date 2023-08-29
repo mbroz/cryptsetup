@@ -549,8 +549,6 @@ int opal_setup_ranges(struct crypt_device *cd,
 	memcpy(new_pw->new_user_pw.opal_key.key, vk->key, vk->keylength);
 	memcpy(new_pw->session.opal_key.key, admin_key, admin_key_len);
 
-	log_dbg(cd, "User authority key length: %zu", vk->keylength);
-
 	r = opal_ioctl(cd, fd, IOC_OPAL_SET_PW, new_pw);
 	if (r != OPAL_STATUS_SUCCESS) {
 		log_dbg(cd, "Failed to set OPAL user password on device '%s': (%d) %s",
