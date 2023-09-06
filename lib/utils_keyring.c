@@ -351,7 +351,7 @@ static int keyring_link_key_to_keyring_key_type(const char *type_name, const cha
 	} while (kid < 0 && errno == EINTR);
 
 	if (kid < 0)
-		return 0;
+		return -errno;
 
 	/* see https://mjg59.dreamwidth.org/37333.html */
 	if (keyring_to_link == KEY_SPEC_USER_KEYRING || keyring_to_link == KEY_SPEC_USER_SESSION_KEYRING)
