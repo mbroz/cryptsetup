@@ -262,10 +262,6 @@ int keyring_read_by_id(const char *key_desc,
 	char *buf = NULL;
 	size_t len = 0;
 
-	do
-		kid = request_key(key_type_name(USER_KEY), key_desc, NULL, 0);
-	while (kid < 0 && errno == EINTR);
-
 	kid = keyring_by_name(key_desc);
 	if (kid < 0)
 		return kid;
