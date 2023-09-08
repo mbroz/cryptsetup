@@ -3873,7 +3873,7 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	r = keyring_get_passphrase(passphrase_description, &passphrase, &passphrase_size);
+	r = keyring_get_user_key(passphrase_description, &passphrase, &passphrase_size);
 	if (r < 0) {
 		log_err(cd, _("Failed to read passphrase from keyring (error %d)."), r);
 		return -EINVAL;

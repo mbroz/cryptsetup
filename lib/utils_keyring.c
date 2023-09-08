@@ -244,14 +244,6 @@ int keyring_add_key_in_user_keyring(key_type_t ktype, const char *key_desc, cons
 	return 0;
 }
 
-/* alias for the same code */
-int keyring_get_key(const char *key_desc,
-		    char **key,
-		    size_t *key_size)
-{
-	return keyring_get_passphrase(key_desc, key, key_size);
-}
-
 int keyring_read_by_id(const char *key_desc,
 		      char **passphrase,
 		      size_t *passphrase_len)
@@ -292,9 +284,9 @@ int keyring_read_by_id(const char *key_desc,
 	return 0;
 }
 
-int keyring_get_passphrase(const char *key_desc,
-		      char **passphrase,
-		      size_t *passphrase_len)
+int keyring_get_user_key(const char *key_desc,
+		    char **key,
+		    size_t *key_size)
 {
 	int err;
 	key_serial_t kid;
@@ -327,8 +319,8 @@ int keyring_get_passphrase(const char *key_desc,
 		return -err;
 	}
 
-	*passphrase = buf;
-	*passphrase_len = len;
+	*key = buf;
+	*key_size = len;
 
 	return 0;
 }
@@ -494,12 +486,7 @@ int keyring_read_by_id(const char *key_desc, char **passphrase, size_t *passphra
 	return -ENOTSUP;
 }
 
-int keyring_get_passphrase(const char *key_desc, char **passphrase, size_t *passphrase_len)
-{
-	return -ENOTSUP;
-}
-
-int keyring_get_key(const char *key_desc, char **key, size_t *key_size)
+int keyring_get_user_key(const char *key_desc, char **key, size_t *key_size)
 {
 	return -ENOTSUP;
 }

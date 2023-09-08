@@ -328,7 +328,7 @@ static int get_passphrase_by_keyring(struct crypt_device *cd,
 	assert(r_passphrase_size);
 
 	if (!kc->i_passphrase) {
-		r = keyring_get_passphrase(kc->u.kr.key_description, &kc->i_passphrase, &kc->i_passphrase_size);
+		r = keyring_get_user_key(kc->u.kr.key_description, &kc->i_passphrase, &kc->i_passphrase_size);
 		if (r < 0) {
 			log_err(cd, _("Failed to read passphrase from keyring."));
 			kc->error = -EINVAL;

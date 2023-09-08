@@ -33,17 +33,13 @@ int32_t keyring_by_name(const char *name);
 
 int keyring_check(void);
 
-int keyring_get_key(const char *key_desc,
+int keyring_get_user_key(const char *key_desc,
 		    char **key,
 		    size_t *key_size);
 
 int keyring_read_by_id(const char *key_desc,
-		      char **passphrase,
-		      size_t *passphrase_len);
-
-int keyring_get_passphrase(const char *key_desc,
-		      char **passphrase,
-		      size_t *passphrase_len);
+		       char **passphrase,
+		       size_t *passphrase_len);
 
 int keyring_add_key_in_thread_keyring(
 	key_type_t ktype,

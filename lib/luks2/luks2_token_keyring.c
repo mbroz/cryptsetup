@@ -40,12 +40,12 @@ int keyring_open(struct crypt_device *cd,
 
 	json_object_object_get_ex(jobj_token, "key_description", &jobj_key);
 
-	r = keyring_get_passphrase(json_object_get_string(jobj_key), buffer, buffer_len);
+	r = keyring_get_user_key(json_object_get_string(jobj_key), buffer, buffer_len);
 	if (r == -ENOTSUP) {
 		log_dbg(cd, "Kernel keyring features disabled.");
 		return -ENOENT;
 	} else if (r < 0) {
-		log_dbg(cd, "keyring_get_passphrase failed (error %d)", r);
+		log_dbg(cd, "keyring_get_user_key failed (error %d)", r);
 		return -EPERM;
 	}
 
