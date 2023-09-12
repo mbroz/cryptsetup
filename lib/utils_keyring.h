@@ -29,7 +29,7 @@ typedef enum { LOGON_KEY = 0, USER_KEY, BIG_KEY, TRUSTED_KEY, ENCRYPTED_KEY, INV
 
 const char *key_type_name(key_type_t ktype);
 key_type_t key_type_by_name(const char *name);
-int32_t keyring_by_name(const char *name);
+int32_t keyring_find_key_id_by_name(const char *key_name);
 
 int keyring_check(void);
 
@@ -37,9 +37,9 @@ int keyring_get_user_key(const char *key_desc,
 		    char **key,
 		    size_t *key_size);
 
-int keyring_read_by_id(const char *key_desc,
-		       char **passphrase,
-		       size_t *passphrase_len);
+int keyring_find_and_get_key_by_name(const char *key_name,
+		      char **key,
+		      size_t *key_size);
 
 int keyring_add_key_in_thread_keyring(
 	key_type_t ktype,

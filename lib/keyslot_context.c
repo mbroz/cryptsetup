@@ -416,7 +416,7 @@ static int get_key_by_vk_in_keyring(struct crypt_device *cd,
 	assert(kc && kc->type == CRYPT_KC_TYPE_VK_KEYRING);
 	assert(r_vk);
 
-	r = keyring_read_by_id(kc->u.vk_kr.key_description, &kc->i_volume_key, &kc->i_volume_key_size);
+	r = keyring_find_and_get_key_by_name(kc->u.vk_kr.key_description, &kc->i_volume_key, &kc->i_volume_key_size);
 	if (r < 0) {
 		log_err(cd, _("Failed to read volume key from keyring."));
 		kc->error = -EINVAL;

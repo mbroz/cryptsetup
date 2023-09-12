@@ -244,9 +244,9 @@ int keyring_add_key_in_user_keyring(key_type_t ktype, const char *key_desc, cons
 	return 0;
 }
 
-int keyring_read_by_id(const char *key_desc,
-		      char **passphrase,
-		      size_t *passphrase_len)
+int keyring_find_and_get_key_by_name(const char *key_name,
+		      char **key,
+		      size_t *key_size)
 {
 	int err;
 	key_serial_t kid;
@@ -254,7 +254,7 @@ int keyring_read_by_id(const char *key_desc,
 	char *buf = NULL;
 	size_t len = 0;
 
-	kid = keyring_by_name(key_desc);
+	kid = keyring_find_key_id_by_name(key_name);
 	if (kid < 0)
 		return kid;
 	else if (kid == 0)
@@ -278,8 +278,8 @@ int keyring_read_by_id(const char *key_desc,
 		return -err;
 	}
 
-	*passphrase = buf;
-	*passphrase_len = len;
+	*key = buf;
+	*key_size = len;
 
 	return 0;
 }
@@ -382,26 +382,26 @@ const char *key_type_name(key_type_t type)
 	return NULL;
 }
 
-int32_t keyring_by_name(const char *name)
+int32_t keyring_find_key_id_by_name(const char *key_name)
 {
 	int32_t id = 0;
 	char *end;
 	char *name_copy, *name_copy_p;
 
-	if (name[0] == '@') {
-		if (strcmp(name, "@t" ) == 0) return KEY_SPEC_THREAD_KEYRING;
-		if (strcmp(name, "@p" ) == 0) return KEY_SPEC_PROCESS_KEYRING;
-		if (strcmp(name, "@s" ) == 0) return KEY_SPEC_SESSION_KEYRING;
-		if (strcmp(name, "@u" ) == 0) return KEY_SPEC_USER_KEYRING;
-		if (strcmp(name, "@us") == 0) return KEY_SPEC_USER_SESSION_KEYRING;
-		if (strcmp(name, "@g" ) == 0) return KEY_SPEC_GROUP_KEYRING;
-		if (strcmp(name, "@a" ) == 0) return KEY_SPEC_REQKEY_AUTH_KEY;
+	if (key_name[0] == '@') {
+		if (strcmp(key_name, "@t" ) == 0) return KEY_SPEC_THREAD_KEYRING;
+		if (strcmp(key_name, "@p" ) == 0) return KEY_SPEC_PROCESS_KEYRING;
+		if (strcmp(key_name, "@s" ) == 0) return KEY_SPEC_SESSION_KEYRING;
+		if (strcmp(key_name, "@u" ) == 0) return KEY_SPEC_USER_KEYRING;
+		if (strcmp(key_name, "@us") == 0) return KEY_SPEC_USER_SESSION_KEYRING;
+		if (strcmp(key_name, "@g" ) == 0) return KEY_SPEC_GROUP_KEYRING;
+		if (strcmp(key_name, "@a" ) == 0) return KEY_SPEC_REQKEY_AUTH_KEY;
 
 		return 0;
 	}
 
 	/* handle a lookup-by-name request "%<type>:<desc>", eg: "%keyring:_ses" */
-	name_copy = strdup(name);
+	name_copy = strdup(key_name);
 	if (!name_copy)
 		goto out;
 	name_copy_p = name_copy;
@@ -431,7 +431,7 @@ int32_t keyring_by_name(const char *name)
 		goto out;
 	}
 
-	id = strtoul(name, &end, 0);
+	id = strtoul(key_name, &end, 0);
 	if (*end)
 		id = 0;
 
@@ -496,7 +496,7 @@ const char *key_type_name(key_type_t type)
 	return NULL;
 }
 
-int32_t keyring_by_name(const char *name)
+int32_t keyring_find_key_id_by_name(const char *key_name)
 {
 	return 0;
 }
