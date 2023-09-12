@@ -29,7 +29,7 @@ ARG(OPT_BUFFER_SECTORS, '\0', POPT_ARG_STRING, N_("Buffers size"), N_("SECTORS")
 
 ARG(OPT_BITMAP_FLUSH_TIME, '\0', POPT_ARG_STRING, N_("Bitmap mode flush time"), N_("ms"), CRYPT_ARG_UINT32, {}, {})
 
-ARG(OPT_BITMAP_SECTORS_PER_BIT, '\0', POPT_ARG_STRING, N_("Number of 512-byte sectors per bit (bitmap mode)."), "INT", CRYPT_ARG_UINT32, {}, {})
+ARG(OPT_BITMAP_SECTORS_PER_BIT, '\0', POPT_ARG_STRING, N_("Number of 512-byte sectors per bit (bitmap mode)"), "INT", CRYPT_ARG_UINT32, {}, {})
 
 ARG(OPT_CANCEL_DEFERRED, '\0', POPT_ARG_NONE, N_("Cancel a previously set deferred device removal"), NULL, CRYPT_ARG_BOOL, {}, OPT_DEFERRED_ACTIONS)
 
@@ -85,9 +85,9 @@ ARG(OPT_PROGRESS_JSON, '\0', POPT_ARG_NONE, N_("Print wipe progress data in json
 
 ARG(OPT_INTEGRITY_BITMAP_MODE, 'B', POPT_ARG_NONE, N_("Use bitmap to track changes and disable journal for integrity device"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_INTEGRITY_RECALCULATE, '\0', POPT_ARG_NONE, N_("Recalculate initial tags automatically."), NULL, CRYPT_ARG_BOOL, {}, OPT_INTEGRITY_RECALCULATE_ACTIONS)
+ARG(OPT_INTEGRITY_RECALCULATE, '\0', POPT_ARG_NONE, N_("Recalculate initial tags automatically"), NULL, CRYPT_ARG_BOOL, {}, OPT_INTEGRITY_RECALCULATE_ACTIONS)
 
-ARG(OPT_INTEGRITY_RECALCULATE_RESET, '\0', POPT_ARG_NONE, N_("Reset automatic recalculate position."), NULL, CRYPT_ARG_BOOL, {}, OPT_INTEGRITY_RECALCULATE_ACTIONS)
+ARG(OPT_INTEGRITY_RECALCULATE_RESET, '\0', POPT_ARG_NONE, N_("Reset automatic recalculate position"), NULL, CRYPT_ARG_BOOL, {}, OPT_INTEGRITY_RECALCULATE_ACTIONS)
 
 ARG(OPT_INTEGRITY_RECOVERY_MODE, 'R', POPT_ARG_NONE, N_("Recovery mode (no journal, no tag checking)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
@@ -97,6 +97,6 @@ ARG(OPT_TAG_SIZE, 't', POPT_ARG_STRING, N_("Tag size (per-sector)"), N_("bytes")
 
 ARG(OPT_VERBOSE, 'v', POPT_ARG_NONE, N_("Shows more detailed error messages"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_DEVICE_SIZE, '\0', POPT_ARG_STRING, N_("Use only specified device size (ignore rest of device). DANGEROUS!"), N_("bytes"), CRYPT_ARG_UINT64, {}, OPT_DEVICE_SIZE_ACTIONS)
+ARG(OPT_DEVICE_SIZE, '\0', POPT_ARG_STRING, N_("Use only specified device size (ignore rest of device), DANGEROUS!"), N_("bytes"), CRYPT_ARG_UINT64, {}, OPT_DEVICE_SIZE_ACTIONS)
 
 ARG(OPT_SIZE, 'b', POPT_ARG_STRING, N_("The size of the device"), N_("SECTORS"), CRYPT_ARG_UINT64, {}, OPT_SIZE_ACTIONS)

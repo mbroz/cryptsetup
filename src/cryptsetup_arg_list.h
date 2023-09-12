@@ -39,9 +39,9 @@ ARG(OPT_DEBUG_JSON, '\0', POPT_ARG_NONE, N_("Show debug messages including JSON 
 
 ARG(OPT_DEFERRED, '\0', POPT_ARG_NONE, N_("Device removal is deferred until the last user closes it"), NULL, CRYPT_ARG_BOOL, {}, OPT_DEFERRED_ACTIONS)
 
-ARG(OPT_DEVICE_SIZE, '\0', POPT_ARG_STRING, N_("Use only specified device size (ignore rest of device). DANGEROUS!"), N_("bytes"), CRYPT_ARG_UINT64, {}, OPT_DEVICE_SIZE_ACTIONS)
+ARG(OPT_DEVICE_SIZE, '\0', POPT_ARG_STRING, N_("Use only specified device size (ignore rest of device), DANGEROUS!"), N_("bytes"), CRYPT_ARG_UINT64, {}, OPT_DEVICE_SIZE_ACTIONS)
 
-ARG(OPT_DECRYPT, '\0', POPT_ARG_NONE, N_("Decrypt LUKS2 device (remove encryption)."), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_DECRYPT, '\0', POPT_ARG_NONE, N_("Decrypt LUKS2 device (remove encryption)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_DISABLE_BLKID, '\0', POPT_ARG_NONE, N_("Disable blkid on-disk signature detection and wiping"), NULL, CRYPT_ARG_BOOL, {}, OPT_DISABLE_BLKID_ACTIONS)
 
@@ -57,11 +57,11 @@ ARG(OPT_DUMP_JSON, '\0', POPT_ARG_NONE, N_("Dump info in JSON format (LUKS2 only
 
 ARG(OPT_DUMP_VOLUME_KEY, '\0', POPT_ARG_NONE, N_("Dump volume key instead of keyslots info"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_ENCRYPT, '\0', POPT_ARG_NONE, N_("Encrypt LUKS2 device (in-place encryption)."), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_ENCRYPT, '\0', POPT_ARG_NONE, N_("Encrypt LUKS2 device (in-place encryption)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_FORCE_PASSWORD, '\0', POPT_ARG_NONE, N_("Disable password quality check (if enabled)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_FORCE_OFFLINE_REENCRYPT, '\0', POPT_ARG_NONE, N_("Force offline LUKS2 reencryption and bypass active device detection."), NULL, CRYPT_ARG_BOOL, {}, OPT_FORCE_OFFLINE_REENCRYPT_ACTIONS)
+ARG(OPT_FORCE_OFFLINE_REENCRYPT, '\0', POPT_ARG_NONE, N_("Force offline LUKS2 reencryption and bypass active device detection"), NULL, CRYPT_ARG_BOOL, {}, OPT_FORCE_OFFLINE_REENCRYPT_ACTIONS)
 
 ARG(OPT_HASH, 'h', POPT_ARG_STRING, N_("The hash used to create the encryption key from the passphrase"), NULL, CRYPT_ARG_STRING, {}, {})
 
@@ -69,15 +69,15 @@ ARG(OPT_HEADER, '\0', POPT_ARG_STRING, N_("Device or file with separated LUKS he
 
 ARG(OPT_HEADER_BACKUP_FILE, '\0', POPT_ARG_STRING, N_("File with LUKS header and keyslots backup"), NULL, CRYPT_ARG_STRING, {}, {})
 
-ARG(OPT_HOTZONE_SIZE, '\0', POPT_ARG_STRING, N_("Maximal reencryption hotzone size."), N_("bytes"), CRYPT_ARG_UINT64, {}, OPT_HOTZONE_SIZE_ACTIONS)
+ARG(OPT_HOTZONE_SIZE, '\0', POPT_ARG_STRING, N_("Maximal reencryption hotzone size"), N_("bytes"), CRYPT_ARG_UINT64, {}, OPT_HOTZONE_SIZE_ACTIONS)
 
-ARG(OPT_HW_OPAL, '\0', POPT_ARG_NONE, N_("Use HW OPAL encryption together with SW encryption."), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_HW_OPAL, '\0', POPT_ARG_NONE, N_("Use HW OPAL encryption together with SW encryption"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_HW_OPAL_ONLY, '\0', POPT_ARG_NONE, N_("Use only HW OPAL encryption."), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_HW_OPAL_ONLY, '\0', POPT_ARG_NONE, N_("Use only HW OPAL encryption"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_HW_OPAL_FACTORY_RESET, '\0', POPT_ARG_NONE, N_("Wipe WHOLE OPAL disk on luksErase."), NULL, CRYPT_ARG_BOOL, {}, OPT_ERASE_ACTIONS)
+ARG(OPT_HW_OPAL_FACTORY_RESET, '\0', POPT_ARG_NONE, N_("Wipe WHOLE OPAL disk on luksErase"), NULL, CRYPT_ARG_BOOL, {}, OPT_ERASE_ACTIONS)
 
-ARG(OPT_INIT_ONLY, '\0', POPT_ARG_NONE, N_("Initialize LUKS2 reencryption in metadata only."), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_INIT_ONLY, '\0', POPT_ARG_NONE, N_("Initialize LUKS2 reencryption in metadata only"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_INTEGRITY, 'I', POPT_ARG_STRING, N_("Data integrity algorithm (LUKS2 only)"), NULL, CRYPT_ARG_STRING, {}, OPT_INTEGRITY_ACTIONS)
 
@@ -93,7 +93,7 @@ ARG(OPT_IV_LARGE_SECTORS, '\0', POPT_ARG_NONE, N_("Use IV counted in sector size
 
 ARG(OPT_JSON_FILE, '\0', POPT_ARG_STRING, N_("Read or write the json from or to a file"), NULL, CRYPT_ARG_STRING, {}, {})
 
-ARG(OPT_KEEP_KEY, '\0', POPT_ARG_NONE, N_("Do not change volume key."), NULL, CRYPT_ARG_BOOL, {}, OPT_KEEP_KEY_ACTIONS)
+ARG(OPT_KEEP_KEY, '\0', POPT_ARG_NONE, N_("Do not change volume key"), NULL, CRYPT_ARG_BOOL, {}, OPT_KEEP_KEY_ACTIONS)
 
 ARG(OPT_KEY_DESCRIPTION, '\0', POPT_ARG_STRING, N_("Key description"), NULL, CRYPT_ARG_STRING, {}, {})
 
@@ -119,9 +119,9 @@ ARG(OPT_LUKS2_KEYSLOTS_SIZE, '\0', POPT_ARG_STRING, N_("LUKS2 header keyslots ar
 
 ARG(OPT_LUKS2_METADATA_SIZE, '\0', POPT_ARG_STRING, N_("LUKS2 header metadata area size"), N_("bytes"), CRYPT_ARG_UINT64, {}, OPT_LUKS2_METADATA_SIZE_ACTIONS)
 
-ARG(OPT_VOLUME_KEY_FILE, '\0', POPT_ARG_STRING, N_("Use the volume key from file."), NULL, CRYPT_ARG_STRING, {}, {})
+ARG(OPT_VOLUME_KEY_FILE, '\0', POPT_ARG_STRING, N_("Use the volume key from file"), NULL, CRYPT_ARG_STRING, {}, {})
 
-ARG(OPT_VOLUME_KEY_KEYRING, '\0', POPT_ARG_STRING, N_("Use the specified keyring key as a volume key."), NULL, CRYPT_ARG_STRING, {}, {})
+ARG(OPT_VOLUME_KEY_KEYRING, '\0', POPT_ARG_STRING, N_("Use the specified keyring key as a volume key"), NULL, CRYPT_ARG_STRING, {}, {})
 
 ARG(OPT_VOLUME_KEY_TYPE, '\0', POPT_ARG_STRING, N_("Specify the type of the volume key stored in keyring"), NULL, CRYPT_ARG_STRING, {}, {})
 
@@ -163,7 +163,7 @@ ARG(OPT_PROGRESS_FREQUENCY, '\0', POPT_ARG_STRING, N_("Progress line update (in 
 
 ARG(OPT_READONLY, 'r', POPT_ARG_NONE, N_("Create a readonly mapping"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_REDUCE_DEVICE_SIZE, '\0', POPT_ARG_STRING, N_("Reduce data device size (move data offset). DANGEROUS!"), N_("bytes"), CRYPT_ARG_UINT64, {}, {})
+ARG(OPT_REDUCE_DEVICE_SIZE, '\0', POPT_ARG_STRING, N_("Reduce data device size (move data offset), DANGEROUS!"), N_("bytes"), CRYPT_ARG_UINT64, {}, {})
 
 ARG(OPT_REFRESH, '\0', POPT_ARG_NONE, N_("Refresh (reactivate) device with new parameters"), NULL, CRYPT_ARG_BOOL, {}, OPT_REFRESH_ACTIONS)
 
@@ -171,7 +171,7 @@ ARG(OPT_RESILIENCE, '\0', POPT_ARG_STRING, N_("Reencryption hotzone resilience t
 
 ARG(OPT_RESILIENCE_HASH, '\0', POPT_ARG_STRING, N_("Reencryption hotzone checksums hash"), NULL, CRYPT_ARG_STRING, {}, {})
 
-ARG(OPT_RESUME_ONLY, '\0', POPT_ARG_NONE, N_("Resume initialized LUKS2 reencryption only."), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_RESUME_ONLY, '\0', POPT_ARG_NONE, N_("Resume initialized LUKS2 reencryption only"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_SECTOR_SIZE, '\0', POPT_ARG_STRING, N_("Encryption sector size (default: 512 bytes)"), "INT", CRYPT_ARG_UINT32, {}, OPT_SECTOR_SIZE_ACTIONS)
 
