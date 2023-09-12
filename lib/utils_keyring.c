@@ -388,6 +388,8 @@ int32_t keyring_find_key_id_by_name(const char *key_name)
 	char *end;
 	char *name_copy, *name_copy_p;
 
+	assert(key_name);
+
 	if (key_name[0] == '@') {
 		if (strcmp(key_name, "@t" ) == 0) return KEY_SPEC_THREAD_KEYRING;
 		if (strcmp(key_name, "@p" ) == 0) return KEY_SPEC_PROCESS_KEYRING;
@@ -440,6 +442,18 @@ out:
 		free(name_copy);
 
 	return id;
+}
+
+int32_t keyring_find_keyring_id_by_name(const char *keyring_name)
+{
+	assert(keyring_name);
+
+	/* "%:" is abbreviation for the type keyring */
+	if ((keyring_name[0] == '@' && keyring_name[1] != 'a') ||
+	    strstr(keyring_name, "%:") || strstr(keyring_name, "%keyring:"))
+		return keyring_find_key_id_by_name(keyring_name);
+
+	return 0;
 }
 
 key_type_t key_type_by_name(const char *name)
@@ -497,6 +511,11 @@ const char *key_type_name(key_type_t type)
 }
 
 int32_t keyring_find_key_id_by_name(const char *key_name)
+{
+	return 0;
+}
+
+int32_t keyring_find_keyring_id_by_name(const char *keyring_name)
 {
 	return 0;
 }

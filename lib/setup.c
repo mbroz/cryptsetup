@@ -7258,9 +7258,9 @@ int crypt_set_keyring_to_link(struct crypt_device *cd, const char *keyring_to_li
 		return -EINVAL;
 
 	if (keyring_to_link_vk) {
-		id = keyring_by_name(keyring_to_link_vk);
+		id = keyring_find_keyring_id_by_name(keyring_to_link_vk);
 		if (id == 0) {
-			log_err(cd, _("Invalid keyring format \"%s\"."), keyring_to_link_vk);
+			log_err(cd, _("Could not find keyring described by \"%s\"."), keyring_to_link_vk);
 			return -EINVAL;
 		}
 	}
