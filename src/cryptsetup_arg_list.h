@@ -37,11 +37,11 @@ ARG(OPT_DEBUG, '\0', POPT_ARG_NONE, N_("Show debug messages"), NULL, CRYPT_ARG_B
 
 ARG(OPT_DEBUG_JSON, '\0', POPT_ARG_NONE, N_("Show debug messages including JSON metadata"), NULL, CRYPT_ARG_BOOL, {}, {})
 
+ARG(OPT_DECRYPT, '\0', POPT_ARG_NONE, N_("Decrypt LUKS2 device (remove encryption)"), NULL, CRYPT_ARG_BOOL, {}, {})
+
 ARG(OPT_DEFERRED, '\0', POPT_ARG_NONE, N_("Device removal is deferred until the last user closes it"), NULL, CRYPT_ARG_BOOL, {}, OPT_DEFERRED_ACTIONS)
 
 ARG(OPT_DEVICE_SIZE, '\0', POPT_ARG_STRING, N_("Use only specified device size (ignore rest of device), DANGEROUS!"), N_("bytes"), CRYPT_ARG_UINT64, {}, OPT_DEVICE_SIZE_ACTIONS)
-
-ARG(OPT_DECRYPT, '\0', POPT_ARG_NONE, N_("Decrypt LUKS2 device (remove encryption)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_DISABLE_BLKID, '\0', POPT_ARG_NONE, N_("Disable blkid on-disk signature detection and wiping"), NULL, CRYPT_ARG_BOOL, {}, OPT_DISABLE_BLKID_ACTIONS)
 
@@ -73,9 +73,9 @@ ARG(OPT_HOTZONE_SIZE, '\0', POPT_ARG_STRING, N_("Maximal reencryption hotzone si
 
 ARG(OPT_HW_OPAL, '\0', POPT_ARG_NONE, N_("Use HW OPAL encryption together with SW encryption"), NULL, CRYPT_ARG_BOOL, {}, {})
 
-ARG(OPT_HW_OPAL_ONLY, '\0', POPT_ARG_NONE, N_("Use only HW OPAL encryption"), NULL, CRYPT_ARG_BOOL, {}, {})
-
 ARG(OPT_HW_OPAL_FACTORY_RESET, '\0', POPT_ARG_NONE, N_("Wipe WHOLE OPAL disk on luksErase"), NULL, CRYPT_ARG_BOOL, {}, OPT_ERASE_ACTIONS)
+
+ARG(OPT_HW_OPAL_ONLY, '\0', POPT_ARG_NONE, N_("Use only HW OPAL encryption"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_INIT_ONLY, '\0', POPT_ARG_NONE, N_("Initialize LUKS2 reencryption in metadata only"), NULL, CRYPT_ARG_BOOL, {}, {})
 
@@ -119,19 +119,13 @@ ARG(OPT_LUKS2_KEYSLOTS_SIZE, '\0', POPT_ARG_STRING, N_("LUKS2 header keyslots ar
 
 ARG(OPT_LUKS2_METADATA_SIZE, '\0', POPT_ARG_STRING, N_("LUKS2 header metadata area size"), N_("bytes"), CRYPT_ARG_UINT64, {}, OPT_LUKS2_METADATA_SIZE_ACTIONS)
 
-ARG(OPT_VOLUME_KEY_FILE, '\0', POPT_ARG_STRING, N_("Use the volume key from file"), NULL, CRYPT_ARG_STRING, {}, {})
-
-ARG(OPT_VOLUME_KEY_KEYRING, '\0', POPT_ARG_STRING, N_("Use the specified keyring key as a volume key"), NULL, CRYPT_ARG_STRING, {}, {})
-
-ARG(OPT_VOLUME_KEY_TYPE, '\0', POPT_ARG_STRING, N_("Specify the type of the volume key stored in keyring"), NULL, CRYPT_ARG_STRING, {}, {})
-
 ARG(OPT_NEW_KEYFILE, '\0', POPT_ARG_STRING, N_("Read the key for a new slot from a file"), NULL, CRYPT_ARG_STRING, {}, OPT_NEW_KEYFILE_ACTIONS)
-
-ARG(OPT_NEW_KEY_SLOT, '\0', POPT_ARG_STRING, N_("Slot number for new key (default is first free)"), "INT", CRYPT_ARG_INT32, { .i32_value = CRYPT_ANY_SLOT }, OPT_NEW_KEY_SLOT_ACTIONS)
 
 ARG(OPT_NEW_KEYFILE_OFFSET , '\0', POPT_ARG_STRING, N_("Number of bytes to skip in newly added keyfile"), N_("bytes"), CRYPT_ARG_UINT64, {}, {})
 
 ARG(OPT_NEW_KEYFILE_SIZE, '\0', POPT_ARG_STRING, N_("Limits the read from newly added keyfile"), N_("bytes"), CRYPT_ARG_UINT32, {}, {})
+
+ARG(OPT_NEW_KEY_SLOT, '\0', POPT_ARG_STRING, N_("Slot number for new key (default is first free)"), "INT", CRYPT_ARG_INT32, { .i32_value = CRYPT_ANY_SLOT }, OPT_NEW_KEY_SLOT_ACTIONS)
 
 ARG(OPT_NEW_TOKEN_ID, '\0', POPT_ARG_STRING, N_("Token number (default: any)"), "INT", CRYPT_ARG_INT32, { .i32_value = CRYPT_ANY_TOKEN }, OPT_NEW_TOKEN_ID_ACTIONS)
 
@@ -185,12 +179,6 @@ ARG(OPT_SKIP, 'p', POPT_ARG_STRING, N_("How many sectors of the encrypted data t
 
 ARG(OPT_SUBSYSTEM, '\0', POPT_ARG_STRING, N_("Set subsystem label for the LUKS2 device"), NULL, CRYPT_ARG_STRING, {}, OPT_SUBSYSTEM_ACTIONS)
 
-ARG(OPT_TCRYPT_BACKUP, '\0', POPT_ARG_NONE, N_("Use backup (secondary) TCRYPT header"), NULL, CRYPT_ARG_BOOL, {}, OPT_TCRYPT_BACKUP_ACTIONS)
-
-ARG(OPT_TCRYPT_HIDDEN, '\0', POPT_ARG_NONE, N_("Use hidden header (hidden TCRYPT device)"), NULL, CRYPT_ARG_BOOL, {}, OPT_TCRYPT_HIDDEN_ACTIONS)
-
-ARG(OPT_TCRYPT_SYSTEM, '\0', POPT_ARG_NONE, N_("Device is system TCRYPT drive (with bootloader)"), NULL, CRYPT_ARG_BOOL, {}, OPT_TCRYPT_SYSTEM_ACTIONS)
-
 ARG(OPT_TEST_ARGS, '\0', POPT_ARG_NONE, N_("Do not run action, just validate all command line parameters"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_TEST_PASSPHRASE, '\0', POPT_ARG_NONE, N_("Do not activate device, just check passphrase"), NULL, CRYPT_ARG_BOOL, {}, OPT_TEST_PASSPHRASE_ACTIONS)
@@ -204,6 +192,12 @@ ARG(OPT_TOKEN_ONLY, '\0', POPT_ARG_NONE, N_("Do not ask for passphrase if activa
 ARG(OPT_TOKEN_REPLACE, '\0', POPT_ARG_NONE, N_("Replace the current token"), NULL, CRYPT_ARG_BOOL, {}, OPT_TOKEN_REPLACE_ACTIONS)
 
 ARG(OPT_TOKEN_TYPE, '\0', POPT_ARG_STRING, N_("Restrict allowed token types used to retrieve LUKS2 key"), NULL, CRYPT_ARG_STRING, {}, {})
+
+ARG(OPT_TCRYPT_BACKUP, '\0', POPT_ARG_NONE, N_("Use backup (secondary) TCRYPT header"), NULL, CRYPT_ARG_BOOL, {}, OPT_TCRYPT_BACKUP_ACTIONS)
+
+ARG(OPT_TCRYPT_HIDDEN, '\0', POPT_ARG_NONE, N_("Use hidden header (hidden TCRYPT device)"), NULL, CRYPT_ARG_BOOL, {}, OPT_TCRYPT_HIDDEN_ACTIONS)
+
+ARG(OPT_TCRYPT_SYSTEM, '\0', POPT_ARG_NONE, N_("Device is system TCRYPT drive (with bootloader)"), NULL, CRYPT_ARG_BOOL, {}, OPT_TCRYPT_SYSTEM_ACTIONS)
 
 ARG(OPT_TRIES, 'T', POPT_ARG_STRING, N_("How often the input of the passphrase can be retried"), "INT", CRYPT_ARG_UINT32, { .u32_value = 3 }, {})
 
@@ -226,6 +220,12 @@ ARG(OPT_VERACRYPT_QUERY_PIM, '\0', POPT_ARG_NONE, N_("Query Personal Iteration M
 ARG(OPT_VERBOSE, 'v', POPT_ARG_NONE, N_("Shows more detailed error messages"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_VERIFY_PASSPHRASE, 'y', POPT_ARG_NONE, N_("Verifies the passphrase by asking for it twice"), NULL, CRYPT_ARG_BOOL, {}, {})
+
+ARG(OPT_VOLUME_KEY_FILE, '\0', POPT_ARG_STRING, N_("Use the volume key from file"), NULL, CRYPT_ARG_STRING, {}, {})
+
+ARG(OPT_VOLUME_KEY_KEYRING, '\0', POPT_ARG_STRING, N_("Use the specified keyring key as a volume key"), NULL, CRYPT_ARG_STRING, {}, {})
+
+ARG(OPT_VOLUME_KEY_TYPE, '\0', POPT_ARG_STRING, N_("Specify the type of the volume key stored in keyring"), NULL, CRYPT_ARG_STRING, {}, {})
 
 /* added for reencryption */
 
