@@ -775,6 +775,11 @@ Removes a previously configured deferred device removal in _close_
 command.
 endif::[]
 
+ifdef::ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
+*--disable-blkid*::
+Disable use of blkid library for checking and wiping on-disk signatures.
+endif::[]
+
 ifdef::ACTION_OPEN,ACTION_LUKSRESUME,ACTION_RESIZE,ACTION_TOKEN[]
 *--disable-external-tokens*::
 Disable loading of plugins for external LUKS2 tokens.

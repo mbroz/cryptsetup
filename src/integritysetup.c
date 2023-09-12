@@ -190,16 +190,18 @@ static int action_format(void)
 			goto out;
 	}
 
-	r = tools_detect_signatures(action_argv[0], PRB_FILTER_NONE, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
-	if (r < 0) {
-		if (r == -EIO)
-			log_err(_("Blkid scan failed for %s."), action_argv[0]);
-		goto out;
-	}
+	if (!ARG_SET(OPT_DISABLE_BLKID_ID)) {
+		r = tools_detect_signatures(action_argv[0], PRB_FILTER_NONE, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
+		if (r < 0) {
+			if (r == -EIO)
+				log_err(_("Blkid scan failed for %s."), action_argv[0]);
+			goto out;
+		}
 
-	/* Signature candidates found */
-	if (signatures && ((r = tools_wipe_all_signatures(action_argv[0], true, false)) < 0))
-		goto out;
+		/* Signature candidates found */
+		if (signatures && ((r = tools_wipe_all_signatures(action_argv[0], true, false)) < 0))
+			goto out;
+	}
 
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_PADDING_ID))
 		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING);

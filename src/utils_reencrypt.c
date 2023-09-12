@@ -1328,6 +1328,9 @@ static int check_broken_luks_signature(const char *device)
 	int r;
 	size_t count;
 
+	if (ARG_SET(OPT_DISABLE_BLKID_ID))
+		return 0;
+
 	r = tools_detect_signatures(device, PRB_ONLY_LUKS, &count, ARG_SET(OPT_BATCH_MODE_ID));
 	if (r < 0) {
 		if (r == -EIO)

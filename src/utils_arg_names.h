@@ -41,6 +41,7 @@
 #define OPT_DEFERRED			"deferred"
 #define OPT_DEVICE_SIZE			"device-size"
 #define OPT_DECRYPT			"decrypt"
+#define OPT_DISABLE_BLKID		"disable-blkid"
 #define OPT_DISABLE_EXTERNAL_TOKENS	"disable-external-tokens"
 #define OPT_DISABLE_KEYRING		"disable-keyring"
 #define OPT_DISABLE_LOCKS		"disable-locks"

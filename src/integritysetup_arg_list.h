@@ -35,6 +35,8 @@ ARG(OPT_CANCEL_DEFERRED, '\0', POPT_ARG_NONE, N_("Cancel a previously set deferr
 
 ARG(OPT_DATA_DEVICE, '\0', POPT_ARG_STRING, N_("Path to data device (if separated)"), N_("path"), CRYPT_ARG_STRING, {}, {})
 
+ARG(OPT_DISABLE_BLKID, '\0', POPT_ARG_NONE, N_("Disable blkid on-disk signature detection and wiping"), NULL, CRYPT_ARG_BOOL, {}, OPT_DISABLE_BLKID_ACTIONS)
+
 ARG(OPT_DEBUG, '\0', POPT_ARG_NONE, N_("Show debug messages"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_DEFERRED, '\0', POPT_ARG_NONE, N_("Device removal is deferred until the last user closes it"), NULL, CRYPT_ARG_BOOL, {}, OPT_DEFERRED_ACTIONS)

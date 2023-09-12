@@ -204,7 +204,7 @@ static int action_open_plain(void)
 			goto out;
 
 		/* Skip blkid scan when activating plain device with offset */
-		if (!ARG_UINT64(OPT_OFFSET_ID)) {
+		if (!ARG_UINT64(OPT_OFFSET_ID) && !ARG_SET(OPT_DISABLE_BLKID_ID)) {
 			/* Print all present signatures in read-only mode */
 			r = tools_detect_signatures(action_argv[0], PRB_FILTER_NONE, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
 			if (r < 0) {
@@ -1305,11 +1305,13 @@ static int action_luksRepair(void)
 		goto out;
 	}
 
-	r = tools_detect_signatures(action_argv[0], PRB_FILTER_LUKS, NULL, ARG_SET(OPT_BATCH_MODE_ID));
-	if (r < 0) {
-		if (r == -EIO)
-			log_err(_("Blkid scan failed for %s."), action_argv[0]);
-		goto out;
+	if (!ARG_SET(OPT_DISABLE_BLKID_ID)) {
+		r = tools_detect_signatures(action_argv[0], PRB_FILTER_LUKS, NULL, ARG_SET(OPT_BATCH_MODE_ID));
+		if (r < 0) {
+			if (r == -EIO)
+				log_err(_("Blkid scan failed for %s."), action_argv[0]);
+			goto out;
+		}
 	}
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID) &&
@@ -1384,7 +1386,7 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	const char *header_device, *type;
 	char *msg = NULL, *key = NULL, *password = NULL;
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN], integrity[MAX_CIPHER_LEN];
-	size_t passwordLen, signatures;
+	size_t passwordLen, signatures = 0;
 	struct crypt_device *cd = NULL;
 	struct crypt_params_luks1 params1 = {
 		.hash = ARG_STR(OPT_HASH_ID) ?: DEFAULT_LUKS1_HASH,
@@ -1495,11 +1497,13 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	}
 
 	/* Print all present signatures in read-only mode */
-	r = tools_detect_signatures(header_device, PRB_FILTER_NONE, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
-	if (r < 0) {
-		if (r == -EIO)
-			log_err(_("Blkid scan failed for %s."), header_device);
-		goto out;
+	if (!ARG_SET(OPT_DISABLE_BLKID_ID)) {
+		r = tools_detect_signatures(header_device, PRB_FILTER_NONE, &signatures, ARG_SET(OPT_BATCH_MODE_ID));
+		if (r < 0) {
+			if (r == -EIO)
+				log_err(_("Blkid scan failed for %s."), header_device);
+			goto out;
+		}
 	}
 
 	if (!created && !ARG_SET(OPT_BATCH_MODE_ID)) {
@@ -1559,7 +1563,8 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	}
 
 	/* Signature candidates found */
-	if (signatures && ((r = tools_wipe_all_signatures(header_device, true, false)) < 0))
+	if (!ARG_SET(OPT_DISABLE_BLKID_ID) && signatures &&
+	    ((r = tools_wipe_all_signatures(header_device, true, false)) < 0))
 		goto out;
 
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_PADDING_ID))
