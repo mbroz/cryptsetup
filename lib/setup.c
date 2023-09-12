@@ -4717,8 +4717,8 @@ static int _open_and_activate(struct crypt_device *cd,
 			       (flags & CRYPT_ACTIVATE_KEYRING_KEY));
 
 	if (use_keyring) {
-		r = LUKS2_volume_key_load_in_keyring_by_keyslot(cd,
-				&cd->u.luks2.hdr, p_crypt, keyslot);
+		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, p_crypt,
+							       crypt_volume_key_get_id(p_crypt));
 		if (r < 0)
 			goto out;
 		flags |= CRYPT_ACTIVATE_KEYRING_KEY;
@@ -5310,10 +5310,7 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 				      (flags & CRYPT_ACTIVATE_KEYRING_KEY);
 
 		if (use_keyring) {
-			r = LUKS2_key_description_by_segment(cd, &cd->u.luks2.hdr, p_crypt, CRYPT_DEFAULT_SEGMENT);
-			if (r < 0)
-				goto out;
-			r = crypt_volume_key_load_in_keyring(cd, p_crypt);
+			r = LUKS2_volume_key_load_in_keyring_by_digest(cd, p_crypt, crypt_volume_key_get_id(p_crypt));
 			if (r < 0)
 				goto out;
 			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
