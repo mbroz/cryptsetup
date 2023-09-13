@@ -239,11 +239,13 @@ ifdef::ACTION_OPEN,ACTION_LUKSRESUME,ACTION_LUKSADDKEY[]
 *--volume-key-keyring* _<key description>_::
 Use a volume key stored in a keyring.
 This allows one to open _luks_ and device types without giving a passphrase.
-The volume key has to be of user type, in order to validate the digest.
+The key and associated type has to be readable from userspace so that volume
+key digest may be verified in before activation.
 +
 The _<key description>_ uses keyctl-compatible syntax. This can either be a
 numeric key ID or a string name in the format _%<key type>:<key name>_. See
-also *KEY IDENTIFIERS* section of *keyctl*(1).
+also *KEY IDENTIFIERS* section of *keyctl*(1). When no _%<key type>:_ prefix
+is specified we assume the key type is _user_ (default type).
 endif::[]
 
 ifdef::ACTION_LUKSDUMP[]
@@ -810,6 +812,26 @@ endif::[]
 ifdef::ACTION_TOKEN[]
 *--key-description <text>*::
 Set key description in keyring for use with _token_ command.
+endif::[]
+
+ifdef::ACTION_OPEN,ACTION_LUKSRESUME[]
+*--link-vk-to-keyring* _<keyring_description>::<key_description>_::
+Link volume key in a keyring with specified key name. The volume key is linked only
+if requested action is successfuly finished.
++
+_<keyring_description>_ string has to contain existing kernel keyring
+description. The keyring name may be optionaly prefixed with "%:" or "%keyring:" type descriptions.
+Or, the keyring may also be specified directly by numeric key id. Also special keyring notations
+starting with "@" may be used to select existing predefined kernel keyrings.
++
+The string "::" is delimiter used to separate keyring description and key description.
++
+_<key_description>_ part describes key type and key name of volume key linked in the keyring
+described in _<keyring_description>_. The type may be specified by adding "%<type_name>:" prefix in front of
+key name. If type is missing default _user_ type is applied. If the key of same name and same type already exists (already linked in the keyring)
+it will get replaced in the process.
++
+See also *KEY IDENTIFIERS* section of *keyctl*(1).
 endif::[]
 
 ifdef::ACTION_CONFIG[]

@@ -20,9 +20,11 @@
  */
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -31,11 +33,6 @@
 #include "libcryptsetup.h"
 #include "libcryptsetup_macros.h"
 #include "utils_keyring.h"
-
-#ifndef HAVE_KEY_SERIAL_T
-#define HAVE_KEY_SERIAL_T
-typedef int32_t key_serial_t;
-#endif
 
 #ifdef KERNEL_KEYRING
 
@@ -213,7 +210,11 @@ int keyring_check(void)
 	return syscall(__NR_request_key, "logon", "dummy", NULL, 0) == -1l && errno != ENOSYS;
 }
 
-int keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
+int keyring_add_key_in_keyring(key_type_t ktype,
+		const char *key_desc,
+		const void *key,
+		size_t key_size,
+		key_serial_t keyring)
 {
 	key_serial_t kid;
 	const char *type_name = key_type_name(ktype);
@@ -221,27 +222,22 @@ int keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, co
 	if (!type_name || !key_desc)
 		return -EINVAL;
 
-	kid = add_key(type_name, key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
+	kid = add_key(type_name, key_desc, key, key_size, keyring);
 	if (kid < 0)
 		return -errno;
 
 	return 0;
 }
 
+int keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
+{
+	return keyring_add_key_in_keyring(ktype, key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
+}
+
 /* currently used in client utilities only */
 int keyring_add_key_in_user_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
 {
-	const char *type_name = key_type_name(ktype);
-	key_serial_t kid;
-
-	if (!type_name || !key_desc)
-		return -EINVAL;
-
-	kid = add_key(type_name, key_desc, key, key_size, KEY_SPEC_USER_KEYRING);
-	if (kid < 0)
-		return -errno;
-
-	return 0;
+	return keyring_add_key_in_keyring(ktype, key_desc, key, key_size, KEY_SPEC_USER_KEYRING);
 }
 
 int keyring_find_and_get_key_by_name(const char *key_name,
@@ -321,32 +317,6 @@ int keyring_get_user_key(const char *key_desc,
 
 	*key = buf;
 	*key_size = len;
-
-	return 0;
-}
-
-static int keyring_link_key_to_keyring_key_type(const char *type_name, const char *key_desc,
-						key_serial_t keyring_to_link)
-{
-	long r;
-	key_serial_t kid;
-
-	if (!type_name || !key_desc)
-		return -EINVAL;
-
-	do {
-		kid = request_key(type_name, key_desc, NULL, 0);
-	} while (kid < 0 && errno == EINTR);
-
-	if (kid < 0)
-		return -errno;
-
-	/* see https://mjg59.dreamwidth.org/37333.html */
-	if (keyring_to_link == KEY_SPEC_USER_KEYRING || keyring_to_link == KEY_SPEC_USER_SESSION_KEYRING)
-		keyctl_setperm(kid, KEY_POS_ALL | KEY_USR_ALL);
-	r = keyctl_link(kid, keyring_to_link);
-	if (r < 0)
-		return -errno;
 
 	return 0;
 }
@@ -444,13 +414,26 @@ out:
 	return id;
 }
 
+static bool numbered(const char *str)
+{
+	char *endp;
+
+	errno = 0;
+	(void) strtol(str, &endp, 0);
+	if (errno == ERANGE)
+		return false;
+
+	return *endp == '\0' ? true : false;
+}
+
 int32_t keyring_find_keyring_id_by_name(const char *keyring_name)
 {
 	assert(keyring_name);
 
 	/* "%:" is abbreviation for the type keyring */
 	if ((keyring_name[0] == '@' && keyring_name[1] != 'a') ||
-	    strstr(keyring_name, "%:") || strstr(keyring_name, "%keyring:"))
+	    strstr(keyring_name, "%:") || strstr(keyring_name, "%keyring:") ||
+	    numbered(keyring_name))
 		return keyring_find_key_id_by_name(keyring_name);
 
 	return 0;
@@ -467,9 +450,28 @@ key_type_t key_type_by_name(const char *name)
 	return INVALID_KEY;
 }
 
-int keyring_link_key_to_keyring(key_type_t ktype, const char *key_desc, key_serial_t keyring_to_link)
+int keyring_add_key_to_custom_keyring(key_type_t ktype,
+				      const char *key_desc,
+				      const void *key,
+				      size_t key_size,
+				      key_serial_t keyring_to_link)
 {
-	return keyring_link_key_to_keyring_key_type(key_type_name(ktype), key_desc, keyring_to_link);
+	key_serial_t kid;
+	const char *type_name = key_type_name(ktype);
+
+	if (!type_name || !key_desc)
+		return -EINVAL;
+
+	kid = add_key(type_name, key_desc, key, key_size, keyring_to_link);
+	if (kid < 0)
+		return -errno;
+
+	/* FIXME: could we delegate it to the caller? */
+	// see https://mjg59.dreamwidth.org/37333.html
+	if (keyring_to_link == KEY_SPEC_USER_KEYRING || keyring_to_link == KEY_SPEC_USER_SESSION_KEYRING)
+		keyctl_setperm(kid, KEY_POS_ALL | KEY_USR_ALL);
+
+	return 0;
 }
 
 int keyring_revoke_and_unlink_key(key_type_t ktype, const char *key_desc)
@@ -491,6 +493,13 @@ int keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, co
 }
 
 int keyring_add_key_in_user_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
+{
+	return -ENOTSUP;
+}
+
+int keyring_find_and_get_key_by_name(const char *key_name,
+		      char **key,
+		      size_t *key_size)
 {
 	return -ENOTSUP;
 }
@@ -525,7 +534,11 @@ key_type_t key_type_by_name(const char *name)
 	return INVALID_KEY;
 }
 
-int keyring_link_key_to_keyring(key_type_t ktype, const char *key_desc, key_serial_t keyring_to_link)
+int keyring_add_key_to_custom_keyring(key_type_t ktype,
+				      const char *key_desc,
+				      const void *key,
+				      size_t key_size,
+				      key_serial_t keyring_to_link)
 {
 	return -ENOTSUP;
 }

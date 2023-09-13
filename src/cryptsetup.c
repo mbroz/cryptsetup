@@ -1619,12 +1619,92 @@ static int action_luksFormat(void)
 	return luksFormat(NULL, NULL, NULL);
 }
 
+static int parse_vk_description(const char *key_description, char **ret_key_description)
+{
+	char *tmp;
+	int r;
+
+	assert(key_description);
+	assert(ret_key_description);
+
+	/* apply default key type */
+	if (*key_description != '%')
+		r = asprintf(&tmp, "%%user:%s", key_description);
+	else {
+		tmp = strdup(key_description);
+		r = tmp ? 0 : -ENOMEM;
+	}
+
+	if (!r)
+		*ret_key_description = tmp;
+
+	return r;
+}
+
+static int parse_vk_and_keyring_description(
+		struct crypt_device *cd,
+		char *keyring_key_description)
+{
+	int r;
+	char *endp, *sep, *keyring_part, *key_part, *type_part = NULL;
+
+	if (!cd || !keyring_key_description)
+		return -EINVAL;
+
+	/* "::" is separator between keyring specification a key description */
+	key_part = strstr(keyring_key_description, "::");
+	if (!key_part)
+		return -EINVAL;
+
+	*key_part = '\0';
+	key_part = key_part + 2;
+
+	if (*key_part == '%') {
+		type_part = key_part + 1;
+		sep = strstr(type_part, ":");
+		if (!sep)
+			return -EINVAL;
+		*sep = '\0';
+
+		key_part = sep + 1;
+	}
+
+	if (*keyring_key_description == '%') {
+		keyring_key_description = strstr(keyring_key_description, ":");
+		if (!keyring_key_description) {
+			log_err(_("Invalid --link-vk-to-keyring value."));
+			return -EINVAL;
+		}
+		log_verbose(_("Type specification in --link-vk-to-keyring keyring specification is ignored."));
+		keyring_key_description++;
+	}
+
+	(void)strtol(keyring_key_description, &endp, 0);
+
+	r = 0;
+	if (*keyring_key_description == '@' || !*endp) {
+		keyring_part = strdup(keyring_key_description);
+		if (!keyring_part)
+			r = -ENOMEM;
+	} else
+		r = asprintf(&keyring_part, "%%:%s", keyring_key_description);
+
+	if (r < 0)
+		return -EINVAL;
+
+	r = crypt_set_keyring_to_link(cd, key_part, type_part, keyring_part);
+
+	free(keyring_part);
+
+	return r;
+}
+
 static int action_open_luks(void)
 {
 	struct crypt_active_device cad;
 	struct crypt_device *cd = NULL;
 	const char *data_device, *header_device, *activated_name;
-	char *key = NULL;
+	char *key = NULL, *vk_description_activation = NULL;
 	uint32_t activate_flags = 0;
 	int r, keysize, tries;
 	char *password = NULL;
@@ -1669,19 +1749,10 @@ static int action_open_luks(void)
 
 	set_activation_flags(&activate_flags);
 
-	if (ARG_SET(OPT_VOLUME_KEY_TYPE_ID)) {
-		r = crypt_set_vk_keyring_type(cd, ARG_STR(OPT_VOLUME_KEY_TYPE_ID));
-
-		if (r) {
-			log_err(_("The specified keyring key type %s is invalid."),
-				  ARG_STR(OPT_VOLUME_KEY_TYPE_ID));
-			goto out;
-		}
-	}
-
 	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID)) {
-		if ((r = crypt_set_keyring_to_link(cd, ARG_STR(OPT_LINK_VK_TO_KEYRING_ID))))
-			return r;
+		r = parse_vk_and_keyring_description(cd, ARG_STR(OPT_LINK_VK_TO_KEYRING_ID));
+		if (r < 0)
+			goto out;
 	}
 
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
@@ -1699,7 +1770,10 @@ static int action_open_luks(void)
 		r = crypt_activate_by_volume_key(cd, activated_name,
 						 key, keysize, activate_flags);
 	} else if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
-		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &kc);
+		r = parse_vk_description(ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &vk_description_activation);
+		if (r < 0)
+			goto out;
+		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description_activation, &kc);
 		if (r)
 			goto out;
 		r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT, kc, activate_flags);
@@ -2029,7 +2103,8 @@ static int action_luksAddKey(void)
 {
 	int keyslot_old, keyslot_new, keysize = 0, r = -EINVAL;
 	const char *new_key_file = (action_argc > 1 ? action_argv[1] : NULL);
-	char *key = NULL, *password = NULL, *password_new = NULL, *pin = NULL, *pin_new = NULL;
+	char *key = NULL, *password = NULL, *password_new = NULL, *pin = NULL, *pin_new = NULL,
+	     *vk_description = NULL;
 	size_t pin_size, pin_size_new, password_size = 0, password_new_size = 0;
 	struct crypt_device *cd = NULL;
 	struct crypt_keyslot_context *p_kc_new = NULL, *kc = NULL, *kc_new = NULL;
@@ -2105,9 +2180,11 @@ static int action_luksAddKey(void)
 				ARG_UINT32(OPT_KEYFILE_SIZE_ID),
 				ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
 				&kc);
-	else if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID))
-		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &kc);
-	else if (ARG_SET(OPT_TOKEN_ID_ID) || ARG_SET(OPT_TOKEN_TYPE_ID) || ARG_SET(OPT_TOKEN_ONLY_ID)) {
+	else if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
+		r = parse_vk_description(ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &vk_description);
+		if (!r)
+			r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description, &kc);
+	} else if (ARG_SET(OPT_TOKEN_ID_ID) || ARG_SET(OPT_TOKEN_TYPE_ID) || ARG_SET(OPT_TOKEN_ONLY_ID)) {
 		r = crypt_keyslot_context_init_by_token(cd,
 				ARG_INT32(OPT_TOKEN_ID_ID),
 				ARG_STR(OPT_TOKEN_TYPE_ID),
@@ -2195,6 +2272,7 @@ static int action_luksAddKey(void)
 	}
 out:
 	tools_keyslot_msg(r, CREATED);
+	free(vk_description);
 	crypt_keyslot_context_free(kc);
 	crypt_keyslot_context_free(kc_new);
 	crypt_safe_free(password);
@@ -2536,7 +2614,7 @@ static int action_luksSuspend(void)
 static int action_luksResume(void)
 {
 	struct crypt_device *cd = NULL;
-	char *password = NULL;
+	char *password = NULL, *vk_description_activation = NULL;
 	size_t passwordLen;
 	int r, tries;
 	struct crypt_active_device cad;
@@ -2549,21 +2627,13 @@ static int action_luksResume(void)
 	if ((r = crypt_init_by_name_and_header(&cd, action_argv[0], uuid_or_device(ARG_STR(OPT_HEADER_ID)))))
 		return r;
 
-	r = -EINVAL;
-	if (ARG_SET(OPT_VOLUME_KEY_TYPE_ID)) {
-		r = crypt_set_vk_keyring_type(cd, ARG_STR(OPT_VOLUME_KEY_TYPE_ID));
-
-		if (r) {
-			log_err(_("The specified keyring key type %s is invalid."),
-				  ARG_STR(OPT_VOLUME_KEY_TYPE_ID));
-			goto out;
-		}
-	}
-
 	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID)) {
-		if ((r = crypt_set_keyring_to_link(cd, ARG_STR(OPT_LINK_VK_TO_KEYRING_ID))))
-			return r;
+		r = parse_vk_and_keyring_description(cd, ARG_STR(OPT_LINK_VK_TO_KEYRING_ID));
+		if (r < 0)
+			goto out;
 	}
+
+	r = -EINVAL;
 
 	if (!isLUKS(crypt_get_type(cd))) {
 		log_err(_("%s is not active LUKS device name or header is missing."), action_argv[0]);
@@ -2600,7 +2670,10 @@ static int action_luksResume(void)
 		goto out;
 
 	if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
-		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &kc);
+		r = parse_vk_description(ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &vk_description_activation);
+		if (r < 0)
+			goto out;
+		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description_activation, &kc);
 		if (r)
 			goto out;
 		r = crypt_resume_by_keyslot_context(cd, action_argv[0], CRYPT_ANY_SLOT, kc);
@@ -2627,6 +2700,7 @@ static int action_luksResume(void)
 out:
 	crypt_keyslot_context_free(kc);
 	crypt_safe_free(password);
+	free(vk_description_activation);
 	crypt_free(cd);
 	return r;
 }

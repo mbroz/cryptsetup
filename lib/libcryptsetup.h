@@ -3073,14 +3073,27 @@ void *crypt_safe_realloc(void *data, size_t size);
 void crypt_safe_memzero(void *data, size_t size);
 
 /**
- * Link the volume key to the specified keyring.
+ * Link the volume key to the specified kernel keyring.
  *
  * @param cd crypt device handle
- * @param keyring_to_link_vk the ID of the keyring in which volume key should
- * be linked, if @e NULL is specified, linking will be disabled (the key will
- * be linked just to the thread keyring, which is destroyed on process exit)
+ * @param key_description the key description of volume key linked in desired keyring.
+ * @param key_type the key type used for the volume key. Currently only "user" and "logon" types are
+ *	  supported. if @e NULL is specified the default "user" type is applied.
+ * @param keyring_to_link_vk the keyring description of the keyring in which volume key should
+ *	  be linked, if @e NULL is specified, linking will be disabled.
+ *
+ * @note keyring_to_link_vk may be passed in various string formats:
+ * 	 It can be kernel key numeric id of existing keyring written as a string,
+ * 	 keyring name prefixed optionally be either "%:" or "%keyring:" substrings or keyctl
+ * 	 special values for keyrings "@t", "@p", "@s" and so on. See keyctl(1) man page,
+ * 	 section KEY IDENTIFIERS for more information. All other prefixes starting "%<type>:"
+ * 	 are ignored.
+ *
+ * @note key_description "%<type>:" prefixes are ignored. Type is applied based on key_type parameter
+ * 	 value.
  */
-int crypt_set_keyring_to_link(struct crypt_device *cd, const char *keyring_to_link_vk);
+int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_description,
+			      const char *key_type_desc, const char *keyring_to_link_vk);
 
 /**
  * Set the type of volume key stored in keyring.

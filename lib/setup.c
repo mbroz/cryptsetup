@@ -62,6 +62,7 @@ struct crypt_device {
 
 	bool link_vk_to_keyring;
 	int32_t keyring_to_link_vk;
+	const char *user_key_name;
 	key_type_t keyring_key_type;
 
 	uint64_t data_offset;
@@ -3993,6 +3994,26 @@ static int resume_luks1_by_volume_key(struct crypt_device *cd,
 	return r;
 }
 
+static int crypt_volume_key_load_in_user_keyring(struct crypt_device *cd, struct volume_key *vk)
+{
+	int r;
+	const char *type_name = key_type_name(cd->keyring_key_type);
+
+	if (!vk || !cd || !type_name || !cd->link_vk_to_keyring)
+		return -EINVAL;
+
+	log_dbg(cd, "Linking volume key (%zu bytes, type %s, name %s) to the specified keyring",
+		    vk->keylength, type_name, cd->user_key_name);
+
+	r = keyring_add_key_to_custom_keyring(cd->keyring_key_type, cd->user_key_name, vk->key, vk->keylength, cd->keyring_to_link_vk);
+	if (r) {
+		log_err(cd, _("Failed to link key to the specified keyring."));
+		log_dbg(cd, "The keyring_link_key_to_keyring function failed (error %d).", r);
+	}
+
+	return r;
+}
+
 static int resume_luks2_by_volume_key(struct crypt_device *cd,
 		int digest,
 		struct volume_key *vk,
@@ -4043,6 +4064,14 @@ static int resume_luks2_by_volume_key(struct crypt_device *cd,
 		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, p_crypt, digest);
 		if (r < 0)
 			goto out;
+
+		/* upload volume key in custom keyring if requested */
+		if (cd->link_vk_to_keyring) {
+			r = crypt_volume_key_load_in_user_keyring(cd, vk);
+			if (r < 0)
+				/* FIXME: We should unlink VK from custom keyring on error */
+				goto out;
+		}
 	}
 
 	if (p_opal) {
@@ -4703,12 +4732,13 @@ static int _open_and_activate(struct crypt_device *cd,
 		if (r < 0)
 			goto out;
 
+		/* copy volume key digest id in crypt subkey */
+		crypt_volume_key_set_id(crypt_key, crypt_volume_key_get_id(vk));
+
 		p_crypt = crypt_key;
 		p_opal = opal_key ?: vk;
-	} else {
+	} else
 		p_crypt = vk;
-		p_opal = NULL;
-	}
 
 	if (!crypt_use_keyring_for_vk(cd) || !p_crypt)
 		use_keyring = false;
@@ -4722,6 +4752,14 @@ static int _open_and_activate(struct crypt_device *cd,
 		if (r < 0)
 			goto out;
 		flags |= CRYPT_ACTIVATE_KEYRING_KEY;
+
+		/* upload the volume key in custom user keyring if requested */
+		if (cd->link_vk_to_keyring) {
+			r = crypt_volume_key_load_in_user_keyring(cd, vk);
+			if (r < 0)
+				/* FIXME: We should unlink VK from custom keyring on error */
+				goto out;
+		}
 	}
 
 	if (name)
@@ -5314,6 +5352,14 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 			if (r < 0)
 				goto out;
 			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
+
+			/* upload the volume key in custom user keyring if requested */
+			if (cd->link_vk_to_keyring) {
+				r = crypt_volume_key_load_in_user_keyring(cd, vk);
+				if (r < 0)
+					/* FIXME: We should unlink VK from custom keyring on error */
+					goto out;
+			}
 		}
 	} else {
 		p_crypt = vk;
@@ -7184,9 +7230,8 @@ int crypt_volume_key_keyring(struct crypt_device *cd __attribute__((unused)), in
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
 {
 	int r;
-	const char *type_name = key_type_name(cd->keyring_key_type);
 
-	if (!vk || !cd || !type_name)
+	if (!vk || !cd)
 		return -EINVAL;
 
 	if (!vk->key_description) {
@@ -7194,23 +7239,14 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 		return -EINVAL;
 	}
 
-	log_dbg(cd, "Loading key (%zu bytes, type %s) in thread keyring.", vk->keylength, type_name);
+	log_dbg(cd, "Loading key (%zu bytes, type logon, name %s) in thread keyring.", vk->keylength, vk->key_description);
 
-	r = keyring_add_key_in_thread_keyring(cd->keyring_key_type, vk->key_description, vk->key, vk->keylength);
+	r = keyring_add_key_in_thread_keyring(LOGON_KEY, vk->key_description, vk->key, vk->keylength);
 	if (r) {
 		log_dbg(cd, "keyring_add_key_in_thread_keyring failed (error %d)", r);
 		log_err(cd, _("Failed to load key in kernel keyring."));
 	} else
 		crypt_set_key_in_keyring(cd, 1);
-
-	if (!r && cd->link_vk_to_keyring) {
-		log_dbg(cd, "Linking volume key to the specified keyring");
-		r = keyring_link_key_to_keyring(cd->keyring_key_type, vk->key_description, cd->keyring_to_link_vk);
-		if (r) {
-			log_err(cd, _("Failed to link key to the specified keyring."));
-			log_dbg(cd, "The keyring_link_key_to_keyring function failed (error %d).", r);
-		}
-	}
 
 	return r;
 }
@@ -7247,11 +7283,21 @@ void crypt_drop_keyring_key_by_description(struct crypt_device *cd, const char *
 	crypt_set_key_in_keyring(cd, 0);
 }
 
-int crypt_set_keyring_to_link(struct crypt_device *cd, const char *keyring_to_link_vk)
+int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_description,
+	const char *key_type_description, const char *keyring_to_link_vk)
 {
+	key_type_t key_type = USER_KEY;
+	const char *name = NULL;
 	int32_t id = 0;
 
-	if (!cd)
+	if (!cd || (!key_description && keyring_to_link_vk) ||
+	    (key_description && !keyring_to_link_vk))
+		return -EINVAL;
+
+	if (key_type_description)
+		key_type = key_type_by_name(key_type_description);
+
+	if (key_type != LOGON_KEY && key_type != USER_KEY)
 		return -EINVAL;
 
 	if (keyring_to_link_vk) {
@@ -7260,8 +7306,14 @@ int crypt_set_keyring_to_link(struct crypt_device *cd, const char *keyring_to_li
 			log_err(cd, _("Could not find keyring described by \"%s\"."), keyring_to_link_vk);
 			return -EINVAL;
 		}
+		if (!(name = strdup(key_description)))
+			return -ENOMEM;
 	}
 
+	cd->keyring_key_type = key_type;
+
+	free(CONST_CAST(void*)cd->user_key_name);
+	cd->user_key_name = name;
 	cd->keyring_to_link_vk = id;
 	cd->link_vk_to_keyring = id != 0;
 

@@ -545,7 +545,7 @@ static char *_uf(char *buf, size_t buf_size, const char *s, unsigned u)
 }
 
 /* https://gitlab.com/cryptsetup/cryptsetup/wikis/DMCrypt */
-static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags, key_type_t key_type)
+static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 {
 	int r, max_size, null_cipher = 0, num_options = 0, keystr_len = 0;
 	char *params = NULL, *hexkey = NULL;
@@ -602,8 +602,8 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags, ke
 		hexkey = crypt_safe_alloc(keystr_len);
 		if (!hexkey)
 			goto out;
-		r = snprintf(hexkey, keystr_len, ":%zu:%s:%s", tgt->u.crypt.vk->keylength,
-			key_type_name(key_type), tgt->u.crypt.vk->key_description);
+		r = snprintf(hexkey, keystr_len, ":%zu:logon:%s", tgt->u.crypt.vk->keylength,
+			     tgt->u.crypt.vk->key_description);
 		if (r < 0 || r >= keystr_len)
 			goto out;
 	} else
@@ -1247,14 +1247,14 @@ static void _destroy_dm_targets_params(struct crypt_dm_active_device *dmd)
 	} while (t);
 }
 
-static int _create_dm_targets_params(struct crypt_dm_active_device *dmd, key_type_t key_type)
+static int _create_dm_targets_params(struct crypt_dm_active_device *dmd)
 {
 	int r;
 	struct dm_target *tgt = &dmd->segment;
 
 	do {
 		if (tgt->type == DM_CRYPT)
-			tgt->params = get_dm_crypt_params(tgt, dmd->flags, key_type);
+			tgt->params = get_dm_crypt_params(tgt, dmd->flags);
 		else if (tgt->type == DM_VERITY)
 			tgt->params = get_dm_verity_params(tgt, dmd->flags);
 		else if (tgt->type == DM_INTEGRITY)
@@ -1312,7 +1312,7 @@ static int _dm_create_device(struct crypt_device *cd, const char *name, const ch
 	if ((dmd->flags & CRYPT_ACTIVATE_READONLY) && !dm_task_set_ro(dmt))
 		goto out;
 
-	r = _create_dm_targets_params(dmd, key_type_by_name(crypt_get_vk_keyring_type(cd)));
+	r = _create_dm_targets_params(dmd);
 	if (r)
 		goto out;
 
@@ -1424,7 +1424,7 @@ static int _dm_reload_device(struct crypt_device *cd, const char *name,
 	if ((dmd->flags & CRYPT_ACTIVATE_READONLY) && !dm_task_set_ro(dmt))
 		goto out;
 
-	r = _create_dm_targets_params(dmd, key_type_by_name(crypt_get_vk_keyring_type(cd)));
+	r = _create_dm_targets_params(dmd);
 	if (r)
 		goto out;
 
@@ -1907,7 +1907,7 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 	int r;
 	size_t key_size;
 	struct device *data_device = NULL;
-	char *cipher = NULL, *integrity = NULL, *key_type = NULL;
+	char *cipher = NULL, *integrity = NULL;
 	struct volume_key *vk = NULL;
 
 	tgt->type = DM_CRYPT;
@@ -2026,16 +2026,12 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 				/* :<key_size>:<key_type>:<key_description> */
 				key_desc = NULL;
 				endp = strpbrk(key_ + 1, ":");
-				key_type = endp + 1;
 				if (endp)
 					key_desc = strpbrk(endp + 1, ":");
 				if (!key_desc) {
 					r = -ENOMEM;
 					goto err;
 				}
-				/* replace colon with zero character */
-				key_desc[0] = '\0';
-
 				key_desc++;
 				crypt_volume_key_set_description(vk, key_desc);
 			} else {
@@ -2061,8 +2057,6 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 		tgt->data_device = data_device;
 	if (vk)
 		tgt->u.crypt.vk = vk;
-	if (key_type)
-		crypt_set_vk_keyring_type(cd, key_type);
 	return 0;
 err:
 	free(cipher);
@@ -3001,8 +2995,8 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	}
 
 	if (vk->key_description) {
-		r = snprintf(msg, msg_size, "key set :%zu:%s:%s", vk->keylength,
-			crypt_get_vk_keyring_type(cd), vk->key_description);
+		r = snprintf(msg, msg_size, "key set :%zu:logon:%s", vk->keylength,
+			     vk->key_description);
 	} else  {
 		key = crypt_bytes_to_hex(vk->keylength, vk->key);
 		if (!key) {
