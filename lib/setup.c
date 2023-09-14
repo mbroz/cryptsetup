@@ -3219,7 +3219,7 @@ int crypt_compare_dm_devices(struct crypt_device *cd,
 }
 
 static int _reload_device(struct crypt_device *cd, const char *name,
-			  struct crypt_dm_active_device *sdmd)
+			  struct crypt_dm_active_device *sdmd, uint32_t dmflags)
 {
 	int r;
 	struct crypt_dm_active_device tdmd;
@@ -3287,7 +3287,7 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 	tdmd.flags = sdmd->flags;
 	tgt->size = tdmd.size = sdmd->size;
 
-	r = dm_reload_device(cd, name, &tdmd, 0, 1);
+	r = dm_reload_device(cd, name, &tdmd, dmflags, 1);
 out:
 	dm_targets_free(cd, &tdmd);
 	free(CONST_CAST(void*)tdmd.uuid);
@@ -3470,7 +3470,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	struct crypt_dm_active_device dmdq, dmd = {};
 	struct dm_target *tgt = &dmdq.segment;
 	struct crypt_params_integrity params = {};
-	uint32_t supported_flags = 0;
+	uint32_t supported_flags = 0, dmflags = 0;
 	uint64_t old_size;
 	int r;
 
@@ -3488,7 +3488,10 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		return -EINVAL;
 	}
 
-	log_dbg(cd, "Resizing device %s to %" PRIu64 " sectors.", name, new_size);
+	if (new_size)
+		log_dbg(cd, "Resizing device %s to %" PRIu64 " sectors.", name, new_size);
+	else
+		log_dbg(cd, "Resizing device %s to underlying device size.", name);
 
 	r = dm_query_device(cd, name, DM_ACTIVE_CRYPT_KEYSIZE | DM_ACTIVE_CRYPT_KEY |
 			    DM_ACTIVE_INTEGRITY_PARAMS | DM_ACTIVE_JOURNAL_CRYPT_KEY |
@@ -3556,7 +3559,8 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 				tgt->u.integrity.journal_integrity_key, &params);
 		if (r)
 			goto out;
-		r = _reload_device(cd, name, &dmd);
+		/* Backend device cannot be smaller here, device_block_adjust() will fail if so. */
+		r = _reload_device(cd, name, &dmd, DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH);
 		if (r)
 			goto out;
 
@@ -3624,8 +3628,13 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 			r = -ENOTSUP;
 		else if (isLUKS2(cd->type))
 			r = LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, 0, 0);
-		if (!r)
-			r = _reload_device(cd, name, &dmd);
+
+		if (!r) {
+			/* Skip flush and lockfs if extending device */
+			if (new_size > dmdq.size)
+				dmflags = DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH;
+			r = _reload_device(cd, name, &dmd, dmflags);
+		}
 
 		if (r && tgt->type == DM_INTEGRITY &&
 		    !dm_flags(cd, tgt->type, &supported_flags) &&
@@ -4589,6 +4598,7 @@ int create_or_reload_device(struct crypt_device *cd, const char *name,
 	enum devcheck device_check;
 	struct dm_target *tgt;
 	uint64_t offset;
+	uint32_t dmflags = 0;
 
 	if (!type || !name || !single_segment(dmd))
 		return -EINVAL;
@@ -4602,9 +4612,12 @@ int create_or_reload_device(struct crypt_device *cd, const char *name,
 	if (r)
 		return r;
 
-	if (dmd->flags & CRYPT_ACTIVATE_REFRESH)
-		r = _reload_device(cd, name, dmd);
-	else {
+	if (dmd->flags & CRYPT_ACTIVATE_REFRESH) {
+		/* Refresh and recalculate means increasing dm-integrity device */
+		if (tgt->type == DM_INTEGRITY && dmd->flags & CRYPT_ACTIVATE_RECALCULATE)
+			dmflags = DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH;;
+		r = _reload_device(cd, name, dmd, dmflags);
+	} else {
 		if (tgt->type == DM_CRYPT || tgt->type == DM_LINEAR) {
 			device_check = dmd->flags & CRYPT_ACTIVATE_SHARED ? DEV_OK : DEV_EXCL;
 			offset = tgt->type == DM_CRYPT ? tgt->u.crypt.offset : tgt->u.linear.offset;
