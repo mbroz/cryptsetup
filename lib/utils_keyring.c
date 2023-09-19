@@ -80,16 +80,6 @@ static long keyctl_read(key_serial_t key, char *buffer, size_t buflen)
 	return syscall(__NR_keyctl, KEYCTL_READ, key, buffer, buflen);
 }
 
-/* key handle permissions mask */
-typedef uint32_t key_perm_t;
-#define KEY_POS_ALL	0x3f000000
-#define KEY_USR_ALL	0x003f0000
-
-static long keyctl_setperm(key_serial_t id, key_perm_t perm)
-{
-	return syscall(__NR_keyctl, KEYCTL_SETPERM, id, perm);
-}
-
 /* keyctl_link */
 static long keyctl_link(key_serial_t key, key_serial_t keyring)
 {
@@ -465,11 +455,6 @@ int keyring_add_key_to_custom_keyring(key_type_t ktype,
 	kid = add_key(type_name, key_desc, key, key_size, keyring_to_link);
 	if (kid < 0)
 		return -errno;
-
-	/* FIXME: could we delegate it to the caller? */
-	// see https://mjg59.dreamwidth.org/37333.html
-	if (keyring_to_link == KEY_SPEC_USER_KEYRING || keyring_to_link == KEY_SPEC_USER_SESSION_KEYRING)
-		keyctl_setperm(kid, KEY_POS_ALL | KEY_USR_ALL);
 
 	return 0;
 }
