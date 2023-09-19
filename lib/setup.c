@@ -7320,24 +7320,6 @@ int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_descripti
 	return 0;
 }
 
-int crypt_set_vk_keyring_type(struct crypt_device *cd, const char *key_type_desc)
-{
-	if (!cd)
-		return -EINVAL;
-
-	key_type_t key_type = key_type_desc ? key_type_by_name(key_type_desc) : LOGON_KEY;
-	if (key_type != LOGON_KEY && key_type != USER_KEY)
-		return -EINVAL;
-
-	cd->keyring_key_type = key_type;
-	return 0;
-}
-
-const char *crypt_get_vk_keyring_type(struct crypt_device *cd)
-{
-	return key_type_name(cd ? cd->keyring_key_type : LOGON_KEY);
-}
-
 /* internal only */
 void crypt_drop_keyring_key(struct crypt_device *cd, struct volume_key *vks)
 {

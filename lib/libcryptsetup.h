@@ -3095,26 +3095,6 @@ void crypt_safe_memzero(void *data, size_t size);
 int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_description,
 			      const char *key_type_desc, const char *keyring_to_link_vk);
 
-/**
- * Set the type of volume key stored in keyring.
- *
- * @param cd crypt device handle
- * @param key_type_desc the type of keyring key (e.g. "user" or "logon"), when
- * @e NULL is specified, key type will be reset to default (logon)
- *
- * @return @e 0 on success or negative errno value when unknown key type was specified.
- */
-int crypt_set_vk_keyring_type(struct crypt_device *cd, const char *key_type_desc);
-
-/**
- * Get the type of volume key stored in keyring.
- *
- * @param cd crypt device handle
- *
- * @return string description of the keyring type (e.g. "user") or "logon" when cd is NULL
- */
-const char *crypt_get_vk_keyring_type(struct crypt_device *cd);
-
 /** @} */
 
 #ifdef __cplusplus
