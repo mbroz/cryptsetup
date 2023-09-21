@@ -3997,9 +3997,12 @@ static int resume_luks1_by_volume_key(struct crypt_device *cd,
 static int crypt_volume_key_load_in_user_keyring(struct crypt_device *cd, struct volume_key *vk)
 {
 	int r;
-	const char *type_name = key_type_name(cd->keyring_key_type);
+	const char *type_name;
 
-	if (!vk || !cd || !type_name || !cd->link_vk_to_keyring)
+	assert(cd);
+	assert(cd->link_vk_to_keyring);
+
+	if (!vk || !(type_name = key_type_name(cd->keyring_key_type)))
 		return -EINVAL;
 
 	log_dbg(cd, "Linking volume key (%zu bytes, type %s, name %s) to the specified keyring",
