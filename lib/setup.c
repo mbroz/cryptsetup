@@ -4005,8 +4005,8 @@ static key_serial_t crypt_volume_key_load_in_user_keyring(struct crypt_device *c
 	if (!vk || !(type_name = key_type_name(cd->keyring_key_type)))
 		return -EINVAL;
 
-	log_dbg(cd, "Linking volume key (%zu bytes, type %s, name %s) to the specified keyring",
-		    vk->keylength, type_name, cd->user_key_name);
+	log_dbg(cd, "Linking volume key (type %s, name %s) to the specified keyring",
+		    type_name, cd->user_key_name);
 
 	kid = keyring_add_key_to_custom_keyring(cd->keyring_key_type, cd->user_key_name, vk->key, vk->keylength, cd->keyring_to_link_vk);
 	if (kid <= 0) {
@@ -7285,7 +7285,7 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 		return -EINVAL;
 	}
 
-	log_dbg(cd, "Loading key (%zu bytes, type logon, name %s) in thread keyring.", vk->keylength, vk->key_description);
+	log_dbg(cd, "Loading key (type logon, name %s) in thread keyring.", vk->key_description);
 
 	r = keyring_add_key_in_thread_keyring(LOGON_KEY, vk->key_description, vk->key, vk->keylength);
 	if (r) {
