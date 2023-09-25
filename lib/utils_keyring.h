@@ -67,7 +67,8 @@ int keyring_add_key_in_keyring(
 	key_serial_t keyring_id);
 
 int keyring_revoke_and_unlink_key(key_type_t ktype, const char *key_desc);
-int keyring_add_key_to_custom_keyring(key_type_t ktype, const char *key_desc, const void *key,
+key_serial_t keyring_add_key_to_custom_keyring(key_type_t ktype, const char *key_desc, const void *key,
 				      size_t key_size, key_serial_t keyring_to_link);
+int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id);
 
 #endif

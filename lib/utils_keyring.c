@@ -311,6 +311,11 @@ int keyring_get_user_key(const char *key_desc,
 	return 0;
 }
 
+int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id)
+{
+	return keyctl_unlink(kid, keyring_id) < 0 ? -EINVAL : 0;
+}
+
 static int keyring_revoke_and_unlink_key_type(const char *type_name, const char *key_desc)
 {
 	key_serial_t kid;
@@ -440,23 +445,18 @@ key_type_t key_type_by_name(const char *name)
 	return INVALID_KEY;
 }
 
-int keyring_add_key_to_custom_keyring(key_type_t ktype,
+key_serial_t keyring_add_key_to_custom_keyring(key_type_t ktype,
 				      const char *key_desc,
 				      const void *key,
 				      size_t key_size,
 				      key_serial_t keyring_to_link)
 {
-	key_serial_t kid;
 	const char *type_name = key_type_name(ktype);
 
 	if (!type_name || !key_desc)
 		return -EINVAL;
 
-	kid = add_key(type_name, key_desc, key, key_size, keyring_to_link);
-	if (kid < 0)
-		return -errno;
-
-	return 0;
+	return add_key(type_name, key_desc, key, key_size, keyring_to_link);
 }
 
 int keyring_revoke_and_unlink_key(key_type_t ktype, const char *key_desc)
@@ -519,7 +519,7 @@ key_type_t key_type_by_name(const char *name)
 	return INVALID_KEY;
 }
 
-int keyring_add_key_to_custom_keyring(key_type_t ktype,
+key_serial_t keyring_add_key_to_custom_keyring(key_type_t ktype,
 				      const char *key_desc,
 				      const void *key,
 				      size_t key_size,
@@ -529,6 +529,11 @@ int keyring_add_key_to_custom_keyring(key_type_t ktype,
 }
 
 int keyring_revoke_and_unlink_key(key_type_t ktype, const char *key_desc)
+{
+	return -ENOTSUP;
+}
+
+int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id)
 {
 	return -ENOTSUP;
 }
