@@ -270,6 +270,52 @@ int keyring_find_and_get_key_by_name(const char *key_name,
 	return 0;
 }
 
+key_serial_t keyring_request_key_id(key_type_t key_type,
+		const char *key_description)
+{
+	key_serial_t kid;
+
+	do {
+		kid = request_key(key_type_name(key_type), key_description, NULL, 0);
+	} while (kid < 0 && errno == EINTR);
+
+	return kid;
+}
+
+int keyring_read_key(key_serial_t kid,
+		char **key,
+		size_t *key_size)
+{
+	long r;
+	char *buf = NULL;
+	size_t len = 0;
+
+	assert(key);
+	assert(key_size);
+
+	/* just get payload size */
+	r = keyctl_read(kid, NULL, 0);
+	if (r > 0) {
+		len = r;
+		buf = crypt_safe_alloc(len);
+		if (!buf)
+			return -ENOMEM;
+
+		/* retrieve actual payload data */
+		r = keyctl_read(kid, buf, len);
+	}
+
+	if (r < 0) {
+		crypt_safe_free(buf);
+		return -EINVAL;
+	}
+
+	*key = buf;
+	*key_size = len;
+
+	return 0;
+}
+
 int keyring_get_user_key(const char *key_desc,
 		    char **key,
 		    size_t *key_size)
@@ -314,6 +360,11 @@ int keyring_get_user_key(const char *key_desc,
 int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id)
 {
 	return keyctl_unlink(kid, keyring_id) < 0 ? -EINVAL : 0;
+}
+
+int keyring_unlink_key_from_thread_keyring(key_serial_t kid)
+{
+	return keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING) < 0 ? -EINVAL : 0;
 }
 
 static int keyring_revoke_and_unlink_key_type(const char *type_name, const char *key_desc)
@@ -489,6 +540,19 @@ int keyring_find_and_get_key_by_name(const char *key_name,
 	return -ENOTSUP;
 }
 
+key_serial_t keyring_request_key_id(key_type_t key_type,
+		const char *key_description)
+{
+	return -ENOTSUP;
+}
+
+int keyring_read_key(key_serial_t kid,
+		char **key,
+		size_t *key_size)
+{
+	return -ENOTSUP;
+}
+
 int keyring_read_by_id(const char *key_desc, char **passphrase, size_t *passphrase_len)
 {
 	return -ENOTSUP;
@@ -534,6 +598,11 @@ int keyring_revoke_and_unlink_key(key_type_t ktype, const char *key_desc)
 }
 
 int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id)
+{
+	return -ENOTSUP;
+}
+
+int keyring_unlink_key_from_thread_keyring(key_serial_t kid)
 {
 	return -ENOTSUP;
 }

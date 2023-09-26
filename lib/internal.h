@@ -234,6 +234,14 @@ int crypt_get_integrity_tag_size(struct crypt_device *cd);
 int crypt_key_in_keyring(struct crypt_device *cd);
 void crypt_set_key_in_keyring(struct crypt_device *cd, unsigned key_in_keyring);
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk);
+int crypt_keyring_get_user_key(struct crypt_device *cd,
+		const char *key_description,
+		char **key,
+		size_t *key_size);
+int crypt_keyring_get_key_by_name(struct crypt_device *cd,
+		const char *key_description,
+		char **key,
+		size_t *key_size);
 int crypt_use_keyring_for_vk(struct crypt_device *cd);
 void crypt_drop_keyring_key_by_description(struct crypt_device *cd, const char *key_description, key_type_t ktype);
 void crypt_drop_keyring_key(struct crypt_device *cd, struct volume_key *vks);

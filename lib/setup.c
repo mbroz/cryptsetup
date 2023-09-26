@@ -7298,6 +7298,74 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 }
 
 /* internal only */
+int crypt_keyring_get_user_key(struct crypt_device *cd,
+		const char *key_description,
+		char **key,
+		size_t *key_size)
+{
+	int r;
+	key_serial_t kid;
+
+	if (!key_description || !key || !key_size)
+		return -EINVAL;
+
+	log_dbg(cd, "Requesting key %s (user type)", key_description);
+
+	kid = keyring_request_key_id(USER_KEY, key_description);
+	if (kid == -ENOTSUP) {
+		log_dbg(cd, "Kernel keyring features disabled.");
+		return -ENOTSUP;
+	} else if (kid < 0) {
+		log_dbg(cd, "keyring_request_key_id failed with errno %d.", errno);
+		return -EINVAL;
+	}
+
+	log_dbg(cd, "Reading content of kernel key (id %" PRIi32 ").", kid);
+
+	r = keyring_read_key(kid, key, key_size);
+	if (r < 0)
+		log_dbg(cd, "keyring_read_key failed with errno %d.", errno);
+
+	return r;
+}
+
+/* internal only */
+int crypt_keyring_get_key_by_name(struct crypt_device *cd,
+		const char *key_description,
+		char **key,
+		size_t *key_size)
+{
+	int r;
+	key_serial_t kid;
+
+	if (!key_description || !key || !key_size)
+		return -EINVAL;
+
+	log_dbg(cd, "Searching for key by name %s.", key_description);
+
+	kid = keyring_find_key_id_by_name(key_description);
+	if (kid == -ENOTSUP) {
+		log_dbg(cd, "Kernel keyring features disabled.");
+		return -ENOTSUP;
+	} else if (kid < 0) {
+		log_dbg(cd, "keyring_find_key_id_by_name failed with errno %d.", errno);
+		return -EINVAL;
+	}
+	else if (kid == 0) {
+		log_dbg(cd, "keyring_find_key_id_by_name failed with errno %d.", ENOENT);
+		return -ENOENT;
+	}
+
+	log_dbg(cd, "Reading content of kernel key (id %" PRIi32 ").", kid);
+
+	r = keyring_read_key(kid, key, key_size);
+	if (r < 0)
+		log_dbg(cd, "keyring_read_key failed with errno %d.", errno);
+
+	return r;
+}
+
+/* internal only */
 int crypt_key_in_keyring(struct crypt_device *cd)
 {
 	return cd ? cd->key_in_keyring : 0;
@@ -7315,18 +7383,33 @@ void crypt_set_key_in_keyring(struct crypt_device *cd, unsigned key_in_keyring)
 /* internal only */
 void crypt_drop_keyring_key_by_description(struct crypt_device *cd, const char *key_description, key_type_t ktype)
 {
-	int r;
+	key_serial_t kid;
 	const char *type_name = key_type_name(ktype);
 
 	if (!key_description || !type_name)
 		return;
 
-	log_dbg(cd, "Requesting keyring %s key for revoke and unlink.", type_name);
+	log_dbg(cd, "Requesting kernel key %s (type %s) for unlink from thread keyring.", key_description, type_name);
 
-	r = keyring_revoke_and_unlink_key(ktype, key_description);
-	if (r)
-		log_dbg(cd, "keyring_revoke_and_unlink_key failed (error %d)", r);
 	crypt_set_key_in_keyring(cd, 0);
+
+	kid = keyring_request_key_id(ktype, key_description);
+	if (kid == -ENOTSUP) {
+		log_dbg(cd, "Kernel keyring features disabled.");
+		return;
+	} else if (kid < 0) {
+		log_dbg(cd, "keyring_request_key_id failed with errno %d.", errno);
+		return;
+	}
+
+	log_dbg(cd, "Unlinking volume key (id: %" PRIi32 ") from thread keyring.", kid);
+
+	if (!keyring_unlink_key_from_thread_keyring(kid))
+		return;
+
+	log_dbg(cd, "keyring_unlink_key_from_thread_keyring failed with errno %d.", errno);
+	log_err(cd, _("Failed to unlink volume key from thread keyring."));
+
 }
 
 int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_description,

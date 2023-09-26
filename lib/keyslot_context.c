@@ -328,7 +328,8 @@ static int get_passphrase_by_keyring(struct crypt_device *cd,
 	assert(r_passphrase_size);
 
 	if (!kc->i_passphrase) {
-		r = keyring_get_user_key(kc->u.kr.key_description, &kc->i_passphrase, &kc->i_passphrase_size);
+		r = crypt_keyring_get_user_key(cd, kc->u.kr.key_description,
+					       &kc->i_passphrase, &kc->i_passphrase_size);
 		if (r < 0) {
 			log_err(cd, _("Failed to read passphrase from keyring."));
 			kc->error = -EINVAL;
@@ -416,9 +417,10 @@ static int get_key_by_vk_in_keyring(struct crypt_device *cd,
 	assert(kc && kc->type == CRYPT_KC_TYPE_VK_KEYRING);
 	assert(r_vk);
 
-	r = keyring_find_and_get_key_by_name(kc->u.vk_kr.key_description, &kc->i_volume_key, &kc->i_volume_key_size);
+	r = crypt_keyring_get_key_by_name(cd, kc->u.vk_kr.key_description,
+					  &kc->i_volume_key, &kc->i_volume_key_size);
 	if (r < 0) {
-		log_err(cd, _("Failed to read volume key from keyring."));
+		log_err(cd, _("Failed to read volume key candidate from keyring."));
 		kc->error = -EINVAL;
 		return -EINVAL;
 	}
