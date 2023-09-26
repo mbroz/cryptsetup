@@ -4537,7 +4537,7 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
 		return LUKS_del_key(keyslot, &cd->u.luks1.hdr, cd);
 	}
 
-	return LUKS2_keyslot_wipe(cd, &cd->u.luks2.hdr, keyslot, 0);
+	return LUKS2_keyslot_wipe(cd, &cd->u.luks2.hdr, keyslot);
 }
 
 static int _check_header_data_overlap(struct crypt_device *cd, const char *name)

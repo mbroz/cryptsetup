@@ -678,8 +678,7 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 
 int LUKS2_keyslot_wipe(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
-	int keyslot,
-	int wipe_area_only)
+	int keyslot)
 {
 	struct device *device = crypt_metadata_device(cd);
 	uint64_t area_offset, area_length;
@@ -695,9 +694,6 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, keyslot);
 	if (!jobj_keyslot)
 		return -ENOENT;
-
-	if (wipe_area_only)
-		log_dbg(cd, "Wiping keyslot %d area only.", keyslot);
 
 	r = LUKS2_device_write_lock(cd, hdr, device);
 	if (r)
@@ -721,9 +717,6 @@ int LUKS2_keyslot_wipe(struct crypt_device *cd,
 			goto out;
 		}
 	}
-
-	if (wipe_area_only)
-		goto out;
 
 	/* Slot specific wipe */
 	if (h) {

@@ -224,8 +224,7 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 
 int LUKS2_keyslot_wipe(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
-	int keyslot,
-	int wipe_area_only);
+	int keyslot);
 
 crypt_keyslot_priority LUKS2_keyslot_priority_get(struct luks2_hdr *hdr, int keyslot);
 
