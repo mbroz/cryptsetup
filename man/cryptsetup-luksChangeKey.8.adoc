@@ -30,7 +30,9 @@ overwritten directly.
 
 *WARNING:* If a key-slot is overwritten, a media failure during this
 operation can cause the overwrite to fail after the old passphrase has
-been wiped and make the LUKS container inaccessible.
+been wiped and make the LUKS container inaccessible. LUKS2 mitigates
+that by never overwritting existing keyslot area as long as there's
+a free space in keyslots area at least for one more LUKS2 keyslot.
 
 *NOTE:* some parameters are effective only if used with LUKS2 format
 that supports per-keyslot parameters. For LUKS1, PBKDF type and hash

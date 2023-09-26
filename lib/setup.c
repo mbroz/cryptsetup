@@ -4327,7 +4327,8 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	const char *new_passphrase,
 	size_t new_passphrase_size)
 {
-	int digest = -1, r, keyslot_new_orig = keyslot_new;
+	bool keyslot_swap = false;
+	int digest = -1, r;
 	struct luks2_keyslot_params params;
 	struct volume_key *vk = NULL;
 
@@ -4362,13 +4363,21 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	}
 	keyslot_old = r;
 
-	if (keyslot_new == CRYPT_ANY_SLOT) {
-		if (isLUKS1(cd->type))
-			keyslot_new = LUKS_keyslot_find_empty(&cd->u.luks1.hdr);
-		else if (isLUKS2(cd->type))
+	if (isLUKS2(cd->type)) {
+		/* If there is a free keyslot (both id and binary area) avoid in-place keyslot area overwrite  */
+		if (keyslot_new == CRYPT_ANY_SLOT || keyslot_new == keyslot_old) {
 			keyslot_new = LUKS2_keyslot_find_empty(cd, &cd->u.luks2.hdr, vk->keylength);
-		if (keyslot_new < 0)
-			keyslot_new = keyslot_old;
+			if (keyslot_new < 0)
+				keyslot_new = keyslot_old;
+			else
+				keyslot_swap = true;
+		}
+	} else if (isLUKS1(cd->type)) {
+		if (keyslot_new == CRYPT_ANY_SLOT) {
+			keyslot_new = LUKS_keyslot_find_empty(&cd->u.luks1.hdr);
+			if (keyslot_new < 0)
+				keyslot_new = keyslot_old;
+		}
 	}
 	log_dbg(cd, "Key change, old slot %d, new slot %d.", keyslot_old, keyslot_new);
 
@@ -4409,7 +4418,7 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 			goto out;
 
 		/* Swap old & new so the final keyslot number remains */
-		if (keyslot_new_orig == CRYPT_ANY_SLOT && keyslot_old != keyslot_new) {
+		if (keyslot_swap && keyslot_old != keyslot_new) {
 			r = LUKS2_keyslot_swap(cd, &cd->u.luks2.hdr, keyslot_old, keyslot_new);
 			if (r < 0)
 				goto out;

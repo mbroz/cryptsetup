@@ -682,6 +682,24 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "2: luks2" && fail
 $CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY1 $KEY2 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "0: luks2" || fail
 $CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d $KEY1 $KEY2 2>/dev/null && fail
+# make a free space in keyslot area
+echo $PWD1 | $CRYPTSETUP luksKillSlot -q $LOOPDEV 0 || fail
+
+# assert LUKS2 does not overwrite existing area with specific keyslot id
+AREA_OFFSET_OLD=$($CRYPTSETUP luksDump $LOOPDEV | grep -e "1: luks2" -A12 | grep -e "Area offset:" | cut -d: -f 2 | sed -e 's/[[:space:]]*\[bytes\]//g')
+[ 0$AREA_OFFSET_OLD -gt 0 ] || fail
+echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksChangeKey --key-slot 1 $LOOPDEV $FAST_PBKDF_OPT
+AREA_OFFSET_NEW=$($CRYPTSETUP luksDump $LOOPDEV | grep -e "1: luks2" -A12 | grep -e "Area offset:" | cut -d: -f 2 | sed -e 's/[[:space:]]*\[bytes\]//g')
+[ 0$AREA_OFFSET_NEW -gt 0 ] || fail
+[ $AREA_OFFSET_OLD -ne $AREA_OFFSET_NEW ] || fail "Area offsets remained same: old area $AREA_OFFSET_OLD, new area $AREA_OFFSET_NEW"
+
+# assert LUKS2 does not overwrite existing area with any sklot
+AREA_OFFSET_OLD=$($CRYPTSETUP luksDump $LOOPDEV | grep -e "1: luks2" -A12 | grep -e "Area offset:" | cut -d: -f 2 | sed -e 's/[[:space:]]*\[bytes\]//g')
+[ 0$AREA_OFFSET_OLD -gt 0 ] || fail
+echo -e "$PWD2\n$PWD1\n" | $CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT
+AREA_OFFSET_NEW=$($CRYPTSETUP luksDump $LOOPDEV | grep -e "1: luks2" -A12 | grep -e "Area offset:" | cut -d: -f 2 | sed -e 's/[[:space:]]*\[bytes\]//g')
+[ 0$AREA_OFFSET_NEW -gt 0 ] || fail
+[ $AREA_OFFSET_OLD -ne $AREA_OFFSET_NEW ] || fail "Area offsets remained same: old area $AREA_OFFSET_OLD, new area $AREA_OFFSET_NEW"
 
 prepare "[24] Keyfile limit" wipe
 $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEY1 --key-slot 0 -l 13 || fail
