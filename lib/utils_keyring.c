@@ -200,26 +200,21 @@ int keyring_check(void)
 	return syscall(__NR_request_key, "logon", "dummy", NULL, 0) == -1l && errno != ENOSYS;
 }
 
-static int keyring_add_key_in_keyring(key_type_t ktype,
+static key_serial_t keyring_add_key_in_keyring(key_type_t ktype,
 		const char *key_desc,
 		const void *key,
 		size_t key_size,
 		key_serial_t keyring)
 {
-	key_serial_t kid;
 	const char *type_name = key_type_name(ktype);
 
 	if (!type_name || !key_desc)
 		return -EINVAL;
 
-	kid = add_key(type_name, key_desc, key, key_size, keyring);
-	if (kid < 0)
-		return -errno;
-
-	return 0;
+	return add_key(type_name, key_desc, key, key_size, keyring);
 }
 
-int keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
+key_serial_t keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
 {
 	return keyring_add_key_in_keyring(ktype, key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
 }
@@ -411,7 +406,7 @@ int keyring_check(void)
 	return 0;
 }
 
-int keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
+key_serial_t keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
 {
 	return -ENOTSUP;
 }

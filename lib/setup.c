@@ -7275,7 +7275,7 @@ int crypt_volume_key_keyring(struct crypt_device *cd __attribute__((unused)), in
 /* internal only */
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
 {
-	int r;
+	key_serial_t kid;
 
 	if (!vk || !cd)
 		return -EINVAL;
@@ -7287,14 +7287,14 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 
 	log_dbg(cd, "Loading key (type logon, name %s) in thread keyring.", vk->key_description);
 
-	r = keyring_add_key_in_thread_keyring(LOGON_KEY, vk->key_description, vk->key, vk->keylength);
-	if (r) {
-		log_dbg(cd, "keyring_add_key_in_thread_keyring failed (error %d)", r);
+	kid = keyring_add_key_in_thread_keyring(LOGON_KEY, vk->key_description, vk->key, vk->keylength);
+	if (kid < 0) {
+		log_dbg(cd, "keyring_add_key_in_thread_keyring failed (error %d)", errno);
 		log_err(cd, _("Failed to load key in kernel keyring."));
 	} else
 		crypt_set_key_in_keyring(cd, 1);
 
-	return r;
+	return kid < 0 ? -EINVAL : 0;
 }
 
 /* internal only */

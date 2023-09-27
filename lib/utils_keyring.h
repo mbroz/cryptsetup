@@ -46,7 +46,7 @@ int keyring_read_key(key_serial_t kid,
 		char **key,
 		size_t *key_size);
 
-int keyring_add_key_in_thread_keyring(
+key_serial_t keyring_add_key_in_thread_keyring(
 	key_type_t ktype,
 	const char *key_desc,
 	const void *key,

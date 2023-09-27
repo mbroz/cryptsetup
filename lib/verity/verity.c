@@ -315,6 +315,7 @@ int VERITY_activate(struct crypt_device *cd,
 {
 	uint32_t dmv_flags;
 	int r;
+	key_serial_t kid;
 	char *description = NULL;
 	struct crypt_dm_active_device dmd = { 0 };
 
@@ -335,12 +336,13 @@ int VERITY_activate(struct crypt_device *cd,
 		if (r < 0)
 			return -EINVAL;
 
-		log_dbg(cd, "Adding signature into keyring %s", description);
-		r = keyring_add_key_in_thread_keyring(USER_KEY, description, signature->key, signature->keylength);
-		if (r) {
+		log_dbg(cd, "Adding signature %s (type user) into thread keyring.", description);
+		kid = keyring_add_key_in_thread_keyring(USER_KEY, description, signature->key, signature->keylength);
+		if (kid < 0) {
+			log_dbg(cd, "keyring_add_key_in_thread_keyring failed with errno %d.", errno);
 			log_err(cd, _("Failed to load key in kernel keyring."));
 			free(description);
-			return r;
+			return -EINVAL;
 		}
 	}
 
