@@ -4400,16 +4400,8 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 			r = LUKS2_token_assignment_copy(cd, &cd->u.luks2.hdr, keyslot_old, keyslot_new, 0);
 			if (r < 0)
 				goto out;
-		} else {
+		} else
 			log_dbg(cd, "Key slot %d is going to be overwritten.", keyslot_old);
-			/* FIXME: improve return code so that we can detect area is damaged */
-			r = LUKS2_keyslot_wipe(cd, &cd->u.luks2.hdr, keyslot_old, 1);
-			if (r) {
-				/* (void)crypt_keyslot_destroy(cd, keyslot_old); */
-				r = -EINVAL;
-				goto out;
-			}
-		}
 
 		r = LUKS2_keyslot_store(cd,  &cd->u.luks2.hdr,
 					keyslot_new, new_passphrase,
