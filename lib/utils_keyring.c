@@ -200,7 +200,7 @@ int keyring_check(void)
 	return syscall(__NR_request_key, "logon", "dummy", NULL, 0) == -1l && errno != ENOSYS;
 }
 
-int keyring_add_key_in_keyring(key_type_t ktype,
+static int keyring_add_key_in_keyring(key_type_t ktype,
 		const char *key_desc,
 		const void *key,
 		size_t key_size,
@@ -222,52 +222,6 @@ int keyring_add_key_in_keyring(key_type_t ktype,
 int keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
 {
 	return keyring_add_key_in_keyring(ktype, key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
-}
-
-/* currently used in client utilities only */
-int keyring_add_key_in_user_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
-{
-	return keyring_add_key_in_keyring(ktype, key_desc, key, key_size, KEY_SPEC_USER_KEYRING);
-}
-
-int keyring_find_and_get_key_by_name(const char *key_name,
-		      char **key,
-		      size_t *key_size)
-{
-	int err;
-	key_serial_t kid;
-	long ret;
-	char *buf = NULL;
-	size_t len = 0;
-
-	kid = keyring_find_key_id_by_name(key_name);
-	if (kid < 0)
-		return kid;
-	else if (kid == 0)
-		return -ENOENT;
-
-	/* just get payload size */
-	ret = keyctl_read(kid, NULL, 0);
-	if (ret > 0) {
-		len = ret;
-		buf = crypt_safe_alloc(len);
-		if (!buf)
-			return -ENOMEM;
-
-		/* retrieve actual payload data */
-		ret = keyctl_read(kid, buf, len);
-	}
-
-	if (ret < 0) {
-		err = errno;
-		crypt_safe_free(buf);
-		return -err;
-	}
-
-	*key = buf;
-	*key_size = len;
-
-	return 0;
 }
 
 key_serial_t keyring_request_key_id(key_type_t key_type,
@@ -316,47 +270,6 @@ int keyring_read_key(key_serial_t kid,
 	return 0;
 }
 
-int keyring_get_user_key(const char *key_desc,
-		    char **key,
-		    size_t *key_size)
-{
-	int err;
-	key_serial_t kid;
-	long ret;
-	char *buf = NULL;
-	size_t len = 0;
-
-	do {
-		kid = request_key(key_type_name(USER_KEY), key_desc, NULL, 0);
-	} while (kid < 0 && errno == EINTR);
-
-	if (kid < 0)
-		return -errno;
-
-	/* just get payload size */
-	ret = keyctl_read(kid, NULL, 0);
-	if (ret > 0) {
-		len = ret;
-		buf = crypt_safe_alloc(len);
-		if (!buf)
-			return -ENOMEM;
-
-		/* retrieve actual payload data */
-		ret = keyctl_read(kid, buf, len);
-	}
-
-	if (ret < 0) {
-		err = errno;
-		crypt_safe_free(buf);
-		return -err;
-	}
-
-	*key = buf;
-	*key_size = len;
-
-	return 0;
-}
-
 int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id)
 {
 	return keyctl_unlink(kid, keyring_id) < 0 ? -EINVAL : 0;
@@ -365,26 +278,6 @@ int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id)
 int keyring_unlink_key_from_thread_keyring(key_serial_t kid)
 {
 	return keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING) < 0 ? -EINVAL : 0;
-}
-
-static int keyring_revoke_and_unlink_key_type(const char *type_name, const char *key_desc)
-{
-	key_serial_t kid;
-
-	if (!type_name || !key_desc)
-		return -EINVAL;
-
-	do {
-		kid = request_key(type_name, key_desc, NULL, 0);
-	} while (kid < 0 && errno == EINTR);
-
-	if (kid < 0)
-		return 0;
-
-	if (keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING))
-		return -errno;
-
-	return 0;
 }
 
 const char *key_type_name(key_type_t type)
@@ -510,11 +403,6 @@ key_serial_t keyring_add_key_to_custom_keyring(key_type_t ktype,
 	return add_key(type_name, key_desc, key, key_size, keyring_to_link);
 }
 
-int keyring_revoke_and_unlink_key(key_type_t ktype, const char *key_desc)
-{
-	return keyring_revoke_and_unlink_key_type(key_type_name(ktype), key_desc);
-}
-
 #else /* KERNEL_KEYRING */
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
@@ -524,18 +412,6 @@ int keyring_check(void)
 }
 
 int keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
-{
-	return -ENOTSUP;
-}
-
-int keyring_add_key_in_user_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
-{
-	return -ENOTSUP;
-}
-
-int keyring_find_and_get_key_by_name(const char *key_name,
-		      char **key,
-		      size_t *key_size)
 {
 	return -ENOTSUP;
 }
@@ -554,11 +430,6 @@ int keyring_read_key(key_serial_t kid,
 }
 
 int keyring_read_by_id(const char *key_desc, char **passphrase, size_t *passphrase_len)
-{
-	return -ENOTSUP;
-}
-
-int keyring_get_user_key(const char *key_desc, char **key, size_t *key_size)
 {
 	return -ENOTSUP;
 }
@@ -588,11 +459,6 @@ key_serial_t keyring_add_key_to_custom_keyring(key_type_t ktype,
 				      const void *key,
 				      size_t key_size,
 				      key_serial_t keyring_to_link)
-{
-	return -ENOTSUP;
-}
-
-int keyring_revoke_and_unlink_key(key_type_t ktype, const char *key_desc)
 {
 	return -ENOTSUP;
 }
