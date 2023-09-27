@@ -286,9 +286,9 @@ const char *key_type_name(key_type_t type)
 	return NULL;
 }
 
-int32_t keyring_find_key_id_by_name(const char *key_name)
+key_serial_t keyring_find_key_id_by_name(const char *key_name)
 {
-	int32_t id = 0;
+	key_serial_t id = 0;
 	char *end;
 	char *name_copy, *name_copy_p;
 
@@ -360,7 +360,7 @@ static bool numbered(const char *str)
 	return *endp == '\0' ? true : false;
 }
 
-int32_t keyring_find_keyring_id_by_name(const char *keyring_name)
+key_serial_t keyring_find_keyring_id_by_name(const char *keyring_name)
 {
 	assert(keyring_name);
 
@@ -434,12 +434,12 @@ const char *key_type_name(key_type_t type)
 	return NULL;
 }
 
-int32_t keyring_find_key_id_by_name(const char *key_name)
+key_serial_t keyring_find_key_id_by_name(const char *key_name)
 {
 	return 0;
 }
 
-int32_t keyring_find_keyring_id_by_name(const char *keyring_name)
+key_serial_t keyring_find_keyring_id_by_name(const char *keyring_name)
 {
 	return 0;
 }
