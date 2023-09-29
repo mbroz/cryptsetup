@@ -14,4 +14,10 @@ test-commit-job-csmock:
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/ || $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
-    - /opt/csmock-run-script.sh
+    - sudo /opt/run-csmock.sh
+  artifacts:
+    # Upload artifacts when a crash makes the job fail.
+    when: always
+    paths:
+      - cryptsetup-csmock-results.tar.xz
+      - cryptsetup-csmock-results

@@ -14,6 +14,4 @@ test-main-commit-job-annocheck:
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
   script:
-    - /opt/build-rpm-script.sh > /dev/null 2>&1
-    - annocheck /var/lib/mock/rhel-9.0.0-candidate-x86_64/result/*.rpm --profile=el9
-    - annocheck /var/lib/mock/rhel-9.0.0-candidate-x86_64/result/*.rpm --profile=el8
+    - sudo /opt/run-annocheck.sh
