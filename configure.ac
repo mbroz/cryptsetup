@@ -738,9 +738,9 @@ AC_DEFUN([CS_ABSPATH], [
 ])
 
 dnl ==========================================================================
-CS_STR_WITH([plain-hash],   [password hashing function for plain mode], [ripemd160])
+CS_STR_WITH([plain-hash],   [password hashing function for plain mode], [sha256])
 CS_STR_WITH([plain-cipher], [cipher for plain mode], [aes])
-CS_STR_WITH([plain-mode],   [cipher mode for plain mode], [cbc-essiv:sha256])
+CS_STR_WITH([plain-mode],   [cipher mode for plain mode], [xts-plain64])
 CS_NUM_WITH([plain-keybits],[key length in bits for plain mode], [256])
 
 CS_STR_WITH([luks1-hash],   [hash function for LUKS1 header], [sha256])
