@@ -151,6 +151,7 @@ static int action_open_plain(void)
 	size_t passwordLen, key_size_max, signatures = 0,
 	       key_size = (ARG_UINT32(OPT_KEY_SIZE_ID) ?: DEFAULT_PLAIN_KEYBITS) / 8;
 	uint32_t activate_flags = 0;
+	bool compat_warning = false;
 	int r;
 
 	r = crypt_parse_name_and_mode(ARG_STR(OPT_CIPHER_ID) ?: DEFAULT_CIPHER(PLAIN),
@@ -159,6 +160,23 @@ static int action_open_plain(void)
 		log_err(_("No known cipher specification pattern detected."));
 		goto out;
 	}
+
+	/*
+	 * Warn user if no cipher options and passphrase hashing is not specified.
+	 * For keyfile, password hashing is not used, no need to print warning for missing --hash.
+	 * Keep this enabled even in batch mode to fix scripts and avoid data corruption.
+	 */
+	if (!ARG_SET(OPT_CIPHER_ID) || !ARG_SET(OPT_KEY_SIZE_ID)) {
+		log_err(_("WARNING: Using default options for cipher (%s-%s, key size %u bits) that could be incompatible with older versions."),
+			cipher, cipher_mode, key_size * 8);
+		compat_warning = true;
+	}
+	if (!ARG_SET(OPT_HASH_ID) && !ARG_SET(OPT_KEY_FILE_ID)) {
+		log_err(_("WARNING: Using default options for hash (%s) that could be incompatible with older versions."), params.hash);
+		compat_warning = true;
+	}
+	if (compat_warning)
+		log_err(_("For plain mode, always use options --cipher, --key-size and if no keyfile is used, then also --hash."));
 
 	/* FIXME: temporary hack, no hashing for keyfiles in plain mode */
 	if (ARG_SET(OPT_KEY_FILE_ID) && !tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID))) {
