@@ -8,6 +8,7 @@ DEV_NAME2="ymmud"
 PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
+PLAIN_OPT="--type plain --cipher aes-cbc-essiv:sha256 --key-size 256 --hash sha256"
 SKIP_COUNT=0
 
 CRYPTSETUP_VALGRIND=../.libs/cryptsetup
@@ -165,33 +166,33 @@ if [ -z "$DM_PERF_CPU" ]; then
 	SKIP_COUNT=$((SKIP_COUNT+1))
 else
 	echo -n "PLAIN: same_cpu_crypt submit_from_cpus "
-	echo -e "$PWD1" | $CRYPTSETUP open -q --type plain --hash sha256 $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
+	echo -e "$PWD1" | $CRYPTSETUP open -q $PLAIN_OPT $DEV $DEV_NAME --perf-same_cpu_crypt --perf-submit_from_crypt_cpus || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q submit_from_crypt_cpus || fail
 	check_io
 	$CRYPTSETUP close $DEV_NAME || fail
 	echo -n "allow_discards "
-	echo -e "$PWD1" | $CRYPTSETUP open -q --type plain --hash sha256 $DEV $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
+	echo -e "$PWD1" | $CRYPTSETUP open -q $PLAIN_OPT $DEV $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
 	check_io
 	$CRYPTSETUP close $DEV_NAME || fail
-	echo -e "$PWD1" | $CRYPTSETUP open -q --type plain --hash sha256 $DEV $DEV_NAME || fail
-	echo -e "$PWD1" | $CRYPTSETUP refresh --hash sha256 -q $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
+	echo -e "$PWD1" | $CRYPTSETUP open -q $PLAIN_OPT $DEV $DEV_NAME || fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $PLAIN_OPT -q $DEV_NAME --perf-same_cpu_crypt --allow-discards || fail
 	# Hash affects volume key for plain device. Check we can detect it
-	echo -e "$PWD1" | $CRYPTSETUP refresh -q $DEV_NAME --hash sha512 --perf-same_cpu_crypt --allow-discards 2>/dev/null && fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh -q $DEV_NAME --cipher aes-cbc-essiv:sha256 --key-size 256 --hash sha512 --perf-same_cpu_crypt --allow-discards 2>/dev/null && fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
-	echo -e "$PWD1" | $CRYPTSETUP refresh --hash sha256 -q $DEV_NAME --allow-discards || fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $PLAIN_OPT -q $DEV_NAME --allow-discards || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
-	echo -e "$PWD1" | $CRYPTSETUP refresh --hash sha256 -q $DEV_NAME || fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $PLAIN_OPT -q $DEV_NAME || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q discards && fail
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
-	echo -e "$PWD1" | $CRYPTSETUP refresh --hash sha256 $DEV $DEV_NAME2 2>/dev/null && fail
+	echo -e "$PWD1" | $CRYPTSETUP refresh $PLAIN_OPT $DEV $DEV_NAME2 2>/dev/null && fail
 	if [ -n "$DM_PERF_NO_WORKQUEUE" ]; then
 		echo -n "no_read_workqueue no_write_workqueue"
-		echo -e "$PWD1" | $CRYPTSETUP refresh --hash sha256 -q $DEV_NAME --perf-no_read_workqueue --perf-no_write_workqueue || fail
+		echo -e "$PWD1" | $CRYPTSETUP refresh $PLAIN_OPT -q $DEV_NAME --perf-no_read_workqueue --perf-no_write_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
 		check_io
@@ -299,7 +300,7 @@ else
 fi
 
 echo "[3] Kernel dmcrypt sector size options"
-echo -e "$PWD1" | $CRYPTSETUP open --type plain --hash sha256 $DEV $DEV_NAME --sector-size 4096 >/dev/null 2>&1
+echo -e "$PWD1" | $CRYPTSETUP open $PLAIN_OPT $DEV $DEV_NAME --sector-size 4096 >/dev/null 2>&1
 ret=$?
 [ -z "$DM_SECTOR_SIZE" -a $ret -eq 0 ] && fail "cryptsetup activated device with --sector-size option on incompatible kernel!"
 if [ $ret -ne 0 ] ; then
@@ -312,18 +313,18 @@ else
 	$CRYPTSETUP close $DEV_NAME || fail
 
 	echo -n "PLAIN sector size:"
-	echo -e "$PWD1" | $CRYPTSETUP open --type plain --hash sha256 $DEV $DEV_NAME --sector-size 1234 >/dev/null 2>&1 && fail
+	echo -e "$PWD1" | $CRYPTSETUP open $PLAIN_OPT $DEV $DEV_NAME --sector-size 1234 >/dev/null 2>&1 && fail
 	for S in 512 1024 2048 4096; do
 		echo -n "[$S]"
-		echo -e "$PWD1" | $CRYPTSETUP open -q --type plain --hash sha256 $DEV $DEV_NAME --sector-size $S || fail
+		echo -e "$PWD1" | $CRYPTSETUP open -q $PLAIN_OPT $DEV $DEV_NAME --sector-size $S || fail
 		check_sector_size $S
 		$CRYPTSETUP close $DEV_NAME || fail
 	done
 
-	echo -e "$PWD1" | $CRYPTSETUP open --type plain --hash sha256 $DEV $DEV_NAME --iv-large-sectors >/dev/null 2>&1 && fail
+	echo -e "$PWD1" | $CRYPTSETUP open $PLAIN_OPT $DEV $DEV_NAME --iv-large-sectors >/dev/null 2>&1 && fail
 	for S in 1024 2048 4096; do
 		echo -n "[$S/IV]"
-		echo -e "$PWD1" | $CRYPTSETUP open -q --type plain --hash sha256 $DEV $DEV_NAME --sector-size $S --iv-large-sectors || fail
+		echo -e "$PWD1" | $CRYPTSETUP open -q $PLAIN_OPT $DEV $DEV_NAME --sector-size $S --iv-large-sectors || fail
 		check_sector_size $S
 		dmsetup table $DEV_NAME | grep -q "iv_large_sectors" || fail
 		$CRYPTSETUP close $DEV_NAME || fail

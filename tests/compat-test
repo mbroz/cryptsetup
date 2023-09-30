@@ -28,6 +28,7 @@ PWDW="rUkL4RUryBom"
 VK_FILE="compattest_vkfile"
 
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
+PLAIN_OPT="--hash sha256 --cipher aes-cbc-essiv:sha256 --key-size 256"
 
 LUKS_HEADER="S0-5 S6-7 S8-39 S40-71 S72-103 S104-107 S108-111 R112-131 R132-163 S164-167 S168-207 A0-591"
 KEY_SLOT0="S208-211 S212-215 R216-247 A248-251 A251-255"
@@ -538,8 +539,8 @@ $CRYPTSETUP luksKillSlot -q $LOOPDEV 1 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: DISABLED" || fail
 
 prepare "[19] create & status & resize" wipe
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash xxx 2>/dev/null && fail
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha256 --cipher aes-cbc-essiv:sha256 --offset 3 --skip 4 --readonly || fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash xxx --cipher aes-cbc-essiv:sha256 --key-size 256 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV $PLAIN_OPT --offset 3 --skip 4 --readonly || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "offset:" | grep -q "3 sectors" || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "skipped:" | grep -q "4 sectors" || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "mode:" | grep -q "readonly" || fail
@@ -559,15 +560,15 @@ $CRYPTSETUP -q resize  $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "32765 sectors" || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME >/dev/null && fail
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME --hash sha256 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME $PLAIN_OPT $LOOPDEV || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
-echo $PWD1 | $CRYPTSETUP -q create $DEV_NAME --hash sha256 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q create $DEV_NAME $PLAIN_OPT $LOOPDEV || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
-echo $PWD1 | $CRYPTSETUP -q create $DEV_NAME --hash sha256 --size 100 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP -q create $DEV_NAME $PLAIN_OPT --size 100 $LOOPDEV || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 # 4k sector resize (if kernel supports it)
-echo $PWD1 | $CRYPTSETUP -q open --type plain --hash sha256 $LOOPDEV $DEV_NAME --sector-size 4096 --size 8  >/dev/null 2>&1
+echo $PWD1 | $CRYPTSETUP -q open --type plain $PLAIN_OPT $LOOPDEV $DEV_NAME --sector-size 4096 --size 8  >/dev/null 2>&1
 if [ $? -eq 0 ] ; then
 	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "8 sectors" || fail
 	$CRYPTSETUP -q resize  $DEV_NAME --size 16 || fail
@@ -580,7 +581,7 @@ if [ $? -eq 0 ] ; then
 fi
 # Resize not aligned to logical block size
 add_scsi_device dev_size_mb=32 sector_size=4096
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME --hash sha256 $DEV || fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME $PLAIN_OPT $DEV || fail
 OLD_SIZE=$($CRYPTSETUP status $DEV_NAME | grep "^ \+size:" | sed 's/.* \([0-9]\+\) .*/\1/')
 $CRYPTSETUP resize $DEV_NAME -b 7 2> /dev/null && fail
 dmsetup info $DEV_NAME | grep -q SUSPENDED && fail
@@ -588,25 +589,25 @@ NEW_SIZE=$($CRYPTSETUP status $DEV_NAME | grep "^ \+size:" | sed 's/.* \([0-9]\+
 test $OLD_SIZE -eq $NEW_SIZE || fail
 $CRYPTSETUP close $DEV_NAME || fail
 # Add check for unaligned plain crypt activation
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME --hash sha256 $DEV -b 7 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME $PLAIN_OPT $DEV -b 7 2>/dev/null && fail
 $CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 && fail
 # verify is ignored on non-tty input
 echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash sha256 --verify-passphrase 2>/dev/null || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 --key-size 255 2>/dev/null && fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 --key-size -1 2>/dev/null && fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 -l -1 2>/dev/null && fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1  || fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d blah 2>/dev/null && fail
+$CRYPTSETUP create --cipher aes-cbc-essiv:sha256 --key-size 256 $DEV_NAME $LOOPDEV -d $KEY1 --key-size 255 2>/dev/null && fail
+$CRYPTSETUP create --cipher aes-cbc-essiv:sha256 --key-size 256 $DEV_NAME $LOOPDEV -d $KEY1 --key-size -1 2>/dev/null && fail
+$CRYPTSETUP create --cipher aes-cbc-essiv:sha256 --key-size 256 $DEV_NAME $LOOPDEV -d $KEY1 -l -1 2>/dev/null && fail
+$CRYPTSETUP create --cipher aes-cbc-essiv:sha256 --key-size 256 $DEV_NAME $LOOPDEV -d $KEY1  || fail
+$CRYPTSETUP create --cipher aes-cbc-essiv:sha256 --key-size 256 $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
+$CRYPTSETUP create --cipher aes-cbc-essiv:sha256 --key-size 256 $DEV_NAME $LOOPDEV -d blah 2>/dev/null && fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d /dev/urandom || fail
+$CRYPTSETUP create --cipher aes-cbc-essiv:sha256 --key-size 256 $DEV_NAME $LOOPDEV -d /dev/urandom || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 
 prepare "[20] Disallow open/create if already mapped." wipe
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 || fail
-$CRYPTSETUP create $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
-$CRYPTSETUP create $DEV_NAME2 $LOOPDEV -d $KEY1 2>/dev/null && fail
+$CRYPTSETUP create --cipher aes-cbc-essiv:sha256 --key-size 256 $DEV_NAME $LOOPDEV -d $KEY1 || fail
+$CRYPTSETUP create --cipher aes-cbc-essiv:sha256 --key-size 256 $DEV_NAME $LOOPDEV -d $KEY1 2>/dev/null && fail
+$CRYPTSETUP create --cipher aes-cbc-essiv:sha256 --key-size 256 $DEV_NAME2 $LOOPDEV -d $KEY1 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $LOOPDEV 2>/dev/null && fail
 $CRYPTSETUP remove  $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $LOOPDEV || fail
@@ -708,15 +709,15 @@ $CRYPTSETUP luksChangeKey $LOOPDEV $FAST_PBKDF_OPT -d /dev/mapper/$DEV_NAME2 \
 dmsetup remove --retry $DEV_NAME2
 
 prepare "[25] Create shared segments" wipe
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV  --hash sha256 --offset   0 --size 256 || fail
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --hash sha256 --offset 512 --size 256 2>/dev/null && fail
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV --hash sha256 --offset 512 --size 256 --shared || fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME  $LOOPDEV $PLAIN_OPT --offset   0 --size 256 || fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV $PLAIN_OPT --offset 512 --size 256 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME2 $LOOPDEV $PLAIN_OPT --offset 512 --size 256 --shared || fail
 $CRYPTSETUP -q remove  $DEV_NAME2 || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 
 prepare "[26] Suspend/Resume" wipe
 # only LUKS is supported
-echo $PWD1 | $CRYPTSETUP create $DEV_NAME --hash sha256 $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP create $DEV_NAME $PLAIN_OPT $LOOPDEV || fail
 $CRYPTSETUP luksSuspend $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
@@ -836,8 +837,8 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: DISABLED" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 5: DISABLED" || fail
 
 prepare "[31] Deferred removal of device" wipe
-echo $PWD1 | $CRYPTSETUP open --type plain --hash sha256 $LOOPDEV $DEV_NAME || fail
-echo $PWD2 | $CRYPTSETUP open --type plain --hash sha256 /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
+echo $PWD1 | $CRYPTSETUP open --type plain $PLAIN_OPT $LOOPDEV $DEV_NAME || fail
+echo $PWD2 | $CRYPTSETUP open --type plain $PLAIN_OPT /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
 $CRYPTSETUP close $DEV_NAME >/dev/null 2>&1 && fail
 $CRYPTSETUP -q status $DEV_NAME >/dev/null 2>&1 || fail
 $CRYPTSETUP close --deferred $DEV_NAME >/dev/null 2>&1

@@ -176,7 +176,7 @@ format_plain() # sector size
 {
 	echo -n "Formatting plain device (sector size $1)..."
 	if [ -n "$DM_SECTOR_SIZE" ] ; then
-		echo $PWD1 | $CRYPTSETUP open --type plain --hash sha256 --sector-size $1 $DEV $DEV_NAME || fail
+		echo $PWD1 | $CRYPTSETUP open --type plain --cipher aes-cbc-essiv:sha256 --key-size 256 --hash sha256 --sector-size $1 $DEV $DEV_NAME || fail
 		$CRYPTSETUP close $DEV_NAME || fail
 		echo "PASSED"
 	else

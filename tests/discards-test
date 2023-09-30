@@ -103,7 +103,7 @@ dmsetup table $DEV_NAME | grep allow_discards >/dev/null || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
 
 echo "[2] Allowing discards for plain device"
-echo $PWD1 | $CRYPTSETUP create -q $DEV_NAME $DEV --hash sha256 --allow-discards || fail
+echo $PWD1 | $CRYPTSETUP create -q $DEV_NAME $DEV --cipher aes-cbc-essiv:sha256 --key-size 256 --hash sha256 --allow-discards || fail
 $CRYPTSETUP status $DEV_NAME | grep flags | grep discards >/dev/null || fail
 $CRYPTSETUP resize $DEV_NAME --size 100 || fail
 $CRYPTSETUP status $DEV_NAME | grep flags | grep discards >/dev/null || fail
