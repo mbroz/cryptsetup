@@ -5543,8 +5543,6 @@ int main(int argc, char *argv[])
 
 	crypt_set_debug_level(_debug ? CRYPT_DEBUG_JSON : CRYPT_DEBUG_NONE);
 
-	goto aaa;
-
 	RUN_(AddDeviceLuks2, "Format and use LUKS2 device");
 	RUN_(Luks2MetadataSize, "LUKS2 metadata settings");
 	RUN_(Luks2HeaderLoad, "LUKS2 header load");
@@ -5570,7 +5568,6 @@ int main(int argc, char *argv[])
 #endif
 	RUN_(LuksKeyslotAdd, "Adding keyslot via new API");
 	RUN_(VolumeKeyGet, "Getting volume key via keyslot context API");
-aaa:
 	RUN_(KeyslotContextAndKeyringLink, "Activate via keyslot context API and linking VK to a keyring");
 	RUN_(Luks2Repair, "LUKS2 repair"); // test disables metadata locking. Run always last!
 
