@@ -292,17 +292,19 @@ function add_scsi_device() {
 # $3 key type (optional)
 test_vk_link() {
 	KEY_TYPE=${3:-user}
-	KEY_TYPE_ARG=""
-	if [ ! -z "$3" ]; then
-		KEY_TYPE_ARG="%$3:"
+	if [ -z "$3" ]; then
+		KEY_DESC=$1
+	else
+		KEY_DESC="%$3:$1"
 	fi
 
-	#echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --key-description $1 --link-vk-to-keyring "$2" $KEY_TYPE_ARG || fail
-	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "$2"::"$KEY_TYPE_ARG""$1" || fail
+	KEYCTL_KEY_NAME="%$KEY_TYPE:$1"
+
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "$2"::"$KEY_DESC" || fail
 	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after activation."
 	$CRYPTSETUP close $DEV_NAME
 	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after deactivation."
-	keyctl unlink "%$KEY_TYPE:$1" "$2" || fail
+	keyctl unlink "$KEYCTL_KEY_NAME" "$2" || fail
 }
 
 # $1 key name
@@ -310,34 +312,34 @@ test_vk_link() {
 # $3 key type (optional)
 test_vk_link_and_reactivate() {
 	KEY_TYPE=${3:-user}
-	KEY_TYPE_ARG=""
-	if [ ! -z "$3" ]; then
-		KEY_TYPE_ARG="%$3:"
+	if [ -z "$3" ]; then
+		KEY_DESC=$1
+	else
+		KEY_DESC="%$3:$1"
 	fi
 
-	LINKED_KEY_NAME="%$KEY_TYPE:$1"
+	KEYCTL_KEY_NAME="%$KEY_TYPE:$1"
 
-	#echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --key-description $1 --link-vk-to-keyring "$2" $KEY_TYPE_ARG || fail
-	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "$2"::"$KEY_TYPE_ARG""$1" || fail
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "$2"::"$KEY_DESC" || fail
 	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after activation."
 	$CRYPTSETUP close $DEV_NAME || fail
 	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after deactivation."
-	$CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-keyring $LINKED_KEY_NAME || fail "Failed to unlock volume via a VK in keyring."
+	$CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-keyring $KEY_DESC || fail "Failed to unlock volume via a VK in keyring."
 	$CRYPTSETUP luksSuspend $DEV_NAME || fail "Failed to suspend device."
-	$CRYPTSETUP luksResume $DEV_NAME --volume-key-keyring $LINKED_KEY_NAME || fail "Failed to resume via a VK in keyring."
+	$CRYPTSETUP luksResume $DEV_NAME --volume-key-keyring $KEY_DESC || fail "Failed to resume via a VK in keyring."
 
 	echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase 2>/dev/null || fail
 	echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase 2>/dev/null && fail
-	echo $PWD2 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --volume-key-keyring $LINKED_KEY_NAME $LOOPDEV --new-key-slot 1 || fail "Failed to add passphrase by VK in keyring."
+	echo $PWD2 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT --volume-key-keyring $KEY_DESC $LOOPDEV --new-key-slot 1 || fail "Failed to add passphrase by VK in keyring."
 	echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase 2>/dev/null || fail
 	$CRYPTSETUP luksKillSlot -q $LOOPDEV 1 2>/dev/null || fail
 
 	$CRYPTSETUP close $DEV_NAME || fail
 	# zero-out the key in keyring
-	keyctl pipe $LINKED_KEY_NAME | tr -c '\0' '\0' | keyctl pupdate $LINKED_KEY_NAME
-	$CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-keyring $LINKED_KEY_NAME > /dev/null 2>&1 && fail "Unlocked volume via a bad VK in keyring."
+	keyctl pipe $KEYCTL_KEY_NAME | tr -c '\0' '\0' | keyctl pupdate $KEYCTL_KEY_NAME
+	$CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-keyring $KEY_DESC > /dev/null 2>&1 && fail "Unlocked volume via a bad VK in keyring."
 	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after bad activation."
-	keyctl unlink "%$KEY_TYPE:$1" "$2" || fail
+	keyctl unlink $KEYCTL_KEY_NAME "$2" || fail
 }
 
 export LANG=C
