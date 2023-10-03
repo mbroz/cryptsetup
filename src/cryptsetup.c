@@ -1815,11 +1815,13 @@ out:
 	    (crypt_get_active_device(cd, activated_name, &cad) ||
 	     crypt_persistent_flags_set(cd, CRYPT_FLAGS_ACTIVATION, cad.flags & activate_flags)))
 		log_err(_("Device activated but cannot make flags persistent."));
-	crypt_keyslot_context_free(kc);
 
+	crypt_keyslot_context_free(kc);
 	crypt_safe_free(key);
 	crypt_safe_free(password);
 	crypt_free(cd);
+	free(vk_description_activation);
+
 	return r;
 }
 
