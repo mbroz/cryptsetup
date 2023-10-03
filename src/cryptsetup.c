@@ -1635,7 +1635,7 @@ static int parse_vk_description(const char *key_description, char **ret_key_desc
 		r = tmp ? 0 : -ENOMEM;
 	}
 
-	if (!r)
+	if (r >= 0)
 		*ret_key_description = tmp;
 
 	return r;
