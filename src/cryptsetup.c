@@ -1629,13 +1629,10 @@ static int parse_vk_description(const char *key_description, char **ret_key_desc
 
 	/* apply default key type */
 	if (*key_description != '%')
-		r = asprintf(&tmp, "%%user:%s", key_description);
-	else {
-		tmp = strdup(key_description);
-		r = tmp ? 0 : -ENOMEM;
-	}
-
-	if (r >= 0)
+		r = asprintf(&tmp, "%%user:%s", key_description) < 0 ? -EINVAL : 0;
+	else
+		r = (tmp = strdup(key_description)) ? 0 : -ENOMEM;
+	if (!r)
 		*ret_key_description = tmp;
 
 	return r;
