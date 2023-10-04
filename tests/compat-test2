@@ -324,9 +324,9 @@ test_vk_link_and_reactivate() {
 	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after activation."
 	$CRYPTSETUP close $DEV_NAME || fail
 	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after deactivation."
-	$CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-keyring $KEY_DESC || fail "Failed to unlock volume via a VK in keyring."
+	$CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-keyring $KEY_DESC <&-|| fail "Failed to unlock volume via a VK in keyring."
 	$CRYPTSETUP luksSuspend $DEV_NAME || fail "Failed to suspend device."
-	$CRYPTSETUP luksResume $DEV_NAME --volume-key-keyring $KEY_DESC || fail "Failed to resume via a VK in keyring."
+	$CRYPTSETUP luksResume $DEV_NAME --volume-key-keyring $KEY_DESC <&- || fail "Failed to resume via a VK in keyring."
 
 	echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase 2>/dev/null || fail
 	echo $PWD2 | $CRYPTSETUP luksOpen $LOOPDEV --test-passphrase 2>/dev/null && fail
@@ -337,7 +337,7 @@ test_vk_link_and_reactivate() {
 	$CRYPTSETUP close $DEV_NAME || fail
 	# zero-out the key in keyring
 	keyctl pipe $KEYCTL_KEY_NAME | tr -c '\0' '\0' | keyctl pupdate $KEYCTL_KEY_NAME
-	$CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-keyring $KEY_DESC > /dev/null 2>&1 && fail "Unlocked volume via a bad VK in keyring."
+	$CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-keyring $KEY_DESC <&- > /dev/null 2>&1 && fail "Unlocked volume via a bad VK in keyring."
 	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after bad activation."
 	keyctl unlink $KEYCTL_KEY_NAME "$2" || fail
 }
