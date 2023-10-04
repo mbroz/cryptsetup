@@ -306,7 +306,7 @@ static int reencrypt_luks2_load(struct crypt_device *cd, const char *data_device
 	if (!ARG_SET(OPT_BATCH_MODE_ID) && !ARG_SET(OPT_RESUME_ONLY_ID)) {
 		r = asprintf(&msg, _("Device %s is already in LUKS2 reencryption. "
 				     "Do you wish to resume previously initialised operation?"),
-			     crypt_get_metadata_device_name(cd) ?: data_device);
+			     crypt_get_metadata_device_name(cd) ?: crypt_get_device_name(cd));
 		if (r < 0) {
 			r = -ENOMEM;
 			goto out;
