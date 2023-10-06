@@ -2216,7 +2216,7 @@ static int action_luksAddKey(void)
 			goto out;
 
 		/* Check password before asking for new one */
-		r = crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT,
+		r = crypt_activate_by_passphrase(cd, NULL, keyslot_old,
 						 password, password_size, 0);
 		check_signal(&r);
 		tools_passphrase_msg(r);
