@@ -1331,7 +1331,15 @@ static int _dm_create_device(struct crypt_device *cd, const char *name, const ch
 		goto out;
 
 	if (!dm_task_run(dmt)) {
-		r = dm_status_device(cd, name);;
+
+		r = -dm_task_get_errno(dmt);
+		if (r == -ENOKEY || r == -EKEYREVOKED || r == -EKEYEXPIRED) {
+			/* propagate DM errors around key managament as such */
+			r = -ENOKEY;
+			goto out;
+		}
+
+		r = dm_status_device(cd, name);
 		if (r >= 0)
 			r = -EEXIST;
 		if (r != -EEXIST && r != -ENODEV)
