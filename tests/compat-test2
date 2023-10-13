@@ -3,6 +3,7 @@
 PS4='$LINENO:'
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+CRYPTSETUP_RAW=$CRYPTSETUP
 
 CRYPTSETUP_VALGRIND=../.libs/cryptsetup
 CRYPTSETUP_LIB_VALGRIND=../.libs
@@ -340,6 +341,36 @@ test_vk_link_and_reactivate() {
 	$CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-keyring $KEY_DESC <&- > /dev/null 2>&1 && fail "Unlocked volume via a bad VK in keyring."
 	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after bad activation."
 	keyctl unlink $KEYCTL_KEY_NAME "$2" || fail
+}
+
+function expect_run()
+{
+	export INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}"
+	expect "$@"
+}
+
+# expected unlocked keyslot id
+# command arguments
+function expect_unlocked_keyslot()
+{
+	command -v expect >/dev/null || {
+		echo "WARNING: expect tool missing, interactive test will be skipped."
+		return 0
+	}
+
+	EXPECT_TIMEOUT=60
+	EXPECT_KEY=$1
+
+	expect_run - >/dev/null <<EOF
+proc abort {} { send_error "Timeout. "; exit 2 }
+set timeout $EXPECT_TIMEOUT
+eval spawn $CRYPTSETUP_RAW $2
+expect timeout abort "Key slot $EXPECT_KEY unlocked."
+expect timeout abort "Command successful."
+expect timeout abort eof
+exit
+EOF
+	[ $? -eq 0 ] || return 1
 }
 
 export LANG=C
@@ -1000,6 +1031,40 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 	$CRYPTSETUP token unassign --token-id 0 -S0 $LOOPDEV 2>/dev/null && fail
 	$CRYPTSETUP token unassign --token-id 0 -S44 $LOOPDEV 2>/dev/null && fail
 	$CRYPTSETUP token unassign --token-id 44 -S0 $LOOPDEV 2>/dev/null && fail
+
+	$CRYPTSETUP token remove $LOOPDEV --token-id 0 || fail
+	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN0 -S0 --token-id 0 || fail
+
+	# token 8 assigned to keyslot 0 and 5. Unlocks only 5
+	echo "$PWD2" | $CRYPTSETUP luksAddKey -q -S5 $FAST_PBKDF_OPT --token-id 0 $LOOPDEV || fail
+	echo -n "{\"type\":\"luks2-keyring\",\"keyslots\":[\"0\",\"5\"],\"key_description\":\"$TEST_TOKEN1\"}" | $CRYPTSETUP token import $LOOPDEV --token-id 8 || fail
+	load_key user $TEST_TOKEN1 "$PWD2" "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+
+	# token 3 assigned to keyslot 1 (wrong passphrase)
+	echo "$PWD3" | $CRYPTSETUP luksAddKey -q -S1 $FAST_PBKDF_OPT --token-id 0 $LOOPDEV || fail
+	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN2 -S1 --token-id 3 || fail
+	load_key user $TEST_TOKEN2 "blabla" "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+
+	# specific token, specific keyslot
+	$CRYPTSETUP open --test-passphrase --token-id 0 -S0 $LOOPDEV --token-only <&- || fail
+	# specific keyslot unlocked by any token
+	$CRYPTSETUP open --test-passphrase -S0 $LOOPDEV --token-only <&- || fail
+
+	# token 0 unusable for keyslot 5
+	$CRYPTSETUP open --test-passphrase --token-id 0 -S5 $LOOPDEV --token-only <&- >/dev/null && fail
+	# backup interactive prompt should work
+	echo $PWD2 | $CRYPTSETUP open --test-passphrase --token-id 0 -S5 $LOOPDEV || fail
+
+	$CRYPTSETUP open --test-passphrase -S5 --token-id 8 $LOOPDEV <&- || fail
+	$CRYPTSETUP open --test-passphrase -S5 $LOOPDEV <&- || fail
+
+	expect_unlocked_keyslot 5 "open -v --test-passphrase --token-id 8 -S5 $LOOPDEV" || fail
+	expect_unlocked_keyslot 5 "open -v --test-passphrase --token-id 8 $LOOPDEV" || fail
+
+	$CRYPTSETUP open --test-passphrase -S0 --token-id 8 $LOOPDEV --token-only >/dev/null && fail
+	[ $? -ne 2 ] && fail "open should return EPERM exit code."
+	$CRYPTSETUP open --test-passphrase -S1 $LOOPDEV --token-only && fail
+	[ $? -ne 2 ] && fail "open should return EPERM exit code."
 fi
 echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 10 || fail
 echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 11 --json-file - || fail
