@@ -3,11 +3,12 @@ test-main-commit-job-annocheck:
     - .dump_kernel_log
   tags:
     - libvirt
-    - rhel9-annocheck
+    - cryptsetup-rhel-9
   stage: test
   interruptible: true
   allow_failure: true
   variables:
+    DISTRO: cryptsetup-rhel-9
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"

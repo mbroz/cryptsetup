@@ -1,4 +1,6 @@
 .centos-openssl-backend:
+  variables:
+    DISTRO: cryptsetup-centos-stream-9
   extends:
     - .dump_kernel_log
   before_script:
@@ -21,7 +23,7 @@ test-main-commit-centos-stream9:
     - .centos-openssl-backend
   tags:
     - libvirt
-    - centos-stream9
+    - cryptsetup-centos-stream-9
   stage: test
   interruptible: true
   variables:
@@ -42,7 +44,7 @@ test-mergerq-centos-stream9:
     - .centos-openssl-backend
   tags:
     - libvirt
-    - centos-stream9
+    - cryptsetup-centos-stream-9
   stage: test
   interruptible: true
   variables:

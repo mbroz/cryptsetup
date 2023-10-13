@@ -21,10 +21,11 @@ test-main-commit-rhel8:
     - .rhel-openssl-backend
   tags:
     - libvirt
-    - rhel8
+    - cryptsetup-rhel-8
   stage: test
   interruptible: true
   variables:
+    DISTRO: cryptsetup-rhel-8
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
     - if: $RUN_SYSTEMD_PLUGIN_TEST != null
@@ -42,10 +43,11 @@ test-main-commit-rhel9:
     - .rhel-openssl-backend
   tags:
     - libvirt
-    - rhel9
+    - cryptsetup-rhel-9
   stage: test
   interruptible: true
   variables:
+    DISTRO: cryptsetup-rhel-9
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
     - if: $RUN_SYSTEMD_PLUGIN_TEST != null
@@ -65,10 +67,11 @@ test-main-commit-rhel8-fips:
     - .rhel-openssl-backend
   tags:
     - libvirt
-    - rhel8-fips
+    - cryptsetup-rhel-8-fips
   stage: test
   interruptible: true
   variables:
+    DISTRO: cryptsetup-rhel-8-fips
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
     - if: $RUN_SYSTEMD_PLUGIN_TEST != null
@@ -87,11 +90,12 @@ test-main-commit-rhel9-fips:
     - .rhel-openssl-backend
   tags:
     - libvirt
-    - rhel9-fips
+    - cryptsetup-rhel-9-fips
   stage: test
   interruptible: true
   allow_failure: true
   variables:
+    DISTRO: cryptsetup-rhel-9-fips
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
     - if: $RUN_SYSTEMD_PLUGIN_TEST != null

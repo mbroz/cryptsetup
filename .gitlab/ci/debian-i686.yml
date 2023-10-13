@@ -1,9 +1,11 @@
-test-mergerq-job-ubuntu-32bit:
+test-mergerq-job-debian-i686:
+  variables:
+    DISTRO: cryptsetup-debian-12i686
   extends:
     - .debian-prep
   tags:
     - libvirt
-    - ubuntu-bionic-32bit
+    - cryptsetup-debian-12i686
   stage: test
   interruptible: true
   variables:
@@ -19,12 +21,14 @@ test-mergerq-job-ubuntu-32bit:
     - make -j -C tests check-programs
     - sudo -E make check
 
-test-main-commit-job-ubuntu-32bit:
+test-main-commit-job-debian-i686:
+  variables:
+    DISTRO: cryptsetup-debian-12i686
   extends:
     - .debian-prep
   tags:
     - libvirt
-    - ubuntu-bionic-32bit
+    - cryptsetup-debian-12i686
   stage: test
   interruptible: true
   variables:
