@@ -1636,8 +1636,12 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	tools_keyslot_msg(r, CREATED);
 
 	if (ARG_SET(OPT_INTEGRITY_ID) && !ARG_SET(OPT_INTEGRITY_NO_WIPE_ID) &&
-	    strcmp_or_null(params2.integrity, "none"))
+	    strcmp_or_null(params2.integrity, "none")) {
 		r = _wipe_data_device(cd);
+		/* Interrupted wipe should not fail luksFormat action */
+		if (r == -EINTR)
+			r = 0;
+	}
 out:
 	crypt_safe_free(key);
 

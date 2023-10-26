@@ -217,8 +217,12 @@ static int action_format(void)
 		log_std(_("Formatted with tag size %u, internal integrity %s.\n"),
 			params2.tag_size, params2.integrity);
 
-	if (!ARG_SET(OPT_NO_WIPE_ID))
+	if (!ARG_SET(OPT_NO_WIPE_ID)) {
 		r = _wipe_data_device(cd, integrity_key);
+		/* Interrupted wipe should not fail format action */
+		if (r == -EINTR)
+			r = 0;
+	}
 out:
 	crypt_safe_free(integrity_key);
 	crypt_safe_free(CONST_CAST(void*)params.journal_integrity_key);
