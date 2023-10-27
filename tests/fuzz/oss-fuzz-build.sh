@@ -47,7 +47,7 @@ in_oss_fuzz && apt-get update && apt-get install -y \
 [ ! -d zlib ]   && git clone --depth 1 https://github.com/madler/zlib.git
 [ ! -d xz ]     && git clone https://git.tukaani.org/xz.git
 [ ! -d json-c ] && git clone --depth 1 https://github.com/json-c/json-c.git
-[ ! -d lvm2 ]   && git clone --depth 1 https://sourceware.org/git/lvm2.git
+[ ! -d lvm2 ]   && git clone --depth 1 https://gitlab.com/lvmteam/lvm2
 [ ! -d popt ]   && git clone --depth 1 https://github.com/rpm-software-management/popt.git
 # FIXME: temporary fix until libprotobuf stops shuffling C++ requirements
 # [ ! -d libprotobuf-mutator ] && git clone --depth 1 https://github.com/google/libprotobuf-mutator.git \
@@ -79,7 +79,7 @@ cd ..
 
 cd xz
 ./autogen.sh --no-po4a --no-doxygen
-./configure --prefix="$DEPS_PATH" --enable-static --disable-shared
+./configure --prefix="$DEPS_PATH" --enable-static --disable-shared --disable-ifunc --disable-sandbox
 make -j
 make install
 cd ..
