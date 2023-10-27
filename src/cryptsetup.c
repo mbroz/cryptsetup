@@ -1468,6 +1468,11 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 			log_err(_("Unsupported LUKS2 metadata size options."));
 			return -EINVAL;
 		}
+
+		if (ARG_SET(OPT_HW_OPAL_ID) || ARG_SET(OPT_HW_OPAL_ONLY_ID)) {
+			log_err(_("OPAL is supported only for LUKS2 format."));
+			return -EINVAL;
+		}
 	} else
 		return -EINVAL;
 
