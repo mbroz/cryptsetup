@@ -2152,7 +2152,7 @@ static void hdr_dump_segments(struct crypt_device *cd, json_object *hdr_jobj)
 			json_object_object_get_ex(jobj_segment, "opal_segment_number", &jobj1);
 			log_std(cd, "\t\tOPAL segment number: %" PRIu32 "\n", crypt_jobj_get_uint32(jobj1));
 			json_object_object_get_ex(jobj_segment, "opal_key_size", &jobj1);
-			log_std(cd, "\t\tOPAL key size: %" PRIu32 " [bytes]\n", crypt_jobj_get_uint32(jobj1));
+			log_std(cd, "\t\tOPAL key: %" PRIu32 " bits\n", crypt_jobj_get_uint32(jobj1) * 8);
 			json_object_object_get_ex(jobj_segment, "opal_segment_size", &jobj1);
 			json_str_to_uint64(jobj1, &value);
 			log_std(cd, "\t\tOPAL segment length: %" PRIu64 " [bytes]\n", value);
