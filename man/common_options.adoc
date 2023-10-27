@@ -159,6 +159,16 @@ If this option is not used, cryptsetup will ask for all active keyslot
 passphrases.
 endif::[]
 endif::[]
+ifdef::ACTION_ERASE[]
+*--key-file, -d* _name_ *(LUKS2 with HW OPAL only)*::
+
+Read the Admin PIN or PSID (with --hw-opal-factory-reset) from file
+depending on options used.
++
+If the name given is "-", then the secret will be read from stdin.
+In this case, reading will not stop at newline characters.
++
+endif::[]
 
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_BITLKDUMP[]
 *--keyfile-offset* _value_::

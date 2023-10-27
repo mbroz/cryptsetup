@@ -18,15 +18,17 @@ cryptsetup-erase, cryptsetup-luksErase - erase all keyslots
 == DESCRIPTION
 
 Erase all keyslots and make the LUKS container permanently inaccessible.
-You do not need to provide any password for this operation.
+Unless the device is configured with HW OPAL support you do not need to
+provide any password for this operation.
 
 *WARNING:* This operation is irreversible.
+
 *WARNING:* with *--hw-opal-factory-reset* ALL data is lost on the device,
 regardless of the partition it is ran on, if any, and regardless of any LUKS2
 header backup, and does not require a valid LUKS2 header to be present on the
 device to run.
 
-*<options>* can be [--header, --disable-locks, --hw-opal-factory-reset].
+*<options>* can be [--header, --disable-locks, --hw-opal-factory-reset, --key-file].
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]
