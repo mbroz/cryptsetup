@@ -700,7 +700,7 @@ endif::[]
 
 ifndef::ACTION_BENCHMARK,ACTION_BITLKDUMP[]
 *--header <device or file storing the LUKS header>*::
-ifndef::ACTION_OPEN[]
+ifndef::ACTION_OPEN,ACTION_ERASE[]
 Use a detached (separated) metadata device or file where the LUKS
 header is stored. This option allows one to store ciphertext and LUKS
 header on different devices.
@@ -723,7 +723,7 @@ FAQ for header size calculation.
 The --align-payload option is taken as absolute sector alignment on ciphertext
 device and can be zero.
 endif::[]
-ifndef::ACTION_LUKSFORMAT,ACTION_OPEN[]
+ifndef::ACTION_LUKSFORMAT,ACTION_OPEN,ACTION_ERASE[]
 For commands that change the LUKS header (e.g. _luksAddKey_),
 specify the device or file with the LUKS header directly as the LUKS
 device.
@@ -743,11 +743,27 @@ decryption operation continues as if the ordinary detached header was passed.
 *WARNING:* Never put exported header file in a filesystem on top of device
 you are about to decrypt! It would cause a deadlock.
 endif::[]
+ifdef::ACTION_ERASE[]
+Use to specify detached LUKS2 header when erasing HW OPAL enabled data device.
+endif::[]
 endif::[]
 
 ifdef::ACTION_LUKSHEADERBACKUP,ACTION_LUKSHEADERRESTORE[]
 *--header-backup-file <file>*::
 Specify file with header backup file.
+endif::[]
+
+ifdef::ACTION_LUKSFORMAT[]
+*--hw-opal*::
+Format LUKS2 device with dm-crypt encryption stacked on top HW based encryption configured
+on SED OPAL locking range. This option enables both SW and HW based data encryption.
+endif::[]
+
+ifdef::ACTION_LUKSFORMAT[]
+*--hw-opal-only*::
+Format LUKS2 device with HW based encryption configured on SED OPAL locking range only. LUKS2
+format only manages locking range unlock key. This option enables HW based data encryption managed
+by SED OPAL drive only.
 endif::[]
 
 ifdef::ACTION_REENCRYPT[]
