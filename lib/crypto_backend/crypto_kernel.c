@@ -245,7 +245,6 @@ void crypt_hash_destroy(struct crypt_hash *ctx)
 		close(ctx->tfmfd);
 	if (ctx->opfd >= 0)
 		close(ctx->opfd);
-	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
 }
 
@@ -324,7 +323,6 @@ void crypt_hmac_destroy(struct crypt_hmac *ctx)
 		close(ctx->tfmfd);
 	if (ctx->opfd >= 0)
 		close(ctx->opfd);
-	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
 }
 

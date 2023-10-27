@@ -414,7 +414,6 @@ void crypt_hash_destroy(struct crypt_hash *ctx)
 {
 	hash_id_free(ctx->hash_id);
 	EVP_MD_CTX_free(ctx->md);
-	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
 }
 
@@ -550,7 +549,6 @@ void crypt_hmac_destroy(struct crypt_hmac *ctx)
 	hash_id_free(ctx->hash_id);
 	HMAC_CTX_free(ctx->md);
 #endif
-	memset(ctx, 0, sizeof(*ctx));
 	free(ctx);
 }
 
