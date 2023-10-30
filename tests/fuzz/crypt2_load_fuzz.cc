@@ -22,7 +22,6 @@
 extern "C" {
 #define FILESIZE (16777216)
 #include "src/cryptsetup.h"
-#include <err.h>
 #include "luks2/luks2.h"
 #include "crypto_backend/crypto_backend.h"
 #include "FuzzerInterface.h"
@@ -30,78 +29,81 @@ extern "C" {
 #define CHKSUM_ALG "sha256"
 #define CHKSUM_SIZE 32
 
-static int calculate_checksum(const uint8_t* data, size_t size) {
+static bool fix_checksum_hdr(struct luks2_hdr_disk *hdr, const char *data, size_t len)
+{
+	char *csum = (char *)&hdr->csum;
 	struct crypt_hash *hd = NULL;
-	struct luks2_hdr_disk *hdr = NULL;
-	uint64_t hdr_size1, hdr_size2;
-	int r;
+	bool r = false;
 
-	/* primary header */
-	if (sizeof(struct luks2_hdr_disk) > size)
-		return 0;
-	hdr = CONST_CAST(struct luks2_hdr_disk *) data;
+	if (crypt_hash_init(&hd, CHKSUM_ALG))
+		return false;
 
-	hdr_size1 = be64_to_cpu(hdr->hdr_size);
-	if (hdr_size1 > size || hdr_size1 <= sizeof(struct luks2_hdr_disk))
-		return 0;
-	memset(&hdr->csum, 0, LUKS2_CHECKSUM_L);
-	if ((r = crypt_hash_init(&hd, CHKSUM_ALG)))
-		goto out;
-	if ((r = crypt_hash_write(hd, CONST_CAST(char*) data, hdr_size1)))
-		goto out;
-	if ((r = crypt_hash_final(hd, (char*)&hdr->csum, CHKSUM_SIZE)))
-		goto out;
+	memset(csum, 0, LUKS2_CHECKSUM_L);
+
+	if (!crypt_hash_write(hd, data, len) &&
+	    !crypt_hash_final(hd, csum, CHKSUM_SIZE))
+		r = true;
+
 	crypt_hash_destroy(hd);
-	hd = NULL;
-
-	/* secondary header */
-	if (hdr_size1 + sizeof(struct luks2_hdr_disk) > size)
-		return 0;
-	hdr = CONST_CAST(struct luks2_hdr_disk *) (data + hdr_size1);
-
-	hdr_size2 = be64_to_cpu(hdr->hdr_size);
-	if (hdr_size2 > size || (hdr_size1 + hdr_size2) > size ||
-	    hdr_size2 <= sizeof(struct luks2_hdr_disk))
-		return 0;
-
-	memset(&hdr->csum, 0, LUKS2_CHECKSUM_L);
-	if ((r = crypt_hash_init(&hd, CHKSUM_ALG)))
-		goto out;
-	if ((r = crypt_hash_write(hd, (char*) hdr, hdr_size2)))
-		goto out;
-	if ((r = crypt_hash_final(hd, (char*)&hdr->csum, CHKSUM_SIZE)))
-		goto out;
-out:
-	if (hd)
-		crypt_hash_destroy(hd);
 	return r;
 }
 
-int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-	int fd;
+static bool calculate_checksum(const char *data, size_t size, struct luks2_hdr_disk *hdr_rw)
+{
+	uint64_t hdr_size;
+
+	/* Primary header cannot fit in data */
+	if (sizeof(*hdr_rw) > size)
+		return false;
+
+	hdr_size = be64_to_cpu(((struct luks2_hdr_disk *)data)->hdr_size);
+	if (hdr_size > size || hdr_size <= sizeof(*hdr_rw))
+		return false;
+
+	/* Calculate checksum for primary header */
+	memcpy(hdr_rw, data, sizeof(*hdr_rw));
+	return fix_checksum_hdr(hdr_rw, data, (size_t)hdr_size);
+}
+
+int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
+{
+	int fd, r = EXIT_FAILURE;
 	struct crypt_device *cd = NULL;
 	char name[] = "/tmp/test-script-fuzz.XXXXXX";
+	struct luks2_hdr_disk hdr_rw;
+	size_t modified_data_size;
 
-	if (calculate_checksum(data, size))
-		return 0;
+	/* if csum calculation fails, keep fuzzer running on original input */
+	if (size >= sizeof(hdr_rw) && calculate_checksum((const char *)data, size, &hdr_rw))
+		modified_data_size = sizeof(hdr_rw);
+	else
+		modified_data_size = 0;
 
+	/* create file with LUKS header for libcryptsetup */
 	fd = mkostemp(name, O_RDWR|O_CREAT|O_EXCL|O_CLOEXEC);
 	if (fd == -1)
-		err(EXIT_FAILURE, "mkostemp() failed");
+		return r;
 
 	/* enlarge header */
 	if (ftruncate(fd, FILESIZE) == -1)
 		goto out;
 
-	if (write_buffer(fd, data, size) != (ssize_t)size)
+	if (modified_data_size &&
+	    write_buffer(fd, &hdr_rw, modified_data_size) != (ssize_t)modified_data_size)
 		goto out;
 
+	if (write_buffer(fd, data + modified_data_size, size - modified_data_size) != (ssize_t)size)
+		goto out;
+
+	/* Actuall fuzzing */
 	if (crypt_init(&cd, name) == 0)
 		(void)crypt_load(cd, CRYPT_LUKS2, NULL);
 	crypt_free(cd);
+	r = 0;
 out:
 	close(fd);
 	unlink(name);
-	return 0;
+
+	return r;
 }
 }
