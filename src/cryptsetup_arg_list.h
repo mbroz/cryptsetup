@@ -71,11 +71,11 @@ ARG(OPT_HEADER_BACKUP_FILE, '\0', POPT_ARG_STRING, N_("File with LUKS header and
 
 ARG(OPT_HOTZONE_SIZE, '\0', POPT_ARG_STRING, N_("Maximal reencryption hotzone size"), N_("bytes"), CRYPT_ARG_UINT64, {}, OPT_HOTZONE_SIZE_ACTIONS)
 
-ARG(OPT_HW_OPAL, '\0', POPT_ARG_NONE, N_("Use HW OPAL encryption together with SW encryption"), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_HW_OPAL, '\0', POPT_ARG_NONE, N_("Use HW OPAL encryption together with SW encryption"), NULL, CRYPT_ARG_BOOL, {}, OPT_HW_OPAL_ACTIONS)
 
 ARG(OPT_HW_OPAL_FACTORY_RESET, '\0', POPT_ARG_NONE, N_("Wipe WHOLE OPAL disk on luksErase"), NULL, CRYPT_ARG_BOOL, {}, OPT_ERASE_ACTIONS)
 
-ARG(OPT_HW_OPAL_ONLY, '\0', POPT_ARG_NONE, N_("Use only HW OPAL encryption"), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_HW_OPAL_ONLY, '\0', POPT_ARG_NONE, N_("Use only HW OPAL encryption"), NULL, CRYPT_ARG_BOOL, {}, OPT_HW_OPAL_ONLY_ACTIONS)
 
 ARG(OPT_INIT_ONLY, '\0', POPT_ARG_NONE, N_("Initialize LUKS2 reencryption in metadata only"), NULL, CRYPT_ARG_BOOL, {}, {})
 
