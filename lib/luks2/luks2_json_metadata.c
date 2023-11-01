@@ -644,6 +644,11 @@ static int reqs_reencrypt_online(uint32_t reqs)
 	return reqs & CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
 }
 
+static int reqs_opal(uint32_t reqs)
+{
+	return reqs & CRYPT_REQUIREMENT_OPAL;
+}
+
 /*
  * Config section requirements object must be valid.
  * Also general segments section must be validated first.
@@ -1650,6 +1655,7 @@ static const struct requirement_flag requirements_flags[] = {
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 2, "online-reencrypt-v2" },
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 3, "online-reencrypt-v3" },
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 1, "online-reencrypt" },
+	{ CRYPT_REQUIREMENT_OPAL,	      1, "opal" },
 	{ 0, 0, NULL }
 };
 
@@ -2647,7 +2653,7 @@ int LUKS2_activate(struct crypt_device *cd,
 	};
 
 	/* do not allow activation when particular requirements detected */
-	if ((r = LUKS2_unmet_requirements(cd, hdr, 0, 0)))
+	if ((r = LUKS2_unmet_requirements(cd, hdr, CRYPT_REQUIREMENT_OPAL, 0)))
 		return r;
 
 	/* Check that cipher is in compatible format */
@@ -2966,6 +2972,8 @@ int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uin
 		log_err(cd, _("Operation incompatible with device marked for legacy reencryption. Aborting."));
 	if (reqs_reencrypt_online(reqs) && !quiet)
 		log_err(cd, _("Operation incompatible with device marked for LUKS2 reencryption. Aborting."));
+	if (reqs_opal(reqs) && !quiet)
+		log_err(cd, _("Operation incompatible with device using OPAL. Aborting."));
 
 	/* any remaining unmasked requirement fails the check */
 	return reqs ? -EINVAL : 0;

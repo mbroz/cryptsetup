@@ -1568,6 +1568,8 @@ uint64_t crypt_get_active_integrity_failures(struct crypt_device *cd,
 #define CRYPT_REQUIREMENT_OFFLINE_REENCRYPT	(UINT32_C(1) << 0)
 /** Online reencryption in-progress */
 #define CRYPT_REQUIREMENT_ONLINE_REENCRYPT	(UINT32_C(1) << 1)
+/** Device configured with OPAL support */
+#define CRYPT_REQUIREMENT_OPAL			(UINT32_C(1) << 2)
 /** unknown requirement in header (output only) */
 #define CRYPT_REQUIREMENT_UNKNOWN		(UINT32_C(1) << 31)
 
