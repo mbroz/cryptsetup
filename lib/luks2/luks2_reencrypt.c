@@ -3863,7 +3863,7 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
 	char *passphrase;
 	size_t passphrase_size;
 
-	if (onlyLUKS2mask(cd, CRYPT_REQUIREMENT_ONLINE_REENCRYPT) || !passphrase_description)
+	if (onlyLUKS2reencrypt(cd) || !passphrase_description)
 		return -EINVAL;
 	if (params && (params->flags & CRYPT_REENCRYPT_INITIALIZE_ONLY) && (params->flags & CRYPT_REENCRYPT_RESUME_ONLY))
 		return -EINVAL;
@@ -3897,7 +3897,7 @@ int crypt_reencrypt_init_by_passphrase(struct crypt_device *cd,
 	const char *cipher_mode,
 	const struct crypt_params_reencrypt *params)
 {
-	if (onlyLUKS2mask(cd, CRYPT_REQUIREMENT_ONLINE_REENCRYPT) || !passphrase)
+	if (onlyLUKS2reencrypt(cd) || !passphrase)
 		return -EINVAL;
 	if (params && (params->flags & CRYPT_REENCRYPT_INITIALIZE_ONLY) && (params->flags & CRYPT_REENCRYPT_RESUME_ONLY))
 		return -EINVAL;
@@ -4201,7 +4201,7 @@ int crypt_reencrypt_run(
 	reenc_status_t rs;
 	bool quit = false;
 
-	if (onlyLUKS2mask(cd, CRYPT_REQUIREMENT_ONLINE_REENCRYPT))
+	if (onlyLUKS2reencrypt(cd))
 		return -EINVAL;
 
 	hdr = crypt_get_hdr(cd, CRYPT_LUKS2);

@@ -403,6 +403,11 @@ static int _onlyLUKS(struct crypt_device *cd, uint32_t cdflags)
 	return LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, 0, cdflags & CRYPT_CD_QUIET);
 }
 
+static int onlyLUKSunrestricted(struct crypt_device *cd)
+{
+	return _onlyLUKS(cd, CRYPT_CD_UNRESTRICTED);
+}
+
 static int onlyLUKS(struct crypt_device *cd)
 {
 	return _onlyLUKS(cd, 0);
@@ -430,6 +435,11 @@ static int _onlyLUKS2(struct crypt_device *cd, uint32_t cdflags, uint32_t mask)
 	return LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, mask, cdflags & CRYPT_CD_QUIET);
 }
 
+static int onlyLUKS2unrestricted(struct crypt_device *cd)
+{
+	return _onlyLUKS2(cd, CRYPT_CD_UNRESTRICTED, 0);
+}
+
 /* Internal only */
 int onlyLUKS2(struct crypt_device *cd)
 {
@@ -437,9 +447,9 @@ int onlyLUKS2(struct crypt_device *cd)
 }
 
 /* Internal only */
-int onlyLUKS2mask(struct crypt_device *cd, uint32_t mask)
+int onlyLUKS2reencrypt(struct crypt_device *cd)
 {
-	return _onlyLUKS2(cd, 0, mask);
+	return _onlyLUKS2(cd, 0, CRYPT_REQUIREMENT_ONLINE_REENCRYPT);
 }
 
 static void crypt_set_null_type(struct crypt_device *cd)
@@ -4535,7 +4545,7 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot)
 
 	log_dbg(cd, "Destroying keyslot %d.", keyslot);
 
-	if ((r = _onlyLUKS(cd, CRYPT_CD_UNRESTRICTED)))
+	if ((r = onlyLUKSunrestricted(cd)))
 		return r;
 
 	ki = crypt_keyslot_status(cd, keyslot);
@@ -5845,7 +5855,7 @@ int crypt_volume_key_verify(struct crypt_device *cd,
 	struct volume_key *vk;
 	int r;
 
-	if ((r = _onlyLUKS(cd, CRYPT_CD_UNRESTRICTED)))
+	if ((r = onlyLUKSunrestricted(cd)))
 		return r;
 
 	vk = crypt_alloc_volume_key(volume_key_size, volume_key);
@@ -6766,7 +6776,7 @@ int crypt_token_json_get(struct crypt_device *cd, int token, const char **json)
 
 	log_dbg(cd, "Requesting JSON for token %d.", token);
 
-	if ((r = _onlyLUKS2(cd, CRYPT_CD_UNRESTRICTED, 0)))
+	if ((r = onlyLUKS2unrestricted(cd)))
 		return r;
 
 	return LUKS2_token_json_get(&cd->u.luks2.hdr, token, json) ?: token;
@@ -6813,7 +6823,7 @@ int crypt_token_luks2_keyring_get(struct crypt_device *cd,
 
 	log_dbg(cd, "Requesting LUKS2 keyring token %d.", token);
 
-	if ((r = _onlyLUKS2(cd, CRYPT_CD_UNRESTRICTED, 0)))
+	if ((r = onlyLUKS2unrestricted(cd)))
 		return r;
 
 	token_info = LUKS2_token_status(cd, &cd->u.luks2.hdr, token, &type);
@@ -6928,7 +6938,7 @@ int crypt_persistent_flags_get(struct crypt_device *cd, crypt_flags_type type, u
 	if (!flags)
 		return -EINVAL;
 
-	if ((r = _onlyLUKS2(cd, CRYPT_CD_UNRESTRICTED, 0)))
+	if ((r = onlyLUKS2unrestricted(cd)))
 		return r;
 
 	if (type == CRYPT_FLAGS_ACTIVATION)

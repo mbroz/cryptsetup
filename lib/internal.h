@@ -215,7 +215,7 @@ void crypt_set_luks2_reencrypt(struct crypt_device *cd, struct luks2_reencrypt *
 struct luks2_reencrypt *crypt_get_luks2_reencrypt(struct crypt_device *cd);
 
 int onlyLUKS2(struct crypt_device *cd);
-int onlyLUKS2mask(struct crypt_device *cd, uint32_t mask);
+int onlyLUKS2reencrypt(struct crypt_device *cd);
 
 int crypt_wipe_device(struct crypt_device *cd,
 	struct device *device,
