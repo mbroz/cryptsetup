@@ -1465,6 +1465,8 @@ static int _decrypt(struct crypt_device **cd, enum device_status_info dev_st, co
 		if ((r = reencrypt_luks2_load(*cd, data_device)) < 0)
 			return r;
 	} else if (dev_st == DEVICE_LUKS2) {
+		if (!luks2_reencrypt_eligible(*cd))
+			return -EINVAL;
 		if (!ARG_SET(OPT_HEADER_ID)) {
 			log_err(_("LUKS2 decryption requires --header option."));
 			return -EINVAL;
