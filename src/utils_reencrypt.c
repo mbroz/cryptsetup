@@ -417,6 +417,11 @@ static bool luks2_reencrypt_eligible(struct crypt_device *cd)
 		return false;
 	}
 
+	if (flags & CRYPT_REQUIREMENT_OPAL) {
+		log_err(_("Can not reencrypt LUKS2 device configured to use OPAL."));
+		return false;
+	}
+
 	/* raw integrity info is available since 2.0 */
 	if (crypt_get_integrity_info(cd, &ip) || ip.tag_size) {
 		log_err(_("Reencryption of device with integrity profile is not supported."));
