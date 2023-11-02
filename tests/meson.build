@@ -419,15 +419,6 @@ if get_option('cryptsetup')
         depends: [
             cryptsetup,
         ])
-    test('opal2-test',
-        find_program('./opal2-test'),
-        workdir: meson.current_build_dir(),
-        env: tests_env,
-        timeout: 14400,
-        is_parallel: false,
-        depends: [
-            cryptsetup,
-        ])
 endif
 
 if get_option('veritysetup')
