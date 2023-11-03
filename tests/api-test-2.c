@@ -655,11 +655,6 @@ static int test_open_pass1(struct crypt_device *_cd __attribute__((unused)),
 	return 0;
 }
 
-static void test_token_free(void *ubffer __attribute__((unused)),
-		size_t buffer_len __attribute__((unused)))
-{
-}
-
 static int test_validate(struct crypt_device *_cd __attribute__((unused)), const char *json)
 {
 	return (strstr(json, "magic_string") == NULL);
@@ -2077,11 +2072,9 @@ static void Tokens(void)
 	}, th4 = {
 		.name = "test_token2",
 		.open = test_open_pass, // PASSPHRASE
-		.buffer_free = test_token_free
 	}, th5 = {
 		.name = "test_token3",
 		.open = test_open_pass1, // PASSPHRASE1
-		.buffer_free = test_token_free
 	};
 
 	struct crypt_token_params_luks2_keyring params = {
