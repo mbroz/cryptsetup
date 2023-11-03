@@ -832,8 +832,6 @@ echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --
 echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase -q $OPAL2_DEV || fail
 $CRYPTSETUP isLuks -q $OPAL2_DEV && fail
 
-# FIXME: Bug to be fixed with OPAL requirement flag
-if false; then
 prepare "[26] LUKS convert" wipe
 # create almost compatible LUKS2 device except OPAL segment
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --sector-size 512 -s256 --hw-opal $OPAL2_DEV || fail
@@ -842,7 +840,6 @@ $CRYPTSETUP isLuks --type luks2 $OPAL2_DEV || fail
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --sector-size 512 -s256 --hw-opal-only $OPAL2_DEV || fail
 $CRYPTSETUP -q convert --type luks1 $OPAL2_DEV >/dev/null 2>&1 && fail
 $CRYPTSETUP isLuks --type luks2 $OPAL2_DEV || fail
-fi
 
 if dm_crypt_keyring_support && dm_crypt_keyring_new_kernel; then
 	prepare "[27] LUKS2 key in keyring" wipe
@@ -1247,8 +1244,6 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 
 fi
 
-# FIXME: Bug to be fixed with OPAL requirement flag
-if false; then
 if ! fips_mode; then
 prepare "[39] LUKS2 reencryption/decryption blocked" wipe
 
@@ -1282,8 +1277,6 @@ $CRYPTSETUP isLuks $OPAL2_DEV && fail
 test -b $DEV_NAME && fail
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal-only $OPAL2_DEV 2>/dev/null && fail
 $CRYPTSETUP isLuks $OPAL2_DEV && fail
-
-fi
 fi
 
 prepare "[42] OPAL2 HW only test." wipe
