@@ -260,7 +260,7 @@ int crypt_opal_supported(struct crypt_device *cd, struct device *opal_device)
 		if (r == -ENOTSUP)
 			log_err(cd, _("cryptsetup library SED OPAL2 support is disabled."));
 		else
-			log_err(cd, _("Device %s does not support OPAL2 HW encryption."),
+			log_err(cd, _("Device %s or kernel does not support OPAL2 HW encryption."),
 				    device_path(opal_device));
 		r = -EINVAL;
 	} else
