@@ -100,8 +100,6 @@ struct crypt_keyslot_context {
 
 	char *i_passphrase;
 	size_t i_passphrase_size;
-	char *i_volume_key;
-	size_t i_volume_key_size;
 
 	keyslot_context_get_key			get_luks2_key;
 	keyslot_context_get_volume_key		get_luks1_volume_key;
