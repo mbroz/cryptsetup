@@ -3840,6 +3840,7 @@ void crypt_free(struct crypt_device *cd)
 
 	free(CONST_CAST(void*)cd->pbkdf.type);
 	free(CONST_CAST(void*)cd->pbkdf.hash);
+	free(CONST_CAST(void*)cd->user_key_name);
 
 	/* Some structures can contain keys (TCRYPT), wipe it */
 	crypt_safe_memzero(cd, sizeof(*cd));
