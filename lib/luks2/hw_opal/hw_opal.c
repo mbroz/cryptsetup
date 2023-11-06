@@ -471,6 +471,8 @@ int opal_setup_ranges(struct crypt_device *cd,
 		}
 	}
 
+	crypt_safe_free(user_session);
+
 	user_session = crypt_safe_alloc(sizeof(struct opal_session_info));
 	if (!user_session) {
 		r = -ENOMEM;

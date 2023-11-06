@@ -2896,14 +2896,15 @@ static int opal_erase(struct crypt_device *cd, bool factory_reset) {
 	if (factory_reset && !ARG_SET(OPT_BATCH_MODE_ID) &&
 		!yesDialog(_("WARNING: WHOLE disk will be factory reset and all data will be lost! Continue?"),
 			_("Operation aborted.\n"))) {
+		crypt_safe_free(password);
 		return -EPERM;
 	}
 
-	return crypt_wipe_hw_opal(cd,
-			factory_reset ? CRYPT_NO_SEGMENT : CRYPT_LUKS2_SEGMENT,
-			password,
-			password_size,
-			0);
+	r = crypt_wipe_hw_opal(cd, factory_reset ? CRYPT_NO_SEGMENT : CRYPT_LUKS2_SEGMENT,
+			       password, password_size, 0);
+
+	crypt_safe_free(password);
+	return r;
 }
 
 static int action_luksErase(void)
