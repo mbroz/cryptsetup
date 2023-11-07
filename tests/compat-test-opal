@@ -3,6 +3,7 @@
 PS4='$LINENO:'
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+CRYPTSETUP_RAW=$CRYPTSETUP
 
 if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 	CRYPTSETUP_VALGRIND=$CRYPTSETUP
@@ -87,7 +88,7 @@ function skip()
 function remove_mapping_and_reset()
 {
 	remove_mapping
-	$CRYPTSETUP luksErase --hw-opal-factory-reset --key-file $OPAL2_PSID_FILE $OPAL2_DEV -q
+	$CRYPTSETUP_RAW luksErase --hw-opal-factory-reset --key-file $OPAL2_PSID_FILE $OPAL2_DEV -q
 }
 
 function prepare()
@@ -99,11 +100,11 @@ function prepare()
 		remove_mapping_and_reset
 		;;
 	wipe)
-		$CRYPTSETUP isLuks --type luks2 $HEADER_IMG -q 2>/dev/null
+		$CRYPTSETUP_RAW isLuks --type luks2 $HEADER_IMG -q 2>/dev/null
 		if [ $? -eq 0 ]; then
-			echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q --header $HEADER_IMG 
+			echo $OPAL2_ADMIN_PIN | $CRYPTSETUP_RAW luksErase $OPAL2_DEV -q --header $HEADER_IMG
 		else
-			echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q 2>/dev/null
+			echo $OPAL2_ADMIN_PIN | $CRYPTSETUP_RAW luksErase $OPAL2_DEV -q 2>/dev/null
 		fi
 		remove_mapping
 		;;
@@ -839,6 +840,9 @@ $CRYPTSETUP isLuks -q $OPAL2_DEV && fail
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV || fail
 echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase -q $OPAL2_DEV || fail
 $CRYPTSETUP isLuks -q $OPAL2_DEV && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+# test psid reset once with valgrind
+$CRYPTSETUP luksErase --hw-opal-factory-reset --key-file $OPAL2_PSID_FILE $OPAL2_DEV -q || fail
 
 prepare "[26] LUKS convert" wipe
 # create almost compatible LUKS2 device except OPAL segment
