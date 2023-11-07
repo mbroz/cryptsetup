@@ -11,8 +11,12 @@ FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 PLAIN_OPT="--type plain --cipher aes-cbc-essiv:sha256 --key-size 256 --hash sha256"
 SKIP_COUNT=0
 
-CRYPTSETUP_VALGRIND=../.libs/cryptsetup
-CRYPTSETUP_LIB_VALGRIND=../.libs
+if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
+	CRYPTSETUP_VALGRIND=$CRYPTSETUP
+else
+	CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+	CRYPTSETUP_LIB_VALGRIND=../.libs
+fi
 
 cleanup() {
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
@@ -44,7 +48,10 @@ function valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
-	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+	[ ! -f valg.sh ] && fail "Unable to get location of valg runner script."
+	if [ -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
+		export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+	fi
 }
 
 function valgrind_run()

@@ -21,9 +21,16 @@ SSH_KEY_PATH="$HOME/sshtest-key"
 
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
-CRYPTSETUP_VALGRIND=../.libs/cryptsetup
-CRYPTSETUP_SSH_VALGRIND=../.libs/cryptsetup-ssh
-CRYPTSETUP_LIB_VALGRIND=../.libs
+if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
+	CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+	CRYPTSETUP_VALGRIND=$CRYPTSETUP
+	CRYPTSETUP_SSH=$CRYPTSETUP_PATH/../tokens/ssh/cryptsetup-ssh
+	CRYPTSETUP_SSH_VALGRIND=$CRYPTSETUP_SSH
+else
+	CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+	CRYPTSETUP_SSH_VALGRIND=../.libs/cryptsetup-ssh
+	CRYPTSETUP_LIB_VALGRIND=../.libs
+fi
 
 [ -z "$srcdir" ] && srcdir="."
 
@@ -113,7 +120,9 @@ function valgrind_setup()
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
 	[ ! -f $CRYPTSETUP_SSH_VALGRIND ] && fail "Unable to get location of cryptsetup-ssh executable."
-	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+	if [ -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
+		export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+	fi
 }
 
 function valgrind_run()

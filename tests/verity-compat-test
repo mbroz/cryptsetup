@@ -2,8 +2,13 @@
 
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
 VERITYSETUP=$CRYPTSETUP_PATH/veritysetup
-VERITYSETUP_VALGRIND=../.libs/veritysetup
-VERITYSETUP_LIB_VALGRIND=../.libs
+
+if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
+	VERITYSETUP_VALGRIND=$VERITYSETUP
+else
+	CRYPTSETUP_VALGRIND=../.libs/veritysetup
+	VERITYSETUP_LIB_VALGRIND=../.libs
+fi
 
 DEV_NAME=verity3273
 DEV_NAME2=verity3273x
@@ -304,7 +309,10 @@ function valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $VERITYSETUP_VALGRIND ] && fail "Unable to get location of veritysetup executable."
-	export LD_LIBRARY_PATH="$VERITYSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+	[ ! -f valg.sh ] && fail "Unable to get location of valg runner script."
+	if [ -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
+		export LD_LIBRARY_PATH="$VERITYSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+	fi
 }
 
 function valgrind_run()

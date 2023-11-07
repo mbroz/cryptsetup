@@ -5,8 +5,12 @@ PS4='$LINENO:'
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 CRYPTSETUP_RAW=$CRYPTSETUP
 
-CRYPTSETUP_VALGRIND=../.libs/cryptsetup
-CRYPTSETUP_LIB_VALGRIND=../.libs
+if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
+	CRYPTSETUP_VALGRIND=$CRYPTSETUP
+else
+	CRYPTSETUP_VALGRIND=../.libs/cryptsetup
+	CRYPTSETUP_LIB_VALGRIND=../.libs
+fi
 
 DEV_NAME=dummy
 DEV_NAME2=dummy2
@@ -158,7 +162,10 @@ function valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
-	export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+	[ ! -f valg.sh ] && fail "Unable to get location of valg runner script."
+	if [ -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
+		export LD_LIBRARY_PATH="$CRYPTSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
+	fi
 }
 
 function valgrind_run()
