@@ -43,6 +43,7 @@ function remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
+	[ -b /dev/mapper/"$DEV_NAME"_dif ] && dmsetup remove --retry "$DEV_NAME"_dif
 	rm -f $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $VK_FILE \
 	$HEADER_LUKS2_INV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* \
 	$KEY_FILE0 $KEY_FILE1 $KEY_PWD1 $NO_HEADER_IMG >/dev/null 2>&1
