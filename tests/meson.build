@@ -339,7 +339,6 @@ if get_option('cryptsetup')
         is_parallel: false,
         depends: [
             cryptsetup,
-            differ,
         ])
     test('valg-compat-test-opal',
         find_program('./compat-test-opal'),
