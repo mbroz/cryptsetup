@@ -28,13 +28,7 @@ test_files_to_copy = [
 ]
 
 foreach file : test_files_to_copy
-    if meson.version().version_compare('>=0.64')
-        fs.copyfile(file)
-    else
-        configure_file(input: file,
-            output: '@PLAINNAME@',
-            copy: true)
-    endif
+    fs.copyfile(file)
 endforeach
 
 api_test = executable('api-test',

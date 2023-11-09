@@ -194,13 +194,8 @@ endforeach
 built_manpages = []
 
 if use_asciidoc
-    if meson.version().version_compare('>=0.55')
-        meson.add_dist_script(find_program('meson_dist_convert.sh'),
-            asciidoc, meson.project_version(), adocfiles_all)
-    else
-        meson.add_dist_script('meson_dist_convert.sh',
-            asciidoc.path(), meson.project_version(), adocfiles_all)
-    endif
+    meson.add_dist_script(find_program('meson_dist_convert.sh'),
+        asciidoc, meson.project_version(), adocfiles_all)
 
     foreach manpage_tuple : manpage_tuples_to_build
         adocfile = manpage_tuple[0]

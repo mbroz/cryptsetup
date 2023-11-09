@@ -1,6 +1,6 @@
 project('cryptsetup',
     'c',
-    meson_version: '>=0.53',
+    meson_version: '>=0.64',
     version: '2.7.0-git')
 
 libcryptsetup_version = '12.9.0'
