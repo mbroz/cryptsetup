@@ -25,7 +25,9 @@
 #include "luks2_internal.h"
 
 #if USE_EXTERNAL_TOKENS
+#define TOKENS_PATH_MAX PATH_MAX
 static bool external_tokens_enabled = true;
+static char external_tokens_path[TOKENS_PATH_MAX] = EXTERNAL_LUKS2_TOKENS_PATH;
 #else
 static bool external_tokens_enabled = false;
 #endif
@@ -51,8 +53,39 @@ void crypt_token_external_disable(void)
 
 const char *crypt_token_external_path(void)
 {
-	return external_tokens_enabled ? EXTERNAL_LUKS2_TOKENS_PATH : NULL;
+#if USE_EXTERNAL_TOKENS
+	return external_tokens_enabled ? external_tokens_path : NULL;
+#else
+	return NULL;
+#endif
 }
+
+#if USE_EXTERNAL_TOKENS
+int crypt_token_set_external_path(const char *path)
+{
+	int r;
+	char tokens_path[TOKENS_PATH_MAX];
+
+	if (!path)
+		path = EXTERNAL_LUKS2_TOKENS_PATH;
+	else if (*path != '/')
+		return -EINVAL;
+
+	r = snprintf(tokens_path, sizeof(tokens_path), "%s", path);
+	if (r < 0 || (size_t)r >= sizeof(tokens_path))
+		return -EINVAL;
+
+	(void)strcpy(external_tokens_path, tokens_path);
+
+	return 0;
+}
+#else
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+int crypt_token_set_external_path(const char *path)
+{
+	return -ENOTSUP;
+}
+#endif
 
 static bool token_validate_v1(struct crypt_device *cd, const crypt_token_handler *h)
 {

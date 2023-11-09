@@ -2768,6 +2768,17 @@ int crypt_token_register(const crypt_token_handler *handler);
 const char *crypt_token_external_path(void);
 
 /**
+ * Override configured external token handlers path for the library.
+ *
+ * @param path Abosulte path (starts with '/') to new external token handlers directory or @e NULL.
+ *
+ * @note if @e path is @e NULL the external token path is reset to default path.
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_token_set_external_path(const char *path);
+
+/**
  * Disable external token handlers (plugins) support
  * If disabled, it cannot be enabled again.
  */
