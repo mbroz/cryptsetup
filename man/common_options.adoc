@@ -1234,6 +1234,12 @@ Enlarge data offset to specified value by shrinking device size.
 You cannot shrink device more than by 64 MiB (131072 sectors).
 endif::[]
 
+ifdef::ACTION_RESIZE,ACTION_OPEN,ACTION_LUKSADDKEY,ACTION_LUKSDUMP,ACTION_LUKSRESUME,ACTION_TOKEN[]
+*--external-tokens-path* _absolute_path_::
+Override system directory path where cryptsetup searches for external token
+handlers (or token plugins). It must be absolute path (starting with '/' character).
+endif::[]
+
 ifdef::COMMON_OPTIONS[]
 *--batch-mode, -q*::
 Suppresses all confirmation questions. Use with care!

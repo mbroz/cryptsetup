@@ -50,6 +50,7 @@
 #define OPT_DUMP_MASTER_KEY		"dump-master-key"
 #define OPT_DUMP_VOLUME_KEY		"dump-volume-key"
 #define OPT_ENCRYPT			"encrypt"
+#define OPT_EXTERNAL_TOKENS_PATH	"external-tokens-path"
 #define OPT_FEC_DEVICE			"fec-device"
 #define OPT_FEC_OFFSET			"fec-offset"
 #define OPT_FEC_ROOTS			"fec-roots"

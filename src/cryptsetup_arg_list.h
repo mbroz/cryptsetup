@@ -59,6 +59,8 @@ ARG(OPT_DUMP_VOLUME_KEY, '\0', POPT_ARG_NONE, N_("Dump volume key instead of key
 
 ARG(OPT_ENCRYPT, '\0', POPT_ARG_NONE, N_("Encrypt LUKS2 device (in-place encryption)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
+ARG(OPT_EXTERNAL_TOKENS_PATH, '\0', POPT_ARG_STRING, N_("Path to directory with external token handlers (plugins)."), NULL, CRYPT_ARG_STRING, {}, OPT_EXTERNAL_TOKENS_PATH_ACTIONS)
+
 ARG(OPT_FORCE_PASSWORD, '\0', POPT_ARG_NONE, N_("Disable password quality check (if enabled)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_FORCE_OFFLINE_REENCRYPT, '\0', POPT_ARG_NONE, N_("Force offline LUKS2 reencryption and bypass active device detection"), NULL, CRYPT_ARG_BOOL, {}, OPT_FORCE_OFFLINE_REENCRYPT_ACTIONS)

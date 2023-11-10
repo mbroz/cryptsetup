@@ -878,6 +878,15 @@ static int action_resize(void)
 	else if (ARG_SET(OPT_SIZE_ID))
 		dev_size = ARG_UINT64(OPT_SIZE_ID);
 
+	if (ARG_SET(OPT_EXTERNAL_TOKENS_PATH_ID)) {
+		r = crypt_token_set_external_path(ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+		if (r < 0) {
+			log_err(_("Failed to set external tokens path %s."),
+				ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+			goto out;
+		}
+	}
+
 	if (cad.flags & CRYPT_ACTIVATE_KEYRING_KEY) {
 		if (ARG_SET(OPT_DISABLE_KEYRING_ID)) {
 			r = -EINVAL;
@@ -1809,6 +1818,15 @@ static int action_open_luks(void)
 
 	set_activation_flags(&activate_flags);
 
+	if (ARG_SET(OPT_EXTERNAL_TOKENS_PATH_ID)) {
+		r = crypt_token_set_external_path(ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+		if (r < 0) {
+			log_err(_("Failed to set external tokens path %s."),
+				ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+			goto out;
+		}
+	}
+
 	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID)) {
 		r = parse_vk_and_keyring_description(cd, ARG_STR(OPT_LINK_VK_TO_KEYRING_ID));
 		if (r < 0)
@@ -2056,6 +2074,15 @@ static int luksAddUnboundKey(void)
 		goto out;
 	}
 
+	if (ARG_SET(OPT_EXTERNAL_TOKENS_PATH_ID)) {
+		r = crypt_token_set_external_path(ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+		if (r < 0) {
+			log_err(_("Failed to set external tokens path %s."),
+				ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+			goto out;
+		}
+	}
+
 	r = _set_keyslot_encryption_params(cd);
 	if (r < 0)
 		goto out;
@@ -2200,6 +2227,15 @@ static int action_luksAddKey(void)
 	r = _set_keyslot_encryption_params(cd);
 	if (r < 0)
 		goto out;
+
+	if (ARG_SET(OPT_EXTERNAL_TOKENS_PATH_ID)) {
+		r = crypt_token_set_external_path(ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+		if (r < 0) {
+			log_err(_("Failed to set external tokens path %s."),
+				ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+			goto out;
+		}
+	}
 
 	/* Never call pwquality if using null cipher */
 	if (crypt_is_cipher_null(crypt_get_cipher(cd)))
@@ -2639,6 +2675,15 @@ static int action_luksDump(void)
 		goto out;
 	}
 
+	if (ARG_SET(OPT_EXTERNAL_TOKENS_PATH_ID)) {
+		r = crypt_token_set_external_path(ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+		if (r < 0) {
+			log_err(_("Failed to set external tokens path %s."),
+				ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+			goto out;
+		}
+	}
+
 	if (ARG_SET(OPT_DUMP_VOLUME_KEY_ID))
 		r = luksDump_with_volume_key(cd);
 	else if (ARG_SET(OPT_UNBOUND_ID))
@@ -2710,6 +2755,15 @@ static int action_luksResume(void)
 		log_err(_("Volume %s is not suspended."), action_argv[0]);
 		r = -EINVAL;
 		goto out;
+	}
+
+	if (ARG_SET(OPT_EXTERNAL_TOKENS_PATH_ID)) {
+		r = crypt_token_set_external_path(ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+		if (r < 0) {
+			log_err(_("Failed to set external tokens path %s."),
+				ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+			goto out;
+		}
 	}
 
 	/* try to resume LUKS2 device by token first */
@@ -3228,6 +3282,16 @@ static int action_token(void)
 			uuid_or_device(ARG_STR(OPT_HEADER_ID) ?: action_argv[1]));
 		crypt_free(cd);
 		return r;
+	}
+
+	if (ARG_SET(OPT_EXTERNAL_TOKENS_PATH_ID)) {
+		r = crypt_token_set_external_path(ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+		if (r < 0) {
+			log_err(_("Failed to set external tokens path %s."),
+				ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+			crypt_free(cd);
+			return r;
+		}
 	}
 
 	r = -EINVAL;
