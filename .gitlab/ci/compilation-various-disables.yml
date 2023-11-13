@@ -28,5 +28,5 @@ test-gcc-disable-compiles:
     - git checkout -f && git clean -xdf
     - meson -v
     - echo "Configuring with -D$DISABLE_FLAGS=false"
-    - meson setup meson_builddir $(for i in $DISABLE_FLAGS; do echo "-D$i=false"; done)
+    - meson setup meson_builddir $(for i in $DISABLE_FLAGS; do [ "$i" == "internal-argon2" ] && echo "-Dargon-implementation=internal" || echo "-D$i=false"; done)
     - ninja -C meson_builddir
