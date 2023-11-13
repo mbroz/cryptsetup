@@ -479,8 +479,9 @@ if check_version 1 3; then
 	fi
 
 	if check_version 1 9; then
-		echo "Verity data performance options test."
-		check_option 512 $HASH $SALT 1 sha256 "--use-tasklets" "try_verify_in_tasklet"
+		# FIXME: until it is fixed upstream, avoid kernel crash.
+		echo "Verity data performance options test. [N/A]"
+		# check_option 512 $HASH $SALT 1 sha256 "--use-tasklets" "try_verify_in_tasklet"
 	fi
 fi
 
