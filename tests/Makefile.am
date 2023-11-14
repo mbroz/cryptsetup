@@ -45,8 +45,7 @@ if EXTERNAL_TOKENS
 TESTS += systemd-test-plugin
 endif
 
-ssh-test-plugin: fake_token_path.so
-systemd-test-plugin: fake_token_path.so fake_systemd_tpm_path.so
+systemd-test-plugin: fake_systemd_tpm_path.so
 
 # Do not use global CFLAGS here as the *.so link does not support sanitizers
 fake_token_path.so: fake_token_path.c

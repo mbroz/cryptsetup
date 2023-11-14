@@ -47,6 +47,7 @@
 #define OPT_DEBUG	5
 #define OPT_DEBUG_JSON	6
 #define OPT_KEY_SLOT	7
+#define OPT_TOKENS_PATH	8
 
 void tools_cleanup(void)
 {
@@ -59,6 +60,7 @@ static int token_add(
 		const char *user,
 		const char *path,
 		const char *keypath,
+		const char *plugin_path,
 		int keyslot)
 
 {
@@ -67,6 +69,12 @@ static int token_add(
 	json_object *jobj_keyslots = NULL;
 	const char *string_token;
 	int r, token;
+
+	if (plugin_path) {
+		r = crypt_token_set_external_path(plugin_path);
+		if (r < 0)
+			return r;
+	}
 
 	r = crypt_init(&cd, device);
 	if (r)
@@ -148,6 +156,8 @@ static struct argp_option options[] = {
 	{"ssh-user",	OPT_SSH_USER, 	"STRING", 0, N_("Username used for the remote server")},
 	{"ssh-path",	OPT_SSH_PATH,	"STRING", 0, N_("Path to the key file on the remote server")},
 	{"ssh-keypath",	OPT_KEY_PATH, 	"STRING", 0, N_("Path to the SSH key for connecting to the remote server")},
+	{"external-tokens-path",
+			OPT_TOKENS_PATH,"STRING", 0, N_("Path to directory containinig libcryptsetup external tokens")},
 	{"key-slot",	OPT_KEY_SLOT,	"NUM",	  0, N_("Keyslot to assign the token to. If not specified, token will "\
 						        "be assigned to the first keyslot matching provided passphrase.")},
 	{0,		0,		0,	  0, N_("Generic options:")},
@@ -164,6 +174,7 @@ struct arguments {
 	char *ssh_user;
 	char *ssh_path;
 	char *ssh_keypath;
+	char *ssh_plugin_path;
 	int keyslot;
 	int verbose;
 	int debug;
@@ -186,6 +197,9 @@ parse_opt (int key, char *arg, struct argp_state *state) {
 		break;
 	case OPT_KEY_PATH:
 		arguments->ssh_keypath = arg;
+		break;
+	case OPT_TOKENS_PATH:
+		arguments->ssh_plugin_path = arg;
 		break;
 	case OPT_KEY_SLOT:
 		arguments->keyslot = atoi(arg);
@@ -413,6 +427,7 @@ int main(int argc, char *argv[])
 				arguments.ssh_user,
 				arguments.ssh_path,
 				arguments.ssh_keypath,
+				arguments.ssh_plugin_path,
 				arguments.keyslot);
 		if (ret < 0)
 			return EXIT_FAILURE;

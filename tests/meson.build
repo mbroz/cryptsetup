@@ -157,6 +157,7 @@ tests_env = environment()
 tests_env.set('CRYPTSETUP_PATH', src_build_dir)
 tests_env.set('LIBCRYPTSETUP_DIR', lib_build_dir)
 tests_env.set('srcdir', meson.current_source_dir())
+tests_env.set('SSH_BUILD_DIR', tokens_ssh_build_dir)
 tests_env.set('CRYPTSETUP_TESTS_RUN_IN_MESON', '1')
 
 tests_env_valg = tests_env
@@ -728,7 +729,6 @@ if get_option('ssh-token') and not enable_static
         is_parallel: false,
         depends: [
             cryptsetup_ssh,
-            fake_token_path,
             libcryptsetup_token_ssh,
         ])
     test('valg-ssh-test-plugin',
@@ -740,7 +740,6 @@ if get_option('ssh-token') and not enable_static
         suite: 'valgrind',
         depends: [
             cryptsetup_ssh,
-            fake_token_path,
             libcryptsetup_token_ssh,
         ])
 endif
@@ -754,7 +753,6 @@ if get_option('external-tokens') and not enable_static
         is_parallel: false,
         depends: [
             fake_systemd_tpm_path,
-            fake_token_path,
         ])
 endif
 

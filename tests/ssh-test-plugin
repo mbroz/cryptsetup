@@ -1,10 +1,10 @@
 #!/bin/bash
 
 [ -z "$CRYPTSETUP_PATH" ] && {
-	TOKEN_PATH="./fake_token_path.so"
-	[ ! -f $TOKEN_PATH ] && { echo "Please compile $TOKEN_PATH."; exit 77; }
-	export LD_PRELOAD=$TOKEN_PATH
 	CRYPTSETUP_PATH=".."
+	if [ -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
+		SSH_BUILD_DIR="$PWD/../.libs"
+	fi
 }
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 CRYPTSETUP_SSH=$CRYPTSETUP_PATH/cryptsetup-ssh
@@ -35,12 +35,8 @@ fi
 [ -z "$srcdir" ] && srcdir="."
 
 [ -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ] || {
-    # test runs on meson build
-    TOKEN_PATH="$CRYPTSETUP_PATH/../tests/fake_token_path.so"
-    [ ! -f $TOKEN_PATH ] && { echo "Please compile $TOKEN_PATH."; exit 77; }
-    export LD_PRELOAD=$TOKEN_PATH
-
-    CRYPTSETUP_SSH="$CRYPTSETUP_PATH/../tokens/ssh/cryptsetup-ssh"
+	# test runs on meson build
+	CRYPTSETUP_SSH="$CRYPTSETUP_PATH/../tokens/ssh/cryptsetup-ssh"
 }
 
 function remove_mapping()
@@ -170,6 +166,9 @@ check_dump()
 	[ "$keyslot_dump" = "$keyslot" ] || fail " keyslot check from dump failed."
 }
 
+if [ -n "$SSH_BUILD_DIR" ]; then
+	CUSTOM_TOKENS_PATH="--external-tokens-path $SSH_BUILD_DIR"
+fi
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run && CRYPTSETUP_SSH=valgrind_run_ssh
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
@@ -192,17 +191,17 @@ ssh_check
 create_user
 ssh_setup
 
-$CRYPTSETUP_SSH add $IMG --ssh-server $SSH_SERVER --ssh-user $USER --ssh-path $SSH_PATH --ssh-keypath $SSH_KEY_PATH
+$CRYPTSETUP_SSH add $IMG --ssh-server $SSH_SERVER --ssh-user $USER --ssh-path $SSH_PATH --ssh-keypath $SSH_KEY_PATH $CUSTOM_TOKENS_PATH
 [ $? -ne 0 ] && fail "Failed to add SSH token to $IMG"
 
-out=$($CRYPTSETUP luksDump $IMG)
+out=$($CRYPTSETUP luksDump $CUSTOM_TOKENS_PATH $IMG)
 check_dump "$out" 0
 echo "[OK]"
 
 echo -n "Activating using SSH token: "
 
 $CRYPTSETUP luksOpen --token-only --disable-external-tokens -r $IMG $MAP && fail "Tokens should be disabled"
-$CRYPTSETUP luksOpen -r $IMG $MAP -q >/dev/null 2>&1 <&-
+$CRYPTSETUP luksOpen $CUSTOM_TOKENS_PATH -r $IMG $MAP -q >/dev/null 2>&1 <&-
 [ $? -ne 0 ] && fail "Failed to open $IMG using SSH token"
 echo "[OK]"
 
@@ -211,10 +210,10 @@ $CRYPTSETUP token remove --token-id 0 $IMG || fail "Failed to remove token"
 
 echo -n "Adding SSH token with --key-slot: "
 
-$CRYPTSETUP_SSH add $IMG --ssh-server $SSH_SERVER --ssh-user $USER --ssh-path $SSH_PATH --ssh-keypath $SSH_KEY_PATH --key-slot 1
+$CRYPTSETUP_SSH add $IMG --ssh-server $SSH_SERVER --ssh-user $USER --ssh-path $SSH_PATH --ssh-keypath $SSH_KEY_PATH --key-slot 1 $CUSTOM_TOKENS_PATH
 [ $? -ne 0 ] && fail "Failed to add SSH token to $IMG"
 
-out=$($CRYPTSETUP luksDump $IMG)
+out=$($CRYPTSETUP luksDump $CUSTOM_TOKENS_PATH $IMG)
 check_dump "$out" 1
 echo "[OK]"
 
