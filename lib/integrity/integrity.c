@@ -344,15 +344,15 @@ static int _create_reduced_device(struct crypt_device *cd,
 	char path[PATH_MAX];
 	struct device *dev;
 
-	assert(cd);
-	assert(name);
-	assert(device_size_sectors);
-	assert(ret_device);
-
 	struct crypt_dm_active_device dmd = {
 		.size = device_size_sectors,
 		.flags = CRYPT_ACTIVATE_PRIVATE,
 	};
+
+	assert(cd);
+	assert(name);
+	assert(device_size_sectors);
+	assert(ret_device);
 
 	r = snprintf(path, sizeof(path), "%s/%s", dm_get_dir(), name);
 	if (r < 0 || (size_t)r >= sizeof(path))
