@@ -470,7 +470,7 @@ void device_free(struct crypt_device *cd, struct device *device)
 /* Get block device path */
 const char *device_block_path(const struct device *device)
 {
-	if (!device || !device->init_done)
+	if (!device)
 		return NULL;
 
 	return device->path;
@@ -482,7 +482,7 @@ const char *device_dm_name(const struct device *device)
 	const char *dmdir = dm_get_dir();
 	size_t dmdir_len = strlen(dmdir);
 
-	if (!device || !device->init_done)
+	if (!device)
 		return NULL;
 
 	if (strncmp(device->path, dmdir, dmdir_len))
