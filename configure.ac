@@ -128,7 +128,6 @@ if test "x$enable_largefile" = "xno"; then
   AC_MSG_ERROR([Building with --disable-largefile is not supported, it can cause data corruption.])
 fi
 
-AC_C_CONST
 AC_C_BIGENDIAN
 AC_TYPE_OFF_T
 AC_SYS_LARGEFILE
