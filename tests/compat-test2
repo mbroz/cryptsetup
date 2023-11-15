@@ -1423,5 +1423,19 @@ if [ "$HAVE_BLKID" -gt 0 ]; then
 	echo $PWD1 | $CRYPTSETUP -q --debug --disable-blkid luksFormat $FAST_PBKDF_OPT --type luks2 $HEADER_LUKS2_PV 2>&1 | grep -q "LVM2_member" && fail
 fi
 
+prepare "[46] Init from suspended device" wipe
+dmsetup create $DEV_NAME --table "0 39998 linear $LOOPDEV 2" || fail
+echo $PWD1 | $CRYPTSETUP -q $FAST_PBKDF_OPT luksFormat --type luks2 --header $HEADER_IMG /dev/mapper/$DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP -q luksOpen --header $HEADER_IMG /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
+# underlying device now returns error but node is still present
+dmsetup load $DEV_NAME --table "0 40000 error" || fail
+dmsetup resume $DEV_NAME || fail
+dmsetup suspend $DEV_NAME || fail
+# status must print data even if data device is suspended
+$CRYPTSETUP -q status --debug --header $HEADER_IMG $DEV_NAME2 | grep "type:" | grep -q "LUKS2" || fail
+dmsetup resume $DEV_NAME || fail
+$CRYPTSETUP -q luksClose $DEV_NAME2 || fail
+dmsetup remove --retry $DEV_NAME || fail
+
 remove_mapping
 exit 0
