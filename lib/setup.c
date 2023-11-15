@@ -548,6 +548,41 @@ int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
 }
 
 /*
+ * compares two UUIDs returned by device-mapper (striped by cryptsetup)
+ * used for stacked LUKS2 & INTEGRITY devices
+ */
+static int crypt_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid)
+{
+	int i;
+	char *str, *stri;
+
+	if (!dm_uuid || !dmi_uuid)
+		return -EINVAL;
+
+	/* skip beyond LUKS2_HW_OPAL prefix */
+	if (!strncmp(dm_uuid, CRYPT_LUKS2_HW_OPAL, strlen(CRYPT_LUKS2_HW_OPAL)))
+		dm_uuid = dm_uuid + strlen(CRYPT_LUKS2_HW_OPAL);
+
+	str = strchr(dm_uuid, '-');
+	if (!str)
+		return -EINVAL;
+
+	stri = strchr(dmi_uuid, '-');
+	if (!stri)
+		return -EINVAL;
+
+	for (i = 1; str[i] && str[i] != '-'; i++) {
+		if (!stri[i])
+			return -EINVAL;
+
+		if (str[i] != stri[i])
+			return -EINVAL;
+	}
+
+	return 0;
+}
+
+/*
  * compares type of active device to provided string
  */
 int crypt_uuid_type_cmp(const char *dm_uuid, const char *type)
@@ -3891,10 +3926,10 @@ int crypt_suspend(struct crypt_device *cd,
 	bool dm_opal_uuid;
 	crypt_status_info ci;
 	int r;
-	struct crypt_dm_active_device dmd;
+	struct crypt_dm_active_device dmd, dmdi = {};
 	uint32_t opal_segment_number = 1, dmflags = DM_SUSPEND_WIPE_KEY;
 	struct dm_target *tgt = &dmd.segment;
-	char *key_desc = NULL;
+	char *key_desc = NULL, *iname = NULL;
 
 	if (!cd || !name)
 		return -EINVAL;
@@ -3950,6 +3985,23 @@ int crypt_suspend(struct crypt_device *cd,
 		goto out;
 	}
 
+	/* check UUID of integrity device underneath crypt device */
+	if (crypt_get_integrity_tag_size(cd)) {
+		r = dm_get_iname(name, &iname, false);
+		if (r)
+			goto out;
+
+		r = dm_query_device(cd, iname, DM_ACTIVE_UUID, &dmdi);
+		if (r < 0)
+			goto out;
+
+		r = crypt_uuid_integrity_cmp(dmd.uuid, dmdi.uuid);
+		if (r < 0) {
+			log_dbg(cd, "Integrity device uuid: %s mismatches crypt device uuid %s", dmdi.uuid, dmd.uuid);
+			goto out;
+		}
+	}
+
 	r = dm_status_suspended(cd, name);
 	if (r < 0)
 		goto out;
@@ -3989,14 +4041,24 @@ int crypt_suspend(struct crypt_device *cd,
 		goto out;
 	}
 
+	/* Suspend integrity device underneath; keep crypt suspended if it fails */
+	if (crypt_get_integrity_tag_size(cd)) {
+		r = dm_suspend_device(cd, iname, 0);
+		if (r)
+			log_err(cd, _("Error during suspending device %s."), iname);
+	}
+
 	crypt_drop_keyring_key_by_description(cd, key_desc, cd->keyring_key_type);
 
 	if (dm_opal_uuid && (!crypt_data_device(cd) || opal_lock(cd, crypt_data_device(cd), opal_segment_number)))
 		log_err(cd, _("Device %s was suspended but hardware OPAL device cannot be locked."), name);
 out:
 	free(key_desc);
+	free(iname);
 	dm_targets_free(cd, &dmd);
+	dm_targets_free(cd, &dmdi);
 	free(CONST_CAST(void*)dmd.uuid);
+	free(CONST_CAST(void*)dmdi.uuid);
 	return r;
 }
 
@@ -4077,6 +4139,7 @@ static int resume_luks2_by_volume_key(struct crypt_device *cd,
 	uint32_t opal_segment_number;
 	key_serial_t user_vk_kid = 0;
 	struct volume_key *p_crypt = vk, *p_opal = NULL, *zerokey = NULL, *crypt_key = NULL, *opal_key = NULL;
+	char *iname = NULL;
 
 	assert(digest >= 0);
 	assert(vk && crypt_volume_key_get_id(vk) == digest);
@@ -4140,6 +4203,16 @@ static int resume_luks2_by_volume_key(struct crypt_device *cd,
 		}
 	}
 
+	if (crypt_get_integrity_tag_size(cd)) {
+		r = dm_get_iname(name, &iname, false);
+		if (r)
+			goto out;
+
+		r = dm_resume_device(cd, iname, 0);
+		if (r)
+			log_err(cd, _("Error during resuming device %s."), iname);
+	}
+
 	if (enc_type == CRYPT_OPAL_HW_ONLY)
 		r = dm_resume_device(cd, name, 0);
 	else
@@ -4163,6 +4236,7 @@ out:
 	crypt_free_volume_key(zerokey);
 	crypt_free_volume_key(opal_key);
 	crypt_free_volume_key(crypt_key);
+	free(iname);
 
 	return r;
 }
@@ -4743,15 +4817,18 @@ int create_or_reload_device_with_integrity(struct crypt_device *cd, const char *
 		     struct crypt_dm_active_device *dmdi)
 {
 	int r;
-	const char *iname = NULL;
-	char *ipath = NULL;
+	char *iname = NULL, *ipath = NULL;
 
 	if (!type || !name || !dmd || !dmdi)
 		return -EINVAL;
 
-	if (asprintf(&ipath, "%s/%s_dif", dm_get_dir(), name) < 0)
-		return -ENOMEM;
-	iname = ipath + strlen(dm_get_dir()) + 1;
+	r = dm_get_iname(name, &iname, false);
+	if (r)
+		goto out;
+
+	r = dm_get_iname(name, &ipath, true);
+	if (r)
+		goto out;
 
 	/* drop CRYPT_ACTIVATE_REFRESH flag if any device is inactive */
 	r = check_devices(cd, name, iname, &dmd->flags);
@@ -4764,6 +4841,7 @@ int create_or_reload_device_with_integrity(struct crypt_device *cd, const char *
 		r = _create_device_with_integrity(cd, type, name, iname, ipath, dmd, dmdi);
 out:
 	free(ipath);
+	free(iname);
 
 	return r;
 }

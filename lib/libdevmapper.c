@@ -3041,6 +3041,18 @@ const char *dm_get_dir(void)
 	return dm_dir();
 }
 
+int dm_get_iname(const char *name, char **iname, bool with_path)
+{
+	int r;
+
+	if (with_path)
+		r = asprintf(iname, "%s/%s_dif", dm_get_dir(), name);
+	else
+		r = asprintf(iname, "%s_dif", name);
+
+	return r < 0 ? -ENOMEM : 0;
+}
+
 int dm_is_dm_device(int major)
 {
 	return dm_is_dm_major((uint32_t)major);
