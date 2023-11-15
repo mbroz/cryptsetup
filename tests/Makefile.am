@@ -47,13 +47,6 @@ endif
 
 systemd-test-plugin: fake_systemd_tpm_path.so
 
-# Do not use global CFLAGS here as the *.so link does not support sanitizers
-fake_token_path.so: fake_token_path.c
-	$(CC) $(LDFLAGS) -I $(top_srcdir)/lib -fPIC -shared -D_GNU_SOURCE \
-	-Wl,--version-script=$(top_srcdir)/lib/libcryptsetup.sym \
-	-o fake_token_path.so  $(top_srcdir)/tests/fake_token_path.c \
-	-DBUILD_DIR=\"$(abs_top_srcdir)/.libs/\"
-
 fake_systemd_tpm_path.so: fake_systemd_tpm_path.c
 	$(CC) $(LDFLAGS) -fPIC -shared -D_GNU_SOURCE -o fake_systemd_tpm_path.so \
 	$(top_srcdir)/tests/fake_systemd_tpm_path.c
@@ -105,12 +98,11 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	ssh-test-plugin \
 	generate-symbols-list \
 	run-all-symbols \
-	fake_token_path.c \
 	fake_systemd_tpm_path.c \
 	unit-wipe-test \
 	systemd-test-plugin
 
-CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_token_path.so fake_systemd_tpm_path.so
+CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_systemd_tpm_path.so
 clean-local:
 	-rm -rf tcrypt-images luks1-images luks2-images bitlk-images fvault2-images conversion_imgs \
 	luks2_valid_hdr.img blkid-luks2-pv-img blkid-luks2-pv-img.bcp external-tokens luks2_invalid_cipher.img
@@ -168,7 +160,7 @@ all_symbols_test_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
 check_PROGRAMS = api-test api-test-2 differ vectors-test unit-utils-io unit-utils-crypt-test unit-wipe all-symbols-test
 
-check-programs: test-symbols-list.h $(check_PROGRAMS) fake_token_path.so fake_systemd_tpm_path.so
+check-programs: test-symbols-list.h $(check_PROGRAMS) fake_systemd_tpm_path.so
 
 conversion_imgs:
 	@tar xJf conversion_imgs.tar.xz

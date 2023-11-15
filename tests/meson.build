@@ -132,20 +132,6 @@ all_symbols_test = executable('all-symbols-test',
     ],
     include_directories: includes_lib)
 
-fake_token_path = shared_library('fake_token_path',
-    [
-        'fake_token_path.c',
-    ],
-    include_directories: includes_lib,
-    version: libcryptsetup_version,
-    link_args: [
-        '-Wl,--version-script=' +
-        libcryptsetup_sym_path,
-    ],
-    name_prefix: '',
-    c_args: ['-DBUILD_DIR="@0@"'.format(tokens_ssh_build_dir)],
-    build_by_default: not enable_static)
-
 fake_systemd_tpm_path = shared_library('fake_systemd_tpm_path',
     [
         'fake_systemd_tpm_path.c',
