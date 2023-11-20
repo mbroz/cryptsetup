@@ -6,7 +6,7 @@
     - >
       [ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] ||
       sudo apt-get -y install -y -qq swtpm meson ninja-build python3-jinja2
-      gperf libcap-dev tpm2-tss-engine-dev libmount-dev swtpm-tools
+      gperf libcap-dev libtss2-dev libmount-dev swtpm-tools
     - >
       sudo apt-get -y install -y -qq git gcc make autoconf automake autopoint
       pkgconf libtool libtool-bin gettext libssl-dev libdevmapper-dev
