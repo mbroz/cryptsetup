@@ -3211,6 +3211,9 @@ static void Luks2KeyslotAdd(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	EQ_(crypt_activate_by_passphrase(cd, NULL, 1, PASSPHRASE1, strlen(PASSPHRASE1), 0), 1);
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, PASSPHRASE1, strlen(PASSPHRASE1), 0), 1);
+	/* check we can resume device with new volume key */
+	OK_(crypt_suspend(cd, CDEVICE_1));
+	EQ_(crypt_resume_by_passphrase(cd, CDEVICE_1, 1, PASSPHRASE1, strlen(PASSPHRASE1)), 1);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	/* old keyslot must be unusable */
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "Key doesn't match volume key digest");

@@ -4226,7 +4226,7 @@ int crypt_resume_by_keyslot_context(struct crypt_device *cd,
 		crypt_volume_key_set_id(vk, 0);
 	} else if (isLUKS2(cd->type)) {
 		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
-		crypt_volume_key_set_id(vk, 0);
+		crypt_volume_key_set_id(vk, r);
 	} else
 		r = -EINVAL;
 	if (r < 0)
