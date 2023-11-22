@@ -61,7 +61,8 @@ function remove_mapping()
 function fail()
 {
 	[ -n "$1" ] && echo "$1"
-	remove_mapping_and_reset
+	remove_mapping
+	reset_device_psid_nofail
 	echo "FAILED backtrace:"
 	while caller $frame; do ((frame++)); done
 	exit 2
@@ -85,10 +86,15 @@ function skip()
 	exit 77
 }
 
-function remove_mapping_and_reset()
+function reset_device_psid()
 {
-	remove_mapping
-	$CRYPTSETUP_RAW luksErase --hw-opal-factory-reset --key-file $OPAL2_PSID_FILE $OPAL2_DEV -q
+	$CRYPTSETUP_RAW luksErase --hw-opal-factory-reset --key-file $OPAL2_PSID_FILE $OPAL2_DEV -q || \
+	fail "PSID reset fail, wrong device used?"
+}
+
+function reset_device_psid_nofail()
+{
+	$CRYPTSETUP_RAW luksErase --hw-opal-factory-reset --key-file $OPAL2_PSID_FILE $OPAL2_DEV -q 2>/dev/null
 }
 
 function prepare()
@@ -97,7 +103,8 @@ function prepare()
 
 	case "$2" in
 	reset)
-		remove_mapping_and_reset
+		remove_mapping
+		reset_device_psid
 		;;
 	wipe)
 		$CRYPTSETUP_RAW isLuks --type luks2 $HEADER_IMG -q 2>/dev/null
@@ -1313,5 +1320,6 @@ test_device_detached_header $HEADER_IMG --hw-opal "-s 280 -c aes-ccm-random --in
 
 # FIXME: Add partition based tests
 
-remove_mapping_and_reset
+remove_mapping
+reset_device_psid_nofail
 exit 0
