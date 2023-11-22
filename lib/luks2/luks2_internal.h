@@ -382,6 +382,7 @@ bool LUKS2_segments_dynamic_size(struct luks2_hdr *hdr);
 
 int LUKS2_reencrypt_digest_new(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_digest_old(struct luks2_hdr *hdr);
+unsigned LUKS2_reencrypt_vks_count(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise);
 
 /*

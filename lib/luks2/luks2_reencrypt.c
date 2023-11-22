@@ -183,6 +183,21 @@ int LUKS2_reencrypt_digest_old(struct luks2_hdr *hdr)
 	return reencrypt_digest(hdr, 0);
 }
 
+unsigned LUKS2_reencrypt_vks_count(struct luks2_hdr *hdr)
+{
+	int digest_old, digest_new;
+	unsigned vks_count = 0;
+
+	if ((digest_new = LUKS2_reencrypt_digest_new(hdr)) >= 0)
+		vks_count++;
+	if ((digest_old = LUKS2_reencrypt_digest_old(hdr)) >= 0) {
+		if (digest_old != digest_new)
+			vks_count++;
+	}
+
+	return vks_count;
+}
+
 /* none, checksums, journal or shift */
 static const char *reencrypt_resilience_type(struct luks2_hdr *hdr)
 {

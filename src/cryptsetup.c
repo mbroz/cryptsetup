@@ -28,9 +28,11 @@
 #include "utils_luks.h"
 
 static char *keyfiles[MAX_KEYFILES];
+static char *keyring_links[MAX_KEYRING_LINKS];
 static char *keyfile_stdin = NULL;
 
 static int keyfiles_count = 0;
+static int keyring_links_count = 0;
 int64_t data_shift = 0;
 
 const char *device_type = "luks";
@@ -57,6 +59,8 @@ void tools_cleanup(void)
 
 	while (keyfiles_count)
 		free(keyfiles[--keyfiles_count]);
+	while (keyring_links_count)
+		free(keyring_links[--keyring_links_count]);
 
 	total_keyfiles = 0;
 }
@@ -1710,12 +1714,14 @@ static int parse_vk_description(const char *key_description, char **ret_key_desc
 	return r;
 }
 
-static int parse_vk_and_keyring_description(
+static int parse_single_vk_and_keyring_description(
 		struct crypt_device *cd,
-		char *keyring_key_description)
+		char *keyring_key_description, char **keyring_part_out, char
+		**key_part_out, char **type_part_out)
 {
 	int r = -EINVAL;
-	char *endp, *sep, *keyring_part = NULL, *key_part, *type_part = NULL;
+	char *endp, *sep, *key_part, *type_part = NULL;
+	char *key_part_copy = NULL, *type_part_copy = NULL, *keyring_part = NULL;
 
 	if (!cd || !keyring_key_description)
 		return -EINVAL;
@@ -1759,12 +1765,81 @@ static int parse_vk_and_keyring_description(
 		goto out;
 	}
 
-	r = crypt_set_keyring_to_link(cd, key_part, NULL, type_part, keyring_part);
+	if (!(key_part_copy = strdup(key_part))) {
+		r = -ENOMEM;
+		goto out;
+	}
+	if (type_part && !(type_part_copy = strdup(type_part)))
+		r = -ENOMEM;
+
+out:
+	if (r < 0) {
+		free(keyring_part);
+		free(key_part_copy);
+		free(type_part_copy);
+	} else {
+		*keyring_part_out = keyring_part;
+		*key_part_out = key_part_copy;
+		*type_part_out = type_part_copy;
+	}
+
+	return r;
+}
+
+static int parse_vk_and_keyring_description(
+		struct crypt_device *cd,
+		char **keyring_key_descriptions,
+		int keyring_links_count)
+{
+	int r = 0;
+
+	char *keyring_part_out1 = NULL, *key_part_out1 = NULL, *type_part_out1 = NULL;
+	char *keyring_part_out2 = NULL, *key_part_out2 = NULL, *type_part_out2 = NULL;
+
+	if (keyring_links_count > 0) {
+		r = parse_single_vk_and_keyring_description(cd,
+				keyring_key_descriptions[0],
+				&keyring_part_out1, &key_part_out1,
+				&type_part_out1);
+		if (r < 0)
+			goto out;
+	}
+	if (keyring_links_count > 1) {
+		r = parse_single_vk_and_keyring_description(cd,
+				keyring_key_descriptions[1],
+				&keyring_part_out2, &key_part_out2,
+				&type_part_out2);
+		if (r < 0)
+			goto out;
+
+		if ((type_part_out1 && type_part_out2) && strcmp(type_part_out1, type_part_out2)) {
+			log_err(_("Key types have to be the same for both volume keys."));
+			r = -EINVAL;
+			goto out;
+		}
+		if ((keyring_part_out1 && keyring_part_out2) && strcmp(keyring_part_out1, keyring_part_out2)) {
+			log_err(_("Both volume keys have to be linked to the same keyring."));
+			r = -EINVAL;
+			goto out;
+		}
+	}
+
+	if (keyring_links_count > 0) {
+		r = crypt_set_keyring_to_link(cd, key_part_out1, key_part_out2,
+				type_part_out1, keyring_part_out1);
+		if (r == -EAGAIN)
+			log_err(_("You need to supply more key names."));
+	}
 out:
 	if (r == -EINVAL)
 		log_err(_("Invalid --link-vk-to-keyring value."));
+	free(keyring_part_out1);
+	free(key_part_out1);
+	free(type_part_out1);
+	free(keyring_part_out2);
+	free(key_part_out2);
+	free(type_part_out2);
 
-	free(keyring_part);
 	return r;
 }
 
@@ -1828,7 +1903,7 @@ static int action_open_luks(void)
 	}
 
 	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID)) {
-		r = parse_vk_and_keyring_description(cd, ARG_STR(OPT_LINK_VK_TO_KEYRING_ID));
+		r = parse_vk_and_keyring_description(cd, keyring_links, keyring_links_count);
 		if (r < 0)
 			goto out;
 	}
@@ -2730,7 +2805,7 @@ static int action_luksResume(void)
 		return r;
 
 	if (ARG_SET(OPT_LINK_VK_TO_KEYRING_ID)) {
-		r = parse_vk_and_keyring_description(cd, ARG_STR(OPT_LINK_VK_TO_KEYRING_ID));
+		r = parse_vk_and_keyring_description(cd, keyring_links, keyring_links_count);
 		if (r < 0)
 			goto out;
 	}
@@ -3658,6 +3733,7 @@ static void basic_options_cb(poptContext popt_context,
 		 const char *arg,
 		 void *data __attribute__((unused)))
 {
+	char buf[128];
 	tools_parse_arg_value(popt_context, tool_core_args[key->val].type, tool_core_args + key->val, arg, key->val, needs_size_conversion);
 
 	/* special cases additional handling */
@@ -3708,6 +3784,18 @@ static void basic_options_cb(poptContext popt_context,
 			usage(popt_context, EXIT_FAILURE,
 			      _("Key size must be a multiple of 8 bits"),
 			      poptGetInvocationName(popt_context));
+		break;
+	case OPT_LINK_VK_TO_KEYRING_ID:
+		if (keyring_links_count < MAX_KEYRING_LINKS)
+			keyring_links[keyring_links_count++] = strdup(ARG_STR(OPT_LINK_VK_TO_KEYRING_ID));
+		else {
+
+			if (snprintf(buf, sizeof(buf), _("At most %d keyring link specifications can be supplied."), MAX_KEYRING_LINKS) < 0)
+				buf[0] = '\0';
+			usage(popt_context, EXIT_FAILURE,
+			      buf,
+			      poptGetInvocationName(popt_context));
+		}
 		break;
 	case OPT_REDUCE_DEVICE_SIZE_ID:
 		if (ARG_UINT64(OPT_REDUCE_DEVICE_SIZE_ID) > 1024 * 1024 * 1024)
