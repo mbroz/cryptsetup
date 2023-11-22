@@ -30,6 +30,7 @@ struct crypt_device;
 #define MAX_CIPHER_LEN       32
 #define MAX_CIPHER_LEN_STR   "31"
 #define MAX_KEYFILES         32
+#define MAX_KEYRING_LINKS    2
 #define MAX_CAPI_ONE_LEN     2 * MAX_CIPHER_LEN
 #define MAX_CAPI_ONE_LEN_STR "63"  /* for sscanf length + '\0' */
 #define MAX_CAPI_LEN         144   /* should be enough to fit whole capi string */
