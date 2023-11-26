@@ -1,4 +1,4 @@
-EXTRA_DIST = README.md COPYING.LGPL FAQ.md docs misc autogen.sh
+EXTRA_DIST = README.md SECURITY.md COPYING.LGPL FAQ.md docs misc autogen.sh
 EXTRA_DIST += meson_options.txt \
 	meson.build \
 	lib/crypto_backend/argon2/meson.build \
