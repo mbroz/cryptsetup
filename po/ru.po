@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: cryptsetup 2.6.1-rc0\n"
 "Report-Msgid-Bugs-To: cryptsetup@lists.linux.dev\n"
 "POT-Creation-Date: 2023-02-01 15:58+0100\n"
-"PO-Revision-Date: 2023-02-04 15:38+0300\n"
+"PO-Revision-Date: 2023-11-02 21:04+0300\n"
 "Last-Translator: Yuri Kozlov <yuray@komyakino.ru>\n"
 "Language-Team: Russian <gnu@d07.ru>\n"
 "Language: ru\n"
@@ -19,7 +19,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Bugs: Report translation errors to the Language-Team address.\n"
 "X-Launchpad-Export-Date: 2018-12-03 15:52+0000\n"
-"X-Generator: Lokalize 20.12.0\n"
+"X-Generator: Lokalize 22.12.3\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 #: lib/libdevmapper.c:419
@@ -723,7 +723,7 @@ msgstr "Запрошенный тип PBKDF %s не поддерживается
 
 #: lib/utils_pbkdf.c:128
 msgid "PBKDF max memory or parallel threads must not be set with pbkdf2."
-msgstr "Максимальный размер памяти PBKDF и количество параллельных нитей нельзя задавать вместе с pbkdf2."
+msgstr "Максимальный размер памяти PBKDF или количество параллельных потоков нельзя задавать вместе с pbkdf2."
 
 #: lib/utils_pbkdf.c:133 lib/utils_pbkdf.c:143
 #, c-format
@@ -746,7 +746,7 @@ msgstr "Запрошенная максимальная стоимость па�
 
 #: lib/utils_pbkdf.c:164
 msgid "Requested PBKDF parallel threads cannot be zero."
-msgstr "Запрошенное количество параллельных нитей PBKDF не может быть нулевым."
+msgstr "Запрошенное количество параллельных потоков PBKDF не может быть нулевым."
 
 #: lib/utils_pbkdf.c:184
 msgid "Only PBKDF2 is supported in FIPS mode."
@@ -1986,7 +1986,7 @@ msgstr "%-10s Н/Д\n"
 #: src/cryptsetup.c:1021
 #, c-format
 msgid "%-10s %4u iterations, %5u memory, %1u parallel threads (CPUs) for %zu-bit key (requested %u ms time)\n"
-msgstr "%-10s %4u итераций, %5u памяти, %1u параллельных нитей (ЦП) для %zu-битного ключа (запрашивался %u мс)\n"
+msgstr "%-10s %4u итераций, %5u памяти, %1u параллельных потоков (ЦП) для %zu-битного ключа (запрашивался %u мс)\n"
 
 #: src/cryptsetup.c:1045
 msgid "Result of benchmark is not reliable."
@@ -2660,7 +2660,7 @@ msgstr ""
 "\tМаксимальный размер файла ключа: %dКБ, Максимальная длина парольной фразы при вводе вручную: %d (символов)\n"
 "PBKDF по умолчанию для LUKS1: %s, Время итерации: %d (мс)\n"
 "PBKDF по умолчанию для LUKS2: %s\n"
-"\tВремя итерации: %d, Требуемая память: %dКБ, Кол-во параллельных нитей: %d\n"
+"\tВремя итерации: %d, Требуемая память: %dКБ, Кол-во параллельных потоков: %d\n"
 
 #: src/cryptsetup.c:3241
 #, c-format
