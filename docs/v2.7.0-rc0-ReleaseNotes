@@ -1,0 +1,435 @@
+Cryptsetup 2.7.0-rc0 Release Notes
+==================================
+Stable release candidate with new features and bug fixes.
+
+Changes since version 2.6.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Introduce support for hardware OPAL disk encryption.
+
+  Some SATA and NVMe devices support hardware encryption through OPAL2
+  TCG interface (SEDs - self-encrypting drives). Using hardware disk
+  encryption is controversial as you must trust proprietary hardware.
+
+  On the other side, using both software and hardware encryption
+  layers increases the security margin by adding an additional layer
+  of protection. There is usually no performance drop if OPAL encryption
+  is used (the drive always operates with full throughput), and it does
+  not add any utilization to the main CPU.
+
+  LUKS2 now supports hardware encryption through the Linux kernel
+  SED OPAL interface (CONFIG_BLK_SED_OPAL Linux kernel option must be
+  enabled). Cryptsetup OPAL is never enabled by default; you have to use
+  luksFormat parameters to use it. OPAL support can be disabled during
+  the build phase with --disable-hw-opal configure option.
+
+  LUKS2 OPAL encryption is configured the same way as software encryption
+  - it stores metadata in the LUKS2 header and activates encryption for
+  the data area on the disk (configured OPAL locking range).
+  LUKS2 header metadata must always be visible (thus not encrypted).
+  The key stored in LUKS2 keyslots contains two parts - volume key
+  for software (dm-crypt) encryption and unlocking key for OPAL.
+  OPAL unlocking key is independent of the dm-crypt volume key and is
+  always 256 bits long. Cryptsetup does not support full drive OPAL
+  encryption; only a specific locking range is always used.
+
+  If the OPAL device is in its initial factory state (after factory
+  reset), cryptsetup needs to configure the OPAL admin user and password.
+  If the OPAL admin user is already set, the OPAL password must be
+  provided during luksFormat.
+  The provided password is needed only to configure or reset the OPAL
+  locking range; LUKS device activation requires LUKS passphrase only.
+  LUKS passphrase should be different from OPAL password (OPAL admin user
+  is configured inside OPAL hardware while LUKS unlocking passphrase
+  unlocks LUKS keyslot).
+
+  OPAL encryption can be used in combination with software (dm-crypt)
+  encryption (--hw-opal option) or without the software layer
+  (--hw-opal-only option).
+  You can see the configured segment parameters in the luksDump command.
+  Note: formal specification of OPAL LUKS2 segment metadata will be added
+  in the next release candidate. LUKS2 devices with OPAL segments set
+  a new requirement flag in the LUKS2 header to prevent older cryptsetup
+  metadata manipulation. Do not use hardware-only encryption if you do
+  not fully trust your hardware vendor.
+
+  Compatibility notes:
+    - Linux kernel SED interface does NOT work through USB external
+    adapters due to the mising compatibility layer in Linux USB storage
+    drivers (even if USB hardware itself can support OPAL commands).
+    - other TCG security subsystems like Ruby or Pyrite are not
+    supported. Note that many drives support only Pyrite subsystem that
+    does NOT encrypt data (it provides only authentication).
+    - compatibility among OPAL-enabled drives is often very problematic,
+    specifically for older drives. Many drives have bugs in the firmware
+    that make the Linux kernel interface unusable.
+    - unlocking key for OPAL remains in memory even after luksSuspend
+    - if you forget the OPAL admin password, the only way to recover is
+    the full drive factory reset through the PSID key (usually printed
+    on the drive itself) that wipes all data on the drive (not only the
+    LUKS area).
+    - cryptsetup reencryption is not supported for LUKS2 OPAL-enabled
+    devices
+    - most OPAL drives use AES-XTS cipher mode (older drives can use
+    AES-CBC). This information is not available through kernel SED API.
+    - locked OPAL locking ranges return IO errors while reading; this
+    can produce a lot of scary messages in the log if some tools (like
+    blkid) try to read the locked area.
+
+  Examples:
+
+  * Formatting the drive
+  Use --hw-opal with luksFormat (or --hw-opal-only for hardware only
+  encryption):
+
+  # cryptsetup luksFormat --hw-opal <device>
+  Enter passphrase for <device>: ***
+  Enter OPAL Admin password: ***
+
+  * Check configuration with luksDump.
+  Note "hw-opal-crypt" segment that uses both dm-crypt and OPAL
+  encryption - keyslot stores 768 bits key (512 sw + 256 bits OPAL key).
+
+  # cryptsetup luksDump <device>
+    LUKS header information
+    Version:        2
+    ...
+    Data segments:
+       0: hw-opal-crypt
+         offset: 16777216 [bytes]
+         length: ... [bytes]
+         cipher: aes-xts-plain64
+         sector: 512 [bytes]
+         HW OPAL encryption:
+                OPAL segment number: 1
+                OPAL key: 256 bits
+                OPAL segment length: ... [bytes]
+     Keyslots:
+       0: luks2
+         Key:        768 bits
+      ...
+
+  For devices with OPAL encryption ONLY (only 256 bits OPAL unlocking
+  key is stored):
+     LUKS header information
+     Version:        2
+     ...
+
+     Data segments:
+        0: hw-opal
+          offset: 16777216 [bytes]
+          length: ... [bytes]
+          cipher: (no SW encryption)
+          HW OPAL encryption:
+                OPAL segment number: 1
+                OPAL key: 256 bits
+                OPAL segment length: ... [bytes]
+     Keyslots:
+       0: luks2
+         Key:        256 bits
+         ...
+
+  * Activation and deactivation (open, close, luksSuspend, luksResume)
+  with OPAL works the same as for the LUKS2 device.
+
+  * Erase LUKS metadata (keyslots) and remove OPAL locking range:
+  # cryptsetup luksErase <device>
+    Enter OPAL Admin password: ***
+
+  The LUKS header is destroyed (unlike in normal LUKS luksErase) as
+  data are no longer accessible even with previous volume key knowledge.
+
+  * Factory reset OPAL drive (if you do not know the Admin password).
+    You need the PSID (physical presence security ID), which is usually
+    printed on the device label. Note this will reset the device to
+    factory state, erasing all data on it (not only LUKS).
+
+  # cryptsetup luksErase --hw-opal-factory-reset <device>
+    Enter OPAL PSID: ***
+
+* plain mode: Set default cipher to aes-xts-plain64 and password hashing
+  to sha256.
+
+  NOTE: this is a backward incompatible change for plain mode (if you
+  rely on defaults). It is not relevant for LUKS devices.
+
+  The default plain encryption mode was CBC for a long time, with many
+  performance problems. Using XTS mode aligns it with LUKS defaults.
+
+  The hash algorithm for plain mode was ripemd160, which is considered
+  deprecated, so the new default is sha256.
+
+  The default key size remains 256 bits (it means using AES-128 as XTS
+  requires two keys).
+
+  Always specify cipher, hash, and key size for plain mode (or even
+  better, use LUKS as it stores all options in its metadata on disk).
+  As we need to upgrade algorithms from time to time because of security
+  reasons, cryptsetup now warns users to specify these options explicitly
+  in the open cryptsetup command if plain mode is used.
+  Cryptsetup does not block using any legacy encryption type; just it
+  must be specified explicitly on the cryptsetup command line.
+
+  You can configure these defaults during build time if you need to
+  enforce backward compatibility.
+  To get the backward-compatible setting, use:
+    --with-plain-hash=ripemd160 --with-plain-cipher=aes
+    --with-plain-mode=cbc-essiv:sha256
+
+  Compiled-in defaults are visible in cryptsetup --help output.
+
+* Allow activation (open), luksResume, and luksAddKey to use the volume
+  key stored in a keyring.
+* Allow to store volume key to a user-specified keyring in open and
+  luksResume commands.
+
+  These options are intended to be used for integration with other
+  systems for automation.
+
+  Note: the API will slightly change in the next release candidate
+  (active reencryption will need to setup old and new keys together).
+
+  Users can now use the volume key (not passphrase) stored in arbitrary
+  kernel keyring and directly use it in particular cryptsetup commands
+  with --volume-key-keyring option. The keyring can use various policies
+  (set outside of the cryptsetup scope, for example, by keyctl).
+
+  The --volume-key-keyring option takes a key description in
+  keyctl-compatible syntax and can either be a numeric key ID or
+  a string name in the format [%<key type>:]<key name>.
+  The default key type is "user".
+
+  To store the volume key in a keyring, you can use cryptsetup with
+  --link-vk-to-keyring option that is available for open and luksResume
+  cryptsetup command. The option argument has a more complex format:
+  <keyring_description>::<key_description>.
+  The <keyring_description> contains the existing kernel keyring
+  description (numeric id or keyctl format). The <keyring_description>
+  may be optionaly prefixed with "%:" or "%keyring:". The string "::" is
+  a delimiter that separates keyring and key descriptions.
+  The <key_description> has the same syntax as used in the
+  --volume-key-keyring option.
+
+  Example:
+
+  Open the device and store the volume key to the keyring:
+  # cryptsetup open <device> --link-vk-to-keyring "@s::%user:testkey" tst
+
+  Add keyslot using the stored key in a keyring:
+  # cryptsetup luksAddKey <device> --volume-key-keyring "%user:testkey"
+
+* Do not flush IO operations if resize grows the device.
+  This can help performance in specific cases where the encrypted device
+  is extended automatically while running many IO operations.
+
+* Use only half of detected free memory for Argon2 PBKDF on systems
+  without swap (for LUKS2 new keyslot or format operations).
+
+  This should avoid out-of-memory crashes on low-memory systems without
+  swap. The benchmark for memory-hard KDF during format is tricky, and
+  it seems that relying on the maximum half of physical memory is not
+  enough; relying on free memory should bring the needed security margin
+  while still using Argon2.
+  There is no change for systems with active swap.
+  Note, for very-low memory-constrained systems, a user should avoid
+  memory-hard PBKDF completely (manually select legacy PBKDF2 instead
+  of Argon2); cryptsetup does not change PBKDF automatically.
+
+* Add the possibility to specify a directory for external LUKS2 token
+  handlers (plugins).
+
+  Use --external-tokens-path parameter in cryptsetup or
+  crypt_token_set_external_path API call. The parameter is required to be
+  an absolute path, and it is set per process context. This parameter is
+  intended mainly for testing and developing new tokens.
+
+* Do not allow reencryption/decryption on LUKS2 devices with
+  authenticated encryption or hardware (OPAL) encryption.
+
+  The operation fails later anyway; cryptsetup now detects incompatible
+  parameters early.
+
+* Do not fail LUKS format if the operation was interrupted on subsequent
+  device wipe.
+
+  Device wipe (used with authenticated encryption) is an optional
+  operation and can be interrupted; not yet wiped part of the device will
+  only report integrity errors (until overwritten with new data).
+
+* Fix the LUKS2 keyslot option to be used while activating the device
+  by a token.
+
+  It can also be used to check if a specific token (--token-id) can
+  unlock a specific keyslot (--key-slot option) when --test-passphrase
+  option is specified.
+
+* Properly report if the dm-verity device cannot be activated due to
+  the inability to verify the signed root hash.
+
+  If the kernel returns ENOKEY, it is properly propagated.
+
+* Fix to check passphrase for selected keyslot only when adding
+  new keyslot.
+
+  If the user specifies the exact keyslot to unlock, cryptsetup no longer
+  checks other keyslots.
+
+* Fix to not wipe the keyslot area before in-place overwrite.
+
+  If the LUKS2 keyslot area has to be overwritten (due to lack of free
+  space for keyslot swap), cryptsetup does not wipe the affected area as
+  the first step (it will be overwritten later anyway).
+  Previously, there was an unnecessary risk of losing the keyslot data
+  if the code crashed before adding the new keyslot.
+
+  If there is enough space in the keyslot area, cryptsetup never
+  overwrites the older keyslot before the new one is written correctly
+  (even if the keyslot number remains the same).
+
+* bitlk: Fix segfaults when attempting to verify the volume key.
+
+  Also, clarify that verifying the volume key is impossible without
+  providing a passphrase or recovery key.
+
+* Add --disable-blkid command line option to avoid blkid device check.
+
+* Add support for the meson build system.
+
+  All basic operations are supported (compile, test, and dist) with some
+  minor exceptions; please see the meson manual for more info.
+
+  The Meson build system will completely replace autotools in some future
+  major release. Both autotools and meson build systems are supported,
+  and the release archive is built with autotools.
+
+* Fix wipe operation that overwrites the whole device if used for LUKS2
+  header with no keyslot area.
+
+   Formatting a LUKS2 device with no defined keyslots area is a very
+   specific operation, and the code now properly recognizes such
+   configuration.
+
+* Fix luksErase to work with detached LUKS header.
+
+* Disallow the use of internal kernel crypto driver names in "capi"
+  specification.
+
+  The common way to specify cipher mode in cryptsetup is to use
+  cipher-mode-iv notation (like aes-xts-plain64).
+  With the introduction of authenticated ciphers, we also allow
+  "capi:<spec>" notation that is directly used by dm-crypt
+  (e.g., capi:xts(aes)-plain64).
+
+  CAPI specification was never intended to be used directly in the LUKS
+  header; unfortunately, the code allowed it until now.
+  Devices with CAPI specification in metadata can no longer be activated;
+  header repair is required.
+
+  CAPI specification could allow attackers to change the cipher
+  specification to enforce loading some specific kernel crypto driver
+  (for example, load driver with known side-channel issues).
+  This can be problematic, specifically in a cloud environment
+  (modifying LUKS2 metadata in container image).
+
+  Thanks to Jan Wichelmann, Luca Wilke, and Thomas Eisenbarth from
+  University of Luebeck for noticing the problems with this code.
+
+* Fix reencryption to fail early for unknown cipher.
+
+* tcrypt: Support new Blake2 hash for VeraCrypt.
+
+  VeraCrypt introduces support for Blake2 PRF for PBKDF2; also support it
+  in cryptsetup compatible tcrypt format.
+
+* tcrypt: use hash values as substring for limiting KDF check.
+
+  This allows the user to specify --hash sha or --hash blake2 to limit
+  the KDF scan without the need to specify the full algorithm name
+  (similar to cipher where we already use substring match).
+
+* Add Aria cipher support and block size info.
+
+  Aria cipher is similar to AES and is supported in Linux kernel crypto
+  API in recent releases.
+  It can be now used also for LUKS keyslot encryption.
+
+* Do not decrease PBKDF parameters if the user forces them.
+
+  If a user explicitly specifies PBKDF parameters (like iterations,
+  used memory, or threads), do not limit them, even if it can cause
+  resource exhaustion.
+  The force options were mostly used for decreasing parameters, but it
+  should work even opposite - despite the fact it can mean an
+  out-of-memory crash.
+
+  The only limits are hard limits per the PBKDF algorithm.
+
+* Support OpenSSL 3.2 Argon2 implementation.
+
+  Argon2 is now available directly in OpenSSL, so the code no longer
+  needs to use libargon implementation.
+  Configure script should detect this automatically.
+
+* Add support for Argon2 from libgcrypt
+  (requires yet unreleased gcrypt 1.11).
+
+  Argon2 has been available since version 1.10, but we need version 1.11,
+  which will allow empty passwords.
+
+* Link only libcrypto from OpenSSL.
+
+  This reduces dependencies as other OpenSSL libraries are not needed.
+
+* Disable reencryption for Direct-Access (DAX) devices.
+
+  Linux kernel device-mapper cannot stack DAX/non-DAX devices in
+  the mapping table, so online reencryption cannot work. Detect DAX
+  devices and warn users during LUKS format. Also, DAX or persistent
+  memory devices do not provide atomic sector updates; any single
+  modification can corrupt the whole encryption block.
+
+* Print a warning message if the device is not aligned to sector size.
+
+  If a partition is resized after format, activation could fail when
+  the device is not multiple of a sector size. Print at least a warning
+  here, as the activation error message is visible only in kernel syslog.
+
+* Fix sector size and integrity fields display for non-LUKS2 crypt
+  devices for the status command.
+
+* Fix suspend for LUKS2 with authenticated encryption (also suspend
+  dm-integrity device underneath).
+
+  This should stop the dm-integrity device from issuing journal updates
+  and possibly corrupt data if the user also tries to modify the
+  underlying device.
+
+Libcryptsetup API extensions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The libcryptsetup API is backward compatible for all existing symbols.
+
+New symbols:
+  crypt_activate_by_keyslot_context
+  crypt_format_luks2_opal
+  crypt_get_hw_encryption_type
+  crypt_get_hw_encryption_key_size
+  crypt_keyslot_context_init_by_keyring
+  crypt_keyslot_context_init_by_vk_in_keyring
+  crypt_keyslot_context_init_by_signed_key
+  crypt_resume_by_keyslot_context
+  crypt_token_set_external_path
+  crypt_set_keyring_to_link
+  crypt_wipe_hw_opal
+
+New defines (hw encryption status):
+  CRYPT_SW_ONLY
+  CRYPT_OPAL_HW_ONLY
+  CRYPT_SW_AND_OPAL_HW
+
+New keyslot context types:
+  CRYPT_KC_TYPE_KEYRING
+  CRYPT_KC_TYPE_VK_KEYRING
+  CRYPT_KC_TYPE_SIGNED_KEY
+
+New requirement flag:
+  CRYPT_REQUIREMENT_OPAL
