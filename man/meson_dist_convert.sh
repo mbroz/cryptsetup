@@ -22,6 +22,6 @@ N=$(nproc)
 for adocfile in "$@"
 do
     $ASCIIDOCTOR -b manpage --failure-level ERROR -a release-version=$RELEASE_VERSION --base-dir=$MESON_DIST_ROOT $adocfile &
-    if (( $i % $N == 0 )); then wait; fi
+    if [ $(( $i % $N )) -eq 0 ]; then wait; fi
     i=$((i+1))
 done
