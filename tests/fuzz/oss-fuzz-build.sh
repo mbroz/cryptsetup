@@ -42,7 +42,7 @@ in_oss_fuzz && LIBFUZZER_PATCH="$PWD/cryptsetup/tests/fuzz/unpoison-mutated-buff
 in_oss_fuzz && apt-get update && apt-get install -y \
     make autoconf automake autopoint libtool pkg-config \
     sharutils gettext expect keyutils ninja-build \
-    bison
+    bison flex
 
 [ ! -d zlib ]   && git clone --depth 1 https://github.com/madler/zlib.git
 [ ! -d xz ]     && git clone https://git.tukaani.org/xz.git
