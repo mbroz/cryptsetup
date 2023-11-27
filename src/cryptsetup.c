@@ -1714,8 +1714,8 @@ static int parse_vk_and_keyring_description(
 		struct crypt_device *cd,
 		char *keyring_key_description)
 {
-	int r;
-	char *endp, *sep, *keyring_part, *key_part, *type_part = NULL;
+	int r = -EINVAL;
+	char *endp, *sep, *keyring_part = NULL, *key_part, *type_part = NULL;
 
 	if (!cd || !keyring_key_description)
 		return -EINVAL;
@@ -1723,7 +1723,7 @@ static int parse_vk_and_keyring_description(
 	/* "::" is separator between keyring specification a key description */
 	key_part = strstr(keyring_key_description, "::");
 	if (!key_part)
-		return -EINVAL;
+		goto out;
 
 	*key_part = '\0';
 	key_part = key_part + 2;
@@ -1732,7 +1732,7 @@ static int parse_vk_and_keyring_description(
 		type_part = key_part + 1;
 		sep = strstr(type_part, ":");
 		if (!sep)
-			return -EINVAL;
+			goto out;
 		*sep = '\0';
 
 		key_part = sep + 1;
@@ -1740,10 +1740,8 @@ static int parse_vk_and_keyring_description(
 
 	if (*keyring_key_description == '%') {
 		keyring_key_description = strstr(keyring_key_description, ":");
-		if (!keyring_key_description) {
-			log_err(_("Invalid --link-vk-to-keyring value."));
-			return -EINVAL;
-		}
+		if (!keyring_key_description)
+			goto out;
 		log_verbose(_("Type specification in --link-vk-to-keyring keyring specification is ignored."));
 		keyring_key_description++;
 	}
@@ -1751,20 +1749,22 @@ static int parse_vk_and_keyring_description(
 	(void)strtol(keyring_key_description, &endp, 0);
 
 	r = 0;
-	if (*keyring_key_description == '@' || !*endp) {
+	if (*keyring_key_description == '@' || !*endp)
 		keyring_part = strdup(keyring_key_description);
-		if (!keyring_part)
-			r = -ENOMEM;
-	} else
+	else
 		r = asprintf(&keyring_part, "%%:%s", keyring_key_description);
 
-	if (r < 0)
-		return -EINVAL;
+	if (!keyring_part || r < 0) {
+		r = -ENOMEM;
+		goto out;
+	}
 
 	r = crypt_set_keyring_to_link(cd, key_part, type_part, keyring_part);
+out:
+	if (r == -EINVAL)
+		log_err(_("Invalid --link-vk-to-keyring value."));
 
 	free(keyring_part);
-
 	return r;
 }
 
