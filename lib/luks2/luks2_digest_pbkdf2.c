@@ -172,8 +172,13 @@ static int PBKDF2_digest_store(struct crypt_device *cd,
 	json_object_object_add(jobj_digest, "digest", json_object_new_string(base64_str));
 	free(base64_str);
 
-	if (jobj_digests)
-		json_object_object_add_by_uint(jobj_digests, digest, jobj_digest);
+	if (jobj_digests) {
+		r = json_object_object_add_by_uint(jobj_digests, digest, jobj_digest);
+		if (r < 0) {
+			json_object_put(jobj_digest);
+			return r;
+		}
+	}
 
 	JSON_DBG(cd, jobj_digest, "Digest JSON:");
 	return 0;

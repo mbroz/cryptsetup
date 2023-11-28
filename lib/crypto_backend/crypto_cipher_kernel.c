@@ -109,6 +109,7 @@ int crypt_cipher_init_kernel(struct crypt_cipher_kernel *ctx, const char *name,
 }
 
 /* The in/out should be aligned to page boundary */
+/* coverity[ -taint_source : arg-3 ] */
 static int _crypt_cipher_crypt(struct crypt_cipher_kernel *ctx,
 			       const char *in, size_t in_length,
 			       char *out, size_t out_length,
