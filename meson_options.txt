@@ -16,7 +16,7 @@ option('default-luks2-external-tokens-path', type : 'string', description : 'pat
 option('default-luks2-iter-time', type : 'integer', description : 'Argon2 PBKDF iteration time for LUKS2 (in ms)', value : 2000)
 option('default-luks2-keyslot-cipher', type : 'string', description : 'fallback cipher for LUKS2 keyslot (if data encryption is incompatible)', value : 'aes-xts-plain64')
 option('default-luks2-keyslot-keybits', type : 'integer', description : 'fallback key size for LUKS2 keyslot (if data encryption is incompatible)', value : 512)
-option('default-luks2-lock-dir-perms', type : 'integer', description : 'default luks2 locking directory permissions', value : '0700')
+option('default-luks2-lock-dir-perms', type : 'integer', description : 'default luks2 locking directory permissions', value : 0o700)
 option('default-luks2-lock-path', type : 'string', description : 'path to directory for LUKSv2 locks', value : '/run/cryptsetup')
 option('default-luks2-memory-kb', type : 'integer', description : 'Argon2 PBKDF memory cost for LUKS2 (in kB)', value : 1048576)
 option('default-luks2-parallel-threads', type : 'integer', description : 'Argon2 PBKDF max parallel cost for LUKS2 (if CPUs available)', value : 4)
