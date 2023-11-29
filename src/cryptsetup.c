@@ -3563,10 +3563,10 @@ static void help(poptContext popt_context,
 
 		path = crypt_token_external_path();
 		if (path) {
-			log_std(_("\nLUKS2 external token plugin support is %s.\n"), _("compiled-in"));
+			log_std(_("\nLUKS2 external token plugin support is enabled.\n"));
 			log_std(_("LUKS2 external token plugin path: %s.\n"), path);
 		} else
-			log_std(_("\nLUKS2 external token plugin support is %s.\n"), _("disabled"));
+			log_std(_("\nLUKS2 external token plugin support is disabled.\n"));
 
 		pbkdf_luks1 = crypt_get_pbkdf_default(CRYPT_LUKS1);
 		pbkdf_luks2 = crypt_get_pbkdf_default(CRYPT_LUKS2);

@@ -258,9 +258,9 @@ int crypt_opal_supported(struct crypt_device *cd, struct device *opal_device)
 	r = opal_supported(cd, opal_device);
 	if (r <= 0) {
 		if (r == -ENOTSUP)
-			log_err(cd, _("cryptsetup library SED OPAL2 support is disabled."));
+			log_err(cd, _("OPAL support is disabled in libcryptsetup."));
 		else
-			log_err(cd, _("Device %s or kernel does not support OPAL2 HW encryption."),
+			log_err(cd, _("Device %s or kernel does not support OPAL encryption."),
 				    device_path(opal_device));
 		r = -EINVAL;
 	} else
@@ -2239,7 +2239,7 @@ static int opal_topology_alignment(struct crypt_device *cd,
 	        opal_align ? 'y' : 'n', opal_block_bytes, opal_alignment_granularity_blocks, opal_lowest_lba_blocks);
 
 	if (opal_block_bytes < SECTOR_SIZE || NOTPOW2(opal_block_bytes)) {
-		log_err(cd, _("Bogus OPAL2 logical block size."));
+		log_err(cd, _("Bogus OPAL logical block size."));
 		return -EINVAL;
 	}
 
