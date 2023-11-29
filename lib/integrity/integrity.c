@@ -418,7 +418,7 @@ int INTEGRITY_format(struct crypt_device *cd,
 			return -EINVAL;
 
 		/*
-		 * Creates reduced dm-linear maping over data device starting at
+		 * Creates reduced dm-linear mapping over data device starting at
 		 * crypt_data_offset(cd) and backing_device_sectors in size.
 		 */
 		r = _create_reduced_device(cd, reduced_device_name,

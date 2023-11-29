@@ -2295,7 +2295,7 @@ static int opal_topology_alignment(struct crypt_device *cd,
 	else
 		*ret_alignment_bytes = size_round_up(default_alignment_bytes, opal_block_bytes * opal_alignment_granularity_blocks);
 
-	/* data offset is not set, calculate proper aligment */
+	/* data offset is not set, calculate proper alignment */
 	*ret_alignment_offset_bytes = (partition_offset_sectors * SECTOR_SIZE) % (opal_block_bytes * opal_alignment_granularity_blocks);
 	if (*ret_alignment_offset_bytes)
 		*ret_alignment_offset_bytes = opal_block_bytes * opal_alignment_granularity_blocks - *ret_alignment_offset_bytes;

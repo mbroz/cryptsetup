@@ -678,7 +678,7 @@ static int LUKS2_keyslot_open_by_token(struct crypt_device *cd,
 	if (!jobj_token_keyslots)
 		return -EINVAL;
 
-	/* with specific keyslot just ingore priorities and unlock */
+	/* with specific keyslot just ignore priorities and unlock */
 	if (keyslot != CRYPT_ANY_SLOT) {
 		log_dbg(cd, "Trying to open keyslot %u with token %d (type %s).",
 			keyslot, token, json_object_get_string(jobj_type));

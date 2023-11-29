@@ -85,7 +85,7 @@ if enable_static == true
     if not sanitizer_enabled
         link_args += '--static'
     else
-        warning('Turning off statically linked binaries as they are not compatible with sanitizer build. Will keep prefering static external dependencies.')
+        warning('Turning off statically linked binaries as they are not compatible with sanitizer build. Will keep preferring static external dependencies.')
     endif
 endif
 

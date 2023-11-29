@@ -72,7 +72,7 @@ static inline uint32_t act2dmflags(uint32_t act_flags)
 #define DM_INTEGRITY_DISCARDS_SUPPORTED (1 << 23) /* dm-integrity discards/TRIM option is supported */
 #define DM_INTEGRITY_RESIZE_SUPPORTED (1 << 23) /* dm-integrity resize of the integrity device supported (introduced in the same version as discards)*/
 #define DM_VERITY_PANIC_CORRUPTION_SUPPORTED (1 << 24) /* dm-verity panic on corruption  */
-#define DM_CRYPT_NO_WORKQUEUE_SUPPORTED (1 << 25) /* dm-crypt suppot for bypassing workqueues  */
+#define DM_CRYPT_NO_WORKQUEUE_SUPPORTED (1 << 25) /* dm-crypt support for bypassing workqueues  */
 #define DM_INTEGRITY_FIX_HMAC_SUPPORTED (1 << 26) /* hmac covers also superblock */
 #define DM_INTEGRITY_RESET_RECALC_SUPPORTED (1 << 27) /* dm-integrity automatic recalculation supported */
 #define DM_VERITY_TASKLETS_SUPPORTED (1 << 28) /* dm-verity tasklets supported */

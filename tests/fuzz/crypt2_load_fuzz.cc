@@ -95,7 +95,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 	if (write_buffer(fd, data + modified_data_size, size - modified_data_size) != (ssize_t)size)
 		goto out;
 
-	/* Actuall fuzzing */
+	/* Actual fuzzing */
 	if (crypt_init(&cd, name) == 0)
 		(void)crypt_load(cd, CRYPT_LUKS2, NULL);
 	crypt_free(cd);

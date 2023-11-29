@@ -2311,7 +2311,7 @@ static void Tokens(void)
 
 	/* keyslots:
 	 *
-	 * 0 ingore (token 0)
+	 * 0 ignore (token 0)
 	 * 1 normal (token 0)
 	 * 2 prefer -
 	 * 3 ignore -
@@ -5290,7 +5290,7 @@ static void KeyslotContextAndKeyringLink(void)
 	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0));
 
 	/*
-	 * Otherwise will wil not be able to search the TEST_KEYRING_USER in current context (see request_key(2):
+	 * Otherwise we will not be able to search the TEST_KEYRING_USER in current context (see request_key(2):
 	 * "The keyrings are searched in the order: thread-specific keyring, process-specific keyring, and then session keyring."
 	 */
 	NOTFAIL_(keyctl_link(keyring_in_user_id, KEY_SPEC_THREAD_KEYRING), "Failed to link in thread keyring.");

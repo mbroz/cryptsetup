@@ -843,10 +843,10 @@ endif::[]
 ifdef::ACTION_OPEN,ACTION_LUKSRESUME[]
 *--link-vk-to-keyring* _<keyring_description>::<key_description>_::
 Link volume key in a keyring with specified key name. The volume key is linked only
-if requested action is successfuly finished.
+if requested action is successfully finished.
 +
 _<keyring_description>_ string has to contain existing kernel keyring
-description. The keyring name may be optionaly prefixed with "%:" or "%keyring:" type descriptions.
+description. The keyring name may be optionally prefixed with "%:" or "%keyring:" type descriptions.
 Or, the keyring may also be specified directly by numeric key id. Also special keyring notations
 starting with "@" may be used to select existing predefined kernel keyrings.
 +
@@ -871,7 +871,7 @@ endif::[]
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_LUKSADDKEY[]
 *--token-id*::
 ifndef::ACTION_TOKEN,ACTION_LUKSADDKEY[]
-Specify what token to use and allow token PIN prompt to take precedence over interative
+Specify what token to use and allow token PIN prompt to take precedence over interactive
 keyslot passphrase prompt. If omitted, all available tokens (not protected by PIN)
 will be checked before proceeding further with passphrase prompt.
 endif::[]

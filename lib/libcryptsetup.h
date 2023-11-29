@@ -1184,7 +1184,7 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
  * @warning CRYPT_VOLUME_KEY_SET flag force updates volume key. It is @b not @b reencryption!
  * 	    By doing so you will most probably destroy your ciphertext data device. It's supposed
  * 	    to be used only in wrapped keys scheme for key refresh process where real (inner) volume
- * 	    key stays untouched. It may be involed on active @e keyslot which makes the (previously
+ * 	    key stays untouched. It may be involved on active @e keyslot which makes the (previously
  * 	    unbound) keyslot new regular keyslot.
  */
 int crypt_keyslot_add_by_key(struct crypt_device *cd,
@@ -1429,7 +1429,7 @@ int crypt_keyslot_context_get_type(const struct crypt_keyslot_context *kc);
  * @warning CRYPT_VOLUME_KEY_SET flag force updates volume key. It is @b not @b reencryption!
  * 	    By doing so you will most probably destroy your ciphertext data device. It's supposed
  * 	    to be used only in wrapped keys scheme for key refresh process where real (inner) volume
- * 	    key stays untouched. It may be involed on active @e keyslot which makes the (previously
+ * 	    key stays untouched. It may be involved on active @e keyslot which makes the (previously
  * 	    unbound) keyslot new regular keyslot.
  */
 int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
@@ -2770,7 +2770,7 @@ const char *crypt_token_external_path(void);
 /**
  * Override configured external token handlers path for the library.
  *
- * @param path Abosulte path (starts with '/') to new external token handlers directory or @e NULL.
+ * @param path Absolute path (starts with '/') to new external token handlers directory or @e NULL.
  *
  * @note if @e path is @e NULL the external token path is reset to default path.
  *
