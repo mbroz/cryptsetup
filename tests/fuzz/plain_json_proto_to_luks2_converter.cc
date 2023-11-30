@@ -32,6 +32,8 @@ namespace json_proto {
 
 void LUKS2ProtoConverter::emit_luks2_binary_header(const LUKS2_header &header_proto, int fd, uint64_t offset, uint64_t seqid, const std::string &json_text) {
   struct luks2_hdr_disk hdr = {};
+  size_t hdr_json_area_len, write_size;
+  uint8_t csum[LUKS2_CHECKSUM_L];
   int r;
 
   if (hd)
@@ -63,7 +65,6 @@ void LUKS2ProtoConverter::emit_luks2_binary_header(const LUKS2_header &header_pr
   strncpy(hdr.uuid, "af7f64ea-3233-4581-946b-6187d812841e", LUKS2_UUID_L);
   memset(hdr.salt, 1, LUKS2_SALT_L);
 
-
   if (header_proto.has_selected_offset())
     hdr.hdr_offset  = cpu_to_be64(header_proto.selected_offset());
   else
@@ -74,10 +75,13 @@ void LUKS2ProtoConverter::emit_luks2_binary_header(const LUKS2_header &header_pr
   if (crypt_hash_write(hd, (char*)&hdr, LUKS2_HDR_BIN_LEN))
     err(EXIT_FAILURE, "crypt_hash_write failed");
 
-  size_t hdr_json_area_len = header_proto.hdr_size() - LUKS2_HDR_BIN_LEN;
-  uint8_t csum[LUKS2_CHECKSUM_L];
+  if (header_proto.hdr_size() <= LUKS2_HDR_BIN_LEN ||
+      header_proto.hdr_size() > LUKS2_DEFAULT_HDR_SIZE)
+      hdr_json_area_len = LUKS2_DEFAULT_HDR_SIZE - LUKS2_HDR_BIN_LEN;
+  else
+      hdr_json_area_len = header_proto.hdr_size() - LUKS2_HDR_BIN_LEN;
 
-  size_t write_size = json_text.length() > hdr_json_area_len - 1 ? hdr_json_area_len - 1 : json_text.length();
+  write_size = json_text.length() > hdr_json_area_len - 1 ? hdr_json_area_len - 1 : json_text.length();
   if (write_buffer(fd, json_text.c_str(), write_size) != (ssize_t)write_size)
     err(EXIT_FAILURE, "write_buffer failed");
   if (crypt_hash_write(hd, json_text.c_str(), write_size))
@@ -112,6 +116,9 @@ void LUKS2ProtoConverter::convert(const LUKS2_both_headers &headers, int fd) {
   int result;
 
   size_t out_size = headers.primary_header().hdr_size() + headers.secondary_header().hdr_size();
+
+  if (out_size < 4096 || out_size > 2 * LUKS2_DEFAULT_HDR_SIZE)
+    out_size = LUKS2_DEFAULT_HDR_SIZE;
 
   if (!write_headers_only)
     out_size += KEYSLOTS_SIZE + DATA_SIZE;
