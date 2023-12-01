@@ -687,15 +687,24 @@ static int opal_lock_unlock(struct crypt_device *cd,
 	/* If we are unlocking, also tell the kernel to automatically unlock when resuming
 	 * from suspend, otherwise the drive will be locked and everything will go up in flames.
 	 * Also set the flag to allow locking without having to pass the key again.
-	 * But do not error out if this fails, as the device will already be unlocked. */
-	if (!lock) {
+	 * But do not error out if this fails, as the device will already be unlocked.
+	 *
+	 * On a lock path we have to overwrite the cached key from kernel otherwise the locking range
+	 * gets unlocked automatically after system resume even when cryptsetup previously locked it
+	 * on purpose (crypt_deactivate* or crypt_suspend)
+	 */
+	if (!lock)
 		unlock.flags = OPAL_SAVE_FOR_LOCK;
-		r = opal_ioctl(cd, fd, IOC_OPAL_SAVE, &unlock);
-		if (r != OPAL_STATUS_SUCCESS) {
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_SAVE, &unlock);
+	if (r != OPAL_STATUS_SUCCESS) {
+		if (!lock)
 			log_std(cd, "Failed to prepare OPAL device '%s' for sleep resume, be aware before suspending: %s",
 				crypt_get_device_name(cd), opal_status_to_string(r));
-			r = 0;
-		}
+		else
+			log_std(cd, "Failed to erase OPAL key for device '%s' from kernel: %s",
+				crypt_get_device_name(cd), opal_status_to_string(r));
+		r = 0;
 	}
 out:
 	if (!lock)
