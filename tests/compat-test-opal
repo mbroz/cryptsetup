@@ -448,6 +448,7 @@ prepare "[6] add key" wipe
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q $FAST_PBKDF_OPT luksFormat --type luks2 --hw-opal $OPAL2_DEV || fail
 echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $OPAL2_DEV $FAST_PBKDF_OPT || fail
 echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP close $DEV_NAME || fail
 
 # Unsuccessful Key Delete - nothing may change
 prepare "[7] unsuccessful delete" new
@@ -461,11 +462,13 @@ $CRYPTSETUP -q luksKillSlot $OPAL2_DEV 1 || fail
 echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME 2> /dev/null && fail
 [ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"
 echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP close $DEV_NAME || fail
 
 # Key Slot 1 and key material section 1 must change, the rest must not
 prepare "[9] add key test for key files" new
 echo $PWD1 | $CRYPTSETUP luksAddKey $FAST_PBKDF_OPT $OPAL2_DEV $KEY1 || fail
 $CRYPTSETUP -d $KEY1 luksOpen $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP close $DEV_NAME || fail
 
 # Key Slot 1 and key material section 1 must change, the rest must not
 prepare "[10] delete key test with key1 as remaining key" new
@@ -631,7 +634,8 @@ echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --
 $CRYPTSETUP remove  $DEV_NAME || fail
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
-echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME2 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksOpen -q $OPAL2_DEV $DEV_NAME2 >/dev/null 2>&1 && fail
+dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 || fail "OPAL segment perhaps locked after failed activation over already active device."
 $CRYPTSETUP  luksClose  $DEV_NAME || fail
 
 prepare "[19] luksDump" wipe
