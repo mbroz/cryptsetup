@@ -352,6 +352,39 @@ test_vk_link_and_reactivate() {
 	keyctl unlink $KEYCTL_KEY_NAME "$2" || fail
 }
 
+# $1 first key name
+# $2 second key name
+# $3 keyring to link VK to
+# $4 key type (optional)
+test_reencrypt_vk_link() {
+	KEY_TYPE=${4:-user}
+	if [ -z "$4" ]; then
+		KEY_DESC=$1
+	else
+		KEY_DESC="%$4:$1"
+	fi
+	if [ -z "$4" ]; then
+		KEY_DESC2=$2
+	else
+		KEY_DESC2="%$4:$2"
+	fi
+
+	KEYCTL_KEY_NAME="%$KEY_TYPE:$1"
+	KEYCTL_KEY_NAME2="%$KEY_TYPE:$2"
+
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "$3"::"$KEY_DESC" --link-vk-to-keyring "$3"::"$KEY_DESC2" || fail
+	keyctl search "$3" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after activation."
+
+	keyctl search "$3" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after activation."
+	keyctl search "$3" $KEY_TYPE $2 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after activation."
+	$CRYPTSETUP close $DEV_NAME || fail
+	keyctl search "$3" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after deactivation."
+	keyctl search "$3" $KEY_TYPE $2 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after deactivation."
+
+	keyctl unlink $KEYCTL_KEY_NAME "$3" || fail
+	keyctl unlink $KEYCTL_KEY_NAME2 "$3" || fail
+}
+
 function expect_run()
 {
 	export INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}"
@@ -1367,6 +1400,8 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 
 	echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV 2> /dev/null || fail
 	KEY_NAME="cryptsetup:test_volume_key_id"
+	KEY_NAME2="cryptsetup:test_volume_key_id2"
+	KEY_NAME3="cryptsetup:test_volume_key_id3"
 	test_and_prepare_keyring
 	KID=$(echo -n test | keyctl padd user my_token @s)
 	keyctl unlink $KID >/dev/null 2>&1 @s && SESSION_KEYRING_WORKS=1
@@ -1414,6 +1449,35 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "@t::%0:$KEY_NAME" > /dev/null 2>&1 && fail
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "@t::%blah:$KEY_NAME" > /dev/null 2>&1 && fail
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "@t::%userlogon:$KEY_NAME" > /dev/null 2>&1 && fail
+
+        # test that only one VK name is used, when the device is not in reencryption
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "@u::%user:$KEY_NAME" --link-vk-to-keyring "@u::%user:$KEY_NAME2" > /dev/null 2>&1 || fail
+	keyctl unlink "%user:$KEY_NAME" @u || fail
+	keyctl unlink "%user:$KEY_NAME2" @u > /dev/null 2>&1 && fail
+	$CRYPTSETUP close $DEV_NAME || fail
+
+        # test linkning multiple VKs during reencryption
+	echo $PWD1 | $CRYPTSETUP -q reencrypt $LOOPDEV --init-only
+
+	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@u"
+	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@u" "user"
+	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s"
+	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s" "logon"
+	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s" "user"
+	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME"
+	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME" "user"
+	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME" "logon"
+	# explicitly specify keyring key type
+	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "%keyring:$TEST_KEYRING_NAME"
+
+        # the keyring and key type have to be the same for both keys
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "@s::%user:$KEY_NAME" --link-vk-to-keyring "@u::%user:$KEY_NAME2" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "@u::%logon:$KEY_NAME" --link-vk-to-keyring "@u::%user:$KEY_NAME2" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "@s::%logon:$KEY_NAME" --link-vk-to-keyring "@u::%user:$KEY_NAME2" > /dev/null 2>&1 && fail
+
+        # supply one/three key name(s) when two names are required
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "@s::%logon:$KEY_NAME" > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "@s::%logon:$KEY_NAME" --link-vk-to-keyring "@s::%logon:$KEY_NAME2" --link-vk-to-keyring "@s::%logon:$KEY_NAME3" > /dev/null 2>&1 && fail
 fi
 
 prepare "[45] Blkid disable check" wipe
