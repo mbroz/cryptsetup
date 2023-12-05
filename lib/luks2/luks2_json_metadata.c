@@ -2644,7 +2644,7 @@ int LUKS2_activate(struct crypt_device *cd,
 	uint32_t flags)
 {
 	int r;
-	bool dynamic;
+	bool dynamic, read_lock, write_lock, opal_lock_on_error = false;
 	uint32_t opal_segment_number;
 	uint64_t range_offset_sectors, range_length_sectors, device_length_bytes;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
@@ -2697,11 +2697,16 @@ int LUKS2_activate(struct crypt_device *cd,
 		}
 
 		range_offset_sectors = crypt_get_data_offset(cd) + crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
-		r = opal_range_check_attributes(cd, crypt_data_device(cd), opal_segment_number,
+		r = opal_range_check_attributes_and_get_lock_state(cd, crypt_data_device(cd), opal_segment_number,
 						opal_key, &range_offset_sectors, &range_length_sectors,
-						NULL /* read locked */, NULL /* write locked */);
+						&read_lock, &write_lock);
 		if (r < 0)
 			return r;
+
+		opal_lock_on_error = read_lock && write_lock;
+		if (!opal_lock_on_error && !(flags & CRYPT_ACTIVATE_REFRESH))
+			log_std(cd, _("OPAL device is %s already unlocked!\n"),
+				    device_path(crypt_data_device(cd)));
 
 		r = opal_unlock(cd, crypt_data_device(cd), opal_segment_number, opal_key);
 		if (r < 0)
@@ -2771,7 +2776,7 @@ int LUKS2_activate(struct crypt_device *cd,
 	dm_targets_free(cd, &dmd);
 	dm_targets_free(cd, &dmdi);
 out:
-	if (r < 0 && opal_key)
+	if (r < 0 && opal_lock_on_error)
 		opal_lock(cd, crypt_data_device(cd), opal_segment_number);
 
 	return r;

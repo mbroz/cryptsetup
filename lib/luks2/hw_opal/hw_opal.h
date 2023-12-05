@@ -53,13 +53,13 @@ int opal_geometry(struct crypt_device *cd,
 		  uint32_t *ret_block_size,
 		  uint64_t *ret_alignment_granularity_blocks,
 		  uint64_t *ret_lowest_lba_blocks);
-int opal_range_check_attributes(struct crypt_device *cd,
+int opal_range_check_attributes_and_get_lock_state(struct crypt_device *cd,
 				struct device *dev,
 				uint32_t segment_number,
 				const struct volume_key *vk,
 				const uint64_t *check_offset_sectors,
 				const uint64_t *check_length_sectors,
-				bool *check_read_locked,
-				bool *check_write_locked);
+				bool *ret_read_locked,
+				bool *ret_write_locked);
 
 #endif
