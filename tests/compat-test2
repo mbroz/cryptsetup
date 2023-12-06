@@ -315,6 +315,15 @@ test_vk_link() {
 	$CRYPTSETUP close $DEV_NAME
 	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after deactivation."
 	keyctl unlink "$KEYCTL_KEY_NAME" "$2" || fail
+
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME || fail
+	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 && fail "VK is linked to the specified keyring before resume with linking."
+        $CRYPTSETUP luksSuspend $DEV_NAME || fail
+	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --link-vk-to-keyring "$2"::"$KEY_DESC" || fail
+	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after activation."
+	$CRYPTSETUP close $DEV_NAME
+	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after deactivation."
+	keyctl unlink "$KEYCTL_KEY_NAME" "$2" || fail
 }
 
 # $1 key name
