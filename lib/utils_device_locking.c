@@ -405,30 +405,6 @@ int device_write_lock_internal(struct crypt_device *cd, struct device *device)
 	return 1;
 }
 
-int crypt_read_lock(struct crypt_device *cd, const char *resource, bool blocking, struct crypt_lock_handle **lock)
-{
-	int r;
-	struct crypt_lock_handle *h;
-
-	if (!resource)
-		return -EINVAL;
-
-	log_dbg(cd, "Acquiring %sblocking read lock for resource %s.", blocking ? "" : "non", resource);
-
-	r = acquire_and_verify(cd, NULL, resource, LOCK_SH | (blocking ? 0 : LOCK_NB), &h);
-	if (r < 0)
-		return r;
-
-	h->type = DEV_LOCK_READ;
-	h->refcnt = 1;
-
-	log_dbg(cd, "READ lock for resource %s taken.", resource);
-
-	*lock = h;
-
-	return 0;
-}
-
 int crypt_write_lock(struct crypt_device *cd, const char *resource, bool blocking, struct crypt_lock_handle **lock)
 {
 	int r;

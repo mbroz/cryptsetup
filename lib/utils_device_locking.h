@@ -37,7 +37,6 @@ void device_unlock_internal(struct crypt_device *cd, struct device *device);
 
 int device_locked_verify(struct crypt_device *cd, int fd, struct crypt_lock_handle *h);
 
-int crypt_read_lock(struct crypt_device *cd, const char *name, bool blocking, struct crypt_lock_handle **lock);
 int crypt_write_lock(struct crypt_device *cd, const char *name, bool blocking, struct crypt_lock_handle **lock);
 void crypt_unlock_internal(struct crypt_device *cd, struct crypt_lock_handle *h);
 
