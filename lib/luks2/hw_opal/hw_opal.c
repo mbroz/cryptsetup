@@ -363,6 +363,28 @@ out:
 	return r;
 }
 
+static int opal_query_status(struct crypt_device *cd, struct device *dev, unsigned expected)
+{
+	struct opal_status st = { };
+	int fd, r;
+
+	assert(cd);
+	assert(dev);
+
+	fd = device_open(cd, dev, O_RDONLY);
+	if (fd < 0)
+		return -EIO;
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_GET_STATUS, &st);
+
+	return r < 0 ? -EINVAL : (st.flags & expected) ? 1 : 0;
+}
+
+static int opal_enabled(struct crypt_device *cd, struct device *dev)
+{
+	return opal_query_status(cd, dev, OPAL_FL_LOCKING_ENABLED);
+}
+
 int opal_setup_ranges(struct crypt_device *cd,
 		      struct device *dev,
 		      const struct volume_key *vk,
@@ -855,31 +877,9 @@ out:
 	return r;
 }
 
-static int opal_query_status(struct crypt_device *cd, struct device *dev, unsigned expected)
-{
-	struct opal_status st = { };
-	int fd, r;
-
-	assert(cd);
-	assert(dev);
-
-	fd = device_open(cd, dev, O_RDONLY);
-	if (fd < 0)
-		return -EIO;
-
-	r = opal_ioctl(cd, fd, IOC_OPAL_GET_STATUS, &st);
-
-	return r < 0 ? -EINVAL : (st.flags & expected) ? 1 : 0;
-}
-
 int opal_supported(struct crypt_device *cd, struct device *dev)
 {
 	return opal_query_status(cd, dev, OPAL_FL_SUPPORTED|OPAL_FL_LOCKING_SUPPORTED);
-}
-
-int opal_enabled(struct crypt_device *cd, struct device *dev)
-{
-	return opal_query_status(cd, dev, OPAL_FL_LOCKING_ENABLED);
 }
 
 int opal_geometry(struct crypt_device *cd,
@@ -955,11 +955,6 @@ int opal_unlock(struct crypt_device *cd,
 }
 
 int opal_supported(struct crypt_device *cd, struct device *dev)
-{
-	return -ENOTSUP;
-}
-
-int opal_enabled(struct crypt_device *cd, struct device *dev)
 {
 	return -ENOTSUP;
 }

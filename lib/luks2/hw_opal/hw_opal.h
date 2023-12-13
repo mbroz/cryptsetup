@@ -38,7 +38,6 @@ int opal_unlock(struct crypt_device *cd,
 		uint32_t segment_number,
 		const struct volume_key *vk);
 int opal_supported(struct crypt_device *cd, struct device *dev);
-int opal_enabled(struct crypt_device *cd, struct device *dev);
 int opal_factory_reset(struct crypt_device *cd,
 		       struct device *dev,
 		       const char *password,
