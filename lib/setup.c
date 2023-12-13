@@ -2333,6 +2333,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 		 required_alignment_bytes, metadata_size_bytes, keyslots_size_bytes,
 		 provided_data_sectors;
 	struct volume_key *user_key = NULL;
+	struct crypt_lock_handle *opal_lh = NULL;
 
 	if (!cd || !params || !opal_params ||
 	    !opal_params->admin_key || !opal_params->admin_key_size || !opal_params->user_key_size)
@@ -2545,6 +2546,12 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 
 	range_offset_blocks = (data_offset_bytes + partition_offset_sectors * SECTOR_SIZE) / opal_block_bytes;
 
+	r = opal_exclusive_lock(cd, crypt_data_device(cd), &opal_lh);
+	if (r < 0) {
+		log_err(cd, _("Failed to acquire opal lock on device %s."), device_path(crypt_data_device(cd)));
+		goto out;
+	}
+
 	r = opal_setup_ranges(cd, crypt_data_device(cd), user_key ?: cd->volume_key,
 					range_offset_blocks, range_size_bytes / opal_block_bytes,
 					opal_segment_number, opal_params->admin_key, opal_params->admin_key_size);
@@ -2636,8 +2643,10 @@ out:
 	if (subsystem_overridden)
 		params->subsystem = NULL;
 
-	if (r >= 0)
+	if (r >= 0) {
+		opal_exclusive_unlock(cd, opal_lh);
 		return 0;
+	}
 
 	if (opal_range_reset &&
 	    (opal_reset_segment(cd, crypt_data_device(cd), opal_segment_number,
@@ -2645,6 +2654,7 @@ out:
 		log_err(cd, _("Locking range %d reset on device %s failed."),
 			opal_segment_number, device_path(crypt_data_device(cd)));
 
+	opal_exclusive_unlock(cd, opal_lh);
 	LUKS2_hdr_free(cd, &cd->u.luks2.hdr);
 
 	crypt_set_null_type(cd);
@@ -3930,6 +3940,7 @@ int crypt_suspend(struct crypt_device *cd,
 	uint32_t opal_segment_number = 1, dmflags = DM_SUSPEND_WIPE_KEY;
 	struct dm_target *tgt = &dmd.segment;
 	char *key_desc = NULL, *iname = NULL;
+	struct crypt_lock_handle *opal_lh = NULL;
 
 	if (!cd || !name)
 		return -EINVAL;
@@ -4050,9 +4061,18 @@ int crypt_suspend(struct crypt_device *cd,
 
 	crypt_drop_keyring_key_by_description(cd, key_desc, cd->keyring_key_type);
 
+	if (dm_opal_uuid && crypt_data_device(cd)) {
+		r = opal_exclusive_lock(cd, crypt_data_device(cd), &opal_lh);
+		if (r < 0) {
+			log_err(cd, _("Failed to acquire opal lock on device %s."), device_path(crypt_data_device(cd)));
+			goto out;
+		}
+	}
+
 	if (dm_opal_uuid && (!crypt_data_device(cd) || opal_lock(cd, crypt_data_device(cd), opal_segment_number)))
 		log_err(cd, _("Device %s was suspended but hardware OPAL device cannot be locked."), name);
 out:
+	opal_exclusive_unlock(cd, opal_lh);
 	free(key_desc);
 	free(iname);
 	dm_targets_free(cd, &dmd);
@@ -4140,6 +4160,7 @@ static int resume_luks2_by_volume_key(struct crypt_device *cd,
 	key_serial_t user_vk_kid = 0;
 	struct volume_key *p_crypt = vk, *p_opal = NULL, *zerokey = NULL, *crypt_key = NULL, *opal_key = NULL;
 	char *iname = NULL;
+	struct crypt_lock_handle *opal_lh = NULL;
 
 	assert(digest >= 0);
 	assert(vk && crypt_volume_key_get_id(vk) == digest);
@@ -4196,6 +4217,12 @@ static int resume_luks2_by_volume_key(struct crypt_device *cd,
 	}
 
 	if (p_opal) {
+		r = opal_exclusive_lock(cd, crypt_data_device(cd), &opal_lh);
+		if (r < 0) {
+			log_err(cd, _("Failed to acquire opal lock on device %s."), device_path(crypt_data_device(cd)));
+			goto out;
+		}
+
 		r = opal_unlock(cd, crypt_data_device(cd), opal_segment_number, p_opal);
 		if (r < 0) {
 			p_opal = NULL; /* do not lock on error path */
@@ -4233,6 +4260,7 @@ out:
 	if (r < 0 && p_opal)
 		opal_lock(cd, crypt_data_device(cd), opal_segment_number);
 
+	opal_exclusive_unlock(cd, opal_lh);
 	crypt_free_volume_key(zerokey);
 	crypt_free_volume_key(opal_key);
 	crypt_free_volume_key(crypt_key);

@@ -2651,6 +2651,7 @@ int LUKS2_activate(struct crypt_device *cd,
 	struct crypt_dm_active_device dmdi = {}, dmd = {
 		.uuid   = crypt_get_uuid(cd)
 	};
+	struct crypt_lock_handle *opal_lh = NULL;
 
 	/* do not allow activation when particular requirements detected */
 	if ((r = LUKS2_unmet_requirements(cd, hdr, CRYPT_REQUIREMENT_OPAL, 0)))
@@ -2697,11 +2698,17 @@ int LUKS2_activate(struct crypt_device *cd,
 		}
 
 		range_offset_sectors = crypt_get_data_offset(cd) + crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
+		r = opal_exclusive_lock(cd, crypt_data_device(cd), &opal_lh);
+		if (r < 0) {
+			log_err(cd, _("Failed to acquire opal lock on device %s."), device_path(crypt_data_device(cd)));
+			return -EINVAL;
+		}
+
 		r = opal_range_check_attributes_and_get_lock_state(cd, crypt_data_device(cd), opal_segment_number,
 						opal_key, &range_offset_sectors, &range_length_sectors,
 						&read_lock, &write_lock);
 		if (r < 0)
-			return r;
+			goto out;
 
 		opal_lock_on_error = read_lock && write_lock;
 		if (!opal_lock_on_error && !(flags & CRYPT_ACTIVATE_REFRESH))
@@ -2710,7 +2717,7 @@ int LUKS2_activate(struct crypt_device *cd,
 
 		r = opal_unlock(cd, crypt_data_device(cd), opal_segment_number, opal_key);
 		if (r < 0)
-			return r;
+			goto out;
 	}
 
 	if (LUKS2_segment_is_type(hdr, CRYPT_DEFAULT_SEGMENT, "crypt") ||
@@ -2779,6 +2786,8 @@ out:
 	if (r < 0 && opal_lock_on_error)
 		opal_lock(cd, crypt_data_device(cd), opal_segment_number);
 
+	opal_exclusive_unlock(cd, opal_lh);
+
 	return r;
 }
 
@@ -2815,7 +2824,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 	uint32_t opal_segment_number;
 	char **dep, deps_uuid_prefix[40], *deps[MAX_DM_DEPS+1] = { 0 };
 	const char *namei = NULL;
-	struct crypt_lock_handle *reencrypt_lock = NULL;
+	struct crypt_lock_handle *reencrypt_lock = NULL, *opal_lh = NULL;
 
 	if (!dmd || !dmd->uuid || strncmp(CRYPT_LUKS2, dmd->uuid, sizeof(CRYPT_LUKS2)-1))
 		return -EINVAL;
@@ -2940,10 +2949,19 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 				opal_segment_number = ret;
 		}
 
+		if (crypt_data_device(cd)) {
+			r = opal_exclusive_lock(cd, crypt_data_device(cd), &opal_lh);
+			if (r < 0) {
+				log_err(cd, _("Failed to acquire opal lock on device %s."), device_path(crypt_data_device(cd)));
+				goto out;
+			}
+		}
+
 		if (!crypt_data_device(cd) || opal_lock(cd, crypt_data_device(cd), opal_segment_number))
 			log_err(cd, _("Device %s was deactivated but hardware OPAL device cannot be locked."), name);
 	}
 out:
+	opal_exclusive_unlock(cd, opal_lh);
 	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
 	dep = deps;
 	while (*dep)

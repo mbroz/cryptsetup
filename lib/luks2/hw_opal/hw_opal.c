@@ -28,10 +28,15 @@
 #include <assert.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#ifdef HAVE_SYS_SYSMACROS_H
+# include <sys/sysmacros.h>     /* for major, minor */
+#endif
 
 #include "internal.h"
 #include "libcryptsetup.h"
 #include "luks2/hw_opal/hw_opal.h"
+#include "utils_device_locking.h"
 
 #if HAVE_HW_OPAL
 
@@ -396,6 +401,7 @@ static int opal_enabled(struct crypt_device *cd, struct device *dev)
 	return opal_query_status(cd, dev, OPAL_FL_LOCKING_ENABLED);
 }
 
+/* requires opal lock */
 int opal_setup_ranges(struct crypt_device *cd,
 		      struct device *dev,
 		      const struct volume_key *vk,
@@ -747,11 +753,13 @@ out:
 	return r;
 }
 
+/* requires opal lock */
 int opal_lock(struct crypt_device *cd, struct device *dev, uint32_t segment_number)
 {
 	return opal_lock_unlock(cd, dev, segment_number, NULL, /* lock= */ true);
 }
 
+/* requires opal lock */
 int opal_unlock(struct crypt_device *cd,
 		struct device *dev,
 		uint32_t segment_number,
@@ -807,6 +815,7 @@ out:
 	return r;
 }
 
+/* requires opal lock */
 int opal_reset_segment(struct crypt_device *cd,
 		       struct device *dev,
 		       uint32_t segment_number,
@@ -914,6 +923,7 @@ int opal_geometry(struct crypt_device *cd,
 				ret_alignment_granularity_blocks, ret_lowest_lba_blocks);
 }
 
+/* requires opal lock */
 int opal_range_check_attributes_and_get_lock_state(struct crypt_device *cd,
 		     struct device *dev,
 		     uint32_t segment_number,
@@ -936,6 +946,52 @@ int opal_range_check_attributes_and_get_lock_state(struct crypt_device *cd,
 	return opal_range_check_attributes_fd(cd, fd, segment_number, vk,
 					      check_offset_sectors, check_length_sectors, NULL,
 					      NULL, ret_read_locked, ret_write_locked);
+}
+
+static int opal_lock_internal(struct crypt_device *cd, struct device *opal_device, struct crypt_lock_handle **opal_lock)
+{
+	char *lock_resource;
+	int devfd, r;
+	struct stat st;
+
+	if (!crypt_metadata_locking_enabled()) {
+		*opal_lock = NULL;
+		return 0;
+	}
+
+	/*
+	 * This also asserts we do not hold any metadata lock on the same device to
+	 * avoid deadlock (OPAL lock must be taken first)
+	 */
+	devfd = device_open(cd, opal_device, O_RDONLY);
+	if (devfd < 0)
+		return -EINVAL;
+
+	if (fstat(devfd, &st) || !S_ISBLK(st.st_mode))
+		return -EINVAL;
+
+	r = asprintf(&lock_resource, "OPAL_%d:%d", major(st.st_rdev), minor(st.st_rdev));
+	if (r < 0)
+		return -ENOMEM;
+
+	r = crypt_write_lock(cd, lock_resource, true, opal_lock);
+
+	free(lock_resource);
+
+	return r;
+}
+
+int opal_exclusive_lock(struct crypt_device *cd, struct device *opal_device, struct crypt_lock_handle **opal_lock)
+{
+	if (!cd || !opal_device || (crypt_get_type(cd) && strcmp(crypt_get_type(cd), CRYPT_LUKS2)))
+		return -EINVAL;
+
+	return opal_lock_internal(cd, opal_device, opal_lock);
+}
+
+void opal_exclusive_unlock(struct crypt_device *cd, struct crypt_lock_handle *opal_lock)
+{
+	crypt_unlock_internal(cd, opal_lock);
 }
 
 #else
@@ -1008,6 +1064,15 @@ int opal_range_check_attributes_and_get_lock_state(struct crypt_device *cd,
 		     bool *ret_write_locked)
 {
 	return -ENOTSUP;
+}
+
+int opal_exclusive_lock(struct crypt_device *cd, struct device *opal_device, struct crypt_lock_handle **opal_lock)
+{
+	return -ENOTSUP;
+}
+
+void opal_exclusive_unlock(struct crypt_device *cd, struct crypt_lock_handle *opal_lock)
+{
 }
 
 #endif

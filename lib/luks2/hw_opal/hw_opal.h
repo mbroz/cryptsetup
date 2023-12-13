@@ -24,6 +24,8 @@
 
 #include "internal.h"
 
+struct crypt_lock_handle;
+
 int opal_setup_ranges(struct crypt_device *cd,
 		      struct device *dev,
 		      const struct volume_key *vk,
@@ -61,5 +63,9 @@ int opal_range_check_attributes_and_get_lock_state(struct crypt_device *cd,
 				const uint64_t *check_length_sectors,
 				bool *ret_read_locked,
 				bool *ret_write_locked);
+int opal_exclusive_lock(struct crypt_device *cd,
+			struct device *opal_device,
+			struct crypt_lock_handle **opal_lock);
+void opal_exclusive_unlock(struct crypt_device *cd, struct crypt_lock_handle *opal_lock);
 
 #endif

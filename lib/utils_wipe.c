@@ -321,6 +321,7 @@ int crypt_wipe_hw_opal(struct crypt_device *cd,
 	int r;
 	struct luks2_hdr *hdr;
 	uint32_t opal_segment_number;
+	struct crypt_lock_handle *opal_lh = NULL;
 
 	UNUSED(flags);
 
@@ -362,11 +363,19 @@ int crypt_wipe_hw_opal(struct crypt_device *cd,
 	} else
 		opal_segment_number = segment;
 
+	r = opal_exclusive_lock(cd, crypt_data_device(cd), &opal_lh);
+	if (r < 0) {
+		log_err(cd, _("Failed to acquire opal lock on device %s."), device_path(crypt_data_device(cd)));
+		return -EINVAL;
+	}
+
 	r = opal_reset_segment(cd,
 			       crypt_data_device(cd),
 			       opal_segment_number,
 			       password,
 			       password_size);
+
+	opal_exclusive_unlock(cd, opal_lh);
 	if (r < 0)
 		return r;
 
