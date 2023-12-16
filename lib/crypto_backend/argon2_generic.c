@@ -52,6 +52,9 @@ int argon2(const char *type, const char *password, size_t password_length,
 	};
 	int r;
 
+	/* This code must not be run if crypt backend library natively supports Argon2 */
+	assert(!(crypt_backend_flags() & CRYPT_BACKEND_ARGON2));
+
 	if (!strcmp(type, "argon2i"))
 		atype = Argon2_i;
 	else if(!strcmp(type, "argon2id"))
@@ -87,3 +90,19 @@ int argon2(const char *type, const char *password, size_t password_length,
 }
 
 #endif
+
+/* Additional string for crypt backend version */
+const char *crypt_argon2_version(void)
+{
+	const char *version = "";
+
+	if (crypt_backend_flags() & CRYPT_BACKEND_ARGON2)
+		return version;
+
+#if HAVE_ARGON2_H /* this has priority over internal argon2 */
+	version = " [external libargon2]";
+#elif USE_INTERNAL_ARGON2
+	version = " [cryptsetup libargon2]";
+#endif
+	return version;
+}

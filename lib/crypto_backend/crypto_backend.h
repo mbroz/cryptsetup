@@ -43,9 +43,11 @@ void crypt_backend_destroy(void);
 
 #define CRYPT_BACKEND_KERNEL     (1 << 0) /* Crypto uses kernel part, for benchmark */
 #define CRYPT_BACKEND_PBKDF2_INT (1 << 1) /* Iteration in PBKDF2 is signed int and can overflow */
+#define CRYPT_BACKEND_ARGON2     (1 << 2) /* Backend provides native Argon2 implementation */
 
 uint32_t crypt_backend_flags(void);
 const char *crypt_backend_version(void);
+const char *crypt_argon2_version(void);
 
 /* HASH */
 int crypt_hash_size(const char *name);

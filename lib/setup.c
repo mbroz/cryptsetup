@@ -285,8 +285,9 @@ int init_crypto(struct crypt_device *ctx)
 		log_err(ctx, _("Cannot initialize crypto backend."));
 
 	if (!r && !_crypto_logged) {
-		log_dbg(ctx, "Crypto backend (%s) initialized in cryptsetup library version %s.",
-			crypt_backend_version(), PACKAGE_VERSION);
+		log_dbg(ctx, "Crypto backend (%s%s) initialized in cryptsetup library version %s.",
+			crypt_backend_version(), crypt_argon2_version(), PACKAGE_VERSION);
+
 		if (!uname(&uts))
 			log_dbg(ctx, "Detected kernel %s %s %s.",
 				uts.sysname, uts.release, uts.machine);

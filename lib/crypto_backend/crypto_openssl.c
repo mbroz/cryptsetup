@@ -197,12 +197,13 @@ static int openssl_backend_init(bool fips)
 	    OSSL_get_max_threads(ossl_ctx) == MAX_THREADS)
 		ossl_threads = true;
 
-	r = snprintf(backend_version, sizeof(backend_version), "%s%s%s%s%s",
+	r = snprintf(backend_version, sizeof(backend_version), "%s %s%s%s%s%s",
 		OpenSSL_version(OPENSSL_VERSION),
 		ossl_default ? "[default]" : "",
 		ossl_legacy  ? "[legacy]" : "",
 		fips  ? "[fips]" : "",
-		ossl_threads ? "[threads]" : "");
+		ossl_threads ? "[threads]" : "",
+		crypt_backend_flags() & CRYPT_BACKEND_ARGON2 ? "[argon2]" : "");
 
 	if (r < 0 || (size_t)r >= sizeof(backend_version)) {
 		openssl_backend_exit();
@@ -251,11 +252,14 @@ void crypt_backend_destroy(void)
 
 uint32_t crypt_backend_flags(void)
 {
-#if OPENSSL_VERSION_MAJOR >= 3
-	return 0;
-#else
-	return CRYPT_BACKEND_PBKDF2_INT;
+	uint32_t flags = 0;
+#if OPENSSL_VERSION_MAJOR < 3
+	flags |= CRYPT_BACKEND_PBKDF2_INT;
 #endif
+#if HAVE_DECL_OSSL_KDF_PARAM_ARGON2_VERSION
+	flags |= CRYPT_BACKEND_ARGON2;
+#endif
+	return flags;
 }
 
 const char *crypt_backend_version(void)

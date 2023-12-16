@@ -127,10 +127,11 @@ int crypt_backend_init(bool fips __attribute__((unused)))
 	crypto_backend_initialised = 1;
 	crypt_hash_test_whirlpool_bug();
 
-	r = snprintf(version, sizeof(version), "gcrypt %s%s%s",
+	r = snprintf(version, sizeof(version), "gcrypt %s%s%s%s",
 		 gcry_check_version(NULL),
 		 crypto_backend_secmem ? "" : ", secmem disabled",
-		 crypto_backend_whirlpool_bug > 0 ? ", flawed whirlpool" : "");
+		 crypto_backend_whirlpool_bug > 0 ? ", flawed whirlpool" : "",
+		 crypt_backend_flags() & CRYPT_BACKEND_ARGON2 ? ", argon2" : "");
 	if (r < 0 || (size_t)r >= sizeof(version))
 		return -EINVAL;
 
@@ -152,7 +153,11 @@ const char *crypt_backend_version(void)
 
 uint32_t crypt_backend_flags(void)
 {
-	return 0;
+	uint32_t flags = 0;
+#if HAVE_DECL_GCRY_KDF_ARGON2 && !USE_INTERNAL_ARGON2
+	flags |= CRYPT_BACKEND_ARGON2;
+#endif
+	return flags;
 }
 
 static const char *crypt_hash_compat_name(const char *name, unsigned int *flags)
