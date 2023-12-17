@@ -365,7 +365,7 @@ int crypt_wipe_hw_opal(struct crypt_device *cd,
 
 	r = opal_exclusive_lock(cd, crypt_data_device(cd), &opal_lh);
 	if (r < 0) {
-		log_err(cd, _("Failed to acquire opal lock on device %s."), device_path(crypt_data_device(cd)));
+		log_err(cd, _("Failed to acquire OPAL lock on device %s."), device_path(crypt_data_device(cd)));
 		return -EINVAL;
 	}
 

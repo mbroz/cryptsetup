@@ -804,11 +804,11 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 			if (!numbered(cd, "opal_segment_size", json_object_get_string(jobj_size)))
 				return 1;
 			if (!json_str_to_uint64(jobj_size, &opal_segment_size) || !opal_segment_size) {
-				log_dbg(cd, "Illegal opal segment size value.");
+				log_dbg(cd, "Illegal OPAL segment size value.");
 				return 1;
 			}
 			if (size > opal_segment_size) {
-				log_dbg(cd, "segment size overflows opal locking range size.");
+				log_dbg(cd, "segment size overflows OPAL locking range size.");
 				return 1;
 			}
 			if (!strcmp(json_object_get_string(jobj_type), "hw-opal-crypt") &&
@@ -2700,7 +2700,7 @@ int LUKS2_activate(struct crypt_device *cd,
 		range_offset_sectors = crypt_get_data_offset(cd) + crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
 		r = opal_exclusive_lock(cd, crypt_data_device(cd), &opal_lh);
 		if (r < 0) {
-			log_err(cd, _("Failed to acquire opal lock on device %s."), device_path(crypt_data_device(cd)));
+			log_err(cd, _("Failed to acquire OPAL lock on device %s."), device_path(crypt_data_device(cd)));
 			return -EINVAL;
 		}
 
@@ -2712,7 +2712,7 @@ int LUKS2_activate(struct crypt_device *cd,
 
 		opal_lock_on_error = read_lock && write_lock;
 		if (!opal_lock_on_error && !(flags & CRYPT_ACTIVATE_REFRESH))
-			log_std(cd, _("OPAL device is %s already unlocked!\n"),
+			log_std(cd, _("OPAL device is %s already unlocked.\n"),
 				    device_path(crypt_data_device(cd)));
 
 		r = opal_unlock(cd, crypt_data_device(cd), opal_segment_number, opal_key);
@@ -2952,7 +2952,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 		if (crypt_data_device(cd)) {
 			r = opal_exclusive_lock(cd, crypt_data_device(cd), &opal_lh);
 			if (r < 0) {
-				log_err(cd, _("Failed to acquire opal lock on device %s."), device_path(crypt_data_device(cd)));
+				log_err(cd, _("Failed to acquire OPAL lock on device %s."), device_path(crypt_data_device(cd)));
 				goto out;
 			}
 		}
