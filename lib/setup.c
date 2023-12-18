@@ -5391,9 +5391,11 @@ static int _activate_by_volume_key(struct crypt_device *cd,
 }
 
 int crypt_activate_by_keyslot_context(struct crypt_device *cd,
-	const char *name,
+const char *name,
 	int keyslot,
 	struct crypt_keyslot_context *kc,
+	int additional_keyslot,
+	struct crypt_keyslot_context *additional_kc,
 	uint32_t flags)
 {
 	bool use_keyring;
@@ -5403,6 +5405,9 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	const char *passphrase = NULL;
 	int unlocked_keyslot, r = -EINVAL;
 	key_serial_t user_vk_kid = 0;
+
+	UNUSED(additional_keyslot);
+	UNUSED(additional_kc);
 
 	log_dbg(cd, "%s volume %s [keyslot %d] using %s.",
 		name ? "Activating" : "Checking", name ?: "passphrase", keyslot, keyslot_context_type_string(kc));
@@ -5582,7 +5587,7 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 	struct crypt_keyslot_context kc;
 
 	crypt_keyslot_unlock_by_passphrase_init_internal(&kc, passphrase, passphrase_size);
-	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, flags);
+	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, CRYPT_ANY_SLOT, NULL, flags);
 	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
@@ -5600,7 +5605,7 @@ int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
 	struct crypt_keyslot_context kc;
 
 	crypt_keyslot_unlock_by_keyfile_init_internal(&kc, keyfile, keyfile_size, keyfile_offset);
-	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, flags);
+	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, CRYPT_ANY_SLOT, NULL, flags);
 	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
@@ -5639,7 +5644,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	struct crypt_keyslot_context kc;
 
 	crypt_keyslot_unlock_by_key_init_internal(&kc, volume_key, volume_key_size);
-	r = crypt_activate_by_keyslot_context(cd, name, CRYPT_ANY_SLOT /* unused */, &kc, flags);
+	r = crypt_activate_by_keyslot_context(cd, name, CRYPT_ANY_SLOT /* unused */, &kc, CRYPT_ANY_SLOT, NULL, flags);
 	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
@@ -5669,7 +5674,7 @@ int crypt_activate_by_signed_key(struct crypt_device *cd,
 			signature, signature_size);
 	else
 		crypt_keyslot_unlock_by_key_init_internal(&kc, volume_key, volume_key_size);
-	r = crypt_activate_by_keyslot_context(cd, name, -2 /* unused */, &kc, flags);
+	r = crypt_activate_by_keyslot_context(cd, name, -2 /* unused */, &kc, CRYPT_ANY_SLOT, NULL, flags);
 	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
@@ -6872,7 +6877,7 @@ int crypt_activate_by_token_pin(struct crypt_device *cd, const char *name,
 	struct crypt_keyslot_context kc;
 
 	crypt_keyslot_unlock_by_token_init_internal(&kc, token, type, pin, pin_size, usrptr);
-	r = crypt_activate_by_keyslot_context(cd, name, CRYPT_ANY_SLOT, &kc, flags);
+	r = crypt_activate_by_keyslot_context(cd, name, CRYPT_ANY_SLOT, &kc, CRYPT_ANY_SLOT, NULL, flags);
 	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
@@ -7556,18 +7561,21 @@ void crypt_drop_keyring_key_by_description(struct crypt_device *cd, const char *
 }
 
 int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_description,
-	const char *key_type_description, const char *keyring_to_link_vk)
+			      const char *old_key_description,
+			      const char *key_type_desc, const char *keyring_to_link_vk)
 {
 	key_type_t key_type = USER_KEY;
 	const char *name = NULL;
 	int32_t id = 0;
 
+	UNUSED(old_key_description);
+
 	if (!cd || (!key_description && keyring_to_link_vk) ||
 	    (key_description && !keyring_to_link_vk))
 		return -EINVAL;
 
-	if (key_type_description)
-		key_type = key_type_by_name(key_type_description);
+	if (key_type_desc)
+		key_type = key_type_by_name(key_type_desc);
 
 	if (key_type != LOGON_KEY && key_type != USER_KEY)
 		return -EINVAL;
@@ -7616,7 +7624,7 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 		return -EINVAL;
 
 	crypt_keyslot_unlock_by_keyring_internal(&kc, key_description);
-	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, flags);
+	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, CRYPT_ANY_SLOT, NULL, flags);
 	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;

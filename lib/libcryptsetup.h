@@ -1624,13 +1624,23 @@ int crypt_persistent_flags_get(struct crypt_device *cd,
  */
 
 /**
- * Activate device or check using keyslot context.
+ * Activate device or check using keyslot context. In some cases (device under
+ * reencryption), more than one keyslot context is required (e.g. one for the old
+ * volume key and one for the new volume key). The order of the keyslot
+ * contexts does not matter. When less keyslot contexts are supplied than
+ * required to unlock the device an -EPERM/-ENOKEY/TODO error code is returned
+ * and you should call the function again with more keyslot contexts.
+ *
+ * NOTE: the API at the moment works for one keyslot context only, the second
+ * keyslot context is just an API placeholder
  *
  * @param cd crypt device handle
  * @param name name of device to create, if @e NULL only check passphrase
  * @param keyslot requested keyslot to check or @e CRYPT_ANY_SLOT, keyslot is
  *        ignored for unlock methods not based on passphrase
  * @param kc keyslot context providing volume key or passphrase.
+ * @param additional_kc keyslot context providing additional volume key or
+ *        passphrase (e.g. old volume key for device under reencryption).
  * @param flags activation flags
  *
  * @return unlocked key slot number for passphrase-based unlock, zero for other
@@ -1640,6 +1650,8 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	const char *name,
 	int keyslot,
 	struct crypt_keyslot_context *kc,
+	int additional_keyslot,
+	struct crypt_keyslot_context *additional_kc,
 	uint32_t flags);
 
 /**
@@ -3088,8 +3100,25 @@ void crypt_safe_memzero(void *data, size_t size);
 /**
  * Link the volume key to the specified kernel keyring.
  *
+ * The volume can have one or two keys. Normally, the device has one key.
+ * However if reencryption was started and not finished yet, the volume will
+ * have two volume keys (the new VK for the already reencrypted segment and old
+ * VK for the not yet reencrypted segment).
+ *
+ * The @link old_key_description @endlink this argument is required only for
+ * devices that are in re-encryption and have two volume keys at the same time
+ * (old and new).  You can set the @link old_key_description @endlink to NULL,
+ * but if you supply number of keys less than required, the function will
+ * return -EAGAIN.  In that case you need to call the function again and set
+ * the missing key description. When supplying just one key description, make
+ * sure to supply it in the @link key_description @endlink
+ *
+ * NOTE: the API at the moment works for one key description only, the second
+ * name is just an API placeholder
+ *
  * @param cd crypt device handle
- * @param key_description the key description of volume key linked in desired keyring.
+ * @param key_description the key description of the volume key linked in desired keyring.
+ * @param old_key_description the key description of the old volume key linked in desired keyring (for devices in re-encryption).
  * @param key_type the key type used for the volume key. Currently only "user" and "logon" types are
  *	  supported. if @e NULL is specified the default "user" type is applied.
  * @param keyring_to_link_vk the keyring description of the keyring in which volume key should
@@ -3105,7 +3134,7 @@ void crypt_safe_memzero(void *data, size_t size);
  * @note key_description "%<type>:" prefixes are ignored. Type is applied based on key_type parameter
  * 	 value.
  */
-int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_description,
+int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_description, const char *old_key_description,
 			      const char *key_type_desc, const char *keyring_to_link_vk);
 
 /** @} */
