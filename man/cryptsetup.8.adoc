@@ -701,11 +701,13 @@ The dm-crypt device then resides on top of such a dm-integrity device.
 All activation and deactivation of this device stack is performed by
 cryptsetup, there is no difference in using *luksOpen* for integrity
 protected devices. If you want to format LUKS2 device with data
-integrity protection, use *--integrity* option.
+integrity protection, use *--integrity* option (see *cryptsetup-luksFormat(8)*).
 
-Since dm-integrity doesn't support discards (TRIM), dm-crypt device on
-top of it inherits this, so integrity protection mode doesn't support
-discards either.
+Albeit Linux kernel 5.7 added TRIM support for standalone dm-integrity devices,
+*cryptsetup(8)* can't offer support for discards (TRIM) in authenticated
+encryption mode, because the underlying dm-crypt kernel module does not support
+this functionality when dm-integrity is used as auth tag space allocator
+(see *--allow-discards* in *cryptsetup-luksFormat(8)*).
 
 Some integrity modes requires two independent keys (key for encryption
 and for authentication). Both these keys are stored in one LUKS keyslot.
