@@ -768,6 +768,11 @@ int opal_unlock(struct crypt_device *cd,
 	return opal_lock_unlock(cd, dev, segment_number, vk, /* lock= */ false);
 }
 
+/*
+ * It does not require opal lock. This completely destroys
+ * data on whole OPAL block device. Serialization does not
+ * make sense here.
+ */
 int opal_factory_reset(struct crypt_device *cd,
 		       struct device *dev,
 		       const char *password,
@@ -898,11 +903,17 @@ out:
 	return r;
 }
 
+/*
+ * Does not require opal lock (immutable).
+ */
 int opal_supported(struct crypt_device *cd, struct device *dev)
 {
 	return opal_query_status(cd, dev, OPAL_FL_SUPPORTED|OPAL_FL_LOCKING_SUPPORTED);
 }
 
+/*
+ * Does not require opal lock (immutable).
+ */
 int opal_geometry(struct crypt_device *cd,
 		  struct device *dev,
 		  bool *ret_align,
