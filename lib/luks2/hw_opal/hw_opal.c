@@ -290,7 +290,7 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 {
 	int r;
 	struct opal_lr_status *lrs;
-	uint32_t opal_block_bytes;
+	uint32_t opal_block_bytes = 0;
 	uint64_t offset, length;
 	bool read_locked, write_locked;
 
