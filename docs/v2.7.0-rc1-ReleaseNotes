@@ -1,6 +1,20 @@
-Cryptsetup 2.7.0-rc0 Release Notes
+Cryptsetup 2.7.0-rc1 Release Notes
 ==================================
 Stable release candidate with new features and bug fixes.
+
+Changes since version 2.7.0-rc0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Used Argon2 PBKDF implementation is now reported in debug mode
+  in the cryptographic backend version. For native support in
+  OpenSSL 3.2 or libgcrypt 1.11, "argon2" is displayed.
+  If libargon2 is used, "cryptsetup libargon2" (for embedded
+  library) or "external libargon2" is displayed.
+
+* Fix wiping of OPAL key in the kernel on luksSuspend.
+
+* Use metadata lock for OPAL disk manipulation to avoid unexpected
+  states if two processes manipulate the device.
 
 Changes since version 2.6.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -47,11 +61,10 @@ Changes since version 2.6.1
   encryption (--hw-opal option) or without the software layer
   (--hw-opal-only option).
   You can see the configured segment parameters in the luksDump command.
-  Note: formal specification of OPAL LUKS2 segment metadata will be added
-  in the next release candidate. LUKS2 devices with OPAL segments set
-  a new requirement flag in the LUKS2 header to prevent older cryptsetup
-  metadata manipulation. Do not use hardware-only encryption if you do
-  not fully trust your hardware vendor.
+  LUKS2 devices with OPAL segments set a new requirement flag in
+  the LUKS2 header to prevent older cryptsetup metadata manipulation.
+  Do not use hardware-only encryption if you do not fully trust your
+  hardware vendor.
 
   Compatibility notes:
     - Linux kernel SED interface does NOT work through USB external
@@ -185,9 +198,6 @@ Changes since version 2.6.1
   These options are intended to be used for integration with other
   systems for automation.
 
-  Note: the API will slightly change in the next release candidate
-  (active reencryption will need to setup old and new keys together).
-
   Users can now use the volume key (not passphrase) stored in arbitrary
   kernel keyring and directly use it in particular cryptsetup commands
   with --volume-key-keyring option. The keyring can use various policies
@@ -304,9 +314,9 @@ Changes since version 2.6.1
 * Fix wipe operation that overwrites the whole device if used for LUKS2
   header with no keyslot area.
 
-   Formatting a LUKS2 device with no defined keyslots area is a very
-   specific operation, and the code now properly recognizes such
-   configuration.
+  Formatting a LUKS2 device with no defined keyslots area is a very
+  specific operation, and the code now properly recognizes such
+  configuration.
 
 * Fix luksErase to work with detached LUKS header.
 
