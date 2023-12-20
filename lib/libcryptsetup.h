@@ -697,8 +697,8 @@ int crypt_format(struct crypt_device *cd,
  * @param cipher for SW encryption (e.g. "aes") or NULL for HW encryption only
  * @param cipher_mode including IV specification (e.g. "xts-plain") or NULL for HW encryption only
  * @param uuid requested UUID or @e NULL if it should be generated
- * @param volume_key pre-generated volume key or @e NULL if it should be generated (only for LUKS2 SW encryption)
- * @param volume_key_size size of volume key in bytes (only for SW encryption).
+ * @param volume_keys pre-generated volume keys or @e NULL if it should be generated (only for LUKS2 SW encryption)
+ * @param volume_keys_size size of volume keys in bytes (only for SW encryption).
  * @param params LUKS2 crypt type specific parameters (see @link crypt-type @endlink)
  * @param opal_params OPAL specific parameters
  *
@@ -1363,7 +1363,7 @@ int crypt_keyslot_context_set_pin(struct crypt_device *cd,
 	struct crypt_keyslot_context *kc);
 
 /**
- * @defgroup crypt-keyslot-context-types Crypt keyslot context
+ * @defgroup crypt-keyslot-context-types Crypt keyslot context types
  * @addtogroup crypt-keyslot-context-types
  * @{
  */
@@ -1639,6 +1639,7 @@ int crypt_persistent_flags_get(struct crypt_device *cd,
  * @param keyslot requested keyslot to check or @e CRYPT_ANY_SLOT, keyslot is
  *        ignored for unlock methods not based on passphrase
  * @param kc keyslot context providing volume key or passphrase.
+ * @param additional_keyslot requested additional keyslot to check or @e CRYPT_ANY_SLOT
  * @param additional_kc keyslot context providing additional volume key or
  *        passphrase (e.g. old volume key for device under reencryption).
  * @param flags activation flags
@@ -1734,9 +1735,9 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
  * 	 CRYPT_ACTIVATE_READONLY flag always.
  * @note For TCRYPT the volume key should be always NULL
  * 	 the key from decrypted header is used instead.
- * @note For BITLK @name cannot be @e NULL checking volume key is not
- *       supported for BITLK, the device will be activated even if the
- *       provided key is not correct.
+ * @note For BITLK the name cannot be @e NULL checking volume key is not
+ * 	 supported for BITLK, the device will be activated even if the
+ * 	 provided key is not correct.
  */
 int crypt_activate_by_volume_key(struct crypt_device *cd,
 	const char *name,
@@ -2443,7 +2444,6 @@ int crypt_wipe(struct crypt_device *cd,
 
 /** Use direct-io */
 #define CRYPT_WIPE_NO_DIRECT_IO (UINT32_C(1) << 0)
-/** @} */
 
 enum {
 	CRYPT_LUKS2_SEGMENT = -2,
@@ -2473,6 +2473,8 @@ int crypt_wipe_hw_opal(struct crypt_device *cd,
 	size_t password_size,
 	uint32_t flags /* currently unused */
 );
+
+/** @} */
 
 /**
  * @defgroup crypt-tokens LUKS2 token wrapper access
@@ -3097,6 +3099,14 @@ void *crypt_safe_realloc(void *data, size_t size);
  */
 void crypt_safe_memzero(void *data, size_t size);
 
+/** @} */
+
+/**
+ * @defgroup crypt-keyring Kernel keyring manipulation
+ * @addtogroup crypt-keyring
+ * @{
+ */
+
 /**
  * Link the volume key to the specified kernel keyring.
  *
@@ -3105,21 +3115,22 @@ void crypt_safe_memzero(void *data, size_t size);
  * have two volume keys (the new VK for the already reencrypted segment and old
  * VK for the not yet reencrypted segment).
  *
- * The @link old_key_description @endlink this argument is required only for
+ * The @e old_key_description argument is required only for
  * devices that are in re-encryption and have two volume keys at the same time
- * (old and new).  You can set the @link old_key_description @endlink to NULL,
+ * (old and new). You can set the @e old_key_description to NULL,
  * but if you supply number of keys less than required, the function will
  * return -EAGAIN.  In that case you need to call the function again and set
  * the missing key description. When supplying just one key description, make
- * sure to supply it in the @link key_description @endlink
+ * sure to supply it in the @e key_description.
  *
  * NOTE: the API at the moment works for one key description only, the second
  * name is just an API placeholder
  *
  * @param cd crypt device handle
  * @param key_description the key description of the volume key linked in desired keyring.
- * @param old_key_description the key description of the old volume key linked in desired keyring (for devices in re-encryption).
- * @param key_type the key type used for the volume key. Currently only "user" and "logon" types are
+ * @param old_key_description the key description of the old volume key linked in desired keyring
+ *	  (for devices in re-encryption).
+ * @param key_type_desc the key type used for the volume key. Currently only "user" and "logon" types are
  *	  supported. if @e NULL is specified the default "user" type is applied.
  * @param keyring_to_link_vk the keyring description of the keyring in which volume key should
  *	  be linked, if @e NULL is specified, linking will be disabled.
@@ -3134,8 +3145,11 @@ void crypt_safe_memzero(void *data, size_t size);
  * @note key_description "%<type>:" prefixes are ignored. Type is applied based on key_type parameter
  * 	 value.
  */
-int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_description, const char *old_key_description,
-			      const char *key_type_desc, const char *keyring_to_link_vk);
+int crypt_set_keyring_to_link(struct crypt_device* cd,
+	const char* key_description,
+	const char* old_key_description,
+	const char* key_type_desc,
+	const char* keyring_to_link_vk);
 
 /** @} */
 
