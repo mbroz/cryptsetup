@@ -20,6 +20,10 @@ Suspends an active device (all IO operations will block and accesses to
 the device will wait indefinitely) and wipes the encryption key from
 kernel memory. Needs kernel 2.6.19 or later.
 
+While the _luksSuspend_ operation wipes encryption keys from memory,
+it does not remove possible plaintext data in various caches or in-kernel
+metadata for mounted filesystems.
+
 After this operation, you have to use _luksResume_ to reinstate the
 encryption key and unblock the device or _close_ to remove the mapped
 device.
