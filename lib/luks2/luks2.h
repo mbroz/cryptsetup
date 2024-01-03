@@ -494,7 +494,7 @@ int LUKS2_reencrypt_check_device_size(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	uint64_t check_size,
 	uint64_t *dev_size,
-	bool activation,
+	bool device_exclusive_check,
 	bool dynamic);
 
 int LUKS2_reencrypt_digest_verify(struct crypt_device *cd,

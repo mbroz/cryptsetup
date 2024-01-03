@@ -4331,7 +4331,7 @@ int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
 
 /* internal only */
 int LUKS2_reencrypt_check_device_size(struct crypt_device *cd, struct luks2_hdr *hdr,
-	uint64_t check_size, uint64_t *dev_size, bool activation, bool dynamic)
+	uint64_t check_size, uint64_t *dev_size, bool device_exclusive_check, bool dynamic)
 {
 	int r;
 	uint64_t data_offset, real_size = 0;
@@ -4340,7 +4340,8 @@ int LUKS2_reencrypt_check_device_size(struct crypt_device *cd, struct luks2_hdr 
 	    (LUKS2_get_segment_by_flag(hdr, "backup-moved-segment") || dynamic))
 		check_size += reencrypt_data_shift(hdr);
 
-	r = device_check_access(cd, crypt_data_device(cd), activation ? DEV_EXCL : DEV_OK);
+	r = device_check_access(cd, crypt_data_device(cd),
+				device_exclusive_check ? DEV_EXCL : DEV_OK);
 	if (r)
 		return r;
 
