@@ -201,25 +201,39 @@ int fips_mode(void)
  */
 int create_dmdevice_over_loop(const char *dm_name, const uint64_t size)
 {
+	int r;
+
+	r = create_dmdevice_over_device(dm_name, THE_LOOP_DEV, size, t_dev_offset);
+	if (r != 0)
+		return r;
+
+	t_dev_offset += size;
+
+	return r;
+}
+
+/*
+ * Creates dm-linear target over the desired block device.
+ */
+int create_dmdevice_over_device(const char *dm_name, const char *device, uint64_t size, uint64_t offset)
+{
 	char cmd[128];
 	int r;
 	uint64_t r_size;
 
-	if (t_device_size(THE_LOOP_DEV, &r_size) < 0 || r_size <= t_dev_offset || !size)
+	if (!device || t_device_size(device, &r_size) < 0 || r_size <= offset || !size)
 		return -1;
-	if ((r_size - t_dev_offset) < size) {
-		printf("No enough space on backing loop device\n.");
+	if ((r_size - offset) < size) {
+		printf("No enough space on device %s\n.", device);
 		return -2;
 	}
 	r = snprintf(cmd, sizeof(cmd),
 		     "dmsetup create %s --table \"0 %" PRIu64 " linear %s %" PRIu64 "\"",
-		     dm_name, size, THE_LOOP_DEV, t_dev_offset);
+		     dm_name, size, device, offset);
 	if (r < 0 || (size_t)r >= sizeof(cmd))
 		return -3;
 
-	if (!(r = _system(cmd, 1)))
-		t_dev_offset += size;
-	return r;
+	return _system(cmd, 1);
 }
 
 __attribute__((format(printf, 3, 4)))

@@ -45,6 +45,8 @@ int t_set_readahead(const char *device, unsigned value);
 
 int fips_mode(void);
 
+int create_dmdevice_over_device(const char *dm_name, const char *device, uint64_t size, uint64_t offset);
+
 int create_dmdevice_over_loop(const char *dm_name, const uint64_t size);
 
 int get_key_dm(const char *name, char *buffer, unsigned int buffer_size);
