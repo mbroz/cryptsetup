@@ -59,10 +59,12 @@ typedef int32_t key_serial_t;
 #define L_DEVICE_0S "luks_zerosec"
 #define L_DEVICE_WRONG "luks_wr"
 #define L_DEVICE_OK "luks_ok"
+#define L_PLACEHOLDER "bdev_reference_placeholder"
 #define REQS_LUKS2_HEADER "luks2_header_requirements"
 #define NO_REQS_LUKS2_HEADER "luks2_header_requirements_free"
 #define BACKUP_FILE "csetup_backup_file"
 #define IMAGE1 "compatimage2.img"
+#define EMPTY_HEADER "empty.hdr"
 #define IMAGE_EMPTY "empty.img"
 #define IMAGE_EMPTY_SMALL "empty_small.img"
 #define IMAGE_EMPTY_SMALL_2 "empty_small2.img"
@@ -291,6 +293,9 @@ static void _cleanup_dmdevices(void)
 {
 	struct stat st;
 
+	if (!stat(DMDIR L_PLACEHOLDER, &st))
+		_system("dmsetup remove " DM_RETRY L_PLACEHOLDER DM_NOSTDERR, 0);
+
 	if (!stat(DMDIR H_DEVICE, &st))
 		_system("dmsetup remove " DM_RETRY H_DEVICE DM_NOSTDERR, 0);
 
@@ -367,6 +372,8 @@ static int _setup(void)
 	_system("dd if=/dev/zero of=" IMAGE_EMPTY_SMALL " bs=1M count=7 2>/dev/null", 1);
 
 	_system("dd if=/dev/zero of=" IMAGE_EMPTY_SMALL_2 " bs=512 count=2050 2>/dev/null", 1);
+
+	_system("dd if=/dev/zero of=" EMPTY_HEADER " bs=4K count=1 2>/dev/null", 1);
 
 	_system(" [ ! -e " NO_REQS_LUKS2_HEADER " ] && tar xJf " REQS_LUKS2_HEADER ".tar.xz", 1);
 	fd = loop_attach(&DEVICE_4, NO_REQS_LUKS2_HEADER, 0, 0, &ro);
@@ -569,6 +576,7 @@ static void _cleanup(void)
 	_system("rm -f " IMAGE_EMPTY, 0);
 	_system("rm -f " IMAGE1, 0);
 	_system("rm -rf " CONV_DIR, 0);
+	_system("rm -f " EMPTY_HEADER, 0);
 
 	if (test_loop_file)
 		remove(test_loop_file);
@@ -4528,6 +4536,52 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 30, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)), 30);
 	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ANY_SLOT, 30, "aes", "xts-plain64", &rparams), "Data device is too small");
 	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+	CRYPT_FREE(cd);
+
+	_cleanup_dmdevices();
+	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_header_size + 1));
+
+	/* offline in-place encryption with reserved space in the head of data device */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	memset(&rparams, 0, sizeof(rparams));
+	params2.sector_size = 512;
+	rparams.mode = CRYPT_REENCRYPT_ENCRYPT;
+	rparams.direction = CRYPT_REENCRYPT_FORWARD;
+	rparams.resilience = "checksum";
+	rparams.hash = "sha256";
+	rparams.luks2 = &params2;
+	rparams.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY;
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, &params2));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 30, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)), 30);
+	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ANY_SLOT, 30, "aes", "xts-plain64", &rparams));
+	FAIL_(crypt_reencrypt_run(cd, NULL, NULL), "context not initialized");
+	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
+	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ANY_SLOT, 30, "aes", "xts-plain64", &rparams));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+	CRYPT_FREE(cd);
+
+	/* wipe existing header from previous run */
+	_system("dd if=/dev/zero of=" DMDIR L_DEVICE_OK " bs=4K count=5 2>/dev/null", 1);
+	/* open existing device from kernel (simulate active filesystem) */
+	OK_(create_dmdevice_over_device(L_PLACEHOLDER, DMDIR L_DEVICE_OK, 1, r_header_size));
+
+	/* online in-place encryption with reserved space */
+	rparams.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY;
+	OK_(crypt_init(&cd, EMPTY_HEADER));
+	OK_(crypt_set_data_offset(cd, r_header_size));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, &params2));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 30, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)), 30);
+	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ANY_SLOT, 30, "aes", "xts-plain64", &rparams));
+	CRYPT_FREE(cd);
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_header_restore(cd, CRYPT_LUKS2, EMPTY_HEADER));
+	NOTFAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ACTIVATE_SHARED), "Failed to activate device in reencryption with shared flag.");
+	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
+	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ANY_SLOT, 30, "aes", "xts-plain64", &rparams));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
 	_cleanup_dmdevices();
