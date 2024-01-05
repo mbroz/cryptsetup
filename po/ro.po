@@ -9,14 +9,15 @@
 # Traducerea inițială, făcută de R-GC, pentru versiunea cryptsetup 2.6.0-rc1.
 # Actualizare a traducerii pentru versiunea 2.6.1-rc0, făcută de R-GC, ian-2023.
 # Actualizare a traducerii pentru versiunea 2.7.0-rc0, făcută de R-GC, noi-2023.
+# Actualizare a traducerii pentru versiunea 2.7.0-rc1, făcută de R-GC, dec-2023.
 # Actualizare a traducerii pentru versiunea Y, făcută de X, Y(luna-anul).
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 2.7.0-rc0\n"
+"Project-Id-Version: cryptsetup 2.7.0-rc1\n"
 "Report-Msgid-Bugs-To: cryptsetup@lists.linux.dev\n"
-"POT-Creation-Date: 2023-11-29 09:21+0100\n"
-"PO-Revision-Date: 2023-11-30 00:59+0100\n"
+"POT-Creation-Date: 2023-12-20 15:16+0100\n"
+"PO-Revision-Date: 2023-12-21 13:41+0100\n"
 "Last-Translator: Remus-Gabriel Chelu <remusgabriel.chelu@disroot.org>\n"
 "Language-Team: Romanian <translation-team-ro@lists.sourceforge.net>\n"
 "Language: ro\n"
@@ -29,11 +30,11 @@ msgstr ""
 
 #: lib/libdevmapper.c:419
 msgid "Cannot initialize device-mapper, running as non-root user."
-msgstr "Nu se poate inițializa device-mapper, rulând ca utilizator non-root."
+msgstr "Nu se poate inițializa «device-mapper», rulând ca utilizator non-root."
 
 #: lib/libdevmapper.c:422
 msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?"
-msgstr "Nu se poate inițializa device-mapper. Este încărcat modulul nucleului, «dm_mod»?"
+msgstr "Nu se poate inițializa «device-mapper». Este încărcat modulul nucleului, «dm_mod»?"
 
 #: lib/libdevmapper.c:1103
 msgid "Requested deferred flag is not supported."
@@ -82,7 +83,7 @@ msgid "Requested automatic recalculation of integrity tags is not supported."
 msgstr "Recalcularea automată a etichetelor de integritate solicitată nu este acceptată."
 
 #: lib/libdevmapper.c:1696 lib/libdevmapper.c:1744 lib/libdevmapper.c:1747
-#: lib/luks2/luks2_json_metadata.c:2742
+#: lib/luks2/luks2_json_metadata.c:2754
 msgid "Discard/TRIM is not supported."
 msgstr "Înlăturarea/Decuparea(TRIM) nu este acceptată."
 
@@ -141,65 +142,65 @@ msgstr "Nu s-a putut inițializa utilitarul de criptare al generatorului de nume
 msgid "Cannot initialize crypto backend."
 msgstr "Nu s-a putut inițializa utilitarul de criptare ."
 
-#: lib/setup.c:316 lib/setup.c:2766 lib/verity/verity.c:122
+#: lib/setup.c:317 lib/setup.c:2777 lib/verity/verity.c:122
 #, c-format
 msgid "Hash algorithm %s not supported."
 msgstr "Algoritmul sumei de control %s nu este acceptat."
 
-#: lib/setup.c:319 lib/loopaes/loopaes.c:90
+#: lib/setup.c:320 lib/loopaes/loopaes.c:90
 #, c-format
 msgid "Key processing error (using hash %s)."
 msgstr "Eroare de procesare a cheii (folosind suma de control %s)."
 
-#: lib/setup.c:390 lib/setup.c:427
+#: lib/setup.c:391 lib/setup.c:428
 msgid "Cannot determine device type. Incompatible activation of device?"
 msgstr "Nu se poate determina tipul de dispozitiv. Activare a dispozitivului incompatibilă?"
 
-#: lib/setup.c:396 lib/setup.c:3959
+#: lib/setup.c:397 lib/setup.c:3971
 msgid "This operation is supported only for LUKS device."
 msgstr "Această operație este acceptată doar pentru dispozitive LUKS."
 
-#: lib/setup.c:433
+#: lib/setup.c:434
 msgid "This operation is supported only for LUKS2 device."
 msgstr "Această operație este acceptată doar pentru dispozitive LUKS2."
 
-#: lib/setup.c:490 lib/luks2/luks2_reencrypt.c:3056
+#: lib/setup.c:491 lib/luks2/luks2_reencrypt.c:3056
 msgid "All key slots full."
 msgstr "Toate sloturile pentru chei sunt ocupate."
 
-#: lib/setup.c:501
+#: lib/setup.c:502
 #, c-format
 msgid "Key slot %d is invalid, please select between 0 and %d."
 msgstr "Slotul de cheie %d este nu este valid, selectați între 0 și %d."
 
-#: lib/setup.c:507
+#: lib/setup.c:508
 #, c-format
 msgid "Key slot %d is full, please select another one."
 msgstr "Slotul pentru chei %d este ocupat, selectați altul."
 
-#: lib/setup.c:618 lib/setup.c:3661
+#: lib/setup.c:619 lib/setup.c:3672
 msgid "Device size is not aligned to device logical block size."
 msgstr "Dimensiunea dispozitivului nu este aliniată la dimensiunea blocului logic al dispozitivului."
 
-#: lib/setup.c:716
+#: lib/setup.c:717
 #, c-format
 msgid "Header detected but device %s is too small."
 msgstr "Antet detectat, dar dispozitivul %s este prea mic."
 
-#: lib/setup.c:757 lib/setup.c:3552 lib/setup.c:5134
+#: lib/setup.c:758 lib/setup.c:3563 lib/setup.c:5163
 #: lib/luks2/luks2_reencrypt.c:3848 lib/luks2/luks2_reencrypt.c:4305
 msgid "This operation is not supported for this device type."
 msgstr "Această operație nu este suportată pentru acest tip de dispozitiv."
 
-#: lib/setup.c:762
+#: lib/setup.c:763
 msgid "Illegal operation with reencryption in-progress."
 msgstr "Operație ilegală cu recriptare în curs."
 
-#: lib/setup.c:894
+#: lib/setup.c:895
 msgid "Failed to rollback LUKS2 metadata in memory."
 msgstr "Nu s-au putut reîncărca metadatele LUKS2 în memorie."
 
-#: lib/setup.c:981 lib/luks1/keymanage.c:249 lib/luks1/keymanage.c:527
+#: lib/setup.c:982 lib/luks1/keymanage.c:249 lib/luks1/keymanage.c:527
 #: lib/luks2/luks2_json_metadata.c:1374 src/cryptsetup.c:1799
 #: src/cryptsetup.c:1962 src/cryptsetup.c:2017 src/cryptsetup.c:2222
 #: src/cryptsetup.c:2392 src/cryptsetup.c:2673 src/cryptsetup.c:2981
@@ -209,499 +210,505 @@ msgstr "Nu s-au putut reîncărca metadatele LUKS2 în memorie."
 msgid "Device %s is not a valid LUKS device."
 msgstr "Dispozitivul %s nu este un dispozitiv LUKS valid."
 
-#: lib/setup.c:984 lib/luks1/keymanage.c:530
+#: lib/setup.c:985 lib/luks1/keymanage.c:530
 #, c-format
 msgid "Unsupported LUKS version %d."
 msgstr "Versiunea %d de LUKS nu este acceptată."
 
-#: lib/setup.c:1357
+#: lib/setup.c:1358
 #, c-format
 msgid "No known cipher specification pattern detected for active device %s."
 msgstr "Nu a fost detectat niciun model cunoscut de specificație de cifrare pentru dispozitivul activ %s."
 
-#: lib/setup.c:1603 lib/setup.c:3306 lib/setup.c:3388 lib/setup.c:3400
-#: lib/setup.c:3570 lib/setup.c:5721
+#: lib/setup.c:1604 lib/setup.c:3317 lib/setup.c:3399 lib/setup.c:3411
+#: lib/setup.c:3581 lib/setup.c:5755
 #, c-format
 msgid "Device %s is not active."
 msgstr "Dispozitivul %s nu este activ."
 
-#: lib/setup.c:1620
+#: lib/setup.c:1621
 #, c-format
 msgid "Underlying device for crypt device %s disappeared."
 msgstr "Dispozitivul subiacent pentru dispozitivul criptat %s a dispărut."
 
-#: lib/setup.c:1702
+#: lib/setup.c:1703
 msgid "Invalid plain crypt parameters."
 msgstr "Parametrii de criptare simplă sunt incorecți."
 
-#: lib/setup.c:1707 lib/setup.c:2669
+#: lib/setup.c:1708 lib/setup.c:2680
 msgid "Invalid key size."
 msgstr "Dimensiunea cheii este nevalidă."
 
-#: lib/setup.c:1712 lib/setup.c:2674 lib/setup.c:2877
+#: lib/setup.c:1713 lib/setup.c:2685 lib/setup.c:2888
 msgid "UUID is not supported for this crypt type."
 msgstr "UUID-ul nu este acceptat pentru acest tip de criptare."
 
-#: lib/setup.c:1717 lib/setup.c:2679
+#: lib/setup.c:1718 lib/setup.c:2690
 msgid "Detached metadata device is not supported for this crypt type."
 msgstr "Dispozitivul cu metadate detașate nu este acceptat pentru acest tip de criptare."
 
-#: lib/setup.c:1727 lib/setup.c:1962 lib/luks2/luks2_reencrypt.c:3012
+#: lib/setup.c:1728 lib/setup.c:1963 lib/luks2/luks2_reencrypt.c:3012
 #: src/cryptsetup.c:1467 src/cryptsetup.c:3726
 msgid "Unsupported encryption sector size."
 msgstr "Dimensiunea sectorului de criptare nu este acceptată."
 
-#: lib/setup.c:1735 lib/setup.c:1991 lib/setup.c:3655
+#: lib/setup.c:1736 lib/setup.c:1992 lib/setup.c:3666
 msgid "Device size is not aligned to requested sector size."
 msgstr "Dimensiunea dispozitivului nu este aliniată la dimensiunea sectorului solicitată."
 
-#: lib/setup.c:1787 lib/setup.c:2024 lib/setup.c:2355
+#: lib/setup.c:1788 lib/setup.c:2025 lib/setup.c:2357
 msgid "Can't format LUKS without device."
 msgstr "Formatarea LUKS fără dispozitiv nu este posibilă."
 
-#: lib/setup.c:1793 lib/setup.c:2030 lib/setup.c:2361
+#: lib/setup.c:1794 lib/setup.c:2031 lib/setup.c:2363
 msgid "Requested data alignment is not compatible with data offset."
 msgstr "Alinierea datelor solicitată nu este compatibilă cu poziția datelor."
 
-#: lib/setup.c:1833 lib/setup.c:2048
+#: lib/setup.c:1834 lib/setup.c:2049
 msgid "WARNING: DAX device can corrupt data as it does not guarantee atomic sector updates.\n"
 msgstr "AVERTISMENT: Dispozitivul DAX poate corupe datele, deoarece nu garantează actualizări atomice ale sectoarelor.\n"
 
-#: lib/setup.c:1871 lib/setup.c:2143 lib/setup.c:2164 lib/setup.c:2539
-#: lib/setup.c:2579 lib/setup.c:2889
+#: lib/setup.c:1872 lib/setup.c:2144 lib/setup.c:2165 lib/setup.c:2541
+#: lib/setup.c:2587 lib/setup.c:2900
 #, c-format
 msgid "Cannot wipe header on device %s."
 msgstr "Nu se poate șterge antetul pe dispozitivul %s."
 
-#: lib/setup.c:1884 lib/setup.c:2203
+#: lib/setup.c:1885 lib/setup.c:2204
 #, c-format
 msgid "Device %s is too small for activation, there is no remaining space for data.\n"
 msgstr "Dispozitivul %s este prea mic pentru activare, nu a mai rămas spațiu pentru date.\n"
 
-#: lib/setup.c:1924
+#: lib/setup.c:1925
 msgid "Volume key is too small for encryption with integrity extensions."
 msgstr "Cheia de volum este prea mică pentru criptare cu extensii de integritate."
 
-#: lib/setup.c:1933
+#: lib/setup.c:1934
 #, c-format
 msgid "Cipher %s-%s (key size %zd bits) is not available."
 msgstr "Cifrul %s-%s (dimensiunea cheii %zd biți) nu este disponibil."
 
-#: lib/setup.c:1972
+#: lib/setup.c:1973
 msgid "WARNING: The device activation will fail, dm-crypt is missing support for requested encryption sector size.\n"
 msgstr "AVERTISMENT: Activarea dispozitivului va eșua, dm-crypt nu are suport pentru dimensiunea sectorului de criptare solicitată.\n"
 
-#: lib/setup.c:2146 lib/setup.c:2482 lib/setup.c:2542 lib/utils_device.c:917
+#: lib/setup.c:2147 lib/setup.c:2484 lib/setup.c:2544 lib/utils_device.c:917
 #: lib/luks1/keyencryption.c:255 lib/luks2/luks2_reencrypt.c:3080
 #: lib/luks2/luks2_reencrypt.c:4364
 #, c-format
 msgid "Device %s is too small."
 msgstr "Dispozitivul %s este prea mic."
 
-#: lib/setup.c:2157 lib/setup.c:2183 lib/setup.c:2572 lib/setup.c:2618
+#: lib/setup.c:2158 lib/setup.c:2184 lib/setup.c:2580 lib/setup.c:2626
 #, c-format
 msgid "Cannot format device %s in use."
 msgstr "Nu se poate formata dispozitivul %s, este în uz."
 
-#: lib/setup.c:2160 lib/setup.c:2186 lib/setup.c:2575 lib/setup.c:2621
+#: lib/setup.c:2161 lib/setup.c:2187 lib/setup.c:2583 lib/setup.c:2629
 #, c-format
 msgid "Cannot format device %s, permission denied."
 msgstr "Nu se poate formata dispozitivul %s; permisiune refuzată."
 
-#: lib/setup.c:2172 lib/setup.c:2592 lib/setup.c:2949
+#: lib/setup.c:2173 lib/setup.c:2600 lib/setup.c:2960
 #, c-format
 msgid "Cannot format integrity for device %s."
 msgstr "Nu se poate formata integritatea pentru dispozitivul %s."
 
-#: lib/setup.c:2190 lib/setup.c:2629
+#: lib/setup.c:2191 lib/setup.c:2637
 #, c-format
 msgid "Cannot format device %s."
 msgstr "Nu se poate formata dispozitivul %s."
 
-#: lib/setup.c:2233
+#: lib/setup.c:2234
 msgid "Cannot get OPAL alignment parameters."
 msgstr "Nu se pot obține parametrii de aliniere OPAL."
 
-#: lib/setup.c:2242
+#: lib/setup.c:2243
 msgid "Bogus OPAL logical block size."
 msgstr "Dimensiune falsă a blocului logic OPAL."
 
-#: lib/setup.c:2248
+#: lib/setup.c:2249
 msgid "Requested data offset is not compatible with OPAL block size."
 msgstr "Intervalul(offset) de date solicitat nu este compatibil cu dimensiunea blocului OPAL."
 
-#: lib/setup.c:2255
+#: lib/setup.c:2256
 msgid "Requested data alignment is not compatible with OPAL alignment."
 msgstr "Alinierea datelor solicitată nu este compatibilă cu alinierea OPAL."
 
-#: lib/setup.c:2275
+#: lib/setup.c:2276
 msgid "Data offset does not satisfy OPAL alignment requirements."
 msgstr "Intervalul datelor nu îndeplinește cerințele de aliniere OPAL."
 
-#: lib/setup.c:2288
+#: lib/setup.c:2289
 msgid "Requested data alignment does not satisfy locking range alignment requirements."
 msgstr "Alinierea datelor solicitată nu satisface cerințele de aliniere a intervalului de blocare."
 
-#: lib/setup.c:2492
+#: lib/setup.c:2494
 #, c-format
 msgid "Compensating device size by %<PRIu64> sectors to align it with OPAL alignment granularity."
 msgstr "Compensarea dimensiunii dispozitivului cu %<PRIu64> sectoare pentru a-l alinia cu gradul de finețe al alinierii OPAL."
 
-#: lib/setup.c:2553
+#: lib/setup.c:2552 lib/setup.c:4068 lib/setup.c:4223 lib/utils_wipe.c:368
+#: lib/luks2/luks2_json_metadata.c:2703 lib/luks2/luks2_json_metadata.c:2955
+#, c-format
+msgid "Failed to acquire OPAL lock on device %s."
+msgstr "Nu s-a putut obține blocarea OPAL pe dispozitivul %s."
+
+#: lib/setup.c:2561
 msgid "Incorrect OPAL Admin key."
 msgstr "Cheie de administrare OPAL incorectă."
 
-#: lib/setup.c:2555
+#: lib/setup.c:2563
 msgid "Cannot setup OPAL segment."
 msgstr "Nu se poate configura segmentul OPAL."
 
-#: lib/setup.c:2625
+#: lib/setup.c:2633
 #, c-format
 msgid "Cannot format device %s, OPAL device seems to be fully write-protected now."
 msgstr "Nu se poate formata dispozitivul %s, dispozitivul OPAL pare a fi complet protejat la scriere acum."
 
-#: lib/setup.c:2627
+#: lib/setup.c:2635
 msgid "This is perhaps a bug in firmware. Run OPAL PSID reset and reconnect for recovery."
 msgstr "Aceasta este probabil o eroare în firmware. Efectuați reinițierea PSID OPAL și reconectați-vă pentru recuperare."
 
-#: lib/setup.c:2645
+#: lib/setup.c:2655
 #, c-format
 msgid "Locking range %d reset on device %s failed."
 msgstr "Reinițierea intervalului de blocare %d pe dispozitivul %s a eșuat."
 
-#: lib/setup.c:2664
+#: lib/setup.c:2675
 msgid "Can't format LOOPAES without device."
 msgstr "Nu se poate formata LOOPAES fără dispozitiv."
 
-#: lib/setup.c:2709
+#: lib/setup.c:2720
 msgid "Can't format VERITY without device."
 msgstr "Nu se poate formata VERITY fără dispozitiv."
 
-#: lib/setup.c:2720 lib/verity/verity.c:101
+#: lib/setup.c:2731 lib/verity/verity.c:101
 #, c-format
 msgid "Unsupported VERITY hash type %d."
 msgstr "Tip de sumă de control VERITY neacceptat %d."
 
-#: lib/setup.c:2726 lib/verity/verity.c:109
+#: lib/setup.c:2737 lib/verity/verity.c:109
 msgid "Unsupported VERITY block size."
 msgstr "Dimensiunea blocului VERITY nu este acceptată."
 
-#: lib/setup.c:2731 lib/verity/verity.c:74
+#: lib/setup.c:2742 lib/verity/verity.c:74
 msgid "Unsupported VERITY hash offset."
 msgstr "Decalajul sumei de control VERITY nu este acceptat."
 
-#: lib/setup.c:2736
+#: lib/setup.c:2747
 msgid "Unsupported VERITY FEC offset."
 msgstr "Decalajul FEC VERITY nu este acceptat."
 
-#: lib/setup.c:2760
+#: lib/setup.c:2771
 msgid "Data area overlaps with hash area."
 msgstr "Zona de date se suprapune cu zona de sume de control."
 
-#: lib/setup.c:2785
+#: lib/setup.c:2796
 msgid "Hash area overlaps with FEC area."
 msgstr "Zona sumelor de control se suprapune cu zona FEC."
 
-#: lib/setup.c:2792
+#: lib/setup.c:2803
 msgid "Data area overlaps with FEC area."
 msgstr "Zona de date se suprapune cu zona FEC."
 
-#: lib/setup.c:2928
+#: lib/setup.c:2939
 #, c-format
 msgid "WARNING: Requested tag size %d bytes differs from %s size output (%d bytes).\n"
 msgstr "AVERTISMENT: Dimensiunea solicitată a etichetei %d octeți diferă de dimensiunea %s de ieșire (%d octeți).\n"
 
-#: lib/setup.c:3007
+#: lib/setup.c:3018
 #, c-format
 msgid "Unknown crypt device type %s requested."
 msgstr "A fost solicitat un tip de dispozitiv de criptare necunoscut %s."
 
-#: lib/setup.c:3314 lib/setup.c:3393 lib/setup.c:3406
+#: lib/setup.c:3325 lib/setup.c:3404 lib/setup.c:3417
 #, c-format
 msgid "Unsupported parameters on device %s."
 msgstr "Parametri neacceptați pentru dispozitivul %s."
 
-#: lib/setup.c:3320 lib/setup.c:3413 lib/luks2/luks2_reencrypt.c:2908
+#: lib/setup.c:3331 lib/setup.c:3424 lib/luks2/luks2_reencrypt.c:2908
 #: lib/luks2/luks2_reencrypt.c:3145 lib/luks2/luks2_reencrypt.c:3540
 #, c-format
 msgid "Mismatching parameters on device %s."
 msgstr "Parametrii nepotriviți în dispozitivul %s."
 
-#: lib/setup.c:3437
+#: lib/setup.c:3448
 msgid "Crypt devices mismatch."
 msgstr "Dispozitivele de criptare nu se potrivesc."
 
-#: lib/setup.c:3474 lib/setup.c:3479 lib/luks2/luks2_reencrypt.c:2390
+#: lib/setup.c:3485 lib/setup.c:3490 lib/luks2/luks2_reencrypt.c:2390
 #: lib/luks2/luks2_reencrypt.c:2924 lib/luks2/luks2_reencrypt.c:4109
 #, c-format
 msgid "Failed to reload device %s."
 msgstr "Nu s-a putut reîncărca dispozitivul %s."
 
-#: lib/setup.c:3485 lib/setup.c:3491 lib/luks2/luks2_reencrypt.c:2361
+#: lib/setup.c:3496 lib/setup.c:3502 lib/luks2/luks2_reencrypt.c:2361
 #: lib/luks2/luks2_reencrypt.c:2368 lib/luks2/luks2_reencrypt.c:2938
 #, c-format
 msgid "Failed to suspend device %s."
 msgstr "Nu s-a putut suspenda dispozitivul %s."
 
-#: lib/setup.c:3497 lib/luks2/luks2_reencrypt.c:2375
+#: lib/setup.c:3508 lib/luks2/luks2_reencrypt.c:2375
 #: lib/luks2/luks2_reencrypt.c:2959 lib/luks2/luks2_reencrypt.c:4022
 #: lib/luks2/luks2_reencrypt.c:4113
 #, c-format
 msgid "Failed to resume device %s."
 msgstr "Nu s-a putut reîncărca dispozitivul %s."
 
-#: lib/setup.c:3512
+#: lib/setup.c:3523
 #, c-format
 msgid "Fatal error while reloading device %s (on top of device %s)."
 msgstr "Eroare fatală la reîncărcarea dispozitivului %s (în partea superioară a dispozitivului %s)."
 
-#: lib/setup.c:3515 lib/setup.c:3517
+#: lib/setup.c:3526 lib/setup.c:3528
 #, c-format
 msgid "Failed to switch device %s to dm-error."
 msgstr "Nu s-a putut comuta dispozitivul %s la dm-error."
 
-#: lib/setup.c:3557
+#: lib/setup.c:3568
 msgid "Can not resize LUKS2 device with static size."
 msgstr "Nu se poate redimensiona dispozitivul LUKS2 cu o dimensiune statică."
 
-#: lib/setup.c:3602
+#: lib/setup.c:3613
 msgid "Cannot resize loop device."
 msgstr "Nu se poate redimensiona dispozitivul de buclă."
 
-#: lib/setup.c:3646
+#: lib/setup.c:3657
 msgid "WARNING: Maximum size already set or kernel doesn't support resize.\n"
 msgstr "AVERTISMENT: Dimensiunea maximă a fost deja stabilită sau nucleul nu acceptă redimensionarea.\n"
 
-#: lib/setup.c:3712
+#: lib/setup.c:3723
 msgid "Resize failed, the kernel doesn't support it."
 msgstr "Redimensionarea nu a reușit, nucleul nu acceptă redimensionarea."
 
-#: lib/setup.c:3744
+#: lib/setup.c:3755
 msgid "Do you really want to change UUID of device?"
 msgstr "Chiar doriți să schimbați UUID-ul dispozitivului?"
 
-#: lib/setup.c:3836
+#: lib/setup.c:3847
 msgid "Header backup file does not contain compatible LUKS header."
 msgstr "Fișierul de copie de rezervă pentru antet nu conține un antet LUKS compatibil."
 
-#: lib/setup.c:3944
+#: lib/setup.c:3956
 #, c-format
 msgid "Volume %s is not active."
 msgstr "Volumul %s nu este activ."
 
-#: lib/setup.c:4010
+#: lib/setup.c:4022
 #, c-format
 msgid "Volume %s is already suspended."
 msgstr "Volumul %s este deja suspendat."
 
-#: lib/setup.c:4038
+#: lib/setup.c:4050
 #, c-format
 msgid "Suspend is not supported for device %s."
 msgstr "Suspendarea nu este acceptată pentru dispozitivul %s."
 
-#: lib/setup.c:4040 lib/setup.c:4048
+#: lib/setup.c:4052 lib/setup.c:4060
 #, c-format
 msgid "Error during suspending device %s."
 msgstr "Eroare la suspendarea dispozitivului %s."
 
-#: lib/setup.c:4054
+#: lib/setup.c:4074
 #, c-format
 msgid "Device %s was suspended but hardware OPAL device cannot be locked."
 msgstr "Dispozitivul %s a fost suspendat, dar dispozitivul hardware OPAL nu poate fi blocat."
 
-#: lib/setup.c:4085 lib/setup.c:4222
+#: lib/setup.c:4106 lib/setup.c:4250
 #, c-format
 msgid "Resume is not supported for device %s."
 msgstr "Reluarea activității nu este acceptată pentru dispozitivul %s."
 
-#: lib/setup.c:4087 lib/setup.c:4213 lib/setup.c:4224
+#: lib/setup.c:4108 lib/setup.c:4241 lib/setup.c:4252
 #, c-format
 msgid "Error during resuming device %s."
 msgstr "Eroare la reluarea activității dispozitivului %s."
 
-#: lib/setup.c:4110
+#: lib/setup.c:4131
 msgid "Failed to link key to the specified keyring."
 msgstr "Nu s-a putut lega cheia la inelul de chei specificat."
 
-#: lib/setup.c:4129
+#: lib/setup.c:4150
 msgid "Failed to unlink volume key from user specified keyring."
 msgstr "Nu s-a putut dezlega cheia de volum de la inelul de chei specificat de utilizator."
 
-#: lib/setup.c:4191 lib/setup.c:4905 lib/setup.c:5515
+#: lib/setup.c:4213 lib/setup.c:4934 lib/setup.c:5549
 msgid "Failed to link volume key in user defined keyring."
 msgstr "Nu s-a putut leg cheia de volum la inelul de chei specificat de utilizator."
 
-#: lib/setup.c:4284 src/cryptsetup.c:2755
+#: lib/setup.c:4313 src/cryptsetup.c:2755
 #, c-format
 msgid "Volume %s is not suspended."
 msgstr "Volumul %s nu este suspendat."
 
-#: lib/setup.c:4385 lib/setup.c:5281 lib/setup.c:5288 lib/setup.c:7142
-#: lib/setup.c:7164 lib/setup.c:7213 src/cryptsetup.c:2265
+#: lib/setup.c:4414 lib/setup.c:5310 lib/setup.c:5317 lib/setup.c:7176
+#: lib/setup.c:7198 lib/setup.c:7247 src/cryptsetup.c:2265
 msgid "Volume key does not match the volume."
 msgstr "Cheia de volum nu se potrivește cu volumul."
 
-#: lib/setup.c:4539
+#: lib/setup.c:4568
 msgid "Failed to swap new key slot."
 msgstr "Nu s-a putut efectua interschimbarea cu noul slot pentru cheie."
 
-#: lib/setup.c:4637
+#: lib/setup.c:4666
 #, c-format
 msgid "Key slot %d is invalid."
 msgstr "Slotul de cheie %d nu este valid."
 
-#: lib/setup.c:4643 src/cryptsetup.c:1975 src/cryptsetup.c:2467
+#: lib/setup.c:4672 src/cryptsetup.c:1975 src/cryptsetup.c:2467
 #: src/cryptsetup.c:3149 src/cryptsetup.c:3209
 #, c-format
 msgid "Keyslot %d is not active."
 msgstr "Slotul de cheie %d nu este activ."
 
-#: lib/setup.c:4662
+#: lib/setup.c:4691
 msgid "Device header overlaps with data area."
 msgstr "Antetul dispozitivului se suprapune cu zona de date."
 
-#: lib/setup.c:5012
+#: lib/setup.c:5041
 msgid "Reencryption in-progress. Cannot activate device."
 msgstr "Recriptare în curs. Nu se poate activa dispozitivul."
 
-#: lib/setup.c:5014 lib/luks2/luks2_json_metadata.c:2847
+#: lib/setup.c:5043 lib/luks2/luks2_json_metadata.c:2861
 #: lib/luks2/luks2_reencrypt.c:3646
 msgid "Failed to get reencryption lock."
 msgstr "Nu s-a putut obține blocarea pentru recriptare."
 
-#: lib/setup.c:5027 lib/luks2/luks2_reencrypt.c:3665
+#: lib/setup.c:5056 lib/luks2/luks2_reencrypt.c:3665
 msgid "LUKS2 reencryption recovery failed."
 msgstr "Recuperarea recriptării LUKS2 a eșuat."
 
-#: lib/setup.c:5199 lib/setup.c:5299 lib/setup.c:5357
+#: lib/setup.c:5228 lib/setup.c:5328 lib/setup.c:5386
 msgid "Device type is not properly initialized."
 msgstr "Tipul de dispozitiv nu este inițializat corect."
 
-#: lib/setup.c:5254
+#: lib/setup.c:5283
 #, c-format
 msgid "Device %s already exists."
 msgstr "Dispozitivul %s există deja."
 
-#: lib/setup.c:5261
+#: lib/setup.c:5290
 #, c-format
 msgid "Cannot use device %s, name is invalid or still in use."
 msgstr "Nu se poate folosi dispozitivul %s, numele este nevalid sau este încă în uz."
 
-#: lib/setup.c:5277
+#: lib/setup.c:5306
 msgid "Incorrect volume key specified for plain device."
 msgstr "Este specificată o cheie de volum incorectă pentru un dispozitiv cu criptare normală."
 
-#: lib/setup.c:5390
+#: lib/setup.c:5424
 msgid "Kernel keyring is not supported by the kernel."
 msgstr "Inelul de chei pentru nucleu nu este acceptat de nucleu actual."
 
-#: lib/setup.c:5394
+#: lib/setup.c:5428
 msgid "Kernel keyring missing: required for passing signature to kernel."
 msgstr "Lipsește inelul de chei pentru nucleu: este necesar pentru transmiterea semnăturii către nucleu."
 
-#: lib/setup.c:5634
+#: lib/setup.c:5668
 msgid "Incorrect root hash specified for verity device."
 msgstr "Sumă de control rădăcină incorectă specificată pentru dispozitivul verity."
 
-#: lib/setup.c:5677
+#: lib/setup.c:5711
 msgid "OPAL does not support deferred deactivation."
 msgstr "OPAL nu acceptă dezactivarea amânată."
 
-#: lib/setup.c:5693
+#: lib/setup.c:5727
 #, c-format
 msgid "Could not cancel deferred remove from device %s."
 msgstr "Nu s-a putut anula eliminarea întârziată din dispozitivul %s."
 
-#: lib/setup.c:5700 lib/setup.c:5716 lib/luks2/luks2_json_metadata.c:2901
+#: lib/setup.c:5734 lib/setup.c:5750 lib/luks2/luks2_json_metadata.c:2915
 #: src/utils_reencrypt.c:116
 #, c-format
 msgid "Device %s is still in use."
 msgstr "Dispozitivul %s este încă în uz."
 
-#: lib/setup.c:5725
+#: lib/setup.c:5759
 #, c-format
 msgid "Invalid device %s."
 msgstr "Dispozitiv nevalid %s."
 
-#: lib/setup.c:5865
+#: lib/setup.c:5899
 msgid "Volume key buffer too small."
 msgstr "Memoria tampon a cheii de volum este prea mică."
 
-#: lib/setup.c:5882
+#: lib/setup.c:5916
 msgid "Cannot retrieve volume key for LUKS2 device."
 msgstr "Nu se poate recupera cheia de volum pentru dispozitivul LUKS2."
 
-#: lib/setup.c:5891
+#: lib/setup.c:5925
 msgid "Cannot retrieve volume key for LUKS1 device."
 msgstr "Nu se poate recupera cheia de volum pentru dispozitivul LUKS1."
 
-#: lib/setup.c:5901
+#: lib/setup.c:5935
 msgid "Cannot retrieve volume key for plain device."
 msgstr "Nu se poate recupera tasta de volum pentru dispozitivul normal."
 
-#: lib/setup.c:5909
+#: lib/setup.c:5943
 msgid "Cannot retrieve root hash for verity device."
 msgstr "Nu se poate recupera suma de control rădăcină pentru dispozitivul verity."
 
-#: lib/setup.c:5916
+#: lib/setup.c:5950
 msgid "Cannot retrieve volume key for BITLK device."
 msgstr "Nu se poate recupera cheia de volum pentru dispozitivul BITLK."
 
-#: lib/setup.c:5921
+#: lib/setup.c:5955
 msgid "Cannot retrieve volume key for FVAULT2 device."
 msgstr "Nu se poate recupera cheia de volum pentru dispozitivul FVAULT2."
 
-#: lib/setup.c:5923
+#: lib/setup.c:5957
 #, c-format
 msgid "This operation is not supported for %s crypt device."
 msgstr "Această operație nu este acceptată pentru dispozitivul criptat %s."
 
-#: lib/setup.c:6107 lib/setup.c:6118
+#: lib/setup.c:6141 lib/setup.c:6152
 msgid "Dump operation is not supported for this device type."
 msgstr "Operația de descărcare nu este acceptată pentru acest tip de dispozitiv."
 
-#: lib/setup.c:6477
+#: lib/setup.c:6511
 #, c-format
 msgid "Data offset is not multiple of %u bytes."
 msgstr "Decalajul datelor nu este multiplu de %u octeți."
 
-#: lib/setup.c:6785
+#: lib/setup.c:6819
 #, c-format
 msgid "Cannot convert device %s which is still in use."
 msgstr "Nu se poate converti dispozitivul %s care este încă în uz."
 
-#: lib/setup.c:7083 lib/setup.c:7222
+#: lib/setup.c:7117 lib/setup.c:7256
 #, c-format
 msgid "Failed to assign keyslot %u as the new volume key."
 msgstr "Nu s-a putut atribui slotul %u ca nouă cheie de volum."
 
-#: lib/setup.c:7107
+#: lib/setup.c:7141
 msgid "Failed to initialize default LUKS2 keyslot parameters."
 msgstr "Nu s-au putut inițializa parametrii impliciți pentru slotul de cheie LUKS2."
 
-#: lib/setup.c:7113
+#: lib/setup.c:7147
 #, c-format
 msgid "Failed to assign keyslot %d to digest."
 msgstr "Nu s-a putut aloca slotul de cheie %d pentru a digera."
 
-#: lib/setup.c:7338
+#: lib/setup.c:7372
 msgid "Cannot add key slot, all slots disabled and no volume key provided."
 msgstr "Nu se poate adăuga slotul pentru cheie, toate sloturile sunt dezactivate și nu este furnizată nicio cheie pentru volum."
 
-#: lib/setup.c:7407 lib/verity/verity.c:343
+#: lib/setup.c:7441 lib/verity/verity.c:343
 msgid "Failed to load key in kernel keyring."
 msgstr "Nu s-a putut încărca cheia în inelul de chei al nucleului."
 
-#: lib/setup.c:7525
+#: lib/setup.c:7559
 msgid "Failed to unlink volume key from thread keyring."
 msgstr "Nu s-a putut dezlega cheia de la inelul de chei al firului."
 
-#: lib/setup.c:7549
+#: lib/setup.c:7586
 #, c-format
 msgid "Could not find keyring described by \"%s\"."
 msgstr "Nu s-a putut găsi inelul de chei descris de „%s”."
 
-#: lib/setup.c:7608
+#: lib/setup.c:7645
 msgid "Failed to acquire global memory-hard access serialization lock."
 msgstr "Nu s-a putut obține blocarea de serializare a accesului la memoria-hardwarw globală."
 
@@ -878,11 +885,11 @@ msgstr "Nu se poate căuta la poziția dispozitivului."
 msgid "Device wipe error, offset %<PRIu64>."
 msgstr "Eroare de ștergere a dispozitivului, decalaj %<PRIu64>."
 
-#: lib/utils_wipe.c:343
+#: lib/utils_wipe.c:344
 msgid "Incorrect OPAL PSID."
 msgstr "PSID OPAL incorect."
 
-#: lib/utils_wipe.c:345
+#: lib/utils_wipe.c:346
 msgid "Cannot erase OPAL device."
 msgstr "Nu se poate șterge dispozitivul OPAL."
 
@@ -1594,61 +1601,66 @@ msgstr "Nu s-a putut definii segmentul dm-crypt."
 msgid "Failed to set dm-linear segment."
 msgstr "Nu s-a putut definii segmentul dm-linear."
 
-#: lib/luks2/luks2_json_metadata.c:2661 src/utils_reencrypt.c:433
+#: lib/luks2/luks2_json_metadata.c:2662 src/utils_reencrypt.c:433
 msgid "No known cipher specification pattern detected in LUKS2 header."
 msgstr "Nu s-a detectat niciun model de specificație de cifrare cunoscut în antetul LUKS2."
 
-#: lib/luks2/luks2_json_metadata.c:2669
+#: lib/luks2/luks2_json_metadata.c:2670
 msgid "OPAL device must have static device size."
 msgstr "Dispozitivul OPAL trebuie să aibă dimensiunea dispozitivului statică."
 
-#: lib/luks2/luks2_json_metadata.c:2689
+#: lib/luks2/luks2_json_metadata.c:2690
 msgid "Encrypted OPAL device with integrity must be smaller than locking range."
 msgstr "Dispozitivul OPAL criptat cu integritate trebuie să fie mai mic decât intervalul de blocare."
 
-#: lib/luks2/luks2_json_metadata.c:2694
+#: lib/luks2/luks2_json_metadata.c:2695
 msgid "OPAL device must have same size as locking range."
 msgstr "Dispozitivul OPAL trebuie să aibă aceeași dimensiune ca și intervalul de blocare."
 
-#: lib/luks2/luks2_json_metadata.c:2736
+#: lib/luks2/luks2_json_metadata.c:2715
+#, c-format
+msgid "OPAL device is %s already unlocked.\n"
+msgstr "Dispozitivul OPAL %s este deja deblocat.\n"
+
+#: lib/luks2/luks2_json_metadata.c:2748
 msgid "Unsupported device integrity configuration."
 msgstr "Configurație de integritate a dispozitivului neacceptată."
 
-#: lib/luks2/luks2_json_metadata.c:2752
+#: lib/luks2/luks2_json_metadata.c:2764
 msgid "Underlying dm-integrity device with unexpected provided data sectors."
 msgstr "Dispozitiv dm-integrity subiacent cu sectoare de date neașteptate furnizate."
 
-#: lib/luks2/luks2_json_metadata.c:2845
+#: lib/luks2/luks2_json_metadata.c:2859
 msgid "Reencryption in-progress. Cannot deactivate device."
 msgstr "Recriptare în curs. Nu se poate dezactiva dispozitivul."
 
-#: lib/luks2/luks2_json_metadata.c:2856 lib/luks2/luks2_reencrypt.c:4159
+#: lib/luks2/luks2_json_metadata.c:2870 lib/luks2/luks2_reencrypt.c:4159
 #, c-format
 msgid "Failed to replace suspended device %s with dm-error target."
 msgstr "Nu s-a putut înlocui dispozitivul suspendat %s cu ținta dm-error."
 
-#: lib/luks2/luks2_json_metadata.c:2925 lib/luks2/luks2_json_metadata.c:2939
+#: lib/luks2/luks2_json_metadata.c:2939 lib/luks2/luks2_json_metadata.c:2961
 #, c-format
 msgid "Device %s was deactivated but hardware OPAL device cannot be locked."
 msgstr "Dispozitivul %s a fost dezactivat, dar dispozitivul hardware OPAL nu poate fi blocat."
 
-#: lib/luks2/luks2_json_metadata.c:2957
+#: lib/luks2/luks2_json_metadata.c:2980
 msgid "Failed to read LUKS2 requirements."
 msgstr "Nu s-au putut citi cerințele LUKS2."
 
-#: lib/luks2/luks2_json_metadata.c:2964
+#: lib/luks2/luks2_json_metadata.c:2987
 msgid "Unmet LUKS2 requirements detected."
 msgstr "Au fost detectate cerințe LUKS2 neîndeplinite."
 
-#: lib/luks2/luks2_json_metadata.c:2972
+#: lib/luks2/luks2_json_metadata.c:2995
 msgid "Operation incompatible with device marked for legacy reencryption. Aborting."
 msgstr "Operație incompatibilă cu dispozitivul marcat pentru recriptare învechită. Se abandonează."
 
-#: lib/luks2/luks2_json_metadata.c:2974
+#: lib/luks2/luks2_json_metadata.c:2997
 msgid "Operation incompatible with device marked for LUKS2 reencryption. Aborting."
 msgstr "Operație incompatibilă cu dispozitivul marcat pentru recriptare LUKS2. Se abandonează."
 
-#: lib/luks2/luks2_json_metadata.c:2976
+#: lib/luks2/luks2_json_metadata.c:2999
 msgid "Operation incompatible with device using OPAL. Aborting."
 msgstr "Operație incompatibilă cu dispozitivul care utilizează OPAL. Se abandonează."
 
@@ -2008,22 +2020,22 @@ msgstr "Nu s-a putut actualiza contextul de recriptare."
 msgid "Reencryption metadata is invalid."
 msgstr "Metadatele de recriptare sunt nevalide."
 
-#: lib/luks2/hw_opal/hw_opal.c:327
+#: lib/luks2/hw_opal/hw_opal.c:335
 #, c-format
 msgid "OPAL range %d offset %<PRIu64> does not match expected values %<PRIu64>."
 msgstr "Intervalul OPAL %d poziția %<PRIu64> nu se potrivește cu valorile așteptate %<PRIu64>."
 
-#: lib/luks2/hw_opal/hw_opal.c:334
+#: lib/luks2/hw_opal/hw_opal.c:344
 #, c-format
 msgid "OPAL range %d length %<PRIu64> does not match device length %<PRIu64>."
 msgstr "Intervalul OPAL %d lungime %<PRIu64> nu se potrivește cu lungimea dispozitivului %<PRIu64>."
 
-#: lib/luks2/hw_opal/hw_opal.c:340
+#: lib/luks2/hw_opal/hw_opal.c:351
 #, c-format
 msgid "OPAL range %d locking is disabled."
 msgstr "Intervalul OPAL %d de blocare este dezactivat."
 
-#: lib/luks2/hw_opal/hw_opal.c:350 lib/luks2/hw_opal/hw_opal.c:357
+#: lib/luks2/hw_opal/hw_opal.c:361 lib/luks2/hw_opal/hw_opal.c:368
 #, c-format
 msgid "Unexpected OPAL range %d lock state."
 msgstr "Stare de blocare neașteptată a intervalului OPAL %d."
