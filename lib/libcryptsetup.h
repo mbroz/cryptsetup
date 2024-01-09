@@ -1628,8 +1628,8 @@ int crypt_persistent_flags_get(struct crypt_device *cd,
  * reencryption), more than one keyslot context is required (e.g. one for the old
  * volume key and one for the new volume key). The order of the keyslot
  * contexts does not matter. When less keyslot contexts are supplied than
- * required to unlock the device an -EPERM/-ENOKEY/TODO error code is returned
- * and you should call the function again with more keyslot contexts.
+ * required to unlock the device an -ENOKEY error code is returned and you
+ * should call the function again with an additional keyslot context specified.
  *
  * NOTE: the API at the moment works for one keyslot context only, the second
  * keyslot context is just an API placeholder

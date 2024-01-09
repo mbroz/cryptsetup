@@ -4434,6 +4434,38 @@ out:
 
 	return r < 0 ? r : keyslot;
 }
+
+int LUKS2_reencrypt_locked_recovery_by_vks(struct crypt_device *cd,
+	struct volume_key *vks)
+{
+	uint64_t minimal_size, device_size;
+	int r = -EINVAL;
+	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+	struct volume_key *vk = NULL;
+
+	log_dbg(cd, "Entering reencryption crash recovery.");
+
+	if (LUKS2_get_data_size(hdr, &minimal_size, NULL))
+		return r;
+
+	if (crypt_use_keyring_for_vk(cd))
+		vk = vks;
+	while (vk) {
+		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, vk, crypt_volume_key_get_id(vk));
+		if (r < 0)
+			goto out;
+		vk = crypt_volume_key_next(vk);
+	}
+
+	if (LUKS2_reencrypt_check_device_size(cd, hdr, minimal_size, &device_size, true, false))
+		goto out;
+
+	r = reencrypt_recovery(cd, hdr, device_size, vks);
+
+out:
+	crypt_drop_keyring_key(cd, vks);
+	return r;
+}
 #endif
 crypt_reencrypt_info LUKS2_reencrypt_get_params(struct luks2_hdr *hdr,
 	struct crypt_params_reencrypt *params)
