@@ -29,10 +29,12 @@
 
 static char *keyfiles[MAX_KEYFILES];
 static char *keyring_links[MAX_KEYRING_LINKS];
+static char *vks_in_keyring[MAX_VK_IN_KEYRING];
 static char *keyfile_stdin = NULL;
 
 static int keyfiles_count = 0;
 static int keyring_links_count = 0;
+static int vks_in_keyring_count = 0;
 int64_t data_shift = 0;
 
 const char *device_type = "luks";
@@ -61,6 +63,8 @@ void tools_cleanup(void)
 		free(keyfiles[--keyfiles_count]);
 	while (keyring_links_count)
 		free(keyring_links[--keyring_links_count]);
+	while (vks_in_keyring_count)
+		free(vks_in_keyring[--vks_in_keyring_count]);
 
 	total_keyfiles = 0;
 }
@@ -1848,13 +1852,13 @@ static int action_open_luks(void)
 	struct crypt_active_device cad;
 	struct crypt_device *cd = NULL;
 	const char *data_device, *header_device, *activated_name;
-	char *key = NULL, *vk_description_activation = NULL;
+	char *key = NULL, *vk_description_activation1 = NULL, *vk_description_activation2 = NULL;
 	uint32_t activate_flags = 0;
 	int r, keysize, tries;
 	char *password = NULL;
 	size_t passwordLen;
 	struct stat st;
-	struct crypt_keyslot_context *kc = NULL;
+	struct crypt_keyslot_context *kc1 = NULL, *kc2 = NULL;
 
 	if (ARG_SET(OPT_REFRESH_ID)) {
 		activated_name = action_argc > 1 ? action_argv[1] : action_argv[0];
@@ -1923,13 +1927,29 @@ static int action_open_luks(void)
 		r = crypt_activate_by_volume_key(cd, activated_name,
 						 key, keysize, activate_flags);
 	} else if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
-		r = parse_vk_description(ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &vk_description_activation);
-		if (r < 0)
-			goto out;
-		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description_activation, &kc);
-		if (r)
-			goto out;
-		r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, activate_flags);
+		if (vks_in_keyring_count == 1) {
+			r = parse_vk_description(vks_in_keyring[0], &vk_description_activation1);
+			if (r < 0)
+				goto out;
+			r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description_activation1, &kc1);
+			if (r)
+				goto out;
+			r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT, kc1, CRYPT_ANY_SLOT, NULL, activate_flags);
+		} else if (vks_in_keyring_count == 2) {
+			r = parse_vk_description(vks_in_keyring[0], &vk_description_activation1);
+			if (r < 0)
+				goto out;
+			r = parse_vk_description(vks_in_keyring[1], &vk_description_activation2);
+			if (r < 0)
+				goto out;
+			r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description_activation1, &kc1);
+			if (r)
+				goto out;
+			r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description_activation2, &kc2);
+			if (r)
+				goto out;
+			r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT, kc1, CRYPT_ANY_SLOT, kc2, activate_flags);
+		}
 		if (r)
 			goto out;
 	} else {
@@ -1964,11 +1984,13 @@ out:
 	     crypt_persistent_flags_set(cd, CRYPT_FLAGS_ACTIVATION, cad.flags & activate_flags)))
 		log_err(_("Device activated but cannot make flags persistent."));
 
-	crypt_keyslot_context_free(kc);
+	crypt_keyslot_context_free(kc1);
+	crypt_keyslot_context_free(kc2);
 	crypt_safe_free(key);
 	crypt_safe_free(password);
 	crypt_free(cd);
-	free(vk_description_activation);
+	free(vk_description_activation1);
+	free(vk_description_activation2);
 
 	return r;
 }
@@ -3784,6 +3806,17 @@ static void basic_options_cb(poptContext popt_context,
 			usage(popt_context, EXIT_FAILURE,
 			      _("Key size must be a multiple of 8 bits"),
 			      poptGetInvocationName(popt_context));
+		break;
+	case OPT_VOLUME_KEY_KEYRING_ID:
+		if (vks_in_keyring_count < MAX_VK_IN_KEYRING)
+			vks_in_keyring[vks_in_keyring_count++] = strdup(ARG_STR(OPT_VOLUME_KEY_KEYRING_ID));
+		else {
+			if (snprintf(buf, sizeof(buf), _("At most %d volume key specifications can be supplied."), MAX_KEYRING_LINKS) < 0)
+				buf[0] = '\0';
+			usage(popt_context, EXIT_FAILURE,
+			      buf,
+			      poptGetInvocationName(popt_context));
+		}
 		break;
 	case OPT_LINK_VK_TO_KEYRING_ID:
 		if (keyring_links_count < MAX_KEYRING_LINKS)
