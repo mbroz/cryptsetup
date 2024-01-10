@@ -94,7 +94,7 @@ typedef int32_t key_serial_t;
 #define TEST_KEY_VK_LOGON "cs_api_test_prefix:api_test_logon_vk1"
 #define TEST_KEY_VK_LOGON_NAME "\%logon:" TEST_KEY_VK_LOGON
 #define TEST_KEY_VK_USER2 "api_test_user_vk2"
-#define TEST_KEY_VK_USER2_NAME "\%user:" TEST_KEY_VK_USER
+#define TEST_KEY_VK_USER2_NAME "\%user:" TEST_KEY_VK_USER2
 #define TEST_KEY_VK_LOGON2 "cs_api_test_prefix:api_test_logon_vk2"
 #define TEST_KEY_VK_LOGON2_NAME "\%logon:" TEST_KEY_VK_LOGON
 
@@ -5267,7 +5267,7 @@ static void KeyslotContextAndKeyringLink(void)
 #ifdef KERNEL_KEYRING
 	const char *cipher = "aes";
 	const char *cipher_mode = "xts-plain64";
-	struct crypt_keyslot_context *kc;
+	struct crypt_keyslot_context *kc, *kc2;
 	uint64_t r_payload_offset;
 	char key[128];
 	size_t key_size = 128;
@@ -5325,6 +5325,7 @@ static void KeyslotContextAndKeyringLink(void)
 	NOTFAIL_(keyring_in_session_id, "Test or kernel keyring are broken.");
 
 	// test passphrase
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, NULL, CRYPT_ANY_SLOT, NULL, 0), -EINVAL);
 	OK_(crypt_keyslot_context_init_by_passphrase(cd, PASSPHRASE, strlen(PASSPHRASE), &kc));
 	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0), 0);
 	crypt_keyslot_context_free(kc);
@@ -5577,8 +5578,153 @@ static void KeyslotContextAndKeyringLink(void)
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0), 0);
 	NOTFAIL_((linked_kid = request_key("user", TEST_KEY_VK_USER, NULL, 0)), "VK was not linked to custom keyring.");
 	FAIL_((linked_kid2 = request_key("user", TEST_KEY_VK_USER2, NULL, 0)), "VK was not linked to custom keyring.");
-
+	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
+
+	// Reenncryption: test reactivation using linked keys
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 1, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)), 1);
+	EQ_(crypt_keyslot_add_by_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 0);
+	rparams.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY;
+
+	EQ_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 1, 0, "aes", "xts-plain64", &rparams), 2);
+	EQ_(crypt_set_keyring_to_link(cd, TEST_KEY_VK_USER, TEST_KEY_VK_USER2, "user", keyring_in_user_str_id), 0);
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0), 0);
+	NOTFAIL_((linked_kid = request_key("user", TEST_KEY_VK_USER, NULL, 0)), "VK was not linked to custom keyring.");
+	NOTFAIL_((linked_kid2 = request_key("user", TEST_KEY_VK_USER2, NULL, 0)), "VK was not linked to custom keyring.");
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	OK_(crypt_keyslot_context_init_by_vk_in_keyring(cd, TEST_KEY_VK_USER_NAME , &kc));
+	OK_(crypt_keyslot_context_init_by_vk_in_keyring(cd, TEST_KEY_VK_USER2_NAME, &kc2));
+
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0), -ENOKEY);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc2, CRYPT_ANY_SLOT, NULL, 0), -ENOKEY);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, NULL, CRYPT_ANY_SLOT, kc, 0), -EINVAL);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, NULL, CRYPT_ANY_SLOT, kc2, 0), -EINVAL);
+
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), 0);
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), 0);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	OK_(_drop_keyring_key_from_keyring_name(TEST_KEY_VK_USER, keyring_in_user_id, "user"));
+	OK_(_drop_keyring_key_from_keyring_name(TEST_KEY_VK_USER2, keyring_in_user_id, "user"));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), -EINVAL);
+
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0), 0);
+	NOTFAIL_((linked_kid = request_key("user", TEST_KEY_VK_USER, NULL, 0)), "VK was not linked to custom keyring.");
+	NOTFAIL_((linked_kid2 = request_key("user", TEST_KEY_VK_USER2, NULL, 0)), "VK was not linked to custom keyring.");
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), 0);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	GE_((vk_len = keyctl_read(linked_kid, vk_buf, sizeof(vk_buf))), 0);
+	vk_buf[0] = ~vk_buf[0];
+	OK_(keyctl_update(linked_kid, vk_buf, vk_len));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), -EINVAL);
+
+	OK_(_drop_keyring_key_from_keyring_name(TEST_KEY_VK_USER, keyring_in_user_id, "user"));
+	OK_(_drop_keyring_key_from_keyring_name(TEST_KEY_VK_USER2, keyring_in_user_id, "user"));
+	CRYPT_FREE(cd);
+
+	// Decryption: test reactivation using linked keys
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 1, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)), 1);
+	rparams.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY;
+	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
+	EQ_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 1, CRYPT_ANY_SLOT, NULL, NULL, &rparams), 0);
+	EQ_(crypt_set_keyring_to_link(cd, TEST_KEY_VK_USER, TEST_KEY_VK_USER2, "user", keyring_in_user_str_id), 0);
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0), 1);
+	NOTFAIL_((linked_kid = request_key("user", TEST_KEY_VK_USER, NULL, 0)), "VK was not linked to custom keyring.");
+	FAIL_((linked_kid2 = request_key("user", TEST_KEY_VK_USER2, NULL, 0)), "second VK was linked to custom keyring.");
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0));
+	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc, 0));
+	// lazy evaluation, if the first context supplies key and only one key is required, the second (invalid) context is not invoked
+	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0));
+	// first context takes precedence, if t fails, the second is not tried
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc2, CRYPT_ANY_SLOT, kc, 0), -EINVAL);
+
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), 0);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	OK_(_drop_keyring_key_from_keyring_name(TEST_KEY_VK_USER, keyring_in_user_id, "user"));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), -EINVAL);
+
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0), 1);
+	NOTFAIL_((linked_kid = request_key("user", TEST_KEY_VK_USER, NULL, 0)), "VK was not linked to custom keyring.");
+	FAIL_((linked_kid2 = request_key("user", TEST_KEY_VK_USER2, NULL, 0)), "VK was not linked to custom keyring.");
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), 0);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	GE_((vk_len = keyctl_read(linked_kid, vk_buf, sizeof(vk_buf))), 0);
+	vk_buf[0] = ~vk_buf[0];
+	OK_(keyctl_update(linked_kid, vk_buf, vk_len));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), -EINVAL);
+
+	OK_(_drop_keyring_key_from_keyring_name(TEST_KEY_VK_USER, keyring_in_user_id, "user"));
+	CRYPT_FREE(cd);
+
+	// Encryption: test reactivation using linked keys
+	_cleanup_dmdevices();
+	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
+	OK_(create_dmdevice_over_loop(L_DEVICE_OK, 12*1024*2));
+
+	OK_(crypt_init(&cd, DMDIR H_DEVICE));
+
+	memset(&rparams, 0, sizeof(rparams));
+	params2.sector_size = 512;
+	params2.data_device = DMDIR L_DEVICE_OK;
+	rparams.mode = CRYPT_REENCRYPT_ENCRYPT;
+	rparams.luks2 = &params2;
+	rparams.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY;
+	rparams.resilience = "checksum";
+	rparams.hash = "sha256";
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, &params2));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 1, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)), 1);
+	EQ_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ANY_SLOT, 1, "aes", "xts-plain64", &rparams), 0);
+
+	EQ_(crypt_set_keyring_to_link(cd, TEST_KEY_VK_USER, TEST_KEY_VK_USER2, "user", keyring_in_user_str_id), 0);
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0), 1);
+	NOTFAIL_((linked_kid = request_key("user", TEST_KEY_VK_USER, NULL, 0)), "VK was not linked to custom keyring.");
+	FAIL_((linked_kid2 = request_key("user", TEST_KEY_VK_USER2, NULL, 0)), "second VK was linked to custom keyring.");
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0));
+	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc, 0));
+	// lazy evaluation, if the first context supplies key and only one key is required, the second (invalid) context is not invoked
+	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0));
+	// first context takes precedence, if t fails, the second is not tried
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc2, CRYPT_ANY_SLOT, kc, 0), -EINVAL);
+
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), 0);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	OK_(_drop_keyring_key_from_keyring_name(TEST_KEY_VK_USER, keyring_in_user_id, "user"));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), -EINVAL);
+
+	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0), 1);
+	NOTFAIL_((linked_kid = request_key("user", TEST_KEY_VK_USER, NULL, 0)), "VK was not linked to custom keyring.");
+	FAIL_((linked_kid2 = request_key("user", TEST_KEY_VK_USER2, NULL, 0)), "VK was not linked to custom keyring.");
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), 0);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	GE_((vk_len = keyctl_read(linked_kid, vk_buf, sizeof(vk_buf))), 0);
+	vk_buf[0] = ~vk_buf[0];
+	OK_(keyctl_update(linked_kid, vk_buf, vk_len));
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), -EINVAL);
+
+	OK_(_drop_keyring_key_from_keyring_name(TEST_KEY_VK_USER, keyring_in_user_id, "user"));
+	CRYPT_FREE(cd);
+
+	crypt_keyslot_context_free(kc);
+	crypt_keyslot_context_free(kc2);
+
 	_cleanup_dmdevices();
 #else
 	printf("WARNING: cryptsetup compiled with kernel keyring service disabled, skipping test.\n");
