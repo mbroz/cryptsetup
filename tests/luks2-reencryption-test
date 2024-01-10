@@ -30,6 +30,12 @@ PWD1="93R4P4pIqAH8"
 PWD2="1cND4319812f"
 PWD3="1-9Qu5Ejfnqv"
 DEV_LINK="reenc-test-link"
+KEYRING="@u"
+KEY_TYPE="user"
+KEY_NAME1="luks2-reencryption-test1"
+KEY_NAME2="luks2-reencryption-test2"
+KEY_SPEC1="${KEYRING}::%${KEY_TYPE}:${KEY_NAME1}"
+KEY_SPEC2="${KEYRING}::%${KEY_TYPE}:${KEY_NAME2}"
 
 FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
@@ -353,6 +359,38 @@ function reencrypt_recover_online() { # $1 sector size, $2 resilience, $3 digest
 
 	# recovery during activation
 	echo $PWD1 | $CRYPTSETUP open $DEV $_hdr $DEV_NAME || fail
+	check_hash_dev /dev/mapper/$DEV_NAME $3
+
+	$CRYPTSETUP luksDump ${4:-$DEV} | grep -q "online-reencrypt"
+	if [ $? -eq 0 ]; then
+		$CRYPTSETUP status $DEV_NAME $_hdr | grep -q "reencryption:  in-progress" || fail
+		echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME $_hdr --resilience $2 --resume-only -q || fail
+		check_hash_dev /dev/mapper/$DEV_NAME $3
+	fi
+
+	$CRYPTSETUP close $DEV_NAME || fail
+	echo "[OK]"
+}
+
+function reencrypt_recover_online_vk() { # $1 sector size, $2 resilience, $3 digest, [$4 header]
+	echo -n "resilience mode: $2 ..."
+	local _hdr=""
+	test -z "$4" || _hdr="--header $4"
+
+	echo $PWD1 | $CRYPTSETUP open $DEV $_hdr $DEV_NAME || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME $_hdr --hotzone-size 1M --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON --init-only >/dev/null 2>&1 || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	echo $PWD1 | $CRYPTSETUP open --link-vk-to-keyring $KEY_SPEC1 --link-vk-to-keyring $KEY_SPEC2 $DEV $_hdr $DEV_NAME || fail
+
+	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+	echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME $_hdr --hotzone-size 1M --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON >/dev/null 2>&1 && fail
+	$CRYPTSETUP status $DEV_NAME $_hdr | grep -q "reencryption:  in-progress" || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	fix_writes $OVRDEV $OLD_DEV
+
+	# recovery during activation
+	$CRYPTSETUP open --volume-key-keyring $KEY_NAME1 --volume-key-keyring $KEY_NAME2 $DEV $_hdr $DEV_NAME || fail
 	check_hash_dev /dev/mapper/$DEV_NAME $3
 
 	$CRYPTSETUP luksDump ${4:-$DEV} | grep -q "online-reencrypt"
@@ -1259,6 +1297,40 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover_online 4096 checksum $HASH1
 	reencrypt_recover_online 4096 journal $HASH1
+fi
+
+echo "sector size 512->512 (recovery by VK)"
+
+get_error_offsets 32 $OFFSET
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+wipe $PWD1
+
+echo "ERR writes to sectors (recovery by VK) [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+reencrypt_recover_online_vk 512 checksum $HASH1
+reencrypt_recover_online_vk 512 journal $HASH1
+
+if [ -n "$DM_SECTOR_SIZE" ]; then
+	echo "sector size 512->4096"
+
+	get_error_offsets 32 $OFFSET 4096
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1
+
+        echo "ERR writes to sectors (recovery by VK) [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_online_vk 4096 checksum $HASH1
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1
+	reencrypt_recover_online_vk 4096 journal $HASH1
+
+	echo "sector size 4096->4096"
+
+	get_error_offsets 32 $OFFSET 4096
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 --sector-size 4096 -c aes-cbc-essiv:sha256 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1
+
+        echo "ERR writes to sectors (recovery by VK) [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_online_vk 4096 checksum $HASH1
+	reencrypt_recover_online_vk 4096 journal $HASH1
 fi
 
 echo "[8] Reencryption with detached header recovery"
