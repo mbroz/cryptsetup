@@ -59,3 +59,39 @@ We do not suppress any other negative effect that two or more concurrent
 writers of the same header may cause.
 
 b) The locking is not cluster aware in any way.
+
+Additional LUKS2 locks
+======================
+
+LUKS2 reencryption device lock
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Device in LUKS2 reencryption is protected by an exclusive lock placed in the default
+locking directory. The lock's purpose is to exclude multiple processes from
+performing reencryption on the same device (identified by LUKS uuid). The lock
+is taken no matter the LUKS2 reencryption mode (online or offline).
+
+LUKS2 memory hard global lock
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An optional global lock that makes libcryptsetup serialize memory hard
+pbkdf function when deriving a key encryption key from passphrase on unlocking
+LUKS2 keyslot. The lock has to be enabled via the CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF
+flag. The lock is placed in the default locking directory.
+
+LUKS2 OPAL lock
+~~~~~~~~~~~~~~~
+
+Exclusive per device lock taken when manipulating LUKS2 device configured for use with
+SED OPAL2 locking range.
+
+Lock ordering
+=============
+
+To avoid a deadlock following rules must apply:
+
+- LUKS2 reencrytpion lock must be taken before LUKS2 OPAL lock.
+
+- LUKS2 OPAL lock must be taken before LUKS2 metadata lock.
+
+- LUKS2 memory hard global lock can not be used with other locks.
