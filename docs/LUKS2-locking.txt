@@ -5,7 +5,7 @@ Why
 ~~~
 
 LUKS2 format keeps two identical copies of metadata stored consecutively
-at the head of metadata device (file or bdev). The metadata
+at the head of the metadata device (file or bdev). The metadata
 area (both copies) must be updated in a single atomic operation to avoid
 header corruption during concurrent write.
 
@@ -15,17 +15,17 @@ locking with legacy format was not so obvious as it is with the LUKSv2 format.
 
 With LUKS2 the boundary between read-only and read-write is blurry and what
 used to be the exclusively read-only operation (i.e., cryptsetup open command) may
-easily become read-update operation silently without user's knowledge.
-Major feature of LUKS2 format is resilience against accidental
+easily become read-update operation silently without the user's knowledge.
+A major feature of the LUKS2 format is resilience against accidental
 corruption of metadata (i.e., partial header overwrite by parted or cfdisk
-while creating partition on mistaken block device).
-Such header corruption is detected early on header read and auto-recovery
+while creating a partition on a mistaken block device).
+Such header corruption is detected early on the header read and the auto-recovery
 procedure takes place (the corrupted header with checksum mismatch is being
 replaced by the secondary one if that one is intact).
-On current Linux systems header load operation may be triggered without user
-direct intervention for example by udev rule or from systemd service.
-Such clash of header read and auto-recovery procedure could have severe
-consequences with the worst case of having LUKS2 device unaccessible or being
+On current Linux systems header load operation may be triggered without the user
+direct intervention for example by an udev rule or from a systemd service.
+Such a clash of header read and auto-recovery procedure could have severe
+consequences with the worst case of having a LUKS2 device inaccessible or being
 broken beyond repair.
 
 The whole locking of LUKSv2 device headers split into two categories depending
@@ -36,17 +36,17 @@ I) block device
 
 We perform flock() on file descriptors of files stored in a private
 directory (by default /run/lock/cryptsetup). The file name is derived
-from major:minor couple of affected block device. Note we recommend
-that access to private locking directory is supposed to be limited
-to superuser only. For this method to work the distribution needs
+from major:minor couple of the affected block device. Note we recommend
+that access to the private locking directory is supposed to be limited
+to the superuser only. For this method to work the distribution needs
 to install the locking directory with appropriate access rights.
 
 II) regular files
 ~~~~~~~~~~~~~~~~~
 
-First notable difference between headers stored in a file
+A first notable difference between headers stored in a file
 vs. headers stored in a block device is that headers in a file may be
-manipulated by the regular user unlike headers on block devices. Therefore
+manipulated by the regular user, unlike headers on block devices. Therefore
 we perform flock() protection on file with the luks2 header directly.
 
 Limitations
@@ -58,7 +58,7 @@ while locking is enabled.
 We do not suppress any other negative effect that two or more concurrent
 writers of the same header may cause.
 
-b) The locking is not cluster aware in any way.
+b) The locking is not cluster-aware in any way.
 
 Additional LUKS2 locks
 ======================
