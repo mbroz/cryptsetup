@@ -24,6 +24,29 @@ used cryptsetup to for device activation.
 Using this feature dm-crypt no longer maintains a direct key copy (but there's
 always at least one copy in kernel crypto layer).
 
+Additionally, libcryptsetup supports the linking of volume keys to
+user-specified kernel keyring with crypt_set_keyring_to_link(). The user may
+specify keyring name, key type ('user' or 'logon') and key description where
+libcryptsetup should link the verified volume key upon subsequent device
+activation (or key verification alone).
+
+The volume key(s) (provided the key type is 'user') linked in the user keyring
+can be later used to activate the device via crypt_activate_by_keyslot_context()
+with CRYPT_KC_TYPE_VK_KEYRING type keyslot context
+(aquired by crypt_keyslot_context_init_by_vk_in_keyring()).
+
+Example of how to use volume key linked in custom user keyring from cryptsetup
+utility:
+
+1) Open the device and store the volume key to the session keyring:
+# cryptsetup open <device> --link-vk-to-keyring "@s::%user:testkey" tst
+
+2) Add a keyslot using the stored volume key in a keyring:
+# cryptsetup luksAddKey <device> --volume-key-keyring "%user:testkey"
+
+3) Activate the device using the volume key cached in a keyring ('user' type key)
+# cryptsetup open <device> <active_name> --volume-key-keyring "testkey"
+
 II) Keyslot passphrase
 The second use case for kernel keyring is to allow cryptsetup reading the keyslot
 passphrase stored in kernel keyring instead. The user may load passphrase in kernel
