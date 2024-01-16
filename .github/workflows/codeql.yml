@@ -41,7 +41,7 @@ jobs:
 
       - name: Install dependencies
         run: sudo -E .github/workflows/cibuild-setup-ubuntu.sh
-        env: { COMPILER: "gcc", COMPILER_VERSION: "11",  RUN_SSH_PLUGIN_TEST: "1" }
+        env: { COMPILER: "gcc", COMPILER_VERSION: "13",  RUN_SSH_PLUGIN_TEST: "1" }
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v2
