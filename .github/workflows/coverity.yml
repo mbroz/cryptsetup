@@ -17,7 +17,7 @@ jobs:
         run: sudo -E .github/workflows/cibuild-setup-ubuntu.sh
         env:
           COMPILER: "gcc"
-          COMPILER_VERSION: "11"
+          COMPILER_VERSION: "13"
       - name: Install Coverity
         run: |
           wget -q https://scan.coverity.com/download/cxx/linux64 --post-data "token=$TOKEN&project=mbroz/cryptsetup" -O cov-analysis-linux64.tar.gz
