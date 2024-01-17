@@ -256,6 +256,7 @@ static int hdr_read_disk(struct crypt_device *cd,
 	if (read_lseek_blockwise(devfd, device_block_size(cd, device),
 				 device_alignment(device), hdr_disk,
 				 LUKS2_HDR_BIN_LEN, offset) != LUKS2_HDR_BIN_LEN) {
+		memset(hdr_disk, 0, LUKS2_HDR_BIN_LEN);
 		return -EIO;
 	}
 
@@ -664,6 +665,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 		/*
 		 * No header size, check all known offsets.
 		 */
+		hdr_disk2.hdr_size = 0;
 		for (r = -EINVAL,i = 0; r < 0 && i < ARRAY_SIZE(hdr2_offsets); i++)
 			r = hdr_read_disk(cd, device, &hdr_disk2, &json_area2, hdr2_offsets[i], 1);
 
