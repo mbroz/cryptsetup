@@ -282,7 +282,7 @@ static char *_sysfs_backing_file(const char *loop)
 {
 	struct stat st;
 	char buf[PATH_MAX];
-	size_t len;
+	ssize_t len;
 	int fd;
 
 	if (stat(loop, &st) || !S_ISBLK(st.st_mode))
