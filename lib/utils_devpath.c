@@ -281,6 +281,7 @@ uint64_t crypt_dev_partition_offset(const char *dev_path)
 			      &val, "start"))
 		return 0;
 
+	/* coverity[tainted_data_return:FALSE] */
 	return val;
 }
 
