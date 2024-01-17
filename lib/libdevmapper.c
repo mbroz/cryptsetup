@@ -2843,7 +2843,7 @@ static int _process_deps(struct crypt_device *cd, const char *prefix, struct dm_
 int dm_device_deps(struct crypt_device *cd, const char *name, const char *prefix,
 		   char **names, size_t names_length)
 {
-	struct dm_task *dmt;
+	struct dm_task *dmt = NULL;
 	struct dm_info dmi;
 	struct dm_deps *deps;
 	int r = -EINVAL;
