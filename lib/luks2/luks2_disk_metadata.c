@@ -537,11 +537,20 @@ static int validate_luks2_json_object(struct crypt_device *cd, json_object *jobj
 }
 
 static json_object *parse_and_validate_json(struct crypt_device *cd,
-					    const char *json_area, uint64_t max_length)
+					    const char *json_area, uint64_t hdr_size)
 {
 	int json_len, r;
-	json_object *jobj = parse_json_len(cd, json_area, max_length, &json_len);
+	json_object *jobj;
+	uint64_t max_length;
 
+	if (hdr_size <= LUKS2_HDR_BIN_LEN || hdr_size > LUKS2_HDR_OFFSET_MAX) {
+		log_dbg(cd, "LUKS2 header JSON has bogus size 0x%04" PRIx64 ".", hdr_size);
+		return NULL;
+	}
+
+	max_length = hdr_size - LUKS2_HDR_BIN_LEN;
+
+	jobj = parse_json_len(cd, json_area, max_length, &json_len);
 	if (!jobj)
 		return NULL;
 
@@ -635,7 +644,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 	state_hdr1 = HDR_FAIL;
 	r = hdr_read_disk(cd, device, &hdr_disk1, &json_area1, 0, 0);
 	if (r == 0) {
-		jobj_hdr1 = parse_and_validate_json(cd, json_area1, be64_to_cpu(hdr_disk1.hdr_size) - LUKS2_HDR_BIN_LEN);
+		jobj_hdr1 = parse_and_validate_json(cd, json_area1, be64_to_cpu(hdr_disk1.hdr_size));
 		state_hdr1 = jobj_hdr1 ? HDR_OK : HDR_OBSOLETE;
 	} else if (r == -EIO)
 		state_hdr1 = HDR_FAIL_IO;
@@ -647,7 +656,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (state_hdr1 != HDR_FAIL && state_hdr1 != HDR_FAIL_IO) {
 		r = hdr_read_disk(cd, device, &hdr_disk2, &json_area2, be64_to_cpu(hdr_disk1.hdr_size), 1);
 		if (r == 0) {
-			jobj_hdr2 = parse_and_validate_json(cd, json_area2, be64_to_cpu(hdr_disk2.hdr_size) - LUKS2_HDR_BIN_LEN);
+			jobj_hdr2 = parse_and_validate_json(cd, json_area2, be64_to_cpu(hdr_disk2.hdr_size));
 			state_hdr2 = jobj_hdr2 ? HDR_OK : HDR_OBSOLETE;
 		} else if (r == -EIO)
 			state_hdr2 = HDR_FAIL_IO;
@@ -659,7 +668,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 			r = hdr_read_disk(cd, device, &hdr_disk2, &json_area2, hdr2_offsets[i], 1);
 
 		if (r == 0) {
-			jobj_hdr2 = parse_and_validate_json(cd, json_area2, be64_to_cpu(hdr_disk2.hdr_size) - LUKS2_HDR_BIN_LEN);
+			jobj_hdr2 = parse_and_validate_json(cd, json_area2, be64_to_cpu(hdr_disk2.hdr_size));
 			state_hdr2 = jobj_hdr2 ? HDR_OK : HDR_OBSOLETE;
 		} else if (r == -EIO)
 			state_hdr2 = HDR_FAIL_IO;
