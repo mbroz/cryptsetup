@@ -175,6 +175,8 @@ function valgrind_run()
 
 function dm_crypt_keyring_support()
 {
+	$CRYPTSETUP --version | grep -q KEYRING || return 1
+
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
 	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
 

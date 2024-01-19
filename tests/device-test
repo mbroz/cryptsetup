@@ -108,21 +108,6 @@ function dm_crypt_features()
 	DM_PERF_NO_WORKQUEUE=1
 }
 
-function dm_crypt_keyring_support()
-{
-	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
-	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
-
-	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
-	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
-
-	# run the test with dm-crypt v1.15.0+ on purpose
-	# the fix is in dm-crypt v1.18.1+
-	[ $VER_MAJ -gt 1 ] && return 0
-	[ $VER_MAJ -lt 1 ] && return 1
-	[ $VER_MIN -ge 15 ]
-}
-
 format() # format
 {
 	add_image
@@ -287,9 +272,12 @@ else
 	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME --disable-keyring || fail
 	$CRYPTSETUP status $DEV_NAME | grep -q keyring && fail
 	if [ -n "$DM_KEYRING" ]; then
-		echo -n "keyring "
-		echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME || fail
-		$CRYPTSETUP status $DEV_NAME | grep -q keyring || fail
+		$CRYPTSETUP --version | grep -q KEYRING
+		if [ $? -eq 0 ]; then
+			echo -n "keyring "
+			echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME || fail
+			$CRYPTSETUP status $DEV_NAME | grep -q keyring || fail
+		fi
 	fi
 	if [ -n "$DM_PERF_NO_WORKQUEUE" ]; then
 		echo -n "no_read_workqueue no_write_workqueue"
