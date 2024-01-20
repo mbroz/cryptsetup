@@ -172,7 +172,7 @@ valgrind-check: api-test api-test-2 differ
 	@VALG=1 ./compat-args-test
 	@VALG=1 ./compat-test
 	@VALG=1 ./compat-test2
-	@[ -z "$OPAL2_PSID_FILE" ] || VALG=1 ./compat-test-opal
+	@[ -z "$(OPAL2_PSID_FILE)" ] || VALG=1 ./compat-test-opal
 	@VALG=1 ./luks2-validation-test
 	@VALG=1 ./verity-compat-test
 	@VALG=1 ./integrity-compat-test
@@ -194,7 +194,7 @@ valgrind-check: api-test api-test-2 differ
 	@VALG=1 ./password-hash-test
 	@VALG=1 ./reencryption-compat-test
 	@VALG=1 ./fvault2-compat-test
-	@[ -z "$RUN_SSH_PLUGIN_TEST" ] || VALG=1 ./ssh-test-plugin
+	@[ -z "$(RUN_SSH_PLUGIN_TEST)" ] || VALG=1 ./ssh-test-plugin
 	@INFOSTRING="unit-utils-crypt-test" ./valg-api.sh ./unit-utils-crypt-test
 	@INFOSTRING="vectors-test" ./valg-api.sh ./vectors-test
 	@grep -l "ERROR SUMMARY: [^0][0-9]* errors" valglog* || echo "No leaks detected."
