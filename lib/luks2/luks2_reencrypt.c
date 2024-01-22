@@ -4463,7 +4463,8 @@ int LUKS2_reencrypt_locked_recovery_by_vks(struct crypt_device *cd,
 	r = reencrypt_recovery(cd, hdr, device_size, vks);
 
 out:
-	crypt_drop_keyring_key(cd, vks);
+	if (r < 0)
+		crypt_drop_keyring_key(cd, vks);
 	return r;
 }
 #endif
