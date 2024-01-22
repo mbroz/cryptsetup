@@ -30,7 +30,7 @@ PWD1="93R4P4pIqAH8"
 PWD2="1cND4319812f"
 PWD3="1-9Qu5Ejfnqv"
 DEV_LINK="reenc-test-link"
-KEYRING="@u"
+KEYRING="luks2_reencryption_test_kr"
 KEY_TYPE="user"
 KEY_NAME1="luks2-reencryption-test1"
 KEY_NAME2="luks2-reencryption-test2"
@@ -115,6 +115,13 @@ function remove_mapping()
 	scsi_debug_teardown $DEV
 }
 
+function cleanup_keyring()
+{
+	if [ $HAVE_KEYRING -eq 1 ]; then
+		keyctl unlink %:$KEYRING "@s" >/dev/null 2>&1 || echo "Failed to unlink test keyring."
+	fi
+}
+
 function fail()
 {
 	local frame=0
@@ -122,6 +129,7 @@ function fail()
 	echo "FAILED backtrace:"
 	while caller $frame; do	((frame++)); done
 	remove_mapping
+	cleanup_keyring
 	exit 2
 }
 
@@ -129,6 +137,7 @@ function skip()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
+	cleanup_keyring
 	exit 77
 }
 
@@ -829,12 +838,27 @@ function reencrypt_online_fixed_size() {
 	[ -n "$7" -a -f "$7" ] && rm -f $7
 }
 
+function prepare_vk_keyring()
+{
+	local s_desc=$(keyctl rdescribe @s | cut -d';' -f5)
+	local us_desc=$(keyctl rdescribe @us | cut -d';' -f5)
+
+	if [ "$s_desc" = "$us_desc" -a -n "$s_desc" ]; then
+		echo "Session keyring is missing. Giving new one to parent process..."
+		keyctl new_session > /dev/null || fail
+	fi
+
+	keyctl newring $KEYRING "@s" >/dev/null || fail "Failed to setup test keyring environment"
+	keyctl search "@s" keyring $KEYRING >/dev/null 2>&1 || fail "Could not find test keyring in a session keyring."
+}
+
 function setup_luks2_env() {
 	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c aes-xts-plain64 $FAST_PBKDF_ARGON $DEV || fail
 	echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
 	HAVE_KEYRING=$($CRYPTSETUP status $DEV_NAME | grep "key location: keyring")
 	if [ -n "$HAVE_KEYRING" ]; then
 		HAVE_KEYRING=1
+		prepare_vk_keyring
 	else
 		HAVE_KEYRING=0
 	fi
@@ -1299,38 +1323,40 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	reencrypt_recover_online 4096 journal $HASH1
 fi
 
-echo "sector size 512->512 (recovery by VK)"
+if [ $HAVE_KEYRING -eq 1 ]; then
+	echo "sector size 512->512 (recovery by VK)"
 
-get_error_offsets 32 $OFFSET
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
-wipe $PWD1
-
-echo "ERR writes to sectors (recovery by VK) [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
-reencrypt_recover_online_vk 512 checksum $HASH1
-reencrypt_recover_online_vk 512 journal $HASH1
-
-if [ -n "$DM_SECTOR_SIZE" ]; then
-	echo "sector size 512->4096"
-
-	get_error_offsets 32 $OFFSET 4096
+	get_error_offsets 32 $OFFSET
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
 
-        echo "ERR writes to sectors (recovery by VK) [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
-	reencrypt_recover_online_vk 4096 checksum $HASH1
-	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
-	wipe $PWD1
-	reencrypt_recover_online_vk 4096 journal $HASH1
+	echo "ERR writes to sectors (recovery by VK) [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_online_vk 512 checksum $HASH1
+	reencrypt_recover_online_vk 512 journal $HASH1
 
-	echo "sector size 4096->4096"
+	if [ -n "$DM_SECTOR_SIZE" ]; then
+		echo "sector size 512->4096"
 
-	get_error_offsets 32 $OFFSET 4096
-	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 --sector-size 4096 -c aes-cbc-essiv:sha256 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
-	wipe $PWD1
+		get_error_offsets 32 $OFFSET 4096
+		echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+		wipe $PWD1
 
-        echo "ERR writes to sectors (recovery by VK) [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
-	reencrypt_recover_online_vk 4096 checksum $HASH1
-	reencrypt_recover_online_vk 4096 journal $HASH1
+		echo "ERR writes to sectors (recovery by VK) [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+		reencrypt_recover_online_vk 4096 checksum $HASH1
+		echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+		wipe $PWD1
+		reencrypt_recover_online_vk 4096 journal $HASH1
+
+		echo "sector size 4096->4096"
+
+		get_error_offsets 32 $OFFSET 4096
+		echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 --sector-size 4096 -c aes-cbc-essiv:sha256 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+		wipe $PWD1
+
+		echo "ERR writes to sectors (recovery by VK) [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+		reencrypt_recover_online_vk 4096 checksum $HASH1
+		reencrypt_recover_online_vk 4096 journal $HASH1
+	fi
 fi
 
 echo "[8] Reencryption with detached header recovery"
@@ -2283,4 +2309,5 @@ echo $PWD1 | $CRYPTSETUP reencrypt --decrypt --header $IMG_HDR $DEV -q || fail
 check_hash_dev_head $DEV 2048 $HASH2
 
 remove_mapping
+cleanup_keyring
 exit 0
