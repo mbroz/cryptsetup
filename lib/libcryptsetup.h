@@ -3120,7 +3120,7 @@ void crypt_safe_memzero(void *data, size_t size);
  * devices that are in re-encryption and have two volume keys at the same time
  * (old and new). You can set the @e old_key_description to NULL,
  * but if you supply number of keys less than required, the function will
- * return -EAGAIN.  In that case you need to call the function again and set
+ * return -ESRCH.  In that case you need to call the function again and set
  * the missing key description. When supplying just one key description, make
  * sure to supply it in the @e key_description.
  *

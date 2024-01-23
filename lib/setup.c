@@ -7835,7 +7835,7 @@ int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_descripti
 
 	user_descriptions_count = (key_description ? 1 : 0) + (old_key_description ? 1 : 0);
 	if (user_descriptions_count != 0 && vks_count > user_descriptions_count)
-		return -EAGAIN;
+		return -ESRCH;
 
 	if (keyring_to_link_vk) {
 		id = keyring_find_keyring_id_by_name(keyring_to_link_vk);

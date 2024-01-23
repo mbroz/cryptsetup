@@ -5537,7 +5537,7 @@ static void KeyslotContextAndKeyringLink(void)
 
 	// key names have to be specified starting from the first
 	EQ_(crypt_set_keyring_to_link(cd, NULL, TEST_KEY_VK_USER, "user", keyring_in_user_str_id), -EINVAL);
-	EQ_(crypt_set_keyring_to_link(cd, TEST_KEY_VK_USER, NULL, "user", keyring_in_user_str_id), -EAGAIN);
+	EQ_(crypt_set_keyring_to_link(cd, TEST_KEY_VK_USER, NULL, "user", keyring_in_user_str_id), -ESRCH);
 
 	EQ_(crypt_set_keyring_to_link(cd, TEST_KEY_VK_USER, TEST_KEY_VK_USER2, "user", keyring_in_user_str_id), 0);
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, PASSPHRASE, strlen(PASSPHRASE), 0), 0);
