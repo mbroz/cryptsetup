@@ -1,20 +1,6 @@
-Cryptsetup 2.7.0-rc1 Release Notes
-==================================
-Stable release candidate with new features and bug fixes.
-
-Changes since version 2.7.0-rc0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* Used Argon2 PBKDF implementation is now reported in debug mode
-  in the cryptographic backend version. For native support in
-  OpenSSL 3.2 or libgcrypt 1.11, "argon2" is displayed.
-  If libargon2 is used, "cryptsetup libargon2" (for embedded
-  library) or "external libargon2" is displayed.
-
-* Fix wiping of OPAL key in the kernel on luksSuspend.
-
-* Use metadata lock for OPAL disk manipulation to avoid unexpected
-  states if two processes manipulate the device.
+Cryptsetup 2.7.0 Release Notes
+==============================
+Stable release with new features and bug fixes.
 
 Changes since version 2.6.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -68,7 +54,7 @@ Changes since version 2.6.1
 
   Compatibility notes:
     - Linux kernel SED interface does NOT work through USB external
-    adapters due to the mising compatibility layer in Linux USB storage
+    adapters due to the missing compatibility layer in Linux USB storage
     drivers (even if USB hardware itself can support OPAL commands).
     - other TCG security subsystems like Ruby or Pyrite are not
     supported. Note that many drives support only Pyrite subsystem that
@@ -214,7 +200,7 @@ Changes since version 2.6.1
   <keyring_description>::<key_description>.
   The <keyring_description> contains the existing kernel keyring
   description (numeric id or keyctl format). The <keyring_description>
-  may be optionaly prefixed with "%:" or "%keyring:". The string "::" is
+  may be optionally prefixed with "%:" or "%keyring:". The string "::" is
   a delimiter that separates keyring and key descriptions.
   The <key_description> has the same syntax as used in the
   --volume-key-keyring option.
@@ -273,9 +259,7 @@ Changes since version 2.6.1
   option is specified.
 
 * Properly report if the dm-verity device cannot be activated due to
-  the inability to verify the signed root hash.
-
-  If the kernel returns ENOKEY, it is properly propagated.
+  the inability to verify the signed root hash (ENOKEY).
 
 * Fix to check passphrase for selected keyslot only when adding
   new keyslot.
@@ -385,6 +369,12 @@ Changes since version 2.6.1
   Argon2 has been available since version 1.10, but we need version 1.11,
   which will allow empty passwords.
 
+* Used Argon2 PBKDF implementation is now reported in debug mode
+  in the cryptographic backend version. For native support in
+  OpenSSL 3.2 or libgcrypt 1.11, "argon2" is displayed.
+  If libargon2 is used, "cryptsetup libargon2" (for embedded
+  library) or "external libargon2" is displayed.
+
 * Link only libcrypto from OpenSSL.
 
   This reduces dependencies as other OpenSSL libraries are not needed.
@@ -412,6 +402,9 @@ Changes since version 2.6.1
   This should stop the dm-integrity device from issuing journal updates
   and possibly corrupt data if the user also tries to modify the
   underlying device.
+
+* Update keyring and locking documentation and LUKS2 specification
+  for OPAL2 support.
 
 Libcryptsetup API extensions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

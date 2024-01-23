@@ -36,6 +36,7 @@ KEY_NAME1="luks2-reencryption-test1"
 KEY_NAME2="luks2-reencryption-test2"
 KEY_SPEC1="${KEYRING}::%${KEY_TYPE}:${KEY_NAME1}"
 KEY_SPEC2="${KEYRING}::%${KEY_TYPE}:${KEY_NAME2}"
+HAVE_KEYRING=0
 
 FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
@@ -855,12 +856,10 @@ function prepare_vk_keyring()
 function setup_luks2_env() {
 	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c aes-xts-plain64 $FAST_PBKDF_ARGON $DEV || fail
 	echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
-	HAVE_KEYRING=$($CRYPTSETUP status $DEV_NAME | grep "key location: keyring")
-	if [ -n "$HAVE_KEYRING" ]; then
+	local check_keyring=$($CRYPTSETUP status $DEV_NAME | grep "key location: keyring")
+	if [ -n "$check_keyring" ]; then
 		HAVE_KEYRING=1
 		prepare_vk_keyring
-	else
-		HAVE_KEYRING=0
 	fi
 	DEF_XTS_KEY=$($CRYPTSETUP status $DEV_NAME | grep "keysize:" | sed 's/\(  keysize: \)\([0-9]\+\)\(.*\)/\2/')
 	[ -n "$DEF_XTS_KEY" ] || fail "Failed to parse xts mode key size."
