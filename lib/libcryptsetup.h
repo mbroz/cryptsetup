@@ -1628,11 +1628,12 @@ int crypt_persistent_flags_get(struct crypt_device *cd,
  * reencryption), more than one keyslot context is required (e.g. one for the old
  * volume key and one for the new volume key). The order of the keyslot
  * contexts does not matter. When less keyslot contexts are supplied than
- * required to unlock the device an -ENOKEY error code is returned and you
+ * required to unlock the device an -ESRCH error code is returned and you
  * should call the function again with an additional keyslot context specified.
  *
- * NOTE: the API at the moment works for one keyslot context only, the second
- * keyslot context is just an API placeholder
+ * NOTE: the API at the moment fully works for single keyslot context only,
+ * the additional keyslot context currently works only with
+ * @e CRYPT_KC_TYPE_VK_KEYRING or @e CRYPT_KC_TYPE_KEY contexts.
  *
  * @param cd crypt device handle
  * @param name name of device to create, if @e NULL only check passphrase

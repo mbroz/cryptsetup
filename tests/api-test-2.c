@@ -5598,8 +5598,8 @@ static void KeyslotContextAndKeyringLink(void)
 	OK_(crypt_keyslot_context_init_by_vk_in_keyring(cd, TEST_KEY_VK_USER_NAME , &kc));
 	OK_(crypt_keyslot_context_init_by_vk_in_keyring(cd, TEST_KEY_VK_USER2_NAME, &kc2));
 
-	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0), -ENOKEY);
-	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc2, CRYPT_ANY_SLOT, NULL, 0), -ENOKEY);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0), -ESRCH);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc2, CRYPT_ANY_SLOT, NULL, 0), -ESRCH);
 	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, NULL, CRYPT_ANY_SLOT, kc, 0), -EINVAL);
 	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, NULL, CRYPT_ANY_SLOT, kc2, 0), -EINVAL);
 

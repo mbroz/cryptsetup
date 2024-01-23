@@ -5699,7 +5699,7 @@ const char *name,
 			}
 
 			if (unlocked_keys < required_keys)
-				r = -ENOKEY;
+				r = -ESRCH;
 		}
 	} else if (isTCRYPT(cd->type)) {
 		r = 0;
