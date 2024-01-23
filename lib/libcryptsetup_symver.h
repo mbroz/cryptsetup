@@ -1,7 +1,7 @@
 /*
  * Helpers for defining versioned symbols
  *
- * Copyright (C) 2021-2023 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Red Hat, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

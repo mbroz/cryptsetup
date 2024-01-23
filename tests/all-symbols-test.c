@@ -1,7 +1,7 @@
 /*
  * Test utility checking symbol versions in libcryptsetup.
  *
- * Copyright (C) 2021-2023 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Red Hat, Inc. All rights reserved.
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

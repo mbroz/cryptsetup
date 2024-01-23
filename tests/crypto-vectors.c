@@ -1,7 +1,7 @@
 /*
  * cryptsetup crypto backend test vectors
  *
- * Copyright (C) 2018-2023 Milan Broz
+ * Copyright (C) 2018-2024 Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

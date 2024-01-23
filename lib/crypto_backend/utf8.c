@@ -4,7 +4,7 @@
  * Copyright (C) 2010 Lennart Poettering
  *
  * cryptsetup related changes
- * Copyright (C) 2021-2023 Vojtech Trefny
+ * Copyright (C) 2021-2024 Vojtech Trefny
 
  * Parts of the original systemd implementation are based on the GLIB utf8
  * validation functions.

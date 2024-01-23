@@ -1,9 +1,9 @@
 /*
  * cryptsetup - action re-encryption utilities
  *
- * Copyright (C) 2009-2023 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2023 Milan Broz
- * Copyright (C) 2021-2023 Ondrej Kozina
+ * Copyright (C) 2009-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2024 Milan Broz
+ * Copyright (C) 2021-2024 Ondrej Kozina
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

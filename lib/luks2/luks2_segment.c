@@ -1,8 +1,8 @@
 /*
  * LUKS - Linux Unified Key Setup v2, internal segment handling
  *
- * Copyright (C) 2018-2023 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2018-2023 Ondrej Kozina
+ * Copyright (C) 2018-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2018-2024 Ondrej Kozina
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

@@ -2,7 +2,7 @@
  * Generic wrapper for storage functions
  * (experimental only)
  *
- * Copyright (C) 2018-2023 Ondrej Kozina
+ * Copyright (C) 2018-2024 Ondrej Kozina
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

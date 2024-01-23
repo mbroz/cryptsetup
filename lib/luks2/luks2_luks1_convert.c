@@ -1,9 +1,9 @@
 /*
  * LUKS - Linux Unified Key Setup v2, LUKS1 conversion code
  *
- * Copyright (C) 2015-2023 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2015-2023 Ondrej Kozina
- * Copyright (C) 2015-2023 Milan Broz
+ * Copyright (C) 2015-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2015-2024 Ondrej Kozina
+ * Copyright (C) 2015-2024 Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

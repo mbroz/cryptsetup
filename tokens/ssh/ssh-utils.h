@@ -1,8 +1,8 @@
 /*
  * ssh plugin utilities
  *
- * Copyright (C) 2016-2023 Milan Broz
- * Copyright (C) 2020-2023 Vojtech Trefny
+ * Copyright (C) 2016-2024 Milan Broz
+ * Copyright (C) 2020-2024 Vojtech Trefny
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

@@ -1,8 +1,8 @@
 /*
  * Cipher performance check
  *
- * Copyright (C) 2018-2023 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2018-2023 Milan Broz
+ * Copyright (C) 2018-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2018-2024 Milan Broz
  *
  * This file is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

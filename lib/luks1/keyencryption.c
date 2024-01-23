@@ -2,8 +2,8 @@
  * LUKS - Linux Unified Key Setup
  *
  * Copyright (C) 2004-2006 Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2023 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2012-2023 Milan Broz
+ * Copyright (C) 2009-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012-2024 Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

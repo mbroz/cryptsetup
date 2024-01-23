@@ -1,7 +1,7 @@
 /*
  * cryptsetup crypto name and hex conversion helper test vectors
  *
- * Copyright (C) 2022-2023 Milan Broz
+ * Copyright (C) 2022-2024 Milan Broz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
