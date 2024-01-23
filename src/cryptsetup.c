@@ -1793,14 +1793,14 @@ out:
 static int parse_vk_and_keyring_description(
 		struct crypt_device *cd,
 		char **keyring_key_descriptions,
-		int keyring_links_count)
+		int keyring_key_links_count)
 {
 	int r = 0;
 
 	char *keyring_part_out1 = NULL, *key_part_out1 = NULL, *type_part_out1 = NULL;
 	char *keyring_part_out2 = NULL, *key_part_out2 = NULL, *type_part_out2 = NULL;
 
-	if (keyring_links_count > 0) {
+	if (keyring_key_links_count > 0) {
 		r = parse_single_vk_and_keyring_description(cd,
 				keyring_key_descriptions[0],
 				&keyring_part_out1, &key_part_out1,
@@ -1808,7 +1808,7 @@ static int parse_vk_and_keyring_description(
 		if (r < 0)
 			goto out;
 	}
-	if (keyring_links_count > 1) {
+	if (keyring_key_links_count > 1) {
 		r = parse_single_vk_and_keyring_description(cd,
 				keyring_key_descriptions[1],
 				&keyring_part_out2, &key_part_out2,
@@ -1828,7 +1828,7 @@ static int parse_vk_and_keyring_description(
 		}
 	}
 
-	if (keyring_links_count > 0) {
+	if (keyring_key_links_count > 0) {
 		r = crypt_set_keyring_to_link(cd, key_part_out1, key_part_out2,
 				type_part_out1, keyring_part_out1);
 		if (r == -EAGAIN)
