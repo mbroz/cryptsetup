@@ -3124,9 +3124,6 @@ void crypt_safe_memzero(void *data, size_t size);
  * the missing key description. When supplying just one key description, make
  * sure to supply it in the @e key_description.
  *
- * NOTE: the API at the moment works for one key description only, the second
- * name is just an API placeholder
- *
  * @param cd crypt device handle
  * @param key_description the key description of the volume key linked in desired keyring.
  * @param old_key_description the key description of the old volume key linked in desired keyring
