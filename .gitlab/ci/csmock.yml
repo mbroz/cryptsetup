@@ -10,6 +10,7 @@ test-commit-job-csmock:
   variables:
     DISTRO: cryptsetup-rhel-9
     RUN_SSH_PLUGIN_TEST: "1"
+    DISK_SIZE: 20
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
