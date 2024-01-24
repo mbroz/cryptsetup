@@ -1,6 +1,6 @@
 test-main-commit-job-annocheck:
   extends:
-    - .dump_kernel_log
+    - .fail_if_coredump_generated
   tags:
     - libvirt
     - cryptsetup-rhel-9

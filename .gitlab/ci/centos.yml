@@ -2,7 +2,7 @@
   variables:
     DISTRO: cryptsetup-centos-stream-9
   extends:
-    - .dump_kernel_log
+    - .fail_if_coredump_generated
   before_script:
     - >
       sudo dnf -y -q  install

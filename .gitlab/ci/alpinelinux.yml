@@ -1,8 +1,8 @@
 .alpinelinux-dependencies:
   variables:
     DISTRO: cryptsetup-alpine-edge
-  after_script:
-    - '[ "$(ls -A /var/coredumps)" ] && exit 1 || true'
+  extends:
+    - .fail_if_coredump_generated
   before_script:
     - >
       sudo apk add

@@ -1,6 +1,6 @@
 .rhel-openssl-backend:
   extends:
-    - .dump_kernel_log
+    - .fail_if_coredump_generated
   before_script:
     - >
       sudo yum -y -q  install

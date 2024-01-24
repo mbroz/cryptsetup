@@ -1,10 +1,8 @@
 stages:
   - test
 
-.dump_kernel_log:
+.fail_if_coredump_generated:
   after_script:
-    - sudo dmesg > /mnt/artifacts/dmesg.log
-    - sudo journalctl > /mnt/artifacts/journalctl.log
     - '[ "$(ls -A /var/coredumps)" ] && exit 1 || true'
 
 include:

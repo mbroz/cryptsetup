@@ -2,7 +2,7 @@
   variables:
     DISTRO: cryptsetup-fedora-rawhide
   extends:
-    - .dump_kernel_log
+    - .fail_if_coredump_generated
   before_script:
     - >
       [ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] ||

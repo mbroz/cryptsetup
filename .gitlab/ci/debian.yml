@@ -1,6 +1,6 @@
 .debian-prep:
   extends:
-    - .dump_kernel_log
+    - .fail_if_coredump_generated
   variables:
     DISTRO: cryptsetup-debian-12
   before_script:
