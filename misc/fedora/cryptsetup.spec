@@ -8,7 +8,7 @@ License: GPL-2.0-or-later WITH cryptsetup-OpenSSL-exception AND LGPL-2.1-or-late
 URL: https://gitlab.com/cryptsetup/cryptsetup
 BuildRequires: autoconf, automake, libtool, gettext-devel,
 BuildRequires: openssl-devel, popt-devel, device-mapper-devel
-BuildRequires: libuuid-devel, gcc, json-c-devel, libargon2-devel
+BuildRequires: libuuid-devel, gcc, json-c-devel
 BuildRequires: libpwquality-devel, libblkid-devel
 BuildRequires: make libssh-devel
 BuildRequires: asciidoctor
@@ -70,7 +70,7 @@ disk integrity protection using dm-integrity kernel module.
 rm -f man/*.8
 
 ./autogen.sh
-%configure --enable-fips --enable-pwquality --enable-libargon2 --enable-asciidoc
+%configure --enable-fips --enable-pwquality --enable-asciidoc
 %make_build
 
 %install
