@@ -512,6 +512,9 @@ elif get_option('crypto-backend') == 'openssl'
     conf.set10('HAVE_DECL_OSSL_KDF_PARAM_ARGON2_VERSION',
         cc.has_header_symbol('openssl/core_names.h', 'OSSL_KDF_PARAM_ARGON2_VERSION',
             dependencies: crypto_backend_library))
+    if conf.get('HAVE_DECL_OSSL_KDF_PARAM_ARGON2_VERSION') == 1
+        use_internal_argon2 = false
+    endif
 elif get_option('crypto-backend') == 'nss'
     if get_option('fips')
         error('nss crypto backend is not supported with FIPS enabled')
@@ -560,7 +563,7 @@ threads = []
 use_internal_sse_argon2 = false
 if not use_internal_argon2 or get_option('argon-implementation') == 'none'
     if get_option('argon-implementation') == 'internal' or get_option('argon-implementation') == 'libargon2'
-        warning('Argon2 in crypto library is used; internal Argon2 options are ignored.')
+        message('Argon2 in crypto library is used; internal Argon2 options are ignored.')
     endif
     conf.set10('USE_INTERNAL_ARGON2', false,
         description: 'Use internal Argon2.')

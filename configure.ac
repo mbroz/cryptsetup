@@ -346,7 +346,7 @@ AC_DEFUN([CONFIGURE_OPENSSL], [
 
 	saved_LIBS=$LIBS
 	AC_CHECK_DECLS([OSSL_get_max_threads], [], [], [#include <openssl/thread.h>])
-	AC_CHECK_DECLS([OSSL_KDF_PARAM_ARGON2_VERSION], [], [], [#include <openssl/core_names.h>])
+	AC_CHECK_DECLS([OSSL_KDF_PARAM_ARGON2_VERSION], [use_internal_argon2=0], [], [#include <openssl/core_names.h>])
 	LIBS=$saved_LIBS
 ])
 
@@ -523,7 +523,7 @@ AC_ARG_ENABLE([libargon2],
 
 if test $use_internal_argon2 = 0 -o "x$enable_internal_argon2" = "xno" ; then
 	if test "x$enable_internal_argon2" = "xyes" -o "x$enable_libargon" = "xyes"; then
-		AC_MSG_WARN([Argon2 in $with_crypto_backend lib is used; internal Argon2 options are ignored.])
+		AC_MSG_NOTICE([Argon2 in $with_crypto_backend lib is used; internal Argon2 options are ignored.])
 	fi
 	enable_internal_argon2=no
 	enable_internal_sse_argon2=no
