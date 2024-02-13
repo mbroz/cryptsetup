@@ -21,15 +21,18 @@
 
 #include <errno.h>
 #include "crypto_backend_internal.h"
+
+/* Check for HAVE_ARGON2_H is run only if libargon2 code is used */
+#if USE_INTERNAL_ARGON2 || HAVE_ARGON2_H
+
+#define CONST_CAST(x) (x)(uintptr_t)
+
 #if HAVE_ARGON2_H
 #include <argon2.h>
 #else
 #include "argon2/argon2.h"
 #endif
 
-#define CONST_CAST(x) (x)(uintptr_t)
-
-#if USE_INTERNAL_ARGON2 || HAVE_ARGON2_H
 int argon2(const char *type, const char *password, size_t password_length,
 	   const char *salt, size_t salt_length,
 	   char *key, size_t key_length,
