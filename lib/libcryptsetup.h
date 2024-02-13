@@ -3135,7 +3135,7 @@ void crypt_safe_memzero(void *data, size_t size);
  *
  * @note keyring_to_link_vk may be passed in various string formats:
  * 	 It can be kernel key numeric id of existing keyring written as a string,
- * 	 keyring name prefixed optionally be either "%:" or "%keyring:" substrings or keyctl
+ * 	 keyring name prefixed by either "%:" or "%keyring:" substrings or keyctl
  * 	 special values for keyrings "@t", "@p", "@s" and so on. See keyctl(1) man page,
  * 	 section KEY IDENTIFIERS for more information. All other prefixes starting "%<type>:"
  * 	 are ignored.
