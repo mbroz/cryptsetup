@@ -409,7 +409,7 @@ static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *para
 {
 	int r, tries, eperm = 0;
 
-	tries = set_tries_tty();
+	tries = set_tries_tty(false);
 	do {
 		/* TCRYPT header is encrypted, get passphrase now */
 		r = tools_get_key(NULL, CONST_CAST(char**)&params->passphrase,
@@ -555,7 +555,7 @@ static int action_open_bitlk(void)
 		r = crypt_activate_by_volume_key(cd, activated_name,
 						 key, keysize, activate_flags);
 	} else {
-		tries = set_tries_tty();
+		tries = set_tries_tty(false);
 		do {
 			r = tools_get_key(NULL, &password, &passwordLen,
 					ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
@@ -837,7 +837,7 @@ static int action_open_fvault2(void)
 			goto out;
 		r = crypt_activate_by_volume_key(cd, activated_name, key, keysize, activate_flags);
 	} else {
-		tries = set_tries_tty();
+		tries = set_tries_tty(false);
 		do {
 			r = tools_get_key(NULL, &password, &passwordLen,
 				ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID),
@@ -1889,7 +1889,7 @@ static int action_open_luks(void)
 	char *password = NULL;
 	size_t passwordLen;
 	struct stat st;
-	struct crypt_keyslot_context *kc1 = NULL, *kc2 = NULL;
+	struct crypt_keyslot_context *kc = NULL, *kc1 = NULL, *kc2 = NULL;
 
 	if (ARG_SET(OPT_REFRESH_ID)) {
 		activated_name = action_argc > 1 ? action_argv[1] : action_argv[0];
@@ -1987,21 +1987,22 @@ static int action_open_luks(void)
 		r = _try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID),
 				      ARG_INT32(OPT_TOKEN_ID_ID), activated_name,
 				      ARG_STR(OPT_TOKEN_TYPE_ID), activate_flags,
-				      set_tries_tty(), true, ARG_SET(OPT_TOKEN_ONLY_ID));
+				      set_tries_tty(false), true, ARG_SET(OPT_TOKEN_ONLY_ID));
 
 		if (r >= 0 || r == -EEXIST || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
 			goto out;
 
-		tries = set_tries_tty();
+		tries = set_tries_tty(true);
 		do {
-			r = tools_get_key(NULL, &password, &passwordLen,
-					ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-					ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
+			r = init_keyslot_context(cd, &password, &passwordLen, verify_passphrase(0), false, false, &kc);
 			if (r < 0)
 				goto out;
 
-			r = crypt_activate_by_passphrase(cd, activated_name,
-				ARG_INT32(OPT_KEY_SLOT_ID), password, passwordLen, activate_flags);
+			r = crypt_activate_by_keyslot_context(cd, activated_name, ARG_INT32(OPT_KEY_SLOT_ID),
+							      kc, CRYPT_ANY_SLOT, NULL, activate_flags);
+			crypt_keyslot_context_free(kc);
+			kc = NULL;
+
 			tools_keyslot_msg(r, UNLOCKED);
 			tools_passphrase_msg(r);
 			check_signal(&r);
@@ -2896,7 +2897,7 @@ static int action_luksResume(void)
 	/* try to resume LUKS2 device by token first */
 	r = _try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_TOKEN_ID_ID),
 			      action_argv[0], ARG_STR(OPT_TOKEN_TYPE_ID), 0,
-			      set_tries_tty(), false, ARG_SET(OPT_TOKEN_ONLY_ID));
+			      set_tries_tty(false), false, ARG_SET(OPT_TOKEN_ONLY_ID));
 
 	if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
 		goto out;
@@ -2912,7 +2913,7 @@ static int action_luksResume(void)
 		goto out;
 	}
 
-	tries = set_tries_tty();
+	tries = set_tries_tty(false);
 	do {
 		r = tools_get_key(NULL, &password, &passwordLen,
 			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
