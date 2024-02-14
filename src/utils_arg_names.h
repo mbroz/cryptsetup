@@ -114,6 +114,7 @@
 #define OPT_VOLUME_KEY_FILE		"volume-key-file"
 #define OPT_VOLUME_KEY_KEYRING		"volume-key-keyring"
 #define OPT_NEW				"new"
+#define OPT_NEW_KEY_DESCRIPTION		"new-key-description"
 #define OPT_NEW_KEY_SLOT		"new-key-slot"
 #define OPT_NEW_KEYFILE			"new-keyfile"
 #define OPT_NEW_KEYFILE_OFFSET		"new-keyfile-offset"
