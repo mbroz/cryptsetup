@@ -141,8 +141,11 @@ int set_pbkdf_params(struct crypt_device *cd, const char *dev_type)
 	return crypt_set_pbkdf_type(cd, &pbkdf);
 }
 
-int set_tries_tty(void)
+int set_tries_tty(bool keyring)
 {
+	if (keyring && ARG_SET(OPT_KEY_DESCRIPTION_ID))
+		return 1;
+
 	return (tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) && isatty(STDIN_FILENO)) ? ARG_UINT32(OPT_TRIES_ID) : 1;
 }
 

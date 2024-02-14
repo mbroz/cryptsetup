@@ -960,7 +960,7 @@ static int init_passphrase(struct keyslot_passwords *kp, size_t keyslot_password
 			return -ENOENT;
 	}
 
-	retry_count = set_tries_tty();
+	retry_count = set_tries_tty(false);
 
 	while (retry_count--) {
 		r = tools_get_key(msg,  &password, &passwordLen, 0, 0,
