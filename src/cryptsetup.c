@@ -896,6 +896,7 @@ static int action_resize(void)
 	uint64_t dev_size = 0;
 	char *password = NULL;
 	struct crypt_device *cd = NULL;
+	struct crypt_keyslot_context *kc = NULL;
 
 	r = crypt_init_by_name_and_header(&cd, action_argv[0], ARG_STR(OPT_HEADER_ID));
 	if (r)
@@ -936,15 +937,14 @@ static int action_resize(void)
 		if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
 			goto out;
 
-		r = tools_get_key(NULL, &password, &passwordLen,
-				  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-				  ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
+		r = init_keyslot_context(cd, &password, &passwordLen, verify_passphrase(0),
+					 false, false, &kc);
 		if (r < 0)
 			goto out;
 
-		r = crypt_activate_by_passphrase(cd, NULL, ARG_INT32(OPT_KEY_SLOT_ID),
-						 password, passwordLen,
-						 CRYPT_ACTIVATE_KEYRING_KEY);
+		r = crypt_activate_by_keyslot_context(cd, NULL,ARG_INT32(OPT_KEY_SLOT_ID),
+						      kc, CRYPT_ANY_SLOT, NULL,
+						      CRYPT_ACTIVATE_KEYRING_KEY);
 		tools_passphrase_msg(r);
 		tools_keyslot_msg(r, UNLOCKED);
 	}
@@ -954,6 +954,7 @@ out:
 		r = crypt_resize(cd, action_argv[0], dev_size);
 
 	crypt_safe_free(password);
+	crypt_keyslot_context_free(kc);
 	crypt_free(cd);
 	return r;
 }
