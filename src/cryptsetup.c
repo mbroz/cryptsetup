@@ -4036,6 +4036,11 @@ int main(int argc, const char **argv)
 		_("Cannot link volume key to a keyring when keyring is disabled."),
 		poptGetInvocationName(popt_context));
 
+	if (ARG_SET(OPT_DISABLE_KEYRING_ID) && (ARG_SET(OPT_KEY_DESCRIPTION_ID) || ARG_SET(OPT_NEW_KEY_DESCRIPTION_ID)))
+		usage(popt_context, EXIT_FAILURE,
+		_("Cannot use keyring key description when keyring is disabled."),
+		poptGetInvocationName(popt_context));
+
 	if (ARG_SET(OPT_DEBUG_ID) || ARG_SET(OPT_DEBUG_JSON_ID)) {
 		crypt_set_debug_level(ARG_SET(OPT_DEBUG_JSON_ID)? CRYPT_DEBUG_JSON : CRYPT_DEBUG_ALL);
 		dbg_version_and_cmd(argc, argv);
