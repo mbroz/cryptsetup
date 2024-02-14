@@ -2913,16 +2913,16 @@ static int action_luksResume(void)
 		goto out;
 	}
 
-	tries = set_tries_tty(false);
+	tries = set_tries_tty(true);
 	do {
-		r = tools_get_key(NULL, &password, &passwordLen,
-			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-			ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
+		r = init_keyslot_context(cd, &password, &passwordLen, verify_passphrase(0), false, false, &kc);
 		if (r < 0)
 			goto out;
 
-		r = crypt_resume_by_passphrase(cd, action_argv[0], ARG_INT32(OPT_KEY_SLOT_ID),
-					       password, passwordLen);
+		r = crypt_resume_by_keyslot_context(cd, action_argv[0], ARG_INT32(OPT_KEY_SLOT_ID), kc);
+		crypt_keyslot_context_free(kc);
+		kc = NULL;
+
 		tools_passphrase_msg(r);
 		check_signal(&r);
 		tools_keyslot_msg(r, UNLOCKED);
