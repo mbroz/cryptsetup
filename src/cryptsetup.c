@@ -1486,6 +1486,7 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 		.user_key_size = DEFAULT_LUKS1_KEYBITS / 8
 	};
 	void *params;
+	struct crypt_keyslot_context *kc = NULL, *new_kc = NULL;
 
 	type = luksType(device_type);
 	if (!type)
@@ -1618,9 +1619,8 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	else if (ARG_SET(OPT_USE_URANDOM_ID))
 		crypt_set_rng_type(cd, CRYPT_RNG_URANDOM);
 
-	r = tools_get_key(NULL, &password, &passwordLen,
-			  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-			  ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
+	r = init_keyslot_context(cd, &password, &passwordLen, verify_passphrase(1),
+				 !ARG_SET(OPT_FORCE_PASSWORD_ID), r_password != NULL, &new_kc);
 	if (r < 0)
 		goto out;
 
@@ -1673,9 +1673,12 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	if (r < 0)
 		goto out;
 
-	r = crypt_keyslot_add_by_volume_key(cd, ARG_INT32(OPT_KEY_SLOT_ID),
-					    key, keysize,
-					    password, passwordLen);
+	r = crypt_keyslot_context_init_by_volume_key(cd, key, keysize, &kc);
+	if (r < 0)
+		goto out;
+
+	r = crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, kc,
+						 ARG_INT32(OPT_KEY_SLOT_ID), new_kc, 0);
 	if (r < 0) {
 		wipe_signatures = true;
 		goto out;
@@ -1691,6 +1694,8 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	}
 out:
 	crypt_safe_free(key);
+	crypt_keyslot_context_free(kc);
+	crypt_keyslot_context_free(new_kc);
 
 	if (r < 0) {
 		encrypt_type = crypt_get_hw_encryption_type(cd);
