@@ -97,6 +97,31 @@ static int _set_keyslot_encryption_params(struct crypt_device *cd)
 	return crypt_keyslot_set_encryption(cd, ARG_STR(OPT_KEYSLOT_CIPHER_ID), ARG_UINT32(OPT_KEYSLOT_KEY_SIZE_ID) / 8);
 }
 
+static int init_keyslot_context(struct crypt_device *cd,
+				char **password, size_t *passwordLen, bool verify, bool pwquality,
+				bool reencrypt, /* tmp hack to use old get_key */
+				struct crypt_keyslot_context **kc)
+{
+	int r = -EINVAL;
+
+	if (ARG_SET(OPT_KEY_DESCRIPTION_ID))
+		r = crypt_keyslot_context_init_by_keyring(cd, ARG_STR(OPT_KEY_DESCRIPTION_ID), kc);
+	else if (ARG_SET(OPT_KEY_FILE_ID) && !tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) && !reencrypt)
+		r = crypt_keyslot_context_init_by_keyfile(cd, ARG_STR(OPT_KEY_FILE_ID),
+							  ARG_UINT32(OPT_KEYFILE_SIZE_ID),
+							  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), kc);
+	else if (password) {
+		r = tools_get_key(NULL, password, passwordLen, ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
+				  ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
+				  ARG_UINT32(OPT_TIMEOUT_ID), verify, pwquality, cd);
+		if (r < 0)
+			return r;
+		r = crypt_keyslot_context_init_by_passphrase(cd, *password, *passwordLen, kc);
+	}
+
+	return r;
+}
+
 static int _try_token_unlock(struct crypt_device *cd,
 			     int keyslot,
 			     int token_id,
@@ -2640,6 +2665,7 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 {
 	char *vk = NULL, *password = NULL;
 	size_t passwordLen = 0;
+	struct crypt_keyslot_context *kc = NULL;
 	size_t vk_size;
 	int r;
 
@@ -2655,14 +2681,11 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	if (!vk)
 		return -ENOMEM;
 
-	r = tools_get_key(NULL, &password, &passwordLen,
-			  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-			  ARG_UINT32(OPT_TIMEOUT_ID), 0, 0, cd);
+	r = init_keyslot_context(cd, &password, &passwordLen, false, false, false, &kc);
 	if (r < 0)
 		goto out;
 
-	r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, vk, &vk_size,
-				 password, passwordLen);
+	r = crypt_volume_key_get_by_keyslot_context(cd, CRYPT_ANY_SLOT, vk, &vk_size, kc);
 	tools_passphrase_msg(r);
 	check_signal(&r);
 	if (r < 0)
@@ -2690,6 +2713,7 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	log_std("\n");
 out:
 	crypt_safe_free(password);
+	crypt_keyslot_context_free(kc);
 	crypt_safe_free(vk);
 	return r;
 }
