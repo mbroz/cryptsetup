@@ -33,9 +33,9 @@ PWD3="ocMakf3fAcQO"
 PWD4="Qx3qn46vq0v"
 PWDW="rUkL4RUryBom"
 TEST_KEYRING_NAME="compattest2_keyring"
-TEST_TOKEN0="compattest2_desc0"
-TEST_TOKEN1="compattest2_desc1"
-TEST_TOKEN2="compattest2_desc2"
+TEST_KEY_DESC0="compattest2_desc0"
+TEST_KEY_DESC1="compattest2_desc1"
+TEST_KEY_DESC2="compattest2_desc2"
 VK_FILE="compattest2_vkfile"
 IMPORT_TOKEN="{\"type\":\"some_type\",\"keyslots\":[],\"base64_data\":\"zxI7vKB1Qwl4VPB4D-N-OgcC14hPCG0IDu8O7eCqaQ\"}"
 TOKEN_FILE0=test-token-file0
@@ -733,12 +733,12 @@ if dm_crypt_keyring_support; then
 	echo | $CRYPTSETUP -q resize --size 100 $DEV_NAME 2>/dev/null && fail
 	if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 		test_and_prepare_keyring
-		load_key user $TEST_TOKEN2 $PWD1 "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
-		$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN2 --token-id 1 || fail
+		load_key user $TEST_KEY_DESC2 $PWD1 "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
+		$CRYPTSETUP token add $LOOPDEV --key-description $TEST_KEY_DESC2 --token-id 1 || fail
 		$CRYPTSETUP -q resize --size 99 $DEV_NAME <&- || fail
 		$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "99 sectors" || fail
 		#replace kernel key with wrong pass
-		load_key user $TEST_TOKEN2 $PWD2 "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
+		load_key user $TEST_KEY_DESC2 $PWD2 "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
 		# must fail due to --token-only
 		echo $PWD1 | $CRYPTSETUP -q resize --token-only --size 100 $DEV_NAME && fail
 		$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" && fail
@@ -1107,16 +1107,16 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 
 	test_and_prepare_keyring
 
-	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN0 --token-id 3 || fail
+	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_KEY_DESC0 --token-id 3 || fail
 	$CRYPTSETUP luksDump $LOOPDEV | grep -q -e "3: luks2-keyring" || fail
 	# keyslot 5 is inactive
-	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN1 --key-slot 5 2> /dev/null && fail
+	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_KEY_DESC1 --key-slot 5 2> /dev/null && fail
 	# key description is not reachable
 	$CRYPTSETUP open --token-only $LOOPDEV --test-passphrase && fail
 	# wrong passphrase
-	load_key user $TEST_TOKEN0 "blabla" "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+	load_key user $TEST_KEY_DESC0 "blabla" "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
 	$CRYPTSETUP open --token-only $LOOPDEV --test-passphrase 2>/dev/null && fail
-	load_key user $TEST_TOKEN0 $PWD1 "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+	load_key user $TEST_KEY_DESC0 $PWD1 "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
 	$CRYPTSETUP open --token-only $LOOPDEV --test-passphrase || fail
 	$CRYPTSETUP open --token-only $LOOPDEV $DEV_NAME || fail
 	$CRYPTSETUP status $DEV_NAME > /dev/null || fail
@@ -1139,17 +1139,17 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 
 	# test we can remove keyslot with token
 	echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey -q -S4 $FAST_PBKDF_OPT $LOOPDEV || fail
-	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN1 --key-slot 4 --token-id 0 || fail
+	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_KEY_DESC1 --key-slot 4 --token-id 0 || fail
 	$CRYPTSETUP -q luksKillSlot $LOOPDEV 4 || fail
 	$CRYPTSETUP token remove --token-id 0 $LOOPDEV || fail
 
 	# test we can add unassigned token
-	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN0 --unbound --token-id 0 || fail
+	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_KEY_DESC0 --unbound --token-id 0 || fail
 	$CRYPTSETUP open --token-only --token-id 0 --test-passphrase $LOOPDEV && fail
 	$CRYPTSETUP token remove --token-id 0 $LOOPDEV || fail
 
 	# test token unassign works
-	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN0 -S0 --token-id 0 || fail
+	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_KEY_DESC0 -S0 --token-id 0 || fail
 	$CRYPTSETUP open --token-only --token-id 0 --test-passphrase $LOOPDEV || fail
 	$CRYPTSETUP token unassign --token-id 0 $LOOPDEV 2>/dev/null && fail
 	$CRYPTSETUP token unassign -S0 $LOOPDEV 2>/dev/null && fail
@@ -1160,17 +1160,17 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 	$CRYPTSETUP token unassign --token-id 44 -S0 $LOOPDEV 2>/dev/null && fail
 
 	$CRYPTSETUP token remove $LOOPDEV --token-id 0 || fail
-	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN0 -S0 --token-id 0 || fail
+	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_KEY_DESC0 -S0 --token-id 0 || fail
 
 	# token 8 assigned to keyslot 0 and 5. Unlocks only 5
 	echo "$PWD2" | $CRYPTSETUP luksAddKey -q -S5 $FAST_PBKDF_OPT --token-id 0 $LOOPDEV || fail
-	echo -n "{\"type\":\"luks2-keyring\",\"keyslots\":[\"0\",\"5\"],\"key_description\":\"$TEST_TOKEN1\"}" | $CRYPTSETUP token import $LOOPDEV --token-id 8 || fail
-	load_key user $TEST_TOKEN1 "$PWD2" "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+	echo -n "{\"type\":\"luks2-keyring\",\"keyslots\":[\"0\",\"5\"],\"key_description\":\"$TEST_KEY_DESC1\"}" | $CRYPTSETUP token import $LOOPDEV --token-id 8 || fail
+	load_key user $TEST_KEY_DESC1 "$PWD2" "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
 
 	# token 3 assigned to keyslot 1 (wrong passphrase)
 	echo "$PWD3" | $CRYPTSETUP luksAddKey -q -S1 $FAST_PBKDF_OPT --token-id 0 $LOOPDEV || fail
-	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_TOKEN2 -S1 --token-id 3 || fail
-	load_key user $TEST_TOKEN2 "$PWDW" "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+	$CRYPTSETUP token add $LOOPDEV --key-description $TEST_KEY_DESC2 -S1 --token-id 3 || fail
+	load_key user $TEST_KEY_DESC2 "$PWDW" "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
 
 	# specific token, specific keyslot
 	$CRYPTSETUP open --test-passphrase --token-id 0 -S0 $LOOPDEV --token-only <&- || fail
@@ -1420,10 +1420,10 @@ $CRYPTSETUP open --test-passphrase -q -S6 -d $KEY5 $IMG || fail
 
 if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 	test_and_prepare_keyring
-	load_key user $TEST_TOKEN0 $PWD1 "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
-	load_key user $TEST_TOKEN1 $PWDW "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
-	$CRYPTSETUP token add $IMG --key-description $TEST_TOKEN0 --token-id 0 -S0 || fail
-	$CRYPTSETUP token add $IMG --key-description $TEST_TOKEN1 --token-id 1 --unbound || fail
+	load_key user $TEST_KEY_DESC0 $PWD1 "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+	load_key user $TEST_KEY_DESC1 $PWDW "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
+	$CRYPTSETUP token add $IMG --key-description $TEST_KEY_DESC0 --token-id 0 -S0 || fail
+	$CRYPTSETUP token add $IMG --key-description $TEST_KEY_DESC1 --token-id 1 --unbound || fail
 
 	# pass token
 	echo -e "$PWD1" | $CRYPTSETUP luksAddKey -q -S7 --new-token-id 1 $FAST_PBKDF_OPT $IMG || fail
