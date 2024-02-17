@@ -858,6 +858,7 @@ function setup_luks2_env() {
 	echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
 	local check_keyring=$($CRYPTSETUP status $DEV_NAME | grep "key location: keyring")
 	if [ -n "$check_keyring" ]; then
+		bin_check keyctl
 		HAVE_KEYRING=1
 		prepare_vk_keyring
 	fi
