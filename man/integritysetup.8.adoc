@@ -99,7 +99,7 @@ Do not ask for confirmation.
 *--bitmap-flush-time MS*::
 Bitmap flush time in milliseconds.
 +
-*WARNING:*::
+*WARNING:*
 In case of a crash, it is possible that the data and integrity tag
 doesn't match if the journal is disabled.
 
@@ -192,10 +192,8 @@ Encryption algorithm for journal data area. You can use a block cipher
 here such as cbc-aes or a stream cipher, for example, chacha20 or
 ctr-aes.
 +
-*NOTE:* The journal encryption options are intended for testing purposes only.
-Using journal encryption does not make sense without encryption the
-data, these options are internally used in authenticated disk
-encryption with *cryptsetup(8)*.
+*NOTE:* The journal encryption options are only intended for testing.
+Using journal encryption does not make sense without encryption of the data.
 
 *--journal-crypt-key-file FILE*::
 The file with the journal encryption key.
