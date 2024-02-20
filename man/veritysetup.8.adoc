@@ -109,59 +109,12 @@ Reports parameters of verity device from on-disk stored superblock.
 *<options>* can be [--hash-offset].
 
 == OPTIONS
+*--batch-mode, -q*::
+Do not ask for confirmation.
 
-*--no-superblock*::
-Create or use dm-verity without permanent on-disk superblock.
-
-*--format=number*::
-Specifies the hash version type. Format type 0 is original Chrome OS
-version. Format type 1 is current version.
-
-*--data-block-size=bytes*::
-Used block size for the data device. (Note kernel supports only
-page-size as maximum here.)
-
-*--hash-block-size=bytes*::
-Used block size for the hash device. (Note kernel supports only
-page-size as maximum here.)
-
-*--data-blocks=blocks*::
-Size of data device used in verification. If not specified, the whole
-device is used.
-
-*--hash-offset=bytes*::
-Offset of hash area/superblock on hash_device. Value must be aligned
-to disk sector offset.
-
-*--salt=hex string*::
-Salt used for format or verification. Format is a hexadecimal string.
-
-*--uuid=UUID*::
-Use the provided UUID for format command instead of generating new
-one.
-+
-The UUID must be provided in standard UUID format, e.g.
-12345678-1234-1234-1234-123456789abc.
-
-*--ignore-corruption, --restart-on-corruption, --panic-on-corruption*::
-Defines what to do if data integrity problem is detected (data
-corruption).
-+
-Without these options kernel fails the IO operation with I/O error. With
---ignore-corruption option the corruption is only logged. With
---restart-on-corruption or --panic-on-corruption the kernel is restarted
-(panicked) immediately. (You have to provide way how to avoid restart
-loops.)
-+
-*WARNING:* Use these options only for very specific cases. These options
-are available since Linux kernel version 4.1.
-
-*--ignore-zero-blocks*::
-Instruct kernel to not verify blocks that are expected to contain
-zeroes and always directly return zeroes instead.
-+
-*WARNING:* Use this option only in very specific cases. This option is
-available since Linux kernel version 4.5.
+*--cancel-deferred*::
+Removes a previously configured deferred device removal in *close*
+command.
 
 *--check-at-most-once*::
 Instruct kernel to verify blocks only the first time they are read
@@ -171,8 +124,21 @@ from the data device, rather than every time.
 tampering of the data device's content will be detected, not online
 tampering. This option is available since Linux kernel version 4.17.
 
-*--hash=hash*::
-Hash algorithm for dm-verity. For default see --help option.
+*--data-blocks=blocks*::
+Size of data device used in verification. If not specified, the whole
+device is used.
+
+*--data-block-size=bytes*::
+Used block size for the data device. (Note kernel supports only
+page-size as maximum here.)
+
+*--debug*::
+Run in debug mode with full diagnostic logs. Debug output lines are
+always prefixed by *#*.
+
+*--deferred*::
+Defers device removal in *close* command until the last user closes
+it.
 
 *--fec-device=fec_device*::
 Use forward error correction (FEC) to recover from corruption if hash
@@ -205,6 +171,47 @@ Number of generator roots. This equals to the number of parity bytes
 in the encoding data. In RS(M, N) encoding, the number of roots is
 M-N. M is 255 and M-N is between 2 and 24 (including).
 
+*--format=number*::
+Specifies the hash version type. Format type 0 is original Chrome OS
+version. Format type 1 is current version.
+
+*--hash=hash*::
+Hash algorithm for dm-verity. For default see --help option.
+
+*--hash-block-size=bytes*::
+Used block size for the hash device. (Note kernel supports only
+page-size as maximum here.)
+
+*--hash-offset=bytes*::
+Offset of hash area/superblock on hash_device. Value must be aligned
+to disk sector offset.
+
+*--help, -?*::
+Show help text and default parameters.
+
+*--ignore-corruption, --restart-on-corruption, --panic-on-corruption*::
+Defines what to do if data integrity problem is detected (data
+corruption).
++
+Without these options kernel fails the IO operation with I/O error. With
+--ignore-corruption option the corruption is only logged. With
+--restart-on-corruption or --panic-on-corruption the kernel is restarted
+(panicked) immediately. (You have to provide way how to avoid restart
+loops.)
++
+*WARNING:* Use these options only for very specific cases. These options
+are available since Linux kernel version 4.1.
+
+*--ignore-zero-blocks*::
+Instruct kernel to not verify blocks that are expected to contain
+zeroes and always directly return zeroes instead.
++
+*WARNING:* Use this option only in very specific cases. This option is
+available since Linux kernel version 4.5.
+
+*--no-superblock*::
+Create or use dm-verity without permanent on-disk superblock.
+
 *--root-hash-file=FILE*::
 Path to file with stored root hash in hex-encoded text.
 
@@ -213,36 +220,28 @@ Path to root hash signature file used to verify the root hash (in
 kernel). This feature requires Linux kernel version 5.4 or more
 recent.
 
-*--use-tasklets*::
-Try to use kernel tasklets in dm-verity driver for performance reasons.
-This option is available since Linux kernel version 6.0.
-
-*--deferred*::
-Defers device removal in *close* command until the last user closes
-it.
-
-*--cancel-deferred*::
-Removes a previously configured deferred device removal in *close*
-command.
-
-*--verbose, -v*::
-Print more information on command execution.
-
-*--debug*::
-Run in debug mode with full diagnostic logs. Debug output lines are
-always prefixed by *#*.
-
-*--version, -V*::
-Show the program version.
-
-*--batch-mode, -q*::
-Do not ask for confirmation.
+*--salt=hex string*::
+Salt used for format or verification. Format is a hexadecimal string.
 
 *--usage*::
 Show short option help.
 
-*--help, -?*::
-Show help text and default parameters.
+*--use-tasklets*::
+Try to use kernel tasklets in dm-verity driver for performance reasons.
+This option is available since Linux kernel version 6.0.
+
+*--uuid=UUID*::
+Use the provided UUID for format command instead of generating new
+one.
++
+The UUID must be provided in standard UUID format, e.g.
+12345678-1234-1234-1234-123456789abc.
+
+*--verbose, -v*::
+Print more information on command execution.
+
+*--version, -V*::
+Show the program version.
 
 == RETURN CODES
 
