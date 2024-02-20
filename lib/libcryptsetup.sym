@@ -180,3 +180,14 @@ CRYPTSETUP_2.7 {
 		crypt_set_keyring_to_link;
 		crypt_wipe_hw_opal;
 } CRYPTSETUP_2.6;
+
+CRYPTSETUP_2.8 {
+	global:
+		crypt_keyslot_context_init_by_passphrase;
+		crypt_keyslot_context_init_by_keyfile;
+		crypt_keyslot_context_init_by_token;
+		crypt_keyslot_context_init_by_volume_key;
+		crypt_keyslot_context_init_by_signed_key;
+		crypt_keyslot_context_init_by_keyring;
+		crypt_keyslot_context_init_by_vk_in_keyring;
+} CRYPTSETUP_2.7;
