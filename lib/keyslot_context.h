@@ -44,9 +44,22 @@ typedef int (*keyslot_context_get_passphrase) (
 	const char **r_passphrase,
 	size_t *r_passphrase_size);
 
+typedef void (*keyslot_context_free) (
+		struct crypt_keyslot_context *kc);
+
+#define KC_VERSION_BASIC          UINT8_C(1)
+#define KC_VERSION_SELF_CONTAINED UINT8_C(2)
+
 /* crypt_keyslot_context */
 struct crypt_keyslot_context {
 	int type;
+
+	/* versions:
+	 * v1: All passed pointers (e.g.: type, passphrase, keyfile,...) must
+	 *     be valid after ctx initialization.
+	 * v2: Fully self-contained
+	 */
+	uint8_t version;
 
 	union {
 	struct {
@@ -55,31 +68,39 @@ struct crypt_keyslot_context {
 	} p;
 	struct {
 		const char *keyfile;
+		char *i_keyfile;
 		uint64_t keyfile_offset;
 		size_t keyfile_size;
 	} kf;
 	struct {
 		int id;
 		const char *type;
+		char *i_type;
 		const char *pin;
+		char *i_pin;
 		size_t pin_size;
 		void *usrptr;
 	} t;
 	struct {
 		const char *volume_key;
+		struct volume_key *i_vk;
 		size_t volume_key_size;
 	} k;
 	struct {
 		const char *volume_key;
 		size_t volume_key_size;
+		struct volume_key *i_vk;
 		const char *signature;
 		size_t signature_size;
+		struct volume_key *i_vk_sig;
 	} ks;
 	struct {
 		const char *key_description;
+		char *i_key_description;
 	} kr;
 	struct {
 		const char *key_description;
+		char *i_key_description;
 	} vk_kr;
 	} u;
 
@@ -97,6 +118,7 @@ struct crypt_keyslot_context {
 	keyslot_context_get_generic_signed_key	get_verity_volume_key;
 	keyslot_context_get_generic_volume_key	get_integrity_volume_key;
 	keyslot_context_get_passphrase		get_passphrase;
+	keyslot_context_free			context_free;
 };
 
 void crypt_keyslot_context_destroy_internal(struct crypt_keyslot_context *method);

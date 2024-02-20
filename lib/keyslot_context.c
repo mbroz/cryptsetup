@@ -436,9 +436,17 @@ static void unlock_method_init_internal(struct crypt_keyslot_context *kc)
 {
 	assert(kc);
 
+	kc->version = KC_VERSION_BASIC;
 	kc->error = 0;
 	kc->i_passphrase = NULL;
 	kc->i_passphrase_size = 0;
+}
+
+static void keyring_context_free(struct crypt_keyslot_context *kc)
+{
+	assert(kc && kc->type == CRYPT_KC_TYPE_KEYRING);
+
+	free(kc->u.kr.i_key_description);
 }
 
 void crypt_keyslot_unlock_by_keyring_internal(struct crypt_keyslot_context *kc,
@@ -448,6 +456,7 @@ void crypt_keyslot_unlock_by_keyring_internal(struct crypt_keyslot_context *kc,
 
 	kc->type = CRYPT_KC_TYPE_KEYRING;
 	kc->u.kr.key_description = key_description;
+	kc->u.kr.i_key_description = NULL;
 
 	kc->get_luks2_key = get_luks2_key_by_keyring;
 	kc->get_luks2_volume_key = get_luks2_volume_key_by_keyring;
@@ -458,7 +467,15 @@ void crypt_keyslot_unlock_by_keyring_internal(struct crypt_keyslot_context *kc,
 	kc->get_fvault2_volume_key = NULL;
 	kc->get_verity_volume_key = NULL;
 	kc->get_integrity_volume_key = NULL;
+	kc->context_free = keyring_context_free;
 	unlock_method_init_internal(kc);
+}
+
+static void key_context_free(struct crypt_keyslot_context *kc)
+{
+	assert(kc && kc->type == CRYPT_KC_TYPE_KEY);
+
+	crypt_free_volume_key(kc->u.k.i_vk);
 }
 
 void crypt_keyslot_unlock_by_key_init_internal(struct crypt_keyslot_context *kc,
@@ -469,6 +486,7 @@ void crypt_keyslot_unlock_by_key_init_internal(struct crypt_keyslot_context *kc,
 
 	kc->type = CRYPT_KC_TYPE_KEY;
 	kc->u.k.volume_key = volume_key;
+	kc->u.k.i_vk = NULL;
 	kc->u.k.volume_key_size = volume_key_size;
 	kc->get_luks2_key = get_key_by_key;
 	kc->get_luks2_volume_key = get_volume_key_by_key;
@@ -479,7 +497,16 @@ void crypt_keyslot_unlock_by_key_init_internal(struct crypt_keyslot_context *kc,
 	kc->get_fvault2_volume_key = get_generic_volume_key_by_key;
 	kc->get_verity_volume_key = get_generic_signed_key_by_key;
 	kc->get_integrity_volume_key = get_generic_volume_key_by_key;
+	kc->context_free = key_context_free;
 	unlock_method_init_internal(kc);
+}
+
+static void signed_key_context_free(struct crypt_keyslot_context *kc)
+{
+	assert(kc && kc->type == CRYPT_KC_TYPE_SIGNED_KEY);
+
+	crypt_free_volume_key(kc->u.ks.i_vk);
+	crypt_free_volume_key(kc->u.ks.i_vk_sig);
 }
 
 void crypt_keyslot_unlock_by_signed_key_init_internal(struct crypt_keyslot_context *kc,
@@ -495,6 +522,8 @@ void crypt_keyslot_unlock_by_signed_key_init_internal(struct crypt_keyslot_conte
 	kc->u.ks.volume_key_size = volume_key_size;
 	kc->u.ks.signature = signature;
 	kc->u.ks.signature_size = signature_size;
+	kc->u.ks.i_vk = NULL;
+	kc->u.ks.i_vk_sig = NULL;
 	kc->get_luks2_key = NULL;
 	kc->get_luks2_volume_key = NULL;
 	kc->get_luks1_volume_key = NULL;
@@ -504,6 +533,7 @@ void crypt_keyslot_unlock_by_signed_key_init_internal(struct crypt_keyslot_conte
 	kc->get_fvault2_volume_key = NULL;
 	kc->get_verity_volume_key = get_generic_signed_key_by_key;
 	kc->get_integrity_volume_key = NULL;
+	kc->context_free = signed_key_context_free;
 	unlock_method_init_internal(kc);
 }
 
@@ -525,7 +555,15 @@ void crypt_keyslot_unlock_by_passphrase_init_internal(struct crypt_keyslot_conte
 	kc->get_fvault2_volume_key = NULL;
 	kc->get_verity_volume_key = NULL;
 	kc->get_integrity_volume_key = NULL;
+	kc->context_free = NULL;
 	unlock_method_init_internal(kc);
+}
+
+static void keyfile_context_free(struct crypt_keyslot_context *kc)
+{
+	assert(kc && kc->type == CRYPT_KC_TYPE_KEYFILE);
+
+	free(kc->u.kf.i_keyfile);
 }
 
 void crypt_keyslot_unlock_by_keyfile_init_internal(struct crypt_keyslot_context *kc,
@@ -537,8 +575,10 @@ void crypt_keyslot_unlock_by_keyfile_init_internal(struct crypt_keyslot_context 
 
 	kc->type = CRYPT_KC_TYPE_KEYFILE;
 	kc->u.kf.keyfile = keyfile;
+	kc->u.kf.i_keyfile = NULL;
 	kc->u.kf.keyfile_size = keyfile_size;
 	kc->u.kf.keyfile_offset = keyfile_offset;
+	kc->u.kf.i_keyfile = NULL;
 	kc->get_luks2_key = get_luks2_key_by_keyfile;
 	kc->get_luks2_volume_key = get_luks2_volume_key_by_keyfile;
 	kc->get_luks1_volume_key = get_luks1_volume_key_by_keyfile;
@@ -548,7 +588,16 @@ void crypt_keyslot_unlock_by_keyfile_init_internal(struct crypt_keyslot_context 
 	kc->get_fvault2_volume_key = NULL;
 	kc->get_verity_volume_key = NULL;
 	kc->get_integrity_volume_key = NULL;
+	kc->context_free = keyfile_context_free;
 	unlock_method_init_internal(kc);
+}
+
+static void token_context_free(struct crypt_keyslot_context *kc)
+{
+	assert(kc && kc->type == CRYPT_KC_TYPE_TOKEN);
+
+	free(kc->u.t.i_type);
+	crypt_safe_free(kc->u.t.i_pin);
 }
 
 void crypt_keyslot_unlock_by_token_init_internal(struct crypt_keyslot_context *kc,
@@ -563,7 +612,9 @@ void crypt_keyslot_unlock_by_token_init_internal(struct crypt_keyslot_context *k
 	kc->type = CRYPT_KC_TYPE_TOKEN;
 	kc->u.t.id = token;
 	kc->u.t.type = type;
+	kc->u.t.i_type = NULL;
 	kc->u.t.pin = pin;
+	kc->u.t.i_pin = NULL;
 	kc->u.t.pin_size = pin_size;
 	kc->u.t.usrptr = usrptr;
 	kc->get_luks2_key = get_luks2_key_by_token;
@@ -575,7 +626,15 @@ void crypt_keyslot_unlock_by_token_init_internal(struct crypt_keyslot_context *k
 	kc->get_fvault2_volume_key = NULL;
 	kc->get_verity_volume_key = NULL;
 	kc->get_integrity_volume_key = NULL;
+	kc->context_free = token_context_free;
 	unlock_method_init_internal(kc);
+}
+
+static void vk_in_keyring_context_free(struct crypt_keyslot_context *kc)
+{
+	assert(kc && kc->type == CRYPT_KC_TYPE_VK_KEYRING);
+
+	free(kc->u.vk_kr.i_key_description);
 }
 
 void crypt_keyslot_unlock_by_vk_in_keyring_internal(struct crypt_keyslot_context *kc,
@@ -585,6 +644,7 @@ void crypt_keyslot_unlock_by_vk_in_keyring_internal(struct crypt_keyslot_context
 
 	kc->type = CRYPT_KC_TYPE_VK_KEYRING;
 	kc->u.vk_kr.key_description = key_description;
+	kc->u.vk_kr.i_key_description = NULL;
 
 	kc->get_luks2_key = get_key_by_vk_in_keyring;
 	kc->get_luks2_volume_key = get_volume_key_by_vk_in_keyring;
@@ -595,14 +655,17 @@ void crypt_keyslot_unlock_by_vk_in_keyring_internal(struct crypt_keyslot_context
 	kc->get_fvault2_volume_key = NULL;
 	kc->get_verity_volume_key = NULL;
 	kc->get_integrity_volume_key = NULL;
+	kc->context_free = vk_in_keyring_context_free;
 	unlock_method_init_internal(kc);
 }
-
 
 void crypt_keyslot_context_destroy_internal(struct crypt_keyslot_context *kc)
 {
 	if (!kc)
 		return;
+
+	if (kc->context_free)
+		kc->context_free(kc);
 
 	crypt_safe_free(kc->i_passphrase);
 	kc->i_passphrase = NULL;
@@ -615,12 +678,13 @@ void crypt_keyslot_context_free(struct crypt_keyslot_context *kc)
 	free(kc);
 }
 
-int crypt_keyslot_context_init_by_passphrase(struct crypt_device *cd __attribute__((unused)),
-	const char *passphrase,
+static int _crypt_keyslot_context_init_by_passphrase(const char *passphrase,
 	size_t passphrase_size,
-	struct crypt_keyslot_context **kc)
+	struct crypt_keyslot_context **kc,
+	bool self_contained)
 {
 	struct crypt_keyslot_context *tmp;
+	char *i_passphrase = NULL;
 
 	if (!kc || !passphrase)
 		return -EINVAL;
@@ -629,19 +693,63 @@ int crypt_keyslot_context_init_by_passphrase(struct crypt_device *cd __attribute
 	if (!tmp)
 		return -ENOMEM;
 
+	if (self_contained) {
+		if (passphrase_size) {
+			i_passphrase = crypt_safe_alloc(passphrase_size);
+			if (!i_passphrase) {
+				free(tmp);
+				return -ENOMEM;
+			}
+			crypt_safe_memcpy(i_passphrase, passphrase, passphrase_size);
+			passphrase = i_passphrase;
+		} else
+			/*
+			 * some crypto backend libraries expect a pointer even though
+			 * passed passphrase size is set to zero.
+			 */
+			passphrase = "";
+	}
+
 	crypt_keyslot_unlock_by_passphrase_init_internal(tmp, passphrase, passphrase_size);
+
+	if (self_contained) {
+		tmp->i_passphrase = i_passphrase;
+		tmp->i_passphrase_size = passphrase_size;
+		tmp->version = KC_VERSION_SELF_CONTAINED;
+	}
 
 	*kc = tmp;
 
 	return 0;
 }
 
-int crypt_keyslot_context_init_by_keyfile(struct crypt_device *cd __attribute__((unused)),
-	const char *keyfile,
-	size_t keyfile_size,
-	uint64_t keyfile_offset,
+CRYPT_SYMBOL_EXPORT_NEW(int, crypt_keyslot_context_init_by_passphrase, 2, 8,
+	/* crypt_keyslot_context_init_by_passphrase parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
+	const char *passphrase,
+	size_t passphrase_size,
 	struct crypt_keyslot_context **kc)
 {
+	return _crypt_keyslot_context_init_by_passphrase(passphrase, passphrase_size, kc, true);
+}
+
+CRYPT_SYMBOL_EXPORT_OLD(int, crypt_keyslot_context_init_by_passphrase, 2, 6,
+	/* crypt_keyslot_context_init_by_passphrase parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
+	const char *passphrase,
+	size_t passphrase_size,
+	struct crypt_keyslot_context **kc)
+{
+	return _crypt_keyslot_context_init_by_passphrase(passphrase, passphrase_size, kc, false);
+}
+
+static int _crypt_keyslot_context_init_by_keyfile(const char *keyfile,
+	size_t keyfile_size,
+	uint64_t keyfile_offset,
+	struct crypt_keyslot_context **kc,
+	bool self_contained)
+{
+	char *i_keyfile;
 	struct crypt_keyslot_context *tmp;
 
 	if (!kc || !keyfile)
@@ -651,41 +759,129 @@ int crypt_keyslot_context_init_by_keyfile(struct crypt_device *cd __attribute__(
 	if (!tmp)
 		return -ENOMEM;
 
+	if (self_contained) {
+		i_keyfile = strdup(keyfile);
+		if (!i_keyfile) {
+			free(tmp);
+			return -ENOMEM;
+		}
+		keyfile = i_keyfile;
+	}
+
 	crypt_keyslot_unlock_by_keyfile_init_internal(tmp, keyfile, keyfile_size, keyfile_offset);
+
+	if (self_contained) {
+		tmp->u.kf.i_keyfile = i_keyfile;
+		tmp->version = KC_VERSION_SELF_CONTAINED;
+	}
 
 	*kc = tmp;
 
 	return 0;
 }
 
-int crypt_keyslot_context_init_by_token(struct crypt_device *cd __attribute__((unused)),
+CRYPT_SYMBOL_EXPORT_NEW(int, crypt_keyslot_context_init_by_keyfile, 2, 8,
+	/* crypt_keyslot_context_init_by_keyfile parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
+	const char *keyfile,
+	size_t keyfile_size,
+	uint64_t keyfile_offset,
+	struct crypt_keyslot_context **kc)
+{
+	return _crypt_keyslot_context_init_by_keyfile(keyfile, keyfile_size, keyfile_offset, kc, true);
+}
+
+CRYPT_SYMBOL_EXPORT_OLD(int, crypt_keyslot_context_init_by_keyfile, 2, 6,
+	/* crypt_keyslot_context_init_by_keyfile parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
+	const char *keyfile,
+	size_t keyfile_size,
+	uint64_t keyfile_offset,
+	struct crypt_keyslot_context **kc)
+{
+	return _crypt_keyslot_context_init_by_keyfile(keyfile, keyfile_size, keyfile_offset, kc, false);
+}
+
+static int _crypt_keyslot_context_init_by_token(int token,
+	const char *type,
+	const char *pin, size_t pin_size,
+	void *usrptr,
+	struct crypt_keyslot_context **kc,
+	bool self_contained)
+{
+	char *i_type = NULL, *i_pin = NULL;
+	struct crypt_keyslot_context *tmp;
+
+	if (!kc || (token < 0 && token != CRYPT_ANY_TOKEN) ||
+	    (pin && !pin_size))
+		return -EINVAL;
+
+	tmp = malloc(sizeof(*tmp));
+	if (!tmp)
+		return -ENOMEM;
+
+	if (self_contained && type) {
+		if (!(i_type = strdup(type)))
+			goto err;
+		type = i_type;
+	}
+
+	if (self_contained && pin) {
+		if (!(i_pin = crypt_safe_alloc(pin_size)))
+			goto err;
+		crypt_safe_memcpy(i_pin, pin, pin_size);
+		pin = i_pin;
+	}
+
+	crypt_keyslot_unlock_by_token_init_internal(tmp, token, type, pin, pin_size, usrptr);
+
+	if (self_contained) {
+		tmp->u.t.i_pin = i_pin;
+		tmp->u.t.i_type = i_type;
+		tmp->version = KC_VERSION_SELF_CONTAINED;
+	}
+
+	*kc = tmp;
+
+	return 0;
+err:
+	crypt_safe_free(i_pin);
+	free(i_type);
+	free(tmp);
+
+	return -ENOMEM;
+}
+
+CRYPT_SYMBOL_EXPORT_NEW(int, crypt_keyslot_context_init_by_token, 2, 8,
+	/* crypt_keyslot_context_init_by_token parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
 	int token,
 	const char *type,
 	const char *pin, size_t pin_size,
 	void *usrptr,
 	struct crypt_keyslot_context **kc)
 {
-	struct crypt_keyslot_context *tmp;
-
-	if (!kc || (token < 0 && token != CRYPT_ANY_TOKEN))
-		return -EINVAL;
-
-	tmp = malloc(sizeof(*tmp));
-	if (!tmp)
-		return -ENOMEM;
-
-	crypt_keyslot_unlock_by_token_init_internal(tmp, token, type, pin, pin_size, usrptr);
-
-	*kc = tmp;
-
-	return 0;
+	return _crypt_keyslot_context_init_by_token(token, type, pin, pin_size, usrptr, kc, true);
 }
 
-int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd __attribute__((unused)),
-	const char *volume_key,
-	size_t volume_key_size,
+CRYPT_SYMBOL_EXPORT_OLD(int, crypt_keyslot_context_init_by_token, 2, 6,
+	/* crypt_keyslot_context_init_by_token parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
+	int token,
+	const char *type,
+	const char *pin, size_t pin_size,
+	void *usrptr,
 	struct crypt_keyslot_context **kc)
 {
+	return _crypt_keyslot_context_init_by_token(token, type, pin, pin_size, usrptr, kc, false);
+}
+
+static int _crypt_keyslot_context_init_by_volume_key(const char *volume_key,
+	size_t volume_key_size,
+	struct crypt_keyslot_context **kc,
+	bool self_contained)
+{
+	struct volume_key *i_vk = NULL;
 	struct crypt_keyslot_context *tmp;
 
 	if (!kc)
@@ -695,75 +891,221 @@ int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd __attribute
 	if (!tmp)
 		return -ENOMEM;
 
+	if (self_contained && volume_key) {
+		if (!(i_vk = crypt_alloc_volume_key(volume_key_size, volume_key))) {
+			free(tmp);
+			return -ENOMEM;
+		}
+		volume_key = i_vk->key;
+	}
+
 	crypt_keyslot_unlock_by_key_init_internal(tmp, volume_key, volume_key_size);
+
+	if (self_contained) {
+		tmp->u.k.i_vk = i_vk;
+		tmp->version = KC_VERSION_SELF_CONTAINED;
+	}
 
 	*kc = tmp;
 
 	return 0;
 }
 
-int crypt_keyslot_context_init_by_signed_key(struct crypt_device *cd __attribute__((unused)),
+CRYPT_SYMBOL_EXPORT_NEW(int, crypt_keyslot_context_init_by_volume_key, 2, 8,
+	/* crypt_keyslot_context_init_by_volume_key parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
+	const char *volume_key,
+	size_t volume_key_size,
+	struct crypt_keyslot_context **kc)
+{
+	return _crypt_keyslot_context_init_by_volume_key(volume_key, volume_key_size, kc, true);
+}
+
+CRYPT_SYMBOL_EXPORT_OLD(int, crypt_keyslot_context_init_by_volume_key, 2, 6,
+	/* crypt_keyslot_context_init_by_volume_key parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
+	const char *volume_key,
+	size_t volume_key_size,
+	struct crypt_keyslot_context **kc)
+{
+	return _crypt_keyslot_context_init_by_volume_key(volume_key, volume_key_size, kc, false);
+}
+
+static int _crypt_keyslot_context_init_by_signed_key(const char *volume_key,
+	size_t volume_key_size,
+	const char *signature,
+	size_t signature_size,
+	struct crypt_keyslot_context **kc,
+	bool self_contained)
+{
+	struct volume_key *i_vk = NULL, *i_vk_sig = NULL;
+	struct crypt_keyslot_context *tmp;
+
+	if (!kc)
+		return -EINVAL;
+
+	tmp = malloc(sizeof(*tmp));
+	if (!tmp)
+		return -ENOMEM;
+
+	if (self_contained && volume_key) {
+		if (!(i_vk = crypt_alloc_volume_key(volume_key_size, volume_key)))
+			goto err;
+		volume_key = i_vk->key;
+	}
+
+	if (self_contained && signature) {
+		if (!(i_vk_sig = crypt_alloc_volume_key(signature_size, signature)))
+			goto err;
+		signature = i_vk_sig->key;
+	}
+
+	crypt_keyslot_unlock_by_signed_key_init_internal(tmp, volume_key, volume_key_size,
+		signature, signature_size);
+
+	if (self_contained) {
+		tmp->u.ks.i_vk = i_vk;
+		tmp->u.ks.i_vk_sig = i_vk_sig;
+		tmp->version = KC_VERSION_SELF_CONTAINED;
+	}
+
+	*kc = tmp;
+
+	return 0;
+err:
+	crypt_free_volume_key(i_vk);
+	crypt_free_volume_key(i_vk_sig);
+	free(tmp);
+
+	return -ENOMEM;
+}
+
+CRYPT_SYMBOL_EXPORT_NEW(int, crypt_keyslot_context_init_by_signed_key, 2, 8,
+	/* crypt_keyslot_context_init_by_signed_key parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
 	const char *volume_key,
 	size_t volume_key_size,
 	const char *signature,
 	size_t signature_size,
 	struct crypt_keyslot_context **kc)
 {
-	struct crypt_keyslot_context *tmp;
-
-	if (!kc)
-		return -EINVAL;
-
-	tmp = malloc(sizeof(*tmp));
-	if (!tmp)
-		return -ENOMEM;
-
-	crypt_keyslot_unlock_by_signed_key_init_internal(tmp, volume_key, volume_key_size,
-		signature, signature_size);
-
-	*kc = tmp;
-
-	return 0;
+	return _crypt_keyslot_context_init_by_signed_key(volume_key, volume_key_size, signature, signature_size,  kc, true);
 }
 
-int crypt_keyslot_context_init_by_keyring(struct crypt_device *cd __attribute__((unused)),
-	const char *key_description,
+CRYPT_SYMBOL_EXPORT_OLD(int, crypt_keyslot_context_init_by_signed_key, 2, 7,
+	/* crypt_keyslot_context_init_by_signed_key parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
+	const char *volume_key,
+	size_t volume_key_size,
+	const char *signature,
+	size_t signature_size,
 	struct crypt_keyslot_context **kc)
 {
+	return _crypt_keyslot_context_init_by_signed_key(volume_key, volume_key_size, signature, signature_size,  kc, false);
+}
+
+static int _crypt_keyslot_context_init_by_keyring(const char *key_description,
+	struct crypt_keyslot_context **kc,
+	bool self_contained)
+{
+	char *i_key_description;
 	struct crypt_keyslot_context *tmp;
 
-	if (!kc)
+	if (!kc || !key_description)
 		return -EINVAL;
 
 	tmp = malloc(sizeof(*tmp));
 	if (!tmp)
 		return -ENOMEM;
+
+	if (self_contained) {
+		if (!(i_key_description = strdup(key_description))) {
+			free(tmp);
+			return -ENOMEM;
+		}
+		key_description = i_key_description;
+	}
 
 	crypt_keyslot_unlock_by_keyring_internal(tmp, key_description);
 
+	if (self_contained) {
+		tmp->u.kr.i_key_description = i_key_description;
+		tmp->version = KC_VERSION_SELF_CONTAINED;
+	}
+
 	*kc = tmp;
 
 	return 0;
 }
 
-int crypt_keyslot_context_init_by_vk_in_keyring(struct crypt_device *cd __attribute__((unused)),
+CRYPT_SYMBOL_EXPORT_NEW(int, crypt_keyslot_context_init_by_keyring, 2, 8,
+	/* crypt_keyslot_context_init_by_keyring parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
 	const char *key_description,
 	struct crypt_keyslot_context **kc)
 {
+	return _crypt_keyslot_context_init_by_keyring(key_description, kc, true);
+}
+
+CRYPT_SYMBOL_EXPORT_OLD(int, crypt_keyslot_context_init_by_keyring, 2, 7,
+	/* crypt_keyslot_context_init_by_keyring parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
+	const char *key_description,
+	struct crypt_keyslot_context **kc)
+{
+	return _crypt_keyslot_context_init_by_keyring(key_description, kc, false);
+}
+
+static int _crypt_keyslot_context_init_by_vk_in_keyring(const char *key_description,
+	struct crypt_keyslot_context **kc,
+	bool self_contained)
+{
+	char *i_key_description;
 	struct crypt_keyslot_context *tmp;
 
-	if (!kc)
+	if (!kc || !key_description)
 		return -EINVAL;
 
 	tmp = malloc(sizeof(*tmp));
 	if (!tmp)
 		return -ENOMEM;
 
+	if (self_contained) {
+		if (!(i_key_description = strdup(key_description))) {
+			free(tmp);
+			return -ENOMEM;
+		}
+		key_description = i_key_description;
+	}
+
 	crypt_keyslot_unlock_by_vk_in_keyring_internal(tmp, key_description);
+
+	if (self_contained) {
+		tmp->u.vk_kr.i_key_description = i_key_description;
+		tmp->version = KC_VERSION_SELF_CONTAINED;
+	}
 
 	*kc = tmp;
 
 	return 0;
+}
+
+CRYPT_SYMBOL_EXPORT_NEW(int, crypt_keyslot_context_init_by_vk_in_keyring, 2, 8,
+	/* crypt_keyslot_context_init_by_vk_in_keyring parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
+	const char *key_description,
+	struct crypt_keyslot_context **kc)
+{
+	return _crypt_keyslot_context_init_by_vk_in_keyring(key_description, kc, true);
+}
+
+CRYPT_SYMBOL_EXPORT_OLD(int, crypt_keyslot_context_init_by_vk_in_keyring, 2, 7,
+	/* crypt_keyslot_context_init_by_vk_in_keyring parameters follows */
+	struct crypt_device *cd __attribute__((unused)),
+	const char *key_description,
+	struct crypt_keyslot_context **kc)
+{
+	return _crypt_keyslot_context_init_by_vk_in_keyring(key_description, kc, false);
 }
 
 int crypt_keyslot_context_get_error(struct crypt_keyslot_context *kc)
@@ -775,10 +1117,21 @@ int crypt_keyslot_context_set_pin(struct crypt_device *cd __attribute__((unused)
 	const char *pin, size_t pin_size,
 	struct crypt_keyslot_context *kc)
 {
+	char *i_pin = NULL;
+
 	if (!kc || kc->type != CRYPT_KC_TYPE_TOKEN)
 		return -EINVAL;
 
-	kc->u.t.pin = pin;
+	if (kc->version >= KC_VERSION_SELF_CONTAINED && pin) {
+		if (!(i_pin = crypt_safe_alloc(pin_size)))
+			return -ENOMEM;
+		crypt_safe_memcpy(i_pin, pin, pin_size);
+	}
+
+	crypt_safe_free(kc->u.t.i_pin);
+	kc->u.t.i_pin = i_pin;
+
+	kc->u.t.pin = i_pin ?: pin;
 	kc->u.t.pin_size = pin_size;
 	kc->error = 0;
 
