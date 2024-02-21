@@ -521,8 +521,8 @@ AC_ARG_ENABLE([internal-argon2],
 AC_ARG_ENABLE([libargon2],
 	AS_HELP_STRING([--enable-libargon2], [enable external libargon2 (PHC) library (disables internal bundled version)]))
 
-if test $use_internal_argon2 = 0 -o "x$enable_internal_argon2" = "xno" ; then
-	if test "x$enable_internal_argon2" = "xyes" -o "x$enable_libargon" = "xyes"; then
+if test $use_internal_argon2 = 0 || ( test "x$enable_internal_argon2" = "xno" && test "x$enable_libargon2" != "xyes" ); then
+	if test "x$enable_internal_argon2" = "xyes" || test "x$enable_libargon2" = "xyes"; then
 		AC_MSG_NOTICE([Argon2 in $with_crypto_backend lib is used; internal Argon2 options are ignored.])
 	fi
 	enable_internal_argon2=no
@@ -535,6 +535,7 @@ elif test "x$enable_libargon2" = "xyes" ; then
 	AC_CHECK_DECL(Argon2_id,,[AC_MSG_ERROR([You need more recent Argon2 library with support for Argon2id.])], [#include <argon2.h>])
 	PKG_CHECK_MODULES([LIBARGON2], [libargon2],,[LIBARGON2_LIBS="-largon2"])
 	enable_internal_argon2=no
+	use_internal_argon2=0
 else
 	AC_MSG_WARN([Argon2 bundled (slow) reference implementation will be used, please consider to use system library with --enable-libargon2.])
 
