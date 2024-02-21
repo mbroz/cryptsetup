@@ -148,10 +148,9 @@ static int _try_token_unlock(struct crypt_device *cd,
 			break;
 
 		r = crypt_keyslot_context_set_pin(cd, pin, pin_len, kc);
-		if (r < 0) {
-			crypt_safe_free(pin);
+		crypt_safe_free(pin);
+		if (r < 0)
 			break;
-		}
 
 		if (activation)
 			r = crypt_activate_by_keyslot_context(cd, activated_name, keyslot,
@@ -2224,14 +2223,14 @@ out:
 }
 
 static int _ask_for_pin(struct crypt_device *cd,
-	int token_id, char **r_pin, size_t *r_pin_size,
+	int token_id,
 	struct crypt_keyslot_context *kc)
 {
+	char *pin;
+	size_t pin_size;
 	int r;
 	char msg[64];
 
-	assert(r_pin);
-	assert(r_pin_size);
 	assert(kc);
 	assert(token_id >= 0 || token_id == CRYPT_ANY_TOKEN);
 
@@ -2245,18 +2244,13 @@ static int _ask_for_pin(struct crypt_device *cd,
 	if (r < 0 || (size_t)r >= sizeof(msg))
 		return -EINVAL;
 
-	r = tools_get_key(msg, r_pin, r_pin_size, 0, 0, NULL,
+	r = tools_get_key(msg, &pin, &pin_size, 0, 0, NULL,
 			ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 	if (r < 0)
 		return r;
 
-	r = crypt_keyslot_context_set_pin(cd, *r_pin, *r_pin_size, kc);
-	if (r < 0) {
-		crypt_safe_free(*r_pin);
-		*r_pin = NULL;
-		*r_pin_size = 0;
-	}
-
+	r = crypt_keyslot_context_set_pin(cd, pin, pin_size, kc);
+	crypt_safe_free(pin);
 	return r;
 }
 
@@ -2282,11 +2276,11 @@ static int try_keyslot_add(struct crypt_device *cd,
 
 static int action_luksAddKey(void)
 {
+	bool pin_provided = false;
 	int keyslot_old, keyslot_new, keysize = 0, r = -EINVAL;
 	const char *new_key_file = (action_argc > 1 ? action_argv[1] : NULL);
-	char *key = NULL, *password = NULL, *password_new = NULL, *pin = NULL, *pin_new = NULL,
-	     *vk_description = NULL;
-	size_t pin_size, pin_size_new, password_size = 0, password_new_size = 0;
+	char *key = NULL, *password, *password_new, *vk_description = NULL;
+	size_t password_size, password_new_size;
 	struct crypt_device *cd = NULL;
 	struct crypt_keyslot_context *p_kc_new = NULL, *kc = NULL, *kc_new = NULL;
 
@@ -2388,16 +2382,18 @@ static int action_luksAddKey(void)
 		if (r < 0)
 			goto out;
 
+		r = crypt_keyslot_context_init_by_passphrase(cd, password, password_size, &kc);
+		crypt_safe_free(password);
+		if (r < 0)
+			goto out;
+
 		/* Check password before asking for new one */
-		r = crypt_activate_by_passphrase(cd, NULL, keyslot_old,
-						 password, password_size, 0);
+		r = crypt_activate_by_keyslot_context(cd, NULL, keyslot_old, kc, CRYPT_ANY_SLOT, NULL, 0);
 		check_signal(&r);
 		tools_passphrase_msg(r);
 		if (r < 0)
 			goto out;
 		tools_keyslot_msg(r, UNLOCKED);
-
-		r = crypt_keyslot_context_init_by_passphrase(cd, password, password_size, &kc);
 	}
 
 	if (r < 0)
@@ -2432,6 +2428,7 @@ static int action_luksAddKey(void)
 		if (r < 0)
 			goto out;
 		r = crypt_keyslot_context_init_by_passphrase(cd, password_new, password_new_size, &kc_new);
+		crypt_safe_free(password_new);
 	}
 
 	if (r < 0)
@@ -2440,35 +2437,33 @@ static int action_luksAddKey(void)
 	if (!p_kc_new)
 		p_kc_new = kc_new;
 
-	r = try_keyslot_add(cd, keyslot_old, keyslot_new, kc, p_kc_new, pin, pin_new);
+	r = try_keyslot_add(cd, keyslot_old, keyslot_new, kc, p_kc_new, false, false);
 	if (r >= 0 || r != -ENOANO)
 		goto out;
 
 	if (crypt_keyslot_context_get_error(kc) == -ENOANO) {
-		r = _ask_for_pin(cd, ARG_INT32(OPT_TOKEN_ID_ID), &pin, &pin_size, kc);
+		r = _ask_for_pin(cd, ARG_INT32(OPT_TOKEN_ID_ID), kc);
 		if (r < 0)
 			goto out;
 
-		r = try_keyslot_add(cd, keyslot_old, keyslot_new, kc, p_kc_new, pin, pin_new);
+		pin_provided = true;
+
+		r = try_keyslot_add(cd, keyslot_old, keyslot_new, kc, p_kc_new, pin_provided, false);
 		if (r >= 0 || r != -ENOANO)
 			goto out;
 	}
 
 	if (crypt_keyslot_context_get_error(p_kc_new) == -ENOANO) {
-		r = _ask_for_pin(cd, ARG_INT32(OPT_NEW_TOKEN_ID_ID), &pin_new, &pin_size_new, p_kc_new);
+		r = _ask_for_pin(cd, ARG_INT32(OPT_NEW_TOKEN_ID_ID), p_kc_new);
 		if (r < 0)
 			goto out;
-		r = try_keyslot_add(cd, keyslot_old, keyslot_new, kc, p_kc_new, pin, pin_new);
+		r = try_keyslot_add(cd, keyslot_old, keyslot_new, kc, p_kc_new, pin_provided, true);
 	}
 out:
 	tools_keyslot_msg(r, CREATED);
 	free(vk_description);
 	crypt_keyslot_context_free(kc);
 	crypt_keyslot_context_free(kc_new);
-	crypt_safe_free(password);
-	crypt_safe_free(password_new);
-	crypt_safe_free(pin);
-	crypt_safe_free(pin_new);
 	crypt_safe_free(key);
 	crypt_free(cd);
 	return r;
