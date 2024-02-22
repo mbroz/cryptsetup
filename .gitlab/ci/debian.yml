@@ -1,8 +1,6 @@
 .debian-prep:
   extends:
     - .fail_if_coredump_generated
-  variables:
-    DISTRO: cryptsetup-debian-12
   before_script:
     - sudo apt-get -y update
     - >
@@ -29,6 +27,7 @@ test-mergerq-job-debian:
   stage: test
   interruptible: true
   variables:
+    DISTRO: cryptsetup-debian-12
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
@@ -48,6 +47,7 @@ test-main-commit-job-debian:
   stage: test
   interruptible: true
   variables:
+    DISTRO: cryptsetup-debian-12
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
@@ -68,6 +68,7 @@ test-mergerq-job-debian-meson:
   stage: test
   interruptible: true
   variables:
+    DISTRO: cryptsetup-debian-12
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
@@ -88,6 +89,7 @@ test-main-commit-job-debian-meson:
   stage: test
   interruptible: true
   variables:
+    DISTRO: cryptsetup-debian-12
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"

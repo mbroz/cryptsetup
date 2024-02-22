@@ -1,6 +1,4 @@
 test-mergerq-job-debian-i686:
-  variables:
-    DISTRO: cryptsetup-debian-12i686
   extends:
     - .debian-prep
   tags:
@@ -9,6 +7,7 @@ test-mergerq-job-debian-i686:
   stage: test
   interruptible: true
   variables:
+    DISTRO: cryptsetup-debian-12i686
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
     - if: $RUN_SYSTEMD_PLUGIN_TEST != null
@@ -22,8 +21,6 @@ test-mergerq-job-debian-i686:
     - sudo -E make check
 
 test-main-commit-job-debian-i686:
-  variables:
-    DISTRO: cryptsetup-debian-12i686
   extends:
     - .debian-prep
   tags:
@@ -32,6 +29,7 @@ test-main-commit-job-debian-i686:
   stage: test
   interruptible: true
   variables:
+    DISTRO: cryptsetup-debian-12i686
     RUN_SSH_PLUGIN_TEST: "1"
   rules:
     - if: $RUN_SYSTEMD_PLUGIN_TEST != null
