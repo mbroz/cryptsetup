@@ -2138,7 +2138,7 @@ rm -f $IMG_HDR
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --offset 8192 || fail
 echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
 wipe_dev /dev/mapper/$DEV_NAME
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR --active-name $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --header $IMG_HDR --active-name $DEV_NAME || fail
 check_hash_dev_head $DEV 2048 $HASH2
 rm -f $IMG_HDR
 
@@ -2146,9 +2146,17 @@ rm -f $IMG_HDR
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --offset 8192 || fail
 echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
 wipe_dev /dev/mapper/$DEV_NAME
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --decrypt --header $IMG_HDR --active-name $DEV_NAME --init-only || fail
+echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --header $IMG_HDR --active-name $DEV_NAME --init-only || fail
 check_hash_dev /dev/mapper/$DEV_NAME $HASH2
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --header $IMG_HDR --active-name $DEV_NAME || fail
+check_hash_dev_head $DEV 2048 $HASH2
+rm -f $IMG_HDR
+
+# run in single command by --active-name parameter
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --offset 8192 || fail
+echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
+wipe_dev /dev/mapper/$DEV_NAME
+echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --header $IMG_HDR --active-name $DEV_NAME || fail
 check_hash_dev_head $DEV 2048 $HASH2
 rm -f $IMG_HDR
 

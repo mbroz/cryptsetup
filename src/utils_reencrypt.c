@@ -736,50 +736,58 @@ static int reencrypt_restore_header(struct crypt_device **cd,
 }
 
 static int decrypt_luks2_datashift_init(struct crypt_device **cd,
-	const char *data_device,
 	const char *expheader)
 {
 	int fd, r;
 	size_t passwordLen;
 	struct stat hdr_st;
+	char *msg, *data_device, *active_name = NULL, *password = NULL;
 	bool remove_header = false;
-	char *msg, *active_name = NULL, *password = NULL;
 	struct crypt_params_reencrypt params = {
 		.mode = CRYPT_REENCRYPT_DECRYPT,
 		.direction = CRYPT_REENCRYPT_FORWARD,
 		.resilience = "datashift-checksum",
 		.hash = ARG_STR(OPT_RESILIENCE_HASH_ID) ?: "sha256",
-		.data_shift = crypt_get_data_offset(*cd),
 		.device_size = ARG_UINT64(OPT_DEVICE_SIZE_ID) / SECTOR_SIZE,
 		.max_hotzone_size = ARG_UINT64(OPT_HOTZONE_SIZE_ID) / SECTOR_SIZE,
 		.flags = CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT
 	};
 
+	assert(expheader);
+	assert(cd && *cd);
+
+	params.data_shift = crypt_get_data_offset(*cd);
+
+	if (!(data_device = strdup(crypt_get_device_name(*cd))))
+		return -ENOMEM;
+
 	if (!ARG_SET(OPT_BATCH_MODE_ID)) {
 		r = asprintf(&msg, _("Header file %s does not exist. Do you want to initialize LUKS2 "
 				     "decryption of device %s and export LUKS2 header to file %s?"),
 			     expheader, data_device, expheader);
-		if (r < 0)
-			return -ENOMEM;
+		if (r < 0) {
+			r = -ENOMEM;
+			goto out;
+		}
 		r = yesDialog(msg, _("Operation aborted.\n")) ? 0 : -EINVAL;
 		free(msg);
 		if (r < 0)
-			return r;
+			goto out;
 	}
 
 	if ((r = decrypt_verify_and_set_params(&params)))
-		return r;
+		goto out;
 
 	r = reencrypt_hint_force_offline_reencrypt(data_device);
 	if (r < 0)
-		return r;
+		goto out;
 
 	r = tools_get_key(NULL, &password, &passwordLen,
 			ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID),
 			ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_TIMEOUT_ID),
 			verify_passphrase(0), 0, *cd);
 	if (r < 0)
-		return r;
+		goto out;
 
 	r = reencrypt_check_passphrase(*cd, ARG_INT32(OPT_KEY_SLOT_ID), password, passwordLen);
 	if (r < 0)
@@ -854,6 +862,7 @@ static int decrypt_luks2_datashift_init(struct crypt_device **cd,
 	}
 out:
 	free(active_name);
+	free(data_device);
 	crypt_safe_free(password);
 
 	if (r < 0 && !remove_header && !stat(expheader, &hdr_st) && S_ISREG(hdr_st.st_mode))
@@ -1478,7 +1487,7 @@ static int _decrypt(struct crypt_device **cd, enum device_status_info dev_st, co
 		}
 
 		if (export_header)
-			r = decrypt_luks2_datashift_init(cd, data_device, ARG_STR(OPT_HEADER_ID));
+			r = decrypt_luks2_datashift_init(cd, ARG_STR(OPT_HEADER_ID));
 		else
 			r = decrypt_luks2_init(*cd, data_device);
 
