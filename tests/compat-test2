@@ -300,6 +300,30 @@ function add_scsi_device() {
 # $1 key name
 # $2 keyring to link VK to
 # $3 key type (optional)
+test_vk_link_with_passphrase_check() {
+	KEY_TYPE=${3:-user}
+	if [ -z "$3" ]; then
+		KEY_DESC=$1
+	else
+		KEY_DESC="%$3:$1"
+	fi
+
+	KEYCTL_KEY_NAME="%$KEY_TYPE:$1"
+
+	echo $PWD1 | $CRYPTSETUP open --test-passphrase $LOOPDEV --link-vk-to-keyring "$2"::"$KEY_DESC" || fail
+	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 || fail "VK is not linked to the specified keyring after --test-passphrase."
+	if [ $KEY_TYPE = "user" ]; then
+		$CRYPTSETUP open $LOOPDEV --test-passphrase --volume-key-keyring $KEY_DESC <&-|| fail "Failed to check volume passed via kernel keyring."
+	fi
+	keyctl unlink "$KEYCTL_KEY_NAME" "$2" || fail
+
+	echo $PWD1 | $CRYPTSETUP open --test-passphrase $LOOPDEV || fail
+	keyctl search "$2" $KEY_TYPE $1 > /dev/null 2>&1 && fail "VK is unexpectedly linked to the specified keyring."
+}
+
+# $1 key name
+# $2 keyring to link VK to
+# $3 key type (optional)
 test_vk_link() {
 	KEY_TYPE=${3:-user}
 	if [ -z "$3" ]; then
@@ -1473,6 +1497,10 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 	# explicitly specify keyring key type
 	test_vk_link_and_reactivate $KEY_NAME "%keyring:$TEST_KEYRING_NAME" "user"
 	test_vk_link_and_reactivate $KEY_NAME "%keyring:$TEST_KEYRING_NAME"
+
+	test_vk_link_with_passphrase_check $KEY_NAME "%:$TEST_KEYRING_NAME"
+	test_vk_link_with_passphrase_check $KEY_NAME "%:$TEST_KEYRING_NAME" "user"
+	test_vk_link_with_passphrase_check $KEY_NAME "%:$TEST_KEYRING_NAME" "logon"
 
 	# test numeric keyring name -5 is user session (@us) keyring
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring -5::%logon:$KEY_NAME || fail
