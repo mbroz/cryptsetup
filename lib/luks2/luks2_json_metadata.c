@@ -2364,6 +2364,23 @@ const char *LUKS2_get_integrity(struct luks2_hdr *hdr, int segment)
 	return json_object_get_string(jobj3);
 }
 
+int LUKS2_get_integrity_key_size(struct luks2_hdr *hdr, int segment)
+{
+	json_object *jobj1, *jobj2, *jobj3;
+
+	jobj1 = LUKS2_get_segment_jobj(hdr, segment);
+	if (!jobj1)
+		return -1;
+
+	if (!json_object_object_get_ex(jobj1, "integrity", &jobj2))
+		return -1;
+
+	if (!json_object_object_get_ex(jobj2, "key_size", &jobj3))
+		return -1;
+
+	return json_object_get_int(jobj3);
+}
+
 /* FIXME: this only ensures that once we have journal encryption, it is not ignored. */
 /* implement segment count and type restrictions (crypt and only single crypt) */
 static int LUKS2_integrity_compatible(struct luks2_hdr *hdr)

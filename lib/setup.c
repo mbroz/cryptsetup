@@ -6538,6 +6538,12 @@ int crypt_get_integrity_key_size(struct crypt_device *cd, bool for_dm_crypt_targ
 {
 	int key_size = 0;
 
+	if (isLUKS2(cd->type)) {
+		key_size = LUKS2_get_integrity_key_size(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
+		if (key_size > 0)
+			return key_size;
+	}
+
 	if (!for_dm_crypt_target_set &&
 	    (isINTEGRITY(cd->type) || isLUKS2(cd->type) || !cd->type))
 		key_size = INTEGRITY_key_size(crypt_get_integrity(cd));
