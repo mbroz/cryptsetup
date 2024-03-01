@@ -110,6 +110,7 @@ struct dm_target {
 		uint64_t iv_offset;	/* IV initialisation sector */
 		uint32_t tag_size;	/* additional on-disk tag size */
 		uint32_t sector_size;	/* encryption sector size */
+		uint32_t integrity_key_size; /* for wrapped key HMAC */
 	} crypt;
 	struct {
 		struct device *hash_device;
@@ -185,7 +186,7 @@ void dm_targets_free(struct crypt_device *cd, struct crypt_dm_active_device *dmd
 int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct volume_key *vk, const char *cipher,
 	uint64_t iv_offset, uint64_t data_offset, const char *integrity,
-	uint32_t tag_size, uint32_t sector_size);
+	uint32_t tag_size, uint32_t sector_size, uint32_t integrity_key_size);
 int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct device *hash_device, struct device *fec_device,
 	const char *root_hash, uint32_t root_hash_size, const char* root_hash_sig_key_desc,

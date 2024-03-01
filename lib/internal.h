@@ -217,7 +217,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 
 /* Internal integrity helpers */
 const char *crypt_get_integrity(struct crypt_device *cd);
-int crypt_get_integrity_key_size(struct crypt_device *cd);
+int crypt_get_integrity_key_size(struct crypt_device *cd, bool for_for_dm_crypt_target_set);
 int crypt_get_integrity_tag_size(struct crypt_device *cd);
 
 int crypt_key_in_keyring(struct crypt_device *cd);

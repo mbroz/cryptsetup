@@ -114,7 +114,8 @@ static int crypt_storage_dmcrypt_init(
 			    device_offset,
 			    NULL,
 			    0,
-			    sector_size);
+			    sector_size,
+			    0);
 	if (r)
 		return r;
 

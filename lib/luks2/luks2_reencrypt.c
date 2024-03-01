@@ -2101,7 +2101,8 @@ static int reencrypt_make_targets(struct crypt_device *cd,
 						segment_offset,
 						"none",
 						0,
-						json_segment_get_sector_size(jobj));
+						json_segment_get_sector_size(jobj),
+						0);
 			if (r) {
 				log_err(cd, _("Failed to set dm-crypt segment."));
 				return r;
