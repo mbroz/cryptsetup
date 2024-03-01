@@ -1522,6 +1522,7 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	struct crypt_params_hw_opal opal_params = {
 		.user_key_size = DEFAULT_LUKS1_KEYBITS / 8
 	};
+	struct crypt_params_integrity integrity_params = { 0 };
 	void *params;
 	struct crypt_keyslot_context *kc = NULL, *new_kc = NULL;
 
@@ -1593,6 +1594,27 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 			log_err(_("No known integrity specification pattern detected."));
 			goto out;
 		}
+
+		/* Special handling for wrapped key HMAC: integrity key size is unknown */
+		if (integrity_keysize < 0) {
+			if (!ARG_SET(OPT_VOLUME_KEY_FILE_ID) || !ARG_SET(OPT_KEY_SIZE_ID)) {
+				log_err(_("Wrapped key HMAC requires that the volume key is read from a file. "));
+				goto out;
+			}
+
+			if (stat(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &st) < 0) {
+				log_err(_("Cannot stat keyfile %s."), ARG_STR(OPT_VOLUME_KEY_FILE_ID));
+				r = -EIO;
+				goto out;
+			}
+
+			integrity_keysize = st.st_size - (ARG_UINT32(OPT_KEY_SIZE_ID) / 8);
+
+			/* Pass integrity key size in integrity_params although integrity_params are normally not used for LUKS2 */
+			integrity_params.integrity_key_size = integrity_keysize;
+			params2.integrity_params = &integrity_params;
+		}
+
 		params2.integrity = integrity;
 		/* FIXME: we use default integrity_params (set to NULL) */
 	}

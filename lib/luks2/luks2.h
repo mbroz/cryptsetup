@@ -371,6 +371,7 @@ int LUKS2_generate_hdr(
 	const struct volume_key *vk,
 	const char *cipher_spec,
 	const char *integrity,
+	uint32_t integrity_key_size,
 	const char *uuid,
 	unsigned int sector_size,
 	uint64_t data_offset,

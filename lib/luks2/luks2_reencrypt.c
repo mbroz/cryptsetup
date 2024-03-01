@@ -299,7 +299,7 @@ static json_object *reencrypt_make_hot_segments_encrypt_shift(struct luks2_hdr *
 						      rh->offset >> SECTOR_SHIFT,
 						      &rh->length,
 						      reencrypt_segment_cipher_new(hdr),
-						      NULL, /* integrity */
+						      NULL, 0, /* integrity */
 						      reencrypt_get_sector_size_new(hdr),
 						      1);
 
@@ -355,7 +355,7 @@ static json_object *reencrypt_make_segment_new(struct crypt_device *cd,
 						  crypt_get_iv_offset(cd) + (iv_offset >> SECTOR_SHIFT),
 						  segment_length,
 						  reencrypt_segment_cipher_new(hdr),
-						  NULL, /* integrity */
+						  NULL, 0, /* integrity */
 						  reencrypt_get_sector_size_new(hdr), 0);
 	case CRYPT_REENCRYPT_DECRYPT:
 		return json_segment_create_linear(data_offset + segment_offset, segment_length, 0);
@@ -467,7 +467,7 @@ static json_object *reencrypt_make_segment_reencrypt(struct crypt_device *cd,
 				crypt_get_iv_offset(cd) + (iv_offset >> SECTOR_SHIFT),
 				segment_length,
 				reencrypt_segment_cipher_new(hdr),
-			        NULL, /* integrity */
+			        NULL, 0, /* integrity */
 				reencrypt_get_sector_size_new(hdr), 1);
 	case CRYPT_REENCRYPT_DECRYPT:
 		return json_segment_create_linear(data_offset + segment_offset, segment_length, 1);
@@ -492,7 +492,7 @@ static json_object *reencrypt_make_segment_old(struct crypt_device *cd,
 						    crypt_get_iv_offset(cd) + (segment_offset >> SECTOR_SHIFT),
 						    segment_length,
 						    reencrypt_segment_cipher_old(hdr),
-						    NULL, /* integrity */
+						    NULL, 0, /* integrity */
 						    reencrypt_get_sector_size_old(hdr),
 						    0);
 		break;
@@ -2012,7 +2012,7 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 	r = -EINVAL;
 	jobj_segment_first = json_segment_create_crypt(0, crypt_get_iv_offset(cd),
 				&moved_segment_length, crypt_get_cipher_spec(cd),
-				NULL, crypt_get_sector_size(cd), 0);
+				NULL, 0, crypt_get_sector_size(cd), 0);
 
 	if (!jobj_segment_first) {
 		log_dbg(cd, "Failed generate 1st segment.");
@@ -2028,7 +2028,7 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 								crypt_get_iv_offset(cd) + (moved_segment_length >> SECTOR_SHIFT),
 								NULL,
 								crypt_get_cipher_spec(cd),
-								NULL, /* integrity */
+								NULL, 0, /* integrity */
 								crypt_get_sector_size(cd), 0);
 		if (!jobj_segment_second) {
 			r = -EINVAL;
@@ -2519,7 +2519,7 @@ static int reencrypt_make_backup_segments(struct crypt_device *cd,
 						json_segment_get_iv_offset(jobj_tmp),
 						device_size ? &device_size : NULL,
 						json_segment_get_cipher(jobj_tmp),
-						NULL, /* integrity */
+						NULL, 0, /* integrity */
 						json_segment_get_sector_size(jobj_tmp),
 						0);
 		} else {
@@ -2566,7 +2566,7 @@ static int reencrypt_make_backup_segments(struct crypt_device *cd,
 		}
 		jobj_segment_new = json_segment_create_crypt(segment_offset,
 							crypt_get_iv_offset(cd),
-							NULL, cipher, NULL, sector_size, 0);
+							NULL, cipher, NULL, 0, sector_size, 0);
 	} else if (params->mode == CRYPT_REENCRYPT_DECRYPT) {
 		segment_offset = data_offset;
 		if (modify_offset(&segment_offset, data_shift, params->direction)) {
