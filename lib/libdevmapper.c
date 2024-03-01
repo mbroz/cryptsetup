@@ -160,6 +160,9 @@ static void _dm_set_crypt_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 26, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_CRYPT_HIGH_PRIORITY_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 28, 0, crypt_maj, crypt_min, crypt_patch))
+		_dm_flags |= DM_CRYPT_INTEGRITY_KEY_SIZE_OPT_SUPPORTED;
+
 	_dm_crypt_checked = true;
 }
 
