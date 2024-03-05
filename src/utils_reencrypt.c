@@ -1451,7 +1451,8 @@ static int _decrypt(struct crypt_device **cd, enum device_status_info dev_st, co
 
 	assert(cd);
 
-	if (dev_st == DEVICE_LUKS1 || dev_st == DEVICE_LUKS1_UNUSABLE)
+	if (dev_st == DEVICE_LUKS1 || dev_st == DEVICE_LUKS1_UNUSABLE ||
+	    (dev_st == DEVICE_NOT_LUKS && ARG_SET(OPT_UUID_ID) && !ARG_SET(OPT_HEADER_ID)))
 		return reencrypt_luks1(data_device);
 
 	/* header file does not exist, try loading device type from data device */
