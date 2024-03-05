@@ -27,6 +27,7 @@ test_files_to_copy = [
     'xfs_512_block_size.img.xz',
     'valg.sh',
     'cryptsetup-valg-supps',
+    'LUKS-d238e48a-0ed3-4169-b841-f26b44693134.tar.xz'
 ]
 
 foreach file : test_files_to_copy
