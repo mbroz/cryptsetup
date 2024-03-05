@@ -25,6 +25,9 @@ PWD1="93R4P4pIqAH8"
 PWD2="1cND4319812f"
 PWD3="1-9Qu5Ejfnqv"
 
+LUKS1_DECRYPT_UUID=d238e48a-0ed3-4169-b841-f26b44693134
+LUKS1_DECRYPT="LUKS-$LUKS1_DECRYPT_UUID"
+
 MNT_DIR=./mnt_luks
 START_DIR=$(pwd)
 FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
@@ -45,7 +48,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
-	rm -f $IMG $IMG_HDR $ORIG_IMG $KEY1 $HEADER_LUKS2_PV $DEV_LINK >/dev/null 2>&1
+	rm -f $IMG $IMG_HDR $ORIG_IMG $KEY1 $HEADER_LUKS2_PV $DEV_LINK $LUKS1_DECRYPT.{org\|new\|log} >/dev/null 2>&1
 	umount $MNT_DIR > /dev/null 2>&1
 	rmdir $MNT_DIR > /dev/null 2>&1
 	LOOPDEV1=""
@@ -491,6 +494,15 @@ if [ "$HAVE_BLKID" -gt 0 ]; then
 	test -f $IMG_HDR && fail
 fi
 fi # if [ ! fips_mode ]
+
+# Only test if the LUKS1 decryption can be resumed with provided --uuid
+echo "[14] Resume LUKS1 decryption"
+prepare 8192
+tar xJf $LUKS1_DECRYPT.tar.xz || fail
+echo $PWD1 | $REENC $LOOPDEV1 -q --decrypt --uuid $LUKS1_DECRYPT_UUID >/dev/null || fail
+test -f $LUKS1_DECRYPT.org && fail
+test -f $LUKS1_DECRYPT.new && fail
+test -f $LUKS1_DECRYPT.log && fail
 
 remove_mapping
 exit 0
