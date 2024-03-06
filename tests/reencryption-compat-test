@@ -493,7 +493,6 @@ if [ "$HAVE_BLKID" -gt 0 ]; then
 	echo $PWD1 | $REENC --header $IMG_HDR $HEADER_LUKS2_PV -q $FAST_PBKDF --new --type luks1 2>/dev/null && fail
 	test -f $IMG_HDR && fail
 fi
-fi # if ! fips_mode
 
 # Only test if the LUKS1 decryption can be resumed with provided --uuid
 echo "[14] Resume LUKS1 decryption"
@@ -503,6 +502,7 @@ echo $PWD1 | $REENC $LOOPDEV1 -q --decrypt --uuid $LUKS1_DECRYPT_UUID >/dev/null
 test -f $LUKS1_DECRYPT.org && fail
 test -f $LUKS1_DECRYPT.new && fail
 test -f $LUKS1_DECRYPT.log && fail
+fi # if ! fips_mode
 
 remove_mapping
 exit 0
