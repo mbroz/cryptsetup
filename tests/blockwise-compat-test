@@ -80,12 +80,12 @@ falloc() {
 
 run_all_in_fs() {
 	for file in $(ls img_fs_*.img.xz) ; do
-		echo "Run tests in $file put on top block device."
+		echo -n "Run tests in $file put on top block device. "
 		xz -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"
 		[ ! -d $MNT_DIR ] && mkdir $MNT_DIR
-		mount $DEV $MNT_DIR
+		mount $DEV $MNT_DIR 2>/dev/null
 		if [ $? -ne 0 ]; then
-			echo "Mounting image $file failed, skipped."
+			echo "[N/A]"
 			continue;
 		fi
 		rm -rf $MNT_DIR/* 2>/dev/null
@@ -97,7 +97,8 @@ run_all_in_fs() {
 		BSIZE=$iobsize
 		run_all $tfile
 		BSIZE=$oldbsize
-		umount $MNT_DIR
+		umount $MNT_DIR || fail
+		echo "[OK]"
 	done
 }
 
