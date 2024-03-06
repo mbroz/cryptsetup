@@ -630,7 +630,7 @@ if [ -d /dev/disk/by-uuid ] ; then
 	$CRYPTSETUP -q luksClose  $DEV_NAME || fail
 fi
 # skip tests using empty passphrases
-if [ ! fips_mode ]; then
+if ! fips_mode; then
 # empty keyfile
 $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV $KEYE || fail
 $CRYPTSETUP luksOpen -d $KEYE $LOOPDEV $DEV_NAME || fail

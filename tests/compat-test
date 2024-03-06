@@ -331,7 +331,7 @@ $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 $CRYPTSETUP luksHeaderRestore -q $IMG --header-backup-file $HEADER_IMG || fail
 
 # Repeat for V1.0 header - not aligned first keyslot
-if [ ! fips_mode ] ; then
+if ! fips_mode; then
 echo $PWD0 | $CRYPTSETUP luksOpen $IMG10 $DEV_NAME || fail
 check_exists
 ORG_SHA1=$(sha1sum -b /dev/mapper/$DEV_NAME | cut -f 1 -d' ')
@@ -459,7 +459,7 @@ if [ -d /dev/disk/by-uuid ] ; then
 	$CRYPTSETUP -q luksClose  $DEV_NAME || fail
 fi
 # skip tests using empty passphrase
-if [ ! fips_mode ]; then
+if ! fips_mode; then
 # empty keyfile
 $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV $KEYE || fail
 $CRYPTSETUP luksOpen -d $KEYE $LOOPDEV $DEV_NAME || fail
@@ -740,7 +740,7 @@ echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
 $CRYPTSETUP -q luksClose $DEV_NAME || fail
 # skip tests using empty passphrase
-if [ ! fips_mode ]; then
+if ! fips_mode; then
 echo | $CRYPTSETUP -q luksFormat -c null $FAST_PBKDF_OPT --type luks1 $LOOPDEV || fail
 echo | $CRYPTSETUP -q luksOpen $LOOPDEV $DEV_NAME || fail
 $CRYPTSETUP luksSuspend $DEV_NAME || fail
