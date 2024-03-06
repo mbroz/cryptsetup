@@ -292,7 +292,7 @@ format_plain_fail 4096
 cleanup
 
 # skip tests using empty passphrase (LUKS1 cipher_null)
-if [ ! fips_mode ]; then
+if ! fips_mode; then
 echo "# Offset check: 512B sector drive"
 add_device dev_size_mb=16 sector_size=512 num_tgts=1
 #           |k| expO reqO expected slot offsets
