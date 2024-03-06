@@ -421,13 +421,18 @@ echo "# Create enterprise-class 4K drive with fs and LUKS images."
 # cryptsetup should properly use 4k block on direct-io
 add_device dev_size_mb=32 sector_size=4096 physblk_exp=0 num_tgts=1 opt_blks=64
 for file in $(ls img_fs_*.img.xz) ; do
-	echo "Format using fs image $file."
+	echo -n "Format using fs image $file. "
 	xz -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"
 	[ ! -d $MNT_DIR ] && mkdir $MNT_DIR
-	mount $DEV $MNT_DIR || skip "Mounting image is not available."
+	mount $DEV $MNT_DIR 2>/dev/null
+	if [ $? -ne 0 ] ; then
+		echo "[N/A]"
+		continue
+	fi
 	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $MNT_DIR/luks.img --offset 8192 || fail
 	echo $PWD2 | $CRYPTSETUP luksFormat $FAST_PBKDF --type luks2 $MNT_DIR/luks.img --header $MNT_DIR/luks_header.img || fail
-	umount $MNT_DIR
+	umount $MNT_DIR || fail
+	echo "[OK]"
 done
 cleanup
 
@@ -454,3 +459,5 @@ add_device dev_size_mb=32 sector_size=4096 num_tgts=1 opt_blks=64
 auto_sector 4096 $DEV
 auto_sector 4096 $DEV $HDR
 cleanup
+
+exit 0
