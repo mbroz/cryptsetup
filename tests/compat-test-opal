@@ -538,7 +538,7 @@ fi
 # skip tests using empty passphrases
 if ! fips_mode; then
 # empty passphrase (OPAL admin pin cannot be empty)
-echo -e "\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+echo -e "\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV --force-password || fail
 $CRYPTSETUP luksOpen -d $KEYE $OPAL2_DEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 fi
@@ -557,7 +557,7 @@ fi
 # skip tests using empty passphrases
 if ! fips_mode; then
 # empty passphrase (OPAL admin pin cannot be empty)
-echo -e "\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV || fail
+echo -e "\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --force-password || fail
 $CRYPTSETUP luksOpen -d $KEYE $OPAL2_DEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 fi
