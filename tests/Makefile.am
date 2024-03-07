@@ -55,7 +55,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	compatimage2.img.xz \
 	conversion_imgs.tar.xz \
 	luks2_keyslot_unassigned.img.xz \
-	img_fs_ext4.img.xz img_fs_vfat.img.xz img_fs_xfs.img.xz \
+	img_fs_ext4.img.xz img_fs_vfat.img.xz img_fs_xfs.img.xz img_fs_xfs5.img.xz \
 	xfs_512_block_size.img.xz \
 	valid_header_file.xz \
 	luks2_valid_hdr.img.xz \
