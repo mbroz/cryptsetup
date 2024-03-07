@@ -52,6 +52,22 @@ skip()
 	exit 77
 }
 
+function dm_crypt_capi_support()
+{
+	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
+	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
+
+	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+	VER_PTC=$(echo $VER_STR | cut -f 3 -d.)
+
+	if [ $VER_MIN -ge 16 ]; then
+		return 0
+	fi
+
+	return 1
+}
+
 function valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
@@ -132,7 +148,7 @@ dmcrypt()
 		echo -n -e "PLAIN:"
 		dmcrypt_check "$DEV_NAME"_tstdev $OUT
 	else
-		echo -n "[n/a]"
+		echo -n "[N/A]"
 	fi
 
 	echo $PASSWORD | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF2 -c $1 -s 256 /dev/mapper/$DEV_NAME >/dev/null 2>&1
@@ -193,12 +209,17 @@ dmcrypt xchacha12,aes-adiantum-plain64
 dmcrypt xchacha20,aes-adiantum-plain64
 
 echo -n "CAPI format:"
-echo $PASSWORD | $CRYPTSETUP create -h sha256 -c 'capi:xts(aes)-plain64' -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME || fail
-$CRYPTSETUP close "$DEV_NAME"_tstdev || fail
-echo $PASSWORD | $CRYPTSETUP create -h sha256 -c 'capi:xts(ecb(aes-generic))-plain64' -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME 2>/dev/null && fail
-dmsetup create "$DEV_NAME"_tstdev --table "0 8 crypt capi:xts(ecb(aes-generic))-plain64 $KEY 0 /dev/mapper/$DEV_NAME 0" || fail
-$CRYPTSETUP status "$DEV_NAME"_tstdev 2>/dev/null | grep "type:" | grep -q "n/a" || fail
-$CRYPTSETUP close "$DEV_NAME"_tstdev 2>/dev/null || fail
-echo [OK]
+if dm_crypt_capi_support ; then
+	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c 'capi:xts(aes)-plain64' -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME --debug || fail
+	$CRYPTSETUP close "$DEV_NAME"_tstdev || fail
+	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c 'capi:xts(ecb(aes-generic))-plain64' -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME 2>/dev/null && fail
+	dmsetup create "$DEV_NAME"_tstdev --table "0 8 crypt capi:xts(ecb(aes-generic))-plain64 $KEY 0 /dev/mapper/$DEV_NAME 0" || fail
+	$CRYPTSETUP status "$DEV_NAME"_tstdev 2>/dev/null | grep "type:" | grep -q "n/a" || fail
+	$CRYPTSETUP close "$DEV_NAME"_tstdev 2>/dev/null || fail
+	echo [OK]
+else
+	echo [N/A]
+fi
 
 cleanup
+exit 0

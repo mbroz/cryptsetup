@@ -5304,6 +5304,11 @@ static void KeyslotContextAndKeyringLink(void)
 		pbkdf.iterations = 1000;
 	}
 
+	if (!t_dm_crypt_keyring_support()) {
+		printf("WARNING: dm-crypt does not support keyring, skipping test.\n");
+		return;
+	}
+
 	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_1S, r_payload_offset + 1));
 
