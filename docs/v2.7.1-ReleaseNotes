@@ -1,0 +1,30 @@
+Cryptsetup 2.7.1 Release Notes
+==============================
+Stable bug-fix release with minor extensions.
+
+All users of cryptsetup 2.7.0 should upgrade to this version.
+
+Changes since version 2.7.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix interrupted LUKS1 decryption resume.
+  With the replacement of the cryptsetup-reencrypt tool by the cryptsetup
+  reencrypt command, resuming the interrupted LUKS1 decryption operation
+  could fail. LUKS2 was not affected.
+
+* Allow --link-vk-to-keyring with --test-passphrase option.
+  This option allows uploading the volume key in a user-specified kernel
+  keyring without activating the device.
+
+* Fix crash when --active-name was used in decryption initialization.
+
+* Updates and changes to man pages, including indentation, sorting options
+  alphabetically, fixing mistakes in crypt_set_keyring_to_link, and fixing
+  some typos.
+
+* Fix compilation with libargon2 when --disable-internal-argon2 was used.
+
+* Do not require installed argon2.h header and never compile internal
+  libargon2 code if the crypto library directly supports Argon2.
+
+* Fixes to regression tests to support older Linux distributions.
