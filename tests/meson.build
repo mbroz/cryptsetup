@@ -471,7 +471,7 @@ if get_option('ssh-token') and not enable_static
         ])
 endif
 
-if get_option('external-tokens') and not enable_static
+if get_option('external-tokens') and get_option('systemd-tokens-test') and not enable_static
     test('systemd-test-plugin',
         find_program('systemd-test-plugin'),
         workdir: meson.current_build_dir(),
