@@ -52,6 +52,7 @@ option('passwdqc', type : 'string', description : 'enable password quality check
 option('pwquality', type : 'boolean', description : 'password quality checking using pwquality library', value : false)
 option('ssh-token', type : 'boolean', description : 'LUKS2 ssh-token', value : true)
 option('static-cryptsetup', type : 'boolean', description : 'enable build of static version of tools', value : false)
+option('systemd-tokens-test', type : 'boolean', description : 'compile systemd tokens and test using them from cryptsetup', value : false)
 option('tmpfilesdir', type : 'string', description : 'override default path to directory with systemd temporary files')
 option('udev', type : 'boolean', description : 'udev support', value : true)
 option('veritysetup', type : 'boolean', description : 'veritysetup support', value : true)
