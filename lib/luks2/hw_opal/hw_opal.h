@@ -29,8 +29,9 @@ struct crypt_lock_handle;
 int opal_setup_ranges(struct crypt_device *cd,
 		      struct device *dev,
 		      const struct volume_key *vk,
-		      uint64_t range_start,
-		      uint64_t range_length,
+		      uint64_t range_start_blocks,
+		      uint64_t range_length_blocks,
+		      uint32_t opal_block_bytes,
 		      uint32_t segment_number,
 		      const void *admin_key,
 		      size_t admin_key_len);

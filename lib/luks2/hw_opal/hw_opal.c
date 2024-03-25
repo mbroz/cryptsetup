@@ -405,8 +405,9 @@ static int opal_enabled(struct crypt_device *cd, struct device *dev)
 int opal_setup_ranges(struct crypt_device *cd,
 		      struct device *dev,
 		      const struct volume_key *vk,
-		      uint64_t range_start,
-		      uint64_t range_length,
+		      uint64_t range_start_blocks,
+		      uint64_t range_length_blocks,
+		      uint32_t opal_block_bytes,
 		      uint32_t segment_number,
 		      const void *admin_key,
 		      size_t admin_key_len)
@@ -423,8 +424,13 @@ int opal_setup_ranges(struct crypt_device *cd,
 	assert(vk);
 	assert(admin_key);
 	assert(vk->keylength <= OPAL_KEY_MAX);
+	assert(opal_block_bytes >= SECTOR_SIZE);
 
 	if (admin_key_len > OPAL_KEY_MAX)
+		return -EINVAL;
+
+	if (((UINT64_MAX / opal_block_bytes) < range_start_blocks) ||
+	    ((UINT64_MAX / opal_block_bytes) < range_length_blocks))
 		return -EINVAL;
 
 	fd = device_open(cd, dev, O_RDONLY);
@@ -604,8 +610,8 @@ int opal_setup_ranges(struct crypt_device *cd,
 		goto out;
 	}
 	*setup = (struct opal_user_lr_setup) {
-		.range_start = range_start,
-		.range_length = range_length,
+		.range_start = range_start_blocks,
+		.range_length = range_length_blocks,
 		/* Some drives do not enable Locking Ranges on setup. This have some
 		 * interesting consequences: Lock command called later below will pass,
 		 * but locking range will _not_ be locked at all.
@@ -658,9 +664,10 @@ int opal_setup_ranges(struct crypt_device *cd,
 	}
 
 	/* Double check the locking range is locked and the ranges are set up as configured */
-	r = opal_range_check_attributes_fd(cd, fd, segment_number, vk, &range_start,
-					   &range_length, &(bool) {true}, &(bool){true},
-					   NULL, NULL);
+	r = opal_range_check_attributes_fd(cd, fd, segment_number, vk,
+					   &(uint64_t) {range_start_blocks * opal_block_bytes / SECTOR_SIZE},
+					   &(uint64_t) {range_length_blocks * opal_block_bytes / SECTOR_SIZE},
+					   &(bool) {true}, &(bool){true}, NULL, NULL);
 out:
 	crypt_safe_free(activate);
 	crypt_safe_free(user_session);
@@ -1011,8 +1018,9 @@ void opal_exclusive_unlock(struct crypt_device *cd, struct crypt_lock_handle *op
 int opal_setup_ranges(struct crypt_device *cd,
 		      struct device *dev,
 		      const struct volume_key *vk,
-		      uint64_t range_start,
-		      uint64_t range_length,
+		      uint64_t range_start_blocks,
+		      uint64_t range_length_blocks,
+		      uint32_t opal_block_bytes,
 		      uint32_t segment_number,
 		      const void *admin_key,
 		      size_t admin_key_len)
