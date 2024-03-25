@@ -332,6 +332,13 @@ Format LUKS2 device with dm-crypt encryption stacked on top HW based encryption 
 on SED OPAL locking range. This option enables both SW and HW based data encryption.
 endif::[]
 
+ifdef::ACTION_ERASE[]
+*--hw-opal-factory-reset*::
+Erase *ALL* data on the OPAL self-encrypted device, regardless of the partition it is ran on, if any,
+and does not require a valid LUKS2 header to be present on the device to run. After providing
+correct PSID via interactive prompt or via *--key-file* parameter the device is erased.
+endif::[]
+
 ifdef::ACTION_LUKSFORMAT[]
 *--hw-opal-only*::
 Format LUKS2 device with HW based encryption configured on SED OPAL locking range only. LUKS2
