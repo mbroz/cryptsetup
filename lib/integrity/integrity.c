@@ -197,6 +197,12 @@ int INTEGRITY_tag_size(const char *integrity,
 		iv_tag_size = 16;
 	else if (!strcmp(cipher, "aegis256") && !strcmp(cipher_mode, "random"))
 		iv_tag_size = 32;
+	else if (!strcmp(cipher, "chacha20") && !strcmp(cipher_mode, "random"))
+		iv_tag_size = 12;
+	else if (!strcmp(cipher, "xchacha20") && !strcmp(cipher_mode, "random"))
+		iv_tag_size = 24;
+	else if (!strcmp(cipher, "xchacha12") && !strcmp(cipher_mode, "random"))
+		iv_tag_size = 24;
 	else if (!strcmp(cipher_mode, "random"))
 		iv_tag_size = 16;
 
@@ -213,11 +219,8 @@ int INTEGRITY_tag_size(const char *integrity,
 		auth_tag_size = 32;
 	else if (!strcmp(integrity, "hmac(sha512)"))
 		auth_tag_size = 64;
-	else if (!strcmp(integrity, "poly1305")) {
-		if (iv_tag_size)
-			iv_tag_size = 12;
+	else if (!strcmp(integrity, "poly1305"))
 		auth_tag_size = 16;
-	}
 
 	return iv_tag_size + auth_tag_size;
 }
