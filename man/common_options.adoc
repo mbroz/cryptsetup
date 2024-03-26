@@ -433,9 +433,9 @@ it is requested.
 Reencrypt only the LUKS1 header and keyslots. Skips data in-place reencryption.
 endif::[]
 
-ifdef::ACTION_TOKEN[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSDUMP,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_TOKEN[]
 *--key-description <text>*::
-Set key description in keyring for use with _token_ command.
+Set key description in keyring that will be used for passphrase retrieval.
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TCRYPTDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_BITLKDUMP[]
@@ -656,6 +656,11 @@ file. The default is to read the whole file up to
 the compiled-in maximum length that can be queried with --help.
 Supplying more than the compiled in maximum aborts the operation. When
 --new-keyfile-offset is also given, reading starts after the offset.
+endif::[]
+
+ifdef::ACTION_LUKSADDKEY[]
+*--new-key-description <text>*::
+Set key description in keyring that will be used for new passphrase retrieval.
 endif::[]
 
 ifdef::ACTION_LUKSADDKEY[]

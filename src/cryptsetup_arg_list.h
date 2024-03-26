@@ -97,7 +97,7 @@ ARG(OPT_JSON_FILE, '\0', POPT_ARG_STRING, N_("Read or write the json from or to 
 
 ARG(OPT_KEEP_KEY, '\0', POPT_ARG_NONE, N_("Do not change volume key"), NULL, CRYPT_ARG_BOOL, {}, OPT_KEEP_KEY_ACTIONS)
 
-ARG(OPT_KEY_DESCRIPTION, '\0', POPT_ARG_STRING, N_("Key description"), NULL, CRYPT_ARG_STRING, {}, {})
+ARG(OPT_KEY_DESCRIPTION, '\0', POPT_ARG_STRING, N_("Keyring key description"), NULL, CRYPT_ARG_STRING, {}, OPT_KEY_DESCRIPTION_ACTIONS)
 
 ARG(OPT_KEY_FILE, 'd', POPT_ARG_STRING, N_("Read the key from a file"), NULL, CRYPT_ARG_STRING, {}, {})
 
@@ -126,6 +126,8 @@ ARG(OPT_NEW_KEYFILE, '\0', POPT_ARG_STRING, N_("Read the key for a new slot from
 ARG(OPT_NEW_KEYFILE_OFFSET , '\0', POPT_ARG_STRING, N_("Number of bytes to skip in newly added keyfile"), N_("bytes"), CRYPT_ARG_UINT64, {}, {})
 
 ARG(OPT_NEW_KEYFILE_SIZE, '\0', POPT_ARG_STRING, N_("Limits the read from newly added keyfile"), N_("bytes"), CRYPT_ARG_UINT32, {}, {})
+
+ARG(OPT_NEW_KEY_DESCRIPTION, '\0', POPT_ARG_STRING, N_("Keyring new key description"), NULL, CRYPT_ARG_STRING, {}, OPT_NEW_KEY_DESCRIPTION_ACTIONS)
 
 ARG(OPT_NEW_KEY_SLOT, '\0', POPT_ARG_STRING, N_("Slot number for new key (default is first free)"), "INT", CRYPT_ARG_INT32, { .i32_value = CRYPT_ANY_SLOT }, OPT_NEW_KEY_SLOT_ACTIONS)
 
