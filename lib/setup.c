@@ -2496,7 +2496,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 			(device_size_bytes - range_size_bytes) / SECTOR_SIZE);
 
 	if (cipher) {
-		r = LUKS2_check_encryption_sector(cd, device_size_bytes, data_offset_bytes, sector_size,
+		r = LUKS2_check_encryption_sector(cd, range_size_bytes, data_offset_bytes, sector_size,
 						  sector_size_autodetect, integrity == NULL,
 						  &sector_size);
 		if (r < 0)
@@ -2517,7 +2517,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 			       sector_size,
 			       data_offset_bytes,
 			       metadata_size_bytes, keyslots_size_bytes,
-			       device_size_bytes,
+			       range_size_bytes,
 			       opal_segment_number,
 			       opal_params->user_key_size);
 	if (r < 0)
