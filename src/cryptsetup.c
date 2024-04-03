@@ -3039,8 +3039,7 @@ static int opal_erase(struct crypt_device *cd, bool factory_reset) {
 	r = tools_get_key(factory_reset ? _("Enter OPAL PSID: ") : _("Enter OPAL Admin password: "),
 				&password, &password_size, ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
 				ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-				ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0),
-				!ARG_SET(OPT_FORCE_PASSWORD_ID), cd);
+				ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 	if (r < 0)
 		return r;
 
