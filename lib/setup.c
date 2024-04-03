@@ -5328,7 +5328,8 @@ static int _activate_luks2_by_volume_key(struct crypt_device *cd,
 		}
 		r = _open_and_activate_reencrypt_device_by_vk(cd, &cd->u.luks2.hdr, name, vk, flags);
 	} else {
-		assert(crypt_volume_key_get_id(vk) == LUKS2_digest_by_segment(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT));
+		/* hw-opal data segment type does not require volume key for activation */
+		assert(!vk || crypt_volume_key_get_id(vk) == LUKS2_digest_by_segment(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT));
 		r = LUKS2_activate(cd, name, vk, external_key, flags);
 	}
 
