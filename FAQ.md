@@ -169,17 +169,12 @@
   me write the section.  Please note that by contributing to this FAQ,
   you accept the license described below.
 
-  This work is under the "Attribution-Share Alike 3.0 Unported" license,
-  which means distribution is unlimited, you may create derived works, but
+  This work is licensed under a Creative Commons CC-BY-SA-4.0
+  "Attribution-ShareAlike 4.0 International" license which means
+  distribution is unlimited, you may create derived works, but
   attributions to original authors and this license statement must be
-  retained and the derived work must be under the same license.  See
-  https://creativecommons.org/licenses/by-sa/3.0/ for more details of the
-  license.
-
-  Side note: I did text license research some time ago and I think this
-  license is best suited for the purpose at hand and creates the least
-  problems.
-
+  retained and the derived work must be under the same license.
+  See https://creativecommons.org/licenses/by-sa/4.0/ for more details.
 
   * **1.6 Where is the project website?**
 
