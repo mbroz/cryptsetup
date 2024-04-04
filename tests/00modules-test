@@ -34,6 +34,11 @@ pversion integritysetup
 	$CRYPTSETUP_PATH/cryptsetup --help | sed -n '/optional key file for/,$p' | tail -n +3
 }
 
+if [ -b "$OPAL2_DEV" ]; then
+	echo "OPAL test device:"
+	lsblk "$OPAL2_DEV" -d -o NAME,TRAN,MODEL,REV,MIN-IO,PHY-SEC,LOG-SEC,DISC-ALN,DISC-GRAN,DISC-MAX,DISC-ZERO 2>/dev/null
+fi
+
 [ $(id -u) != 0 ] && exit 77
 
 modprobe dm-crypt     >/dev/null 2>&1
