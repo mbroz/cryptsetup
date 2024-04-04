@@ -1,0 +1,23 @@
+Cryptsetup 2.7.2 Release Notes
+==============================
+Stable bug-fix release.
+
+All users of cryptsetup 2.7 should upgrade to this version.
+
+Changes since version 2.7.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Fix activation of OPAL-only encrypted LUKS device with tokens.
+  The issue was caused by an invalid volume key check (assert)
+  that is impossible without software encryption.
+
+* Fix formatting of OPAL devices with 4096-byte sector size.
+
+* Fix incorrect OPAL locking range alignment calculation if used
+  over an unaligned device partition.
+
+* Add --hw-opal-factory-reset option description to the manual page.
+
+* Do not check the passphrase quality for OPAL Admin PIN,
+  as this passphrase already exists.
+
+* Update license for FAQ document to CC BY-SA 4.0.
