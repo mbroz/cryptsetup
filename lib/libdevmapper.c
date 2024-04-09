@@ -157,6 +157,9 @@ static void _dm_set_crypt_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 22, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_CRYPT_NO_WORKQUEUE_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 26, 0, crypt_maj, crypt_min, crypt_patch))
+		_dm_flags |= DM_CRYPT_HIGH_PRIORITY_SUPPORTED;
+
 	_dm_crypt_checked = true;
 }
 
@@ -558,19 +561,22 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 		num_options++;
 	if (flags & CRYPT_ACTIVATE_IV_LARGE_SECTORS)
 		num_options++;
+	if (flags & CRYPT_ACTIVATE_HIGH_PRIORITY)
+		num_options++;
 	if (tgt->u.crypt.integrity)
 		num_options++;
 	if (tgt->u.crypt.sector_size != SECTOR_SIZE)
 		num_options++;
 
-	if (num_options) { /* MAX length  int32 + 15 + 15 + 23 + 18 + 19 + 17 + 13 + int32 + integrity_str */
-		r = snprintf(features, sizeof(features), " %d%s%s%s%s%s%s%s%s", num_options,
+	if (num_options) { /* MAX length  int32 + 15 + 15 + 23 + 18 + 19 + 17 + 14 + 13 + int32 + integrity_str */
+		r = snprintf(features, sizeof(features), " %d%s%s%s%s%s%s%s%s%s", num_options,
 		(flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? " allow_discards" : "",
 		(flags & CRYPT_ACTIVATE_SAME_CPU_CRYPT) ? " same_cpu_crypt" : "",
 		(flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? " submit_from_crypt_cpus" : "",
 		(flags & CRYPT_ACTIVATE_NO_READ_WORKQUEUE) ? " no_read_workqueue" : "",
 		(flags & CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE) ? " no_write_workqueue" : "",
 		(flags & CRYPT_ACTIVATE_IV_LARGE_SECTORS) ? " iv_large_sectors" : "",
+		(flags & CRYPT_ACTIVATE_HIGH_PRIORITY) ? " high_priority" : "",
 		(tgt->u.crypt.sector_size != SECTOR_SIZE) ?
 			_uf(sector_feature, sizeof(sector_feature), "sector_size", tgt->u.crypt.sector_size) : "",
 		integrity_dm);
@@ -1580,6 +1586,14 @@ static int check_retry(struct crypt_device *cd, uint32_t *dmd_flags, uint32_t dm
 		ret = 1;
 	}
 
+	/* Drop high-priority workqueue options if not supported */
+	if ((*dmd_flags & CRYPT_ACTIVATE_HIGH_PRIORITY) &&
+	    !(dmt_flags & DM_CRYPT_HIGH_PRIORITY_SUPPORTED)) {
+		log_dbg(cd, "dm-crypt does not support high-priority option");
+		*dmd_flags = *dmd_flags & ~CRYPT_ACTIVATE_HIGH_PRIORITY;
+		ret = 1;
+	}
+
 	return ret;
 }
 
@@ -1973,6 +1987,8 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 				*act_flags |= CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE;
 			else if (!strcasecmp(arg, "iv_large_sectors"))
 				*act_flags |= CRYPT_ACTIVATE_IV_LARGE_SECTORS;
+			else if (!strcasecmp(arg, "high_priority"))
+				*act_flags |= CRYPT_ACTIVATE_HIGH_PRIORITY;
 			else if (sscanf(arg, "integrity:%u:", &val) == 1) {
 				tgt->u.crypt.tag_size = val;
 				rintegrity = strchr(arg + strlen("integrity:"), ':');

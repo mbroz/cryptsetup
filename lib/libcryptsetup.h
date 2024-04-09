@@ -1504,6 +1504,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_RECALCULATE_RESET (UINT32_C(1) << 26)
 /** dm-verity: try to use tasklets */
 #define CRYPT_ACTIVATE_TASKLETS (UINT32_C(1) << 27)
+/** dm-crypt: use high-priority workqueues */
+#define CRYPT_ACTIVATE_HIGH_PRIORITY (UINT32_C(1) << 28)
 
 /**
  * Active device runtime attributes

@@ -113,6 +113,7 @@
 #define OPT_PBKDF_FORCE_ITERATIONS	"pbkdf-force-iterations"
 #define OPT_PBKDF_MEMORY		"pbkdf-memory"
 #define OPT_PBKDF_PARALLEL		"pbkdf-parallel"
+#define OPT_PERF_HIGH_PRIORITY		"perf-high_priority"
 #define OPT_PERF_NO_READ_WORKQUEUE	"perf-no_read_workqueue"
 #define OPT_PERF_NO_WRITE_WORKQUEUE	"perf-no_write_workqueue"
 #define OPT_PERF_SAME_CPU_CRYPT		"perf-same_cpu_crypt"

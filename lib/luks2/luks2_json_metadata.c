@@ -1553,6 +1553,7 @@ static const struct  {
 	{ CRYPT_ACTIVATE_NO_JOURNAL,             "no-journal" },
 	{ CRYPT_ACTIVATE_NO_READ_WORKQUEUE,      "no-read-workqueue" },
 	{ CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE,     "no-write-workqueue" },
+	{ CRYPT_ACTIVATE_HIGH_PRIORITY,          "high_priority" },
 	{ 0, NULL }
 };
 

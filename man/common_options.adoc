@@ -780,6 +780,17 @@ count is lower. This option is not available for PBKDF2.
 endif::[]
 
 ifdef::ACTION_REFRESH,ACTION_OPEN[]
+*--perf-high_priority*::
+Set dm-crypt workqueues and the writer thread to high priority.
+This i mproves throughput and latency of dm-crypt while degrading general
+responsiveness of the system.
++
+*NOTE:* This option is available only for low-level dm-crypt
+performance tuning, use only if you need a change to default dm-crypt
+behaviour. Needs kernel 6.10 or later.
+endif::[]
+
+ifdef::ACTION_REFRESH,ACTION_OPEN[]
 *--perf-no_read_workqueue, --perf-no_write_workqueue*::
 Bypass dm-crypt internal workqueue and process read or write requests
 synchronously.

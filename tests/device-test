@@ -106,6 +106,9 @@ function dm_crypt_features()
 
 	[ $VER_MIN -lt 22 ] && return
 	DM_PERF_NO_WORKQUEUE=1
+
+	[ $VER_MIN -lt 26 ] && return
+	DM_PERF_HIGH_PRIORITY=1
 }
 
 format() # format
@@ -183,10 +186,16 @@ else
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
 	echo -e "$PWD1" | $CRYPTSETUP refresh $PLAIN_OPT $DEV $DEV_NAME2 2>/dev/null && fail
 	if [ -n "$DM_PERF_NO_WORKQUEUE" ]; then
-		echo -n "no_read_workqueue no_write_workqueue"
+		echo -n "no_read_workqueue no_write_workqueue "
 		echo -e "$PWD1" | $CRYPTSETUP refresh $PLAIN_OPT -q $DEV_NAME --perf-no_read_workqueue --perf-no_write_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
+		check_io
+	fi
+	if [ -n "$DM_PERF_HIGH_PRIORITY" ]; then
+		echo -n "high_priority "
+		echo -e "$PWD1" | $CRYPTSETUP refresh $PLAIN_OPT -q $DEV_NAME --perf-high_priority || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q high_priority || fail
 		check_io
 	fi
 	$CRYPTSETUP close $DEV_NAME || fail
@@ -215,10 +224,15 @@ else
 	$CRYPTSETUP status $DEV_NAME | grep -q same_cpu_crypt && fail
 	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME2 2>/dev/null && fail
 	if [ -n "$DM_PERF_NO_WORKQUEUE" ]; then
-		echo -n "no_read_workqueue no_write_workqueue"
+		echo -n "no_read_workqueue no_write_workqueue "
 		echo -e "$PWD1" | $CRYPTSETUP refresh $DEV_NAME  --perf-no_read_workqueue --perf-no_write_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
+	fi
+	if [ -n "$DM_PERF_HIGH_PRIORITY" ]; then
+		echo -n "high_priority "
+		echo -e "$PWD1" | $CRYPTSETUP refresh $DEV_NAME  --perf-high_priority || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q high_priority || fail
 	fi
 	$CRYPTSETUP close $DEV_NAME || fail
 	echo
@@ -280,7 +294,7 @@ else
 		fi
 	fi
 	if [ -n "$DM_PERF_NO_WORKQUEUE" ]; then
-		echo -n "no_read_workqueue no_write_workqueue"
+		echo -n "no_read_workqueue no_write_workqueue "
 		echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME --perf-no_read_workqueue --perf-no_write_workqueue --persistent || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
@@ -288,6 +302,14 @@ else
 		echo -e "$PWD1" | $CRYPTSETUP open $DEV $DEV_NAME || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_read_workqueue || fail
 		$CRYPTSETUP status $DEV_NAME | grep -q no_write_workqueue || fail
+	fi
+	if [ -n "$DM_PERF_HIGH_PRIORITY" ]; then
+		echo -n "high_priority "
+		echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME --perf-high_priority --persistent || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q high_priority || fail
+		$CRYPTSETUP close $DEV_NAME || fail
+		echo -e "$PWD1" | $CRYPTSETUP open $DEV $DEV_NAME || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q high_priority || fail
 	fi
 	echo -e "$PWD1" | $CRYPTSETUP refresh $DEV $DEV_NAME2 2>/dev/null && fail
 	$CRYPTSETUP close $DEV_NAME || fail
