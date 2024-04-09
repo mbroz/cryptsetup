@@ -21,3 +21,11 @@ Changes since version 2.7.1
   as this passphrase already exists.
 
 * Update license for FAQ document to CC BY-SA 4.0.
+
+NOTE: Please note that with OPAL-only (--hw-opal-only) encryption,
+the configured OPAL administrator PIN (passphrase) allows unlocking
+all configured locking ranges without LUKS keyslot decryption
+(without knowledge of LUKS passphrase).
+Because of many observed problems with compatibility, cryptsetup
+currently DOES NOT use OPAL single-user mode, which would allow such
+decoupling of OPAL admin PIN access.

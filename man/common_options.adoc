@@ -344,6 +344,14 @@ ifdef::ACTION_LUKSFORMAT[]
 Format LUKS2 device with HW based encryption configured on SED OPAL locking range only. LUKS2
 format only manages locking range unlock key. This option enables HW based data encryption managed
 by SED OPAL drive only.
++
+*NOTE*: Please note that with OPAL-only (--hw-opal-only) encryption,
+the configured OPAL administrator PIN (passphrase) allows unlocking
+all configured locking ranges without LUKS keyslot decryption
+(without knowledge of LUKS passphrase).
+Because of many observed problems with compatibility, cryptsetup
+currently DOES NOT use OPAL single-user mode, which would allow such
+decoupling of OPAL admin PIN access.
 endif::[]
 
 ifdef::ACTION_REENCRYPT[]
