@@ -266,6 +266,8 @@ static inline void *crypt_zalloc(size_t size) { return calloc(1, size); }
 static inline bool uint64_mult_overflow(uint64_t *u, uint64_t b, size_t size)
 {
 	*u = (uint64_t)b * size;
+	if (size == 0)
+		return true;
 	if ((uint64_t)(*u / size) != b)
 		return true;
 	return false;
