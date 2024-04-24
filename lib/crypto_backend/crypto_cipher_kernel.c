@@ -164,7 +164,7 @@ static int _crypt_cipher_crypt(struct crypt_cipher_kernel *ctx,
 		header->cmsg_len = iv_msg_size;
 		alg_iv = (void*)CMSG_DATA(header);
 		alg_iv->ivlen = iv_length;
-		memcpy(alg_iv->iv, iv, iv_length);
+		crypt_backend_memcpy(alg_iv->iv, iv, iv_length);
 	}
 
 	len = sendmsg(ctx->opfd, &msg, 0);

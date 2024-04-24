@@ -402,7 +402,7 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 	if (EVP_DigestFinal_ex(ctx->md, tmp, &tmp_len) != 1)
 		return -EINVAL;
 
-	memcpy(buffer, tmp, length);
+	crypt_backend_memcpy(buffer, tmp, length);
 	crypt_backend_memzero(tmp, sizeof(tmp));
 
 	if (tmp_len < length)
@@ -531,7 +531,7 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 
 	HMAC_Final(ctx->md, tmp, &tmp_len);
 #endif
-	memcpy(buffer, tmp, length);
+	crypt_backend_memcpy(buffer, tmp, length);
 	crypt_backend_memzero(tmp, sizeof(tmp));
 
 	if (tmp_len < length)

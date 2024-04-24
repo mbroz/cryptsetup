@@ -313,7 +313,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 		return -ENOMEM;
 	}
 
-	memcpy(h->key, key, key_length);
+	crypt_backend_memcpy(h->key, key, key_length);
 	h->key_length = key_length;
 
 	h->hash->init(&h->nettle_ctx);
