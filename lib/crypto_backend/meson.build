@@ -11,6 +11,7 @@ libcrypto_backend_link_with = []
 libcrypto_backend_sources = files(
     'argon2_generic.c',
     'base64.c',
+    'memutils.c',
     'cipher_check.c',
     'cipher_generic.c',
     'crc32.c',
