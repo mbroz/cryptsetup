@@ -19,11 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
 #include <sys/mman.h>
-#include "libcryptsetup.h"
+#include "internal.h"
 
 struct safe_allocation {
 	size_t size;
@@ -41,14 +39,7 @@ void crypt_safe_memzero(void *data, size_t size)
 	if (!data)
 		return;
 
-#ifdef HAVE_EXPLICIT_BZERO
-	explicit_bzero(data, size);
-#else
-	volatile uint8_t *p = (volatile uint8_t *)data;
-
-	while(size--)
-		*p++ = 0;
-#endif
+	return crypt_backend_memzero(data, size);
 }
 
 /* safe allocations */
@@ -63,7 +54,7 @@ void *crypt_safe_alloc(size_t size)
 	if (!alloc)
 		return NULL;
 
-	crypt_safe_memzero(alloc, size + OVERHEAD);
+	crypt_backend_memzero(alloc, size + OVERHEAD);
 	alloc->size = size;
 
 	/* Ignore failure if it is over limit. */
@@ -86,7 +77,7 @@ void crypt_safe_free(void *data)
 	p = (char *)data - OVERHEAD;
 	alloc = (struct safe_allocation *)p;
 
-	crypt_safe_memzero(data, alloc->size);
+	crypt_backend_memzero(data, alloc->size);
 
 	if (alloc->locked) {
 		munlock(alloc, alloc->size + OVERHEAD);
@@ -114,7 +105,7 @@ void *crypt_safe_realloc(void *data, size_t size)
 		if (size > alloc->size)
 			size = alloc->size;
 
-		memcpy(new_data, data, size);
+		crypt_backend_memcpy(new_data, data, size);
 	}
 
 	crypt_safe_free(data);
