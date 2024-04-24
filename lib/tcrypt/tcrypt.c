@@ -320,16 +320,16 @@ static void TCRYPT_copy_key(struct tcrypt_alg *alg, const char *mode,
 	int ks2;
 	if (!strncmp(mode, "xts", 3)) {
 		ks2 = alg->key_size / 2;
-		memcpy(out_key, &key[alg->key_offset], ks2);
-		memcpy(&out_key[ks2], &key[alg->iv_offset], ks2);
+		crypt_safe_memcpy(out_key, &key[alg->key_offset], ks2);
+		crypt_safe_memcpy(&out_key[ks2], &key[alg->iv_offset], ks2);
 	} else if (!strncmp(mode, "lrw", 3)) {
 		ks2 = alg->key_size - TCRYPT_LRW_IKEY_LEN;
-		memcpy(out_key, &key[alg->key_offset], ks2);
-		memcpy(&out_key[ks2], key, TCRYPT_LRW_IKEY_LEN);
+		crypt_safe_memcpy(out_key, &key[alg->key_offset], ks2);
+		crypt_safe_memcpy(&out_key[ks2], key, TCRYPT_LRW_IKEY_LEN);
 	} else if (!strncmp(mode, "cbc", 3)) {
-		memcpy(out_key, &key[alg->key_offset], alg->key_size);
+		crypt_safe_memcpy(out_key, &key[alg->key_offset], alg->key_size);
 		/* IV + whitening */
-		memcpy(&out_key[alg->key_size], &key[alg->iv_offset],
+		crypt_safe_memcpy(&out_key[alg->key_size], &key[alg->iv_offset],
 		       alg->key_extra_size);
 	}
 }

@@ -317,7 +317,7 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 			}
 		}
 	};
-	memcpy(lrs->session.opal_key.key, vk->key, vk->keylength);
+	crypt_safe_memcpy(lrs->session.opal_key.key, vk->key, vk->keylength);
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_GET_LR_STATUS, lrs);
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -458,7 +458,7 @@ int opal_setup_ranges(struct crypt_device *cd,
 			 */
 			.lr = { 1, 2, 3, 4, 5, 6, 7, 8 },
 		};
-		memcpy(activate->key.key, admin_key, admin_key_len);
+		crypt_safe_memcpy(activate->key.key, admin_key, admin_key_len);
 
 		r = opal_ioctl(cd, fd, IOC_OPAL_TAKE_OWNERSHIP, &activate->key);
 		if (r < 0) {
@@ -500,7 +500,7 @@ int opal_setup_ranges(struct crypt_device *cd,
 				.key_len = admin_key_len,
 			},
 		};
-		memcpy(user_session->opal_key.key, admin_key, admin_key_len);
+		crypt_safe_memcpy(user_session->opal_key.key, admin_key, admin_key_len);
 
 		r = opal_ioctl(cd, fd, IOC_OPAL_ERASE_LR, user_session);
 		if (r != OPAL_STATUS_SUCCESS) {
@@ -529,7 +529,7 @@ int opal_setup_ranges(struct crypt_device *cd,
 			.key_len = admin_key_len,
 		},
 	};
-	memcpy(user_session->opal_key.key, admin_key, admin_key_len);
+	crypt_safe_memcpy(user_session->opal_key.key, admin_key, admin_key_len);
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_ACTIVATE_USR, user_session);
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -554,7 +554,7 @@ int opal_setup_ranges(struct crypt_device *cd,
 		},
 		.l_state = OPAL_RO,
 	};
-	memcpy(user_add_to_lr->session.opal_key.key, admin_key, admin_key_len);
+	crypt_safe_memcpy(user_add_to_lr->session.opal_key.key, admin_key, admin_key_len);
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_ADD_USR_TO_LR, user_add_to_lr);
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -593,8 +593,8 @@ int opal_setup_ranges(struct crypt_device *cd,
 			},
 		},
 	};
-	memcpy(new_pw->new_user_pw.opal_key.key, vk->key, vk->keylength);
-	memcpy(new_pw->session.opal_key.key, admin_key, admin_key_len);
+	crypt_safe_memcpy(new_pw->new_user_pw.opal_key.key, vk->key, vk->keylength);
+	crypt_safe_memcpy(new_pw->session.opal_key.key, admin_key, admin_key_len);
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_SET_PW, new_pw);
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -626,7 +626,7 @@ int opal_setup_ranges(struct crypt_device *cd,
 			},
 		},
 	};
-	memcpy(setup->session.opal_key.key, admin_key, admin_key_len);
+	crypt_safe_memcpy(setup->session.opal_key.key, admin_key, admin_key_len);
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_LR_SETUP, setup);
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -653,7 +653,7 @@ int opal_setup_ranges(struct crypt_device *cd,
 			},
 		}
 	};
-	memcpy(lock->session.opal_key.key, vk->key, vk->keylength);
+	crypt_safe_memcpy(lock->session.opal_key.key, vk->key, vk->keylength);
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_LOCK_UNLOCK, lock);
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -709,7 +709,7 @@ static int opal_lock_unlock(struct crypt_device *cd,
 		assert(vk->keylength <= OPAL_KEY_MAX);
 
 		unlock.session.opal_key.key_len = vk->keylength;
-		memcpy(unlock.session.opal_key.key, vk->key, vk->keylength);
+		crypt_safe_memcpy(unlock.session.opal_key.key, vk->key, vk->keylength);
 	}
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_LOCK_UNLOCK, &unlock);
@@ -801,7 +801,7 @@ int opal_factory_reset(struct crypt_device *cd,
 	if (fd < 0)
 		return -EIO;
 
-	memcpy(reset.key, password, password_len);
+	crypt_safe_memcpy(reset.key, password, password_len);
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_PSID_REVERT_TPR, &reset);
 	if (r < 0) {
@@ -858,7 +858,7 @@ int opal_reset_segment(struct crypt_device *cd,
 			.key_len = password_len,
 		},
 	};
-	memcpy(user_session->opal_key.key, password, password_len);
+	crypt_safe_memcpy(user_session->opal_key.key, password, password_len);
 
 	fd = device_open(cd, dev, O_RDONLY);
 	if (fd < 0) {

@@ -1092,7 +1092,7 @@ static int decrypt_key(struct crypt_device *cd,
 		crypt_get_volume_key_size(cd) == 32) {
 		/* 128bit AES-CBC with Elephant -- key size is 256 bit (2 keys) but key data is 512 bits,
 		   data: 16B CBC key, 16B empty, 16B elephant key, 16B empty */
-		memcpy(outbuf + 16 + BITLK_OPEN_KEY_METADATA_LEN,
+		crypt_safe_memcpy(outbuf + 16 + BITLK_OPEN_KEY_METADATA_LEN,
 			outbuf + 2 * 16 + BITLK_OPEN_KEY_METADATA_LEN, 16);
 		key_size = 32 + BITLK_OPEN_KEY_METADATA_LEN;
 	}

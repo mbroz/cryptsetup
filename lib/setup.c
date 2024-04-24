@@ -325,9 +325,9 @@ static int process_key(struct crypt_device *cd, const char *hash_name,
 			return -EINVAL;
 		}
 	} else if (passLen > key_size) {
-		memcpy((*vk)->key, pass, key_size);
+		crypt_safe_memcpy((*vk)->key, pass, key_size);
 	} else {
-		memcpy((*vk)->key, pass, passLen);
+		crypt_safe_memcpy((*vk)->key, pass, passLen);
 	}
 
 	return 0;
@@ -5465,7 +5465,7 @@ static int _activate_loopaes(struct crypt_device *cd,
 	buffer_copy = crypt_safe_alloc(buffer_size);
 	if (!buffer_copy)
 		return -ENOMEM;
-	memcpy(buffer_copy, buffer, buffer_size);
+	crypt_safe_memcpy(buffer_copy, buffer, buffer_size);
 
 	r = LOOPAES_parse_keyfile(cd, &vk, cd->u.loopaes.hdr.hash, &key_count,
 				  buffer_copy, buffer_size);
@@ -6178,7 +6178,7 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 	} else if (isVERITY(cd->type)) {
 		/* volume_key == root hash */
 		if (cd->u.verity.root_hash) {
-			memcpy(volume_key, cd->u.verity.root_hash, cd->u.verity.root_hash_size);
+			crypt_safe_memcpy(volume_key, cd->u.verity.root_hash, cd->u.verity.root_hash_size);
 			*volume_key_size = cd->u.verity.root_hash_size;
 			r = 0;
 		} else
@@ -6204,7 +6204,7 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 	}
 
 	if (r >= 0 && vk) {
-		memcpy(volume_key, vk->key, vk->keylength);
+		crypt_safe_memcpy(volume_key, vk->key, vk->keylength);
 		*volume_key_size = vk->keylength;
 	}
 

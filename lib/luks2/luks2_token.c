@@ -1150,7 +1150,7 @@ out:
 	if (!r) {
 		*passphrase = crypt_safe_alloc(buffer_size);
 		if (*passphrase) {
-			memcpy(*passphrase, buffer, buffer_size);
+			crypt_safe_memcpy(*passphrase, buffer, buffer_size);
 			*passphrase_size = buffer_size;
 		} else
 			r = -ENOMEM;

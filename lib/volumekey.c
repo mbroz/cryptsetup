@@ -45,7 +45,7 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 	/* keylength 0 is valid => no key */
 	if (vk->keylength) {
 		if (key)
-			memcpy(&vk->key, key, keylength);
+			crypt_safe_memcpy(&vk->key, key, keylength);
 		else
 			crypt_safe_memzero(&vk->key, keylength);
 	}

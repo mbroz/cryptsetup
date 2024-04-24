@@ -2045,7 +2045,7 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 			} else {
 				buffer[2] = '\0';
 				for(i = 0; i < vk->keylength; i++) {
-					memcpy(buffer, &key_[i * 2], 2);
+					crypt_safe_memcpy(buffer, &key_[i * 2], 2);
 					vk->key[i] = strtoul(buffer, &endp, 16);
 					if (endp != &buffer[2]) {
 						r = -EINVAL;

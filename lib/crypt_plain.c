@@ -105,7 +105,7 @@ int crypt_plain_hash(struct crypt_device *cd,
 			log_dbg(cd, "Too short plain passphrase.");
 			return -EINVAL;
 		}
-		memcpy(key, passphrase, hash_size);
+		crypt_safe_memcpy(key, passphrase, hash_size);
 		r = 0;
 	} else
 		r = hash(hash_name_buf, hash_size, key, passphrase_size, passphrase);

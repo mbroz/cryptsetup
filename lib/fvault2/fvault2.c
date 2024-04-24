@@ -579,8 +579,8 @@ static int _read_volume_header(
 	*block_size = le32_to_cpu(vol_header->block_size);
 	*disklbl_blkoff = le64_to_cpu(vol_header->disklbl_blkoff);
 	uuid_unparse(vol_header->ph_vol_uuid, ph_vol_uuid);
-	memcpy((*enc_md_key)->key, vol_header->key_data, FVAULT2_AES_KEY_SIZE);
-	memcpy((*enc_md_key)->key + FVAULT2_AES_KEY_SIZE,
+	crypt_safe_memcpy((*enc_md_key)->key, vol_header->key_data, FVAULT2_AES_KEY_SIZE);
+	crypt_safe_memcpy((*enc_md_key)->key + FVAULT2_AES_KEY_SIZE,
 		vol_header->ph_vol_uuid, FVAULT2_AES_KEY_SIZE);
 out:
 	free(vol_header);
