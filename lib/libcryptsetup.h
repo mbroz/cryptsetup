@@ -3100,6 +3100,15 @@ void *crypt_safe_realloc(void *data, size_t size);
  */
 void crypt_safe_memzero(void *data, size_t size);
 
+/**
+ * Memcpy helper to avoid spilling sensitive data through additional registers
+ *
+ * @param dst pointer to memory to be written
+ * @param src pointer to memory to be copied
+ * @param size size of memory in bytes
+ */
+void *crypt_safe_memcpy(void *dst, const void *src, size_t size);
+
 /** @} */
 
 /**

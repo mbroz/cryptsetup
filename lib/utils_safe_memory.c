@@ -42,6 +42,15 @@ void crypt_safe_memzero(void *data, size_t size)
 	return crypt_backend_memzero(data, size);
 }
 
+/* Memcpy helper to avoid spilling sensitive data through additional registers */
+void *crypt_safe_memcpy(void *dst, const void *src, size_t size)
+{
+	if (!dst || !src)
+		return NULL;
+
+	return crypt_backend_memcpy(dst, src, size);
+}
+
 /* safe allocations */
 void *crypt_safe_alloc(size_t size)
 {

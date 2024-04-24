@@ -180,3 +180,8 @@ CRYPTSETUP_2.7 {
 		crypt_set_keyring_to_link;
 		crypt_wipe_hw_opal;
 } CRYPTSETUP_2.6;
+
+CRYPTSETUP_2.8 {
+	global:
+		crypt_safe_memcpy;
+} CRYPTSETUP_2.7;
