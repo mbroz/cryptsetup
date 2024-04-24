@@ -146,6 +146,9 @@ int crypt_bitlk_decrypt_key(const void *key, size_t key_length,
 /* Memzero helper (memset on stack can be optimized out) */
 void crypt_backend_memzero(void *s, size_t n);
 
+/* Memcpy helper to avoid spilling sensitive data through additional registers */
+void *crypt_backend_memcpy(void *dst, const void *src, size_t n);
+
 /* Memcmp helper (memcmp in constant time) */
 int crypt_backend_memeq(const void *m1, const void *m2, size_t n);
 
