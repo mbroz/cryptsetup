@@ -210,6 +210,23 @@ static int _path_get_uint64(const char *sysfs_path, uint64_t *value, const char 
 	return _read_uint64(path, value);
 }
 
+static int _sysfs_get_string(int major, int minor, char *buf, size_t buf_size, const char *attr)
+{
+	char path[PATH_MAX];
+	int fd, r;
+
+	if (snprintf(path, sizeof(path), "/sys/dev/block/%d:%d/%s",
+		     major, minor, attr) < 0)
+		return 0;
+
+	if ((fd = open(path, O_RDONLY)) < 0)
+		return 0;
+	r = read(fd, buf, buf_size);
+	close(fd);
+
+	return r < 0 ? 0 : r;
+}
+
 int crypt_dev_get_partition_number(const char *dev_path)
 {
 	uint64_t partno;
@@ -246,6 +263,16 @@ int crypt_dev_is_dax(int major, int minor)
 		return 0; /* if failed, expect non-DAX device */
 
 	return val ? 1 : 0;
+}
+
+int crypt_dev_is_zoned(int major, int minor)
+{
+	char buf[32] = {};
+
+	if (!_sysfs_get_string(major, minor, buf, sizeof(buf), "queue/zoned"))
+		return 0; /* if failed, expect non-zoned device */
+
+	return strncmp(buf, "none", 4) ? 1 : 0;
 }
 
 int crypt_dev_is_partition(const char *dev_path)

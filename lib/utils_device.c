@@ -1007,6 +1007,22 @@ int device_is_dax(struct device *device)
 	return crypt_dev_is_dax(major(st.st_rdev), minor(st.st_rdev));
 }
 
+int device_is_zoned(struct device *device)
+{
+	struct stat st;
+
+	if (!device)
+		return -EINVAL;
+
+	if (stat(device_path(device), &st) < 0)
+		return -EINVAL;
+
+	if (!S_ISBLK(st.st_mode))
+		return 0;
+
+	return crypt_dev_is_zoned(major(st.st_rdev), minor(st.st_rdev));
+}
+
 size_t device_alignment(struct device *device)
 {
 	int devfd;

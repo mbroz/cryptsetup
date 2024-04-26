@@ -1604,5 +1604,16 @@ dmsetup resume $DEV_NAME || fail
 $CRYPTSETUP -q luksClose $DEV_NAME2 || fail
 dmsetup remove --retry $DEV_NAME || fail
 
+prepare "[47] Zoned device is unusable for LUKS header" wipe
+add_scsi_device dev_size_mb=32 sector_size=4096 zbc=host-managed
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT $DEV > /dev/null 2>&1 && fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT --header $HEADER_IMG $DEV >/dev/null || fail
+echo $PWD1 | $CRYPTSETUP open --header $HEADER_IMG $DEV $DEV_NAME || fail
+$CRYPTSETUP close $DEV_NAME || fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $DEV > /dev/null 2>&1 && fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT --header $HEADER_IMG $DEV >/dev/null || fail
+echo $PWD1 | $CRYPTSETUP open --header $HEADER_IMG $DEV $DEV_NAME || fail
+$CRYPTSETUP close $DEV_NAME || fail
+
 remove_mapping
 exit 0
