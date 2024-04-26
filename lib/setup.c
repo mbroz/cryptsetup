@@ -1790,6 +1790,12 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (device_is_zoned(crypt_metadata_device(cd)) > 0) {
+		log_err(cd, _("Zoned device %s cannot be used for LUKS header."),
+			device_path(crypt_metadata_device(cd)));
+		return -EINVAL;
+	}
+
 	if (params && cd->data_offset && params->data_alignment &&
 	   (cd->data_offset % params->data_alignment)) {
 		log_err(cd, _("Requested data alignment is not compatible with data offset."));
@@ -2024,6 +2030,12 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 
 	if (!crypt_metadata_device(cd)) {
 		log_err(cd, _("Can't format LUKS without device."));
+		return -EINVAL;
+	}
+
+	if (device_is_zoned(crypt_metadata_device(cd)) > 0) {
+		log_err(cd, _("Zoned device %s cannot be used for LUKS header."),
+			device_path(crypt_metadata_device(cd)));
 		return -EINVAL;
 	}
 
