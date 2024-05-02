@@ -158,7 +158,7 @@ static key_serial_t find_key_by_type_and_desc(const char *type, const char *desc
 	char *newline;
 	size_t buffer_len = 0;
 
-	int n;
+	ssize_t n;
 
 	do {
 		id = request_key(type, desc, NULL, 0);
@@ -171,7 +171,8 @@ static key_serial_t find_key_by_type_and_desc(const char *type, const char *desc
 		return 0;
 
 	while ((n = read(f, buf + buffer_len, sizeof(buf) - buffer_len - 1)) > 0) {
-		buffer_len += n;
+		/* coverity[overflow:FALSE] */
+		buffer_len += (size_t)n;
 		buf[buffer_len] = '\0';
 		newline = strchr(buf, '\n');
 		while (newline != NULL && buffer_len != 0) {

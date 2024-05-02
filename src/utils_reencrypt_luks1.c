@@ -690,10 +690,13 @@ out:
 	return r;
 }
 
+/* FIXME this function will be replaced with equivalent from lib/utils_io.c */
 static ssize_t read_buf(int fd, void *buf, size_t count)
 {
-	size_t read_size = 0;
-	ssize_t s;
+	ssize_t s, read_size = 0;
+
+	if (count > SSIZE_MAX)
+		return -EINVAL;
 
 	do {
 		/* This expects that partial read is aligned in buffer */
@@ -701,14 +704,17 @@ static ssize_t read_buf(int fd, void *buf, size_t count)
 		if (s == -1 && errno != EINTR)
 			return s;
 		if (s == 0)
-			return (ssize_t)read_size;
+			return read_size;
 		if (s > 0) {
 			if (s != (ssize_t)count)
 				log_dbg("Partial read %zd / %zu.", s, count);
-			read_size += (size_t)s;
+			/* FIXME: temporarily silence coverity INTEGER_OVERFLOW (CWE-190) */
+			if (read_size > SSIZE_MAX - s)
+				return -1;
+			read_size += s;
 			buf = (uint8_t*)buf + s;
 		}
-	} while (read_size != count);
+	} while ((size_t)read_size != count);
 
 	return (ssize_t)count;
 }
@@ -726,6 +732,10 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		.interrupt_message = _("\nReencryption interrupted."),
 		.device = tools_get_device_name(rc->device, &backing_file)
 	};
+
+	assert(rc);
+	assert(bytes);
+	assert(buf);
 
 	log_dbg("Reencrypting in forward direction.");
 
@@ -746,19 +756,18 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 		if ((rc->device_size - rc->device_offset) < (uint64_t)block_size)
 			block_size = rc->device_size - rc->device_offset;
 		s1 = read_buf(fd_old, buf, block_size);
-		if (s1 < 0 || ((size_t)s1 != block_size &&
-		    (rc->device_offset + s1) != rc->device_size)) {
+		if (s1 < 0 || ((size_t)s1 != block_size)) {
 			log_dbg("Read error, expecting %zu, got %zd.",
 				block_size, s1);
 			goto out;
 		}
 
-		/* If device_size is forced, never write more than limit */
-		if ((s1 + rc->device_offset) > rc->device_size)
-			s1 = rc->device_size - rc->device_offset;
-
+		/*
+		 * FIXME: this may fail with shorter write.
+		 * Replace ir with write_buffer from lib/utils_io.c
+		 */
 		s2 = write(fd_new, buf, s1);
-		if (s2 < 0) {
+		if (s2 < 0 || s2 != s1) {
 			log_dbg("Write error, expecting %zu, got %zd.",
 				block_size, s2);
 			goto out;
@@ -840,6 +849,10 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 			goto out;
 		}
 
+		/*
+		 * FIXME: this may fail with shorter write.
+		 * Replace ir with write_buffer from lib/utils_io.c
+		 */
 		s2 = write(fd_new, buf, working_block);
 		if (s2 < 0) {
 			log_dbg("Write error, expecting %zu, got %zd.",
@@ -872,6 +885,11 @@ static void zero_rest_of_device(int fd, size_t block_size, void *buf,
 {
 	ssize_t s1, s2;
 
+	assert(bytes);
+
+	if (*bytes > SSIZE_MAX || !block_size || block_size > SSIZE_MAX)
+		return;
+
 	log_dbg("Zeroing rest of device.");
 
 	if (lseek(fd, offset, SEEK_SET) < 0) {
@@ -884,10 +902,14 @@ static void zero_rest_of_device(int fd, size_t block_size, void *buf,
 
 	while (!quit && *bytes) {
 		if (*bytes < (uint64_t)s1)
-			s1 = *bytes;
+			s1 = (ssize_t)*bytes;
 
+		/*
+		 * FIXME: this may fail with shorter write.
+		 * Replace ir with write_buffer from lib/utils_io.c
+		 */
 		s2 = write(fd, buf, s1);
-		if (s2 != s1) {
+		if (s2 < 0 || s2 != s1) {
 			log_dbg("Write error, expecting %zd, got %zd.",
 				s1, s2);
 			return;
@@ -898,7 +920,7 @@ static void zero_rest_of_device(int fd, size_t block_size, void *buf,
 			return;
 		}
 
-		*bytes -= s2;
+		*bytes -= (uint64_t)s2;
 	}
 }
 

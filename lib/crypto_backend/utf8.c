@@ -230,6 +230,7 @@ static size_t utf16_encode_unichar(char16_t *out, char32_t c)
 		return 1;
 
 	case 0x10000U ... 0x10ffffU:
+		/* coverity[overflow_const:FALSE] */
 		c -= 0x10000U;
 		out[0] = htole16((c >> 10) + 0xd800U);
 		out[1] = htole16((c & 0x3ffU) + 0xdc00U);

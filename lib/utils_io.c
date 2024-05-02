@@ -22,6 +22,7 @@
  */
 
 #include <errno.h>
+#include <limits.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -32,10 +33,9 @@
 /* coverity[ -taint_source : arg-1 ] */
 static ssize_t _read_buffer(int fd, void *buf, size_t length, volatile int *quit)
 {
-	size_t read_size = 0;
-	ssize_t r;
+	ssize_t r, read_size = 0;
 
-	if (fd < 0 || !buf)
+	if (fd < 0 || !buf || length > SSIZE_MAX)
 		return -EINVAL;
 
 	do {
@@ -43,12 +43,13 @@ static ssize_t _read_buffer(int fd, void *buf, size_t length, volatile int *quit
 		if (r == -1 && errno != EINTR)
 			return r;
 		if (r > 0) {
-			read_size += (size_t)r;
+			/* coverity[overflow:FALSE] */
+			read_size += r;
 			buf = (uint8_t*)buf + r;
 		}
 		if (r == 0 || (quit && *quit))
-			return (ssize_t)read_size;
-	} while (read_size != length);
+			return read_size;
+	} while ((size_t)read_size != length);
 
 	return (ssize_t)length;
 }
@@ -65,25 +66,25 @@ ssize_t read_buffer_intr(int fd, void *buf, size_t length, volatile int *quit)
 
 static ssize_t _write_buffer(int fd, const void *buf, size_t length, volatile int *quit)
 {
-	size_t write_size = 0;
-	ssize_t w;
+	ssize_t w, write_size = 0;
 
-	if (fd < 0 || !buf || !length)
+	if (fd < 0 || !buf || !length || length > SSIZE_MAX)
 		return -EINVAL;
 
 	do {
-		w = write(fd, buf, length - write_size);
+		w = write(fd, buf, length - (size_t)write_size);
 		if (w < 0 && errno != EINTR)
 			return w;
 		if (w > 0) {
-			write_size += (size_t) w;
+			/* coverity[overflow:FALSE] */
+			write_size += w;
 			buf = (const uint8_t*)buf + w;
 		}
 		if (w == 0 || (quit && *quit))
-			return (ssize_t)write_size;
-	} while (write_size != length);
+			return write_size;
+	} while ((size_t)write_size != length);
 
-	return (ssize_t)write_size;
+	return write_size;
 }
 
 ssize_t write_buffer(int fd, const void *buf, size_t length)
