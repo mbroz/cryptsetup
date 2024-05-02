@@ -621,6 +621,10 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	if (max_size < required_size)
 		max_size = required_size;
 
+	/* fix coverity false positive integer underflow */
+	if (max_size < 2 * LUKS2_HDR_16K_LEN)
+		return -EINVAL;
+
 	r = json_luks1_object(hdr1, &jobj, max_size - 2 * LUKS2_HDR_16K_LEN);
 	if (r < 0)
 		return r;

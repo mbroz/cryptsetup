@@ -109,8 +109,10 @@ static int tools_check_password(const char *password)
 static ssize_t read_tty_eol(int fd, char *pass, size_t maxlen)
 {
 	bool eol = false;
-	size_t read_size = 0;
-	ssize_t r;
+	ssize_t r, read_size = 0;
+
+	if (maxlen > SSIZE_MAX)
+		return -EINVAL;
 
 	do {
 		r = read(fd, pass, maxlen - read_size);
@@ -119,12 +121,13 @@ static ssize_t read_tty_eol(int fd, char *pass, size_t maxlen)
 		if (r >= 0) {
 			if (!r || pass[r-1] == '\n')
 				eol = true;
-			read_size += (size_t)r;
+			/* coverity[overflow:FALSE] */
+			read_size += r;
 			pass = pass + r;
 		}
-	} while (!eol && read_size != maxlen);
+	} while (!eol && (size_t)read_size != maxlen);
 
-	return (ssize_t)read_size;
+	return read_size;
 }
 
 /* The pass buffer is zeroed and has trailing \0 already " */

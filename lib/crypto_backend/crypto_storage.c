@@ -261,7 +261,7 @@ int crypt_storage_init(struct crypt_storage **ctx,
 	}
 
 	s->sector_size = sector_size;
-	s->iv_shift = large_iv ? int_log2(sector_size) - SECTOR_SHIFT : 0;
+	s->iv_shift = large_iv ? (unsigned)int_log2(sector_size) - SECTOR_SHIFT : 0;
 
 	*ctx = s;
 	return 0;

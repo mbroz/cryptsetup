@@ -1070,7 +1070,7 @@ uint64_t TCRYPT_get_iv_offset(struct crypt_device *cd,
 			      struct tcrypt_phdr *hdr,
 			      struct crypt_params_tcrypt *params)
 {
-	uint64_t iv_offset;
+	uint64_t iv_offset, partition_offset;
 
 	if (params->mode && !strncmp(params->mode, "xts", 3))
 		iv_offset = TCRYPT_get_data_offset(cd, hdr, params);
@@ -1079,8 +1079,14 @@ uint64_t TCRYPT_get_iv_offset(struct crypt_device *cd,
 	else
 		iv_offset = hdr->d.mk_offset / SECTOR_SIZE;
 
-	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER)
-		iv_offset += crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
+	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
+		partition_offset = crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
+		/* FIXME: we need to deal with overflow sooner */
+		if (iv_offset > (UINT64_MAX - partition_offset))
+			iv_offset = UINT64_MAX;
+		else
+			iv_offset += partition_offset;
+	}
 
 	return iv_offset;
 }
