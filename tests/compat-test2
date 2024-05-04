@@ -308,7 +308,8 @@ function add_scsi_device() {
 
 	sleep 1
 	DEV="/dev/"$(grep -l -e scsi_debug /sys/block/*/device/model | cut -f4 -d /)
-	[ -b $DEV ] || fail "Cannot find $DEV."
+	[ -b $DEV ] || return 1
+	return 0
 }
 
 # $1 key name
@@ -774,7 +775,7 @@ if dm_crypt_sector_size_support; then
 fi
 $CRYPTSETUP close $DEV_NAME || fail
 # Resize not aligned to logical block size
-add_scsi_device dev_size_mb=32 sector_size=4096
+add_scsi_device dev_size_mb=32 sector_size=4096 || fail "scsi_debug device not found"
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $DEV || fail
 echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
 OLD_SIZE=$($CRYPTSETUP status $DEV_NAME | grep "^ \+size:" | sed 's/.* \([0-9]\+\) .*/\1/') #'
@@ -1606,14 +1607,16 @@ dmsetup remove --retry $DEV_NAME || fail
 
 prepare "[47] Zoned device is unusable for LUKS header" wipe
 add_scsi_device dev_size_mb=32 sector_size=4096 zbc=host-managed
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT $DEV > /dev/null 2>&1 && fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT --header $HEADER_IMG $DEV >/dev/null || fail
-echo $PWD1 | $CRYPTSETUP open --header $HEADER_IMG $DEV $DEV_NAME || fail
-$CRYPTSETUP close $DEV_NAME || fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $DEV > /dev/null 2>&1 && fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT --header $HEADER_IMG $DEV >/dev/null || fail
-echo $PWD1 | $CRYPTSETUP open --header $HEADER_IMG $DEV $DEV_NAME || fail
-$CRYPTSETUP close $DEV_NAME || fail
+if [ $? -eq 0 ] ; then
+	echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT $DEV > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT --header $HEADER_IMG $DEV >/dev/null || fail
+	echo $PWD1 | $CRYPTSETUP open --header $HEADER_IMG $DEV $DEV_NAME || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $DEV > /dev/null 2>&1 && fail
+	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT --header $HEADER_IMG $DEV >/dev/null || fail
+	echo $PWD1 | $CRYPTSETUP open --header $HEADER_IMG $DEV $DEV_NAME || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+fi
 
 remove_mapping
 exit 0
