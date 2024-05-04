@@ -1587,7 +1587,7 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --link-vk-to-keyring "@s::%logon:$KEY_NAME" --link-vk-to-keyring "@s::%logon:$KEY_NAME2" --link-vk-to-keyring "@s::%logon:$KEY_NAME3" > /dev/null 2>&1 && fail
 fi
 
-prepare "[45] Blkid disable check" wipe
+prepare "[46] Blkid disable check" wipe
 if [ "$HAVE_BLKID" -gt 0 ]; then
 	xz -dkf $HEADER_LUKS2_PV.xz
 	# batch mode disables blkid print, use --debug to check it
@@ -1596,7 +1596,7 @@ if [ "$HAVE_BLKID" -gt 0 ]; then
 	echo $PWD1 | $CRYPTSETUP -q --debug --disable-blkid luksFormat $FAST_PBKDF_OPT --type luks2 $HEADER_LUKS2_PV 2>&1 | grep -q "LVM2_member" && fail
 fi
 
-prepare "[46] Init from suspended device" wipe
+prepare "[47] Init from suspended device" wipe
 dmsetup create $DEV_NAME --table "0 39998 linear $LOOPDEV 2" || fail
 echo $PWD1 | $CRYPTSETUP -q $FAST_PBKDF_OPT luksFormat --type luks2 --header $HEADER_IMG /dev/mapper/$DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP -q luksOpen --header $HEADER_IMG /dev/mapper/$DEV_NAME $DEV_NAME2 || fail
@@ -1610,7 +1610,7 @@ dmsetup resume $DEV_NAME || fail
 $CRYPTSETUP -q luksClose $DEV_NAME2 || fail
 dmsetup remove --retry $DEV_NAME || fail
 
-prepare "[47] Zoned device is unusable for LUKS header" wipe
+prepare "[48] Zoned device is unusable for LUKS header" wipe
 add_scsi_device dev_size_mb=32 sector_size=4096 zbc=host-managed
 if [ $? -eq 0 ] ; then
 	echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT $DEV > /dev/null 2>&1 && fail
