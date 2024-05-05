@@ -687,6 +687,17 @@ static void UseLuks2Device(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	FAIL_(crypt_deactivate(cd, CDEVICE_1), "no such device");
 
+	if (!_fips_mode) {
+		/* keyslot 0 is PBKDF2, keyslot 1 is Argon2id */
+		OK_(crypt_activate_by_passphrase(cd, NULL, 0, KEY1, strlen(KEY1), 0));
+		EQ_(crypt_activate_by_passphrase(cd, NULL, 1, KEY2, strlen(KEY2), 0), 1);
+		EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, KEY2, strlen(KEY2), 0), 1);
+		FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, KEY2, strlen(KEY2), 0), "already open");
+		GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+		OK_(crypt_deactivate(cd, CDEVICE_1));
+		FAIL_(crypt_deactivate(cd, CDEVICE_1), "no such device");
+	}
+
 #if KERNEL_KEYRING
 	// repeat previous tests and check kernel keyring is released when not needed
 	if (t_dm_crypt_keyring_support()) {
@@ -701,6 +712,21 @@ static void UseLuks2Device(void)
 		OK_(crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
 		OK_(crypt_deactivate(cd, CDEVICE_1));
 		FAIL_(_volume_key_in_keyring(cd, 0), "");
+
+		if (!_fips_mode) {
+			/* keyslot 0 is PBKDF2, keyslot 1 is Argon2id */
+			EQ_(crypt_activate_by_passphrase(cd, NULL, 1, KEY2, strlen(KEY2), 0), 1);
+			FAIL_(_drop_keyring_key(cd, 0), "");
+			EQ_(crypt_activate_by_passphrase(cd, NULL, 1, KEY2, strlen(KEY2), CRYPT_ACTIVATE_KEYRING_KEY), 1);
+			OK_(_drop_keyring_key(cd, 0));
+			EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, KEY2, strlen(KEY2), 0), 1);
+			OK_(_drop_keyring_key(cd, 0));
+			FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, KEY2, strlen(KEY2), 0), "already open");
+			FAIL_(_volume_key_in_keyring(cd, 0), "");
+			EQ_(crypt_activate_by_passphrase(cd, NULL, 1, KEY2, strlen(KEY2), 0), 1);
+			OK_(crypt_deactivate(cd, CDEVICE_1));
+			FAIL_(_volume_key_in_keyring(cd, 0), "");
+		}
 	}
 #endif
 
