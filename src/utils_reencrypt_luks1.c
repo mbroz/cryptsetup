@@ -733,18 +733,14 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 			goto out;
 		}
 
-		/*
-		 * FIXME: this may fail with shorter write.
-		 * Replace ir with write_buffer from lib/utils_io.c
-		 */
-		s2 = write(fd_new, buf, s1);
+		s2 = write_buffer(fd_new, buf, s1);
 		if (s2 < 0 || s2 != s1) {
-			log_dbg("Write error, expecting %zu, got %zd.",
-				block_size, s2);
+			log_dbg("Write error, expecting %zd, got %zd.",
+				s1, s2);
 			goto out;
 		}
 
-		rc->device_offset += s1;
+		rc->device_offset += s2;
 		if (ARG_SET(OPT_WRITE_LOG_ID) && write_log(rc) < 0)
 			goto out;
 
@@ -820,18 +816,14 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 			goto out;
 		}
 
-		/*
-		 * FIXME: this may fail with shorter write.
-		 * Replace ir with write_buffer from lib/utils_io.c
-		 */
-		s2 = write(fd_new, buf, working_block);
-		if (s2 < 0) {
-			log_dbg("Write error, expecting %zu, got %zd.",
-				block_size, s2);
+		s2 = write_buffer(fd_new, buf, s1);
+		if (s2 < 0 || s2 != s1) {
+			log_dbg("Write error, expecting %zd, got %zd.",
+				s1, s2);
 			goto out;
 		}
 
-		rc->device_offset -= s1;
+		rc->device_offset -= s2;
 		if (ARG_SET(OPT_WRITE_LOG_ID) && write_log(rc) < 0)
 			goto out;
 
