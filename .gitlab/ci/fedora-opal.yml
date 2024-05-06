@@ -1,33 +1,10 @@
-.dnf-openssl-backend:
-  variables:
-    DISTRO: cryptsetup-fedora-rawhide
-  extends:
-    - .fail_if_coredump_generated
-  before_script:
-    - >
-      [ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] ||
-      sudo dnf -y -q install
-      swtpm meson ninja-build python3-jinja2 gperf libcap-devel tpm2-tss-devel
-      libmount-devel swtpm-tools
-    - >
-      sudo dnf -y -q install
-      autoconf automake device-mapper-devel gcc gettext-devel json-c-devel
-      libargon2-devel libblkid-devel libpwquality-devel libselinux-devel
-      libssh-devel libtool libuuid-devel make popt-devel
-      libsepol-devel.x86_64 netcat openssh-clients passwd pkgconfig sharutils
-      sshpass tar uuid-devel vim-common device-mapper expect gettext git jq
-      keyutils openssl-devel openssl asciidoctor
-    - sudo -E git clean -xdf
-    - ./autogen.sh
-    - ./configure --enable-fips --enable-pwquality --enable-libargon2 --with-crypto_backend=openssl --enable-asciidoc
-
 .opal-template-fedora:
   extends:
     - .dnf-openssl-backend
   tags:
     - libvirt
     - cryptsetup-fedora-rawhide
-  stage: test
+  stage: test-opal
   interruptible: false
   variables:
     OPAL2_DEV: "/dev/nvme0n1"
@@ -50,7 +27,6 @@ test-commit-rawhide-samsung980:
     - .opal-template-fedora
   tags:
     - tiber
-  stage: test
   interruptible: false
   variables:
     PCI_PASSTHROUGH_VENDOR_ID: "144d"
@@ -65,7 +41,6 @@ test-mergerq-rawhide-samsung980:
     - .opal-template-fedora
   tags:
     - tiber
-  stage: test
   interruptible: false
   variables:
     PCI_PASSTHROUGH_VENDOR_ID: "144d"
@@ -81,7 +56,6 @@ test-commit-rawhide-sn740:
     - .opal-template-fedora
   tags:
     - tiber
-  stage: test
   interruptible: false
   variables:
     PCI_PASSTHROUGH_VENDOR_ID: "15b7"
@@ -96,7 +70,6 @@ test-mergerq-rawhide-sn740:
     - .opal-template-fedora
   tags:
     - tiber
-  stage: test
   interruptible: false
   variables:
     PCI_PASSTHROUGH_VENDOR_ID: "15b7"
