@@ -843,52 +843,20 @@ out:
 	return quit ? -EAGAIN : r;
 }
 
-static void zero_rest_of_device(int fd, size_t block_size, void *buf,
-				uint64_t *bytes, uint64_t offset)
+static int detect_interrupt(uint64_t size __attribute__((unused)),
+			  uint64_t offset __attribute__((unused)),
+			  void *usrptr __attribute__((unused)))
 {
-	ssize_t s1, s2;
+	int r = 0;
 
-	assert(bytes);
+	check_signal(&r);
 
-	if (*bytes > SSIZE_MAX || !block_size || block_size > SSIZE_MAX)
-		return;
-
-	log_dbg("Zeroing rest of device.");
-
-	if (lseek(fd, offset, SEEK_SET) < 0) {
-		log_dbg("Cannot seek to device offset.");
-		return;
-	}
-
-	memset(buf, 0, block_size);
-	s1 = block_size;
-
-	while (!quit && *bytes) {
-		if (*bytes < (uint64_t)s1)
-			s1 = (ssize_t)*bytes;
-
-		/*
-		 * FIXME: this may fail with shorter write.
-		 * Replace ir with write_buffer from lib/utils_io.c
-		 */
-		s2 = write(fd, buf, s1);
-		if (s2 < 0 || s2 != s1) {
-			log_dbg("Write error, expecting %zd, got %zd.",
-				s1, s2);
-			return;
-		}
-
-		if (ARG_SET(OPT_USE_FSYNC_ID) && fsync(fd) < 0) {
-			log_dbg("Write error, fsync.");
-			return;
-		}
-
-		*bytes -= (uint64_t)s2;
-	}
+	return r;
 }
 
 static int copy_data(struct reenc_ctx *rc)
 {
+	struct crypt_device *wipe_cd;
 	size_t block_size = ARG_UINT32(OPT_BLOCK_SIZE_ID) * 1024 * 1024;
 	int fd_old = -1, fd_new = -1;
 	int r = -EINVAL;
@@ -944,7 +912,14 @@ static int copy_data(struct reenc_ctx *rc)
 	if (!r && rc->reencrypt_mode == DECRYPT &&
 	    rc->device_size_new_real > rc->device_size_org_real) {
 		bytes = rc->device_size_new_real - rc->device_size_org_real;
-		zero_rest_of_device(fd_new, block_size, buf, &bytes, rc->device_size_org_real);
+		if (crypt_init(&wipe_cd, rc->crypt_path_new) == 0) {
+			log_dbg("Zeroing rest of device.");
+			(void)crypt_wipe(wipe_cd, NULL, CRYPT_WIPE_ZERO,
+				   rc->device_size_org_real, bytes, block_size,
+				   !ARG_SET(OPT_USE_DIRECTIO_ID) ? CRYPT_WIPE_NO_DIRECT_IO : 0,
+				   detect_interrupt, NULL);
+			crypt_free(wipe_cd);
+		}
 	}
 
 	set_int_block(1);
