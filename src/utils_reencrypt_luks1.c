@@ -690,35 +690,6 @@ out:
 	return r;
 }
 
-/* FIXME this function will be replaced with equivalent from lib/utils_io.c */
-static ssize_t read_buf(int fd, void *buf, size_t count)
-{
-	ssize_t s, read_size = 0;
-
-	if (count > SSIZE_MAX)
-		return -EINVAL;
-
-	do {
-		/* This expects that partial read is aligned in buffer */
-		s = read(fd, buf, count - read_size);
-		if (s == -1 && errno != EINTR)
-			return s;
-		if (s == 0)
-			return read_size;
-		if (s > 0) {
-			if (s != (ssize_t)count)
-				log_dbg("Partial read %zd / %zu.", s, count);
-			/* FIXME: temporarily silence coverity INTEGER_OVERFLOW (CWE-190) */
-			if (read_size > SSIZE_MAX - s)
-				return -1;
-			read_size += s;
-			buf = (uint8_t*)buf + s;
-		}
-	} while ((size_t)read_size != count);
-
-	return (ssize_t)count;
-}
-
 static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 			     size_t block_size, void *buf, uint64_t *bytes)
 {
@@ -755,7 +726,7 @@ static int copy_data_forward(struct reenc_ctx *rc, int fd_old, int fd_new,
 	while (!quit && rc->device_offset < rc->device_size) {
 		if ((rc->device_size - rc->device_offset) < (uint64_t)block_size)
 			block_size = rc->device_size - rc->device_offset;
-		s1 = read_buf(fd_old, buf, block_size);
+		s1 = read_buffer(fd_old, buf, block_size);
 		if (s1 < 0 || ((size_t)s1 != block_size)) {
 			log_dbg("Read error, expecting %zu, got %zd.",
 				block_size, s1);
@@ -842,7 +813,7 @@ static int copy_data_backward(struct reenc_ctx *rc, int fd_old, int fd_new,
 			goto out;
 		}
 
-		s1 = read_buf(fd_old, buf, working_block);
+		s1 = read_buffer(fd_old, buf, working_block);
 		if (s1 < 0 || (s1 != working_block)) {
 			log_dbg("Read error, expecting %zu, got %zd.",
 				block_size, s1);
