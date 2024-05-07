@@ -106,14 +106,14 @@ rm -rf %{buildroot}%{_libdir}/%{name}/*.la
 %{_libdir}/pkgconfig/libcryptsetup.pc
 
 %files libs -f cryptsetup.lang
-%license COPYING COPYING.LGPL
+%license COPYING
 %{_libdir}/libcryptsetup.so.*
 %dir %{_libdir}/%{name}/
 %{_tmpfilesdir}/cryptsetup.conf
 %ghost %attr(700, -, -) %dir /run/cryptsetup
 
 %files ssh-token
-%license COPYING COPYING.LGPL
+%license COPYING
 %{_libdir}/%{name}/libcryptsetup-token-ssh.so
 %{_mandir}/man8/cryptsetup-ssh.8.gz
 %{_sbindir}/cryptsetup-ssh
