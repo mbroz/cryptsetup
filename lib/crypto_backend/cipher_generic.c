@@ -62,6 +62,9 @@ int crypt_cipher_ivsize(const char *name, const char *mode)
 	if (!ca)
 		return -EINVAL;
 
+	if (mode && !strcasecmp(mode, "hctr2"))
+		return 32;
+
 	if (mode && !strcasecmp(mode, "ecb"))
 		return 0;
 
