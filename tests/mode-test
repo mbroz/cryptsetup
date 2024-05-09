@@ -208,6 +208,8 @@ done
 dmcrypt xchacha12,aes-adiantum-plain64
 dmcrypt xchacha20,aes-adiantum-plain64
 
+dmcrypt aes-hctr2-plain64
+
 echo -n "CAPI format:"
 if dm_crypt_capi_support ; then
 	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c 'capi:xts(aes)-plain64' -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME || fail
