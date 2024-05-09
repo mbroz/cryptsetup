@@ -218,6 +218,10 @@ if dm_crypt_capi_support ; then
 	dmsetup create "$DEV_NAME"_tstdev --table "0 8 crypt capi:xts(ecb(aes-generic))-plain64 $KEY 0 /dev/mapper/$DEV_NAME 0" || fail
 	$CRYPTSETUP status "$DEV_NAME"_tstdev 2>/dev/null | grep "type:" | grep -q "n/a" || fail
 	$CRYPTSETUP close "$DEV_NAME"_tstdev 2>/dev/null || fail
+
+	# Do not confuse aes-plain with capi:xts(plain)-plain
+	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c 'capi:xts(aes)-plain' -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME || fail
+	$CRYPTSETUP close "$DEV_NAME"_tstdev || fail
 	echo [OK]
 else
 	echo [N/A]
