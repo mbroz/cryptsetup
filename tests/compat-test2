@@ -501,6 +501,37 @@ EOF
 	[ $? -eq 0 ] || return 1
 }
 
+# expected unlocked keyslot id
+# password
+# command arguments
+function expect_retried_unlocked_keyslot()
+{
+	command -v expect >/dev/null || {
+		echo "WARNING: expect tool missing, interactive test will be skipped."
+		return 0
+	}
+
+	EXPECT_TIMEOUT=60
+
+	expect_run - >/dev/null <<EOF
+proc abort {} { send_error "Timeout. "; exit 2 }
+set timeout $EXPECT_TIMEOUT
+eval spawn $CRYPTSETUP_RAW $3
+expect timeout abort "Enter passphrase for*:"
+sleep 0.1
+send "$2 x\n"
+expect timeout abort "No key available with this passphrase."
+expect timeout abort "Enter passphrase for*:"
+sleep 0.1
+send "$2\n"
+expect timeout abort "Key slot $1 unlocked."
+expect timeout abort "Command successful."
+expect timeout abort eof
+exit
+EOF
+	[ $? -eq 0 ] || return 1
+}
+
 export LANG=C
 
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
@@ -1617,6 +1648,12 @@ if [ $? -eq 0 ] ; then
 	echo $PWD1 | $CRYPTSETUP open --header $HEADER_IMG $DEV $DEV_NAME || fail
 	$CRYPTSETUP close $DEV_NAME || fail
 fi
+
+prepare "[48] Interactive retry keyslot test" wipe
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail
+echo $PWD2 | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_OPT --unbound --key-size 256 $LOOPDEV || fail
+expect_retried_unlocked_keyslot 0 $PWD1 "open -v --test-passphrase --tries 2 $LOOPDEV" || fail
+expect_retried_unlocked_keyslot 1 $PWD2 "open -v --test-passphrase --tries 2 -S1 $LOOPDEV" || fail
 
 remove_mapping
 exit 0
