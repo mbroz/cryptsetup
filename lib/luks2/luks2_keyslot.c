@@ -415,11 +415,13 @@ static int LUKS2_keyslot_open_priority_digest(struct crypt_device *cd,
 {
 	json_object *jobj_keyslots, *jobj;
 	crypt_keyslot_priority slot_priority;
-	int keyslot, r = -ENOENT;
+	int keyslot, r = -ENOENT, r_old;
 
 	json_object_object_get_ex(hdr->jobj, "keyslots", &jobj_keyslots);
 
 	json_object_object_foreach(jobj_keyslots, slot, val) {
+		r_old = r;
+
 		if (!json_object_object_get_ex(val, "priority", &jobj))
 			slot_priority = CRYPT_SLOT_PRIORITY_NORMAL;
 		else
@@ -438,6 +440,9 @@ static int LUKS2_keyslot_open_priority_digest(struct crypt_device *cd,
 		   former meaning password wrong, latter key slot unusable for segment */
 		if ((r != -EPERM) && (r != -ENOENT))
 			break;
+		/* If a previous keyslot failed with EPERM (bad password) prefer it */
+		if (r_old == -EPERM && r == -ENOENT)
+			r = -EPERM;
 	}
 
 	return r;
@@ -453,11 +458,13 @@ static int LUKS2_keyslot_open_priority(struct crypt_device *cd,
 {
 	json_object *jobj_keyslots, *jobj;
 	crypt_keyslot_priority slot_priority;
-	int keyslot, r = -ENOENT;
+	int keyslot, r = -ENOENT, r_old;
 
 	json_object_object_get_ex(hdr->jobj, "keyslots", &jobj_keyslots);
 
 	json_object_object_foreach(jobj_keyslots, slot, val) {
+		r_old = r;
+
 		if (!json_object_object_get_ex(val, "priority", &jobj))
 			slot_priority = CRYPT_SLOT_PRIORITY_NORMAL;
 		else
@@ -476,6 +483,9 @@ static int LUKS2_keyslot_open_priority(struct crypt_device *cd,
 		   former meaning password wrong, latter key slot unusable for segment */
 		if ((r != -EPERM) && (r != -ENOENT))
 			break;
+		/* If a previous keyslot failed with EPERM (bad password) prefer it */
+		if (r_old == -EPERM && r == -ENOENT)
+			r = -EPERM;
 	}
 
 	return r;
