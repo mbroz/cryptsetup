@@ -310,6 +310,13 @@ echo "[10] uuid"
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT --uuid $TEST_UUID $IMG || fail
 $CRYPTSETUP -q luksUUID $IMG | grep -q $TEST_UUID || fail
 
+echo "[11] benchmark"
+$CRYPTSETUP benchmark -c aes-xts --key-size 128 >/dev/null 2>&1 && fail
+$CRYPTSETUP benchmark -c aes-xts >/dev/null || fail
+$CRYPTSETUP benchmark -c aes-xts-plain64 >/dev/null || fail
+$CRYPTSETUP benchmark -c capi:xts\(aes\) >/dev/null || fail
+$CRYPTSETUP benchmark -c capi:xts\(aes\)-plain64 >/dev/null || fail
+
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ -z "$LOOPDEV" ] && skip "WARNING: Cannot find free loop device, test skipped."
 [ ! -x "$DIFFER" ] && skip "Cannot find $DIFFER, test skipped."

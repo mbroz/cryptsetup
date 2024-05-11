@@ -1154,7 +1154,7 @@ static int action_benchmark(void)
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	double enc_mbr = 0, dec_mbr = 0;
 	int key_size = (ARG_UINT32(OPT_KEY_SIZE_ID) ?: DEFAULT_PLAIN_KEYBITS) / 8;
-	int skipped = 0, width;
+	int skipped = 0, width, mode_len;
 	char *c;
 	int i, r;
 
@@ -1174,13 +1174,22 @@ static int action_benchmark(void)
 
 		r = benchmark_cipher_loop(cipher, cipher_mode, key_size, &enc_mbr, &dec_mbr);
 		if (!r) {
-			width = strlen(cipher) + strlen(cipher_mode) + 1;
+			if (!strncmp(cipher, "capi:", 5))
+				mode_len = 0;
+			else
+				mode_len = strlen(cipher_mode);
+			width = strlen(cipher) + mode_len + 1;
 			if (width < 11)
 				width = 11;
+
 			/* TRANSLATORS: The string is header of a table and must be exactly (right side) aligned. */
 			log_std(_("#%*s Algorithm |       Key |      Encryption |      Decryption\n"), width - 11, "");
-			log_std("%*s-%s  %9db  %10.1f MiB/s  %10.1f MiB/s\n", width - (int)strlen(cipher_mode) - 1,
-				cipher, cipher_mode, key_size*8, enc_mbr, dec_mbr);
+			if (mode_len)
+				log_std("%*s-%s  %9db  %10.1f MiB/s  %10.1f MiB/s\n", width - mode_len - 1,
+					cipher, cipher_mode, key_size*8, enc_mbr, dec_mbr);
+			else
+				log_std("%*s  %9db  %10.1f MiB/s  %10.1f MiB/s\n", width,
+					cipher, key_size*8, enc_mbr, dec_mbr);
 		} else if (r < 0)
 			log_err(_("Cipher %s (with %i bits key) is not available."), ARG_STR(OPT_CIPHER_ID), key_size * 8);
 	} else {

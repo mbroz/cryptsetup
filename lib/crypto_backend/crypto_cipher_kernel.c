@@ -86,9 +86,13 @@ int crypt_cipher_init_kernel(struct crypt_cipher_kernel *ctx, const char *name,
 	if (!strcmp(name, "cipher_null"))
 		key_length = 0;
 
-	r = snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "%s(%s)", mode, name);
-	if (r < 0 || (size_t)r >= sizeof(sa.salg_name))
-		return -EINVAL;
+	if (!strncmp(name, "capi:", 5))
+		strncpy((char *)sa.salg_name, &name[5], sizeof(sa.salg_name) - 1);
+	else {
+		r = snprintf((char *)sa.salg_name, sizeof(sa.salg_name), "%s(%s)", mode, name);
+		if (r < 0 || (size_t)r >= sizeof(sa.salg_name))
+			return -EINVAL;
+	}
 
 	return _crypt_cipher_init(ctx, key, key_length, 0, &sa);
 }
