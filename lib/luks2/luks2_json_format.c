@@ -313,40 +313,43 @@ err:
 }
 
 int LUKS2_wipe_header_areas(struct crypt_device *cd,
-	struct luks2_hdr *hdr, bool detached_header)
+	struct luks2_hdr *hdr)
 {
 	int r;
-	uint64_t offset, length;
-	size_t wipe_block;
+	uint64_t device_size_bytes, length, offset;
+	size_t wipe_block = 1024 * 1024;
 
-	/* Wipe complete header, keyslots and padding areas with zeroes. */
-	offset = 0;
-	length = LUKS2_get_data_offset(hdr) * SECTOR_SIZE;
-	wipe_block = 1024 * 1024;
-
-	if (LUKS2_hdr_validate(cd, hdr->jobj, hdr->hdr_size - LUKS2_HDR_BIN_LEN))
+	if (!hdr || LUKS2_hdr_validate(cd, hdr->jobj, hdr->hdr_size - LUKS2_HDR_BIN_LEN))
 		return -EINVAL;
 
-	/* On detached header wipe at least the first 4k */
-	if (detached_header) {
-		length = 4096;
-		wipe_block = 4096;
-	}
+	r = device_size(crypt_metadata_device(cd), &device_size_bytes);
+	if (r < 0)
+		return -EINVAL;
 
-	r = device_check_size(cd, crypt_metadata_device(cd), length, 1);
-	if (r)
-		return r;
+	/* Wipe up to maximal allowed metadata size, but do not write beyond data offset. */
+	length = LUKS2_get_data_offset(hdr) * SECTOR_SIZE;
+	if (!length || length > LUKS2_HDR_MAX_MDA_SIZE)
+		length = LUKS2_HDR_MAX_MDA_SIZE;
+
+	/* Also do not extend the device size yet (file backends) */
+	if (length > device_size_bytes)
+		length = device_size_bytes;
 
 	log_dbg(cd, "Wiping LUKS areas (0x%06" PRIx64 " - 0x%06" PRIx64") with zeroes.",
-		offset, length + offset);
+		0, length);
 
-	r = crypt_wipe_device(cd, crypt_metadata_device(cd), CRYPT_WIPE_ZERO,
-			      offset, length, wipe_block, NULL, NULL);
+	r = crypt_wipe_device(cd, crypt_metadata_device(cd), CRYPT_WIPE_ZERO, 0,
+			      length, wipe_block, NULL, NULL);
 	if (r < 0)
 		return r;
 
+	/* Allocate at least actual LUKS2 metadata size */
+	r = device_check_size(cd, crypt_metadata_device(cd),
+			      LUKS2_hdr_and_areas_size(hdr), 1);
+	if (r)
+		return r;
+
 	/* Wipe keyslot area */
-	wipe_block = 1024 * 1024;
 	offset = get_min_offset(hdr);
 	length = LUKS2_keyslots_size(hdr);
 

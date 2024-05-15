@@ -145,6 +145,8 @@ struct luks2_keyslot_params {
 
 #define LUKS2_HDR_OFFSET_MAX 0x400000 /* 4 MiB */
 
+#define LUKS2_HDR_MAX_MDA_SIZE 2 * LUKS2_HDR_OFFSET_MAX + LUKS2_MAX_KEYSLOTS_SIZE
+
 /* Offsets for secondary header (for scan if primary header is corrupted). */
 #define LUKS2_HDR2_OFFSETS { 0x04000, 0x008000, 0x010000, 0x020000, \
                              0x40000, 0x080000, 0x100000, 0x200000, LUKS2_HDR_OFFSET_MAX }
@@ -389,7 +391,7 @@ int LUKS2_check_metadata_area_size(uint64_t metadata_size);
 int LUKS2_check_keyslots_area_size(uint64_t keyslots_size);
 
 int LUKS2_wipe_header_areas(struct crypt_device *cd,
-	struct luks2_hdr *hdr, bool detached_header);
+	struct luks2_hdr *hdr);
 
 uint64_t LUKS2_get_data_offset(struct luks2_hdr *hdr);
 int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size, bool *dynamic);

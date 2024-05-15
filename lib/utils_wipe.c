@@ -366,5 +366,5 @@ int crypt_wipe_hw_opal(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	return LUKS2_wipe_header_areas(cd, hdr, crypt_header_is_detached(cd));
+	return LUKS2_wipe_header_areas(cd, hdr);
 }

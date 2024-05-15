@@ -2139,7 +2139,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 
 	device_set_block_size(crypt_data_device(cd), sector_size);
 
-	r = LUKS2_wipe_header_areas(cd, &cd->u.luks2.hdr, cd->metadata_device != NULL);
+	r = LUKS2_wipe_header_areas(cd, &cd->u.luks2.hdr);
 	if (r < 0) {
 		log_err(cd, _("Cannot wipe header on device %s."),
 			mdata_device_path(cd));
@@ -2544,7 +2544,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 
 	device_set_block_size(crypt_data_device(cd), sector_size);
 
-	r = LUKS2_wipe_header_areas(cd, &cd->u.luks2.hdr, cd->metadata_device != NULL);
+	r = LUKS2_wipe_header_areas(cd, &cd->u.luks2.hdr);
 	if (r < 0) {
 		log_err(cd, _("Cannot wipe header on device %s."),
 			mdata_device_path(cd));
