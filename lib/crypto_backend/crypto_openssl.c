@@ -28,9 +28,10 @@
  * for all of the code used other than OpenSSL.
  */
 
-#include <string.h>
+#include <stdio.h>
 #include <errno.h>
 #include <limits.h>
+#include <strings.h>
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>

@@ -20,7 +20,6 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
 #include <errno.h>
 #include <nettle/sha.h>
 #include <nettle/sha3.h>

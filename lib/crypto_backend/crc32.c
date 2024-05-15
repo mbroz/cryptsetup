@@ -38,8 +38,6 @@
  *
  */
 
-#include <stdio.h>
-
 #include "crypto_backend.h"
 
 static const uint32_t crc32_tab[] = {
