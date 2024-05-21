@@ -324,6 +324,9 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 		/* unknown timestamps in recovery protected VMK */
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_RECOVERY_TIME) {
 			;
+		/* optional hint (?) string (masked email?), we can safely ignore it */
+		} else if (key_entry_value == BITLK_ENTRY_VALUE_HINT) {
+			;
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_STRING) {
 			if (key_entry_size < BITLK_ENTRY_HEADER_LEN)
 				return -EINVAL;
