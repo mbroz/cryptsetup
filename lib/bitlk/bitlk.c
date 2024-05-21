@@ -356,6 +356,9 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 		/* no idea what this is, lets hope it's not important */
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_USE_KEY && (*vmk)->protection == BITLK_PROTECTION_STARTUP_KEY) {
 			;
+		/* quietly ignore unsupported TPM key */
+		} else if (key_entry_value == BITLK_ENTRY_VALUE_TPM_KEY && (*vmk)->protection == BITLK_PROTECTION_TPM) {
+			;
 		} else {
 			if (supported) {
 				log_err(cd, _("Unexpected metadata entry value '%u' found when parsing supported Volume Master Key."), key_entry_value);
