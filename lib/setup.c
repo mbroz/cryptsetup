@@ -2232,7 +2232,7 @@ static int opal_topology_alignment(struct crypt_device *cd,
 {
 	bool opal_align;
 	int r;
-	uint32_t opal_block_bytes;
+	uint32_t opal_block_bytes, device_block_bytes;
 	uint64_t opal_alignment_granularity_blocks, opal_lowest_lba_blocks;
 
 	assert(cd);
@@ -2248,12 +2248,20 @@ static int opal_topology_alignment(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	log_dbg(cd, "OPAL geometry: alignment: '%c', logical block size: %" PRIu32
+	device_block_bytes = device_block_size(cd, crypt_data_device(cd));
+
+	log_dbg(cd, "OPAL geometry: alignment: '%c', logical block size: %" PRIu32 "/%" PRIu32
 		    ", alignment granularity: %" PRIu64 ", lowest aligned LBA: %" PRIu64,
-	        opal_align ? 'y' : 'n', opal_block_bytes, opal_alignment_granularity_blocks, opal_lowest_lba_blocks);
+		    opal_align ? 'y' : 'n', opal_block_bytes, device_block_bytes,
+		    opal_alignment_granularity_blocks, opal_lowest_lba_blocks);
 
 	if (opal_block_bytes < SECTOR_SIZE || NOTPOW2(opal_block_bytes)) {
 		log_err(cd, _("Bogus OPAL logical block size."));
+		return -EINVAL;
+	}
+
+	if (device_block_bytes != opal_block_bytes) {
+		log_err(cd, _("Bogus OPAL logical block size differs from device block size."));
 		return -EINVAL;
 	}
 
