@@ -297,12 +297,12 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 	assert(fd >= 0);
 	assert(cd);
 	assert(vk);
+	assert(check_offset_sectors);
+	assert(check_length_sectors);
 
-	if (check_offset_sectors || check_length_sectors) {
-		r = opal_geometry_fd(cd, fd, NULL, &opal_block_bytes, NULL, NULL);
-		if (r != OPAL_STATUS_SUCCESS)
-			return -EINVAL;
-	}
+	r = opal_geometry_fd(cd, fd, NULL, &opal_block_bytes, NULL, NULL);
+	if (r != OPAL_STATUS_SUCCESS)
+		return -EINVAL;
 
 	lrs = crypt_safe_alloc(sizeof(*lrs));
 	if (!lrs)
@@ -329,22 +329,18 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 
 	r = 0;
 
-	if (check_offset_sectors) {
-		offset = lrs->range_start * opal_block_bytes / SECTOR_SIZE;
-		if (offset != *check_offset_sectors) {
-			log_err(cd, _("OPAL range %d offset %" PRIu64 " does not match expected values %" PRIu64 "."),
-				segment_number, offset, *check_offset_sectors);
-			r = -EINVAL;
-		}
+	offset = lrs->range_start * opal_block_bytes / SECTOR_SIZE;
+	if (offset != *check_offset_sectors) {
+		log_err(cd, _("OPAL range %d offset %" PRIu64 " does not match expected values %" PRIu64 "."),
+			segment_number, offset, *check_offset_sectors);
+		r = -EINVAL;
 	}
 
-	if (check_length_sectors) {
-		length = lrs->range_length * opal_block_bytes / SECTOR_SIZE;
-		if (length != *check_length_sectors) {
-			log_err(cd, _("OPAL range %d length %" PRIu64" does not match device length %" PRIu64 "."),
-				segment_number, length, *check_length_sectors);
-			r = -EINVAL;
-		}
+	length = lrs->range_length * opal_block_bytes / SECTOR_SIZE;
+	if (length != *check_length_sectors) {
+		log_err(cd, _("OPAL range %d length %" PRIu64" does not match device length %" PRIu64 "."),
+			segment_number, length, *check_length_sectors);
+		r = -EINVAL;
 	}
 
 	if (!lrs->RLE || !lrs->WLE) {
