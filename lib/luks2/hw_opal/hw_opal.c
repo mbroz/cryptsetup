@@ -41,6 +41,7 @@
 #if HAVE_HW_OPAL
 
 #include <linux/sed-opal.h>
+#include <linux/fs.h>
 
 /* Error codes are defined in the specification:
  * TCG_Storage_Architecture_Core_Spec_v2.01_r1.00
@@ -290,6 +291,7 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 {
 	int r;
 	struct opal_lr_status *lrs;
+	int device_block_bytes;
 	uint32_t opal_block_bytes = 0;
 	uint64_t offset, length;
 	bool read_locked, write_locked;
@@ -303,6 +305,11 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 	r = opal_geometry_fd(cd, fd, NULL, &opal_block_bytes, NULL, NULL);
 	if (r != OPAL_STATUS_SUCCESS)
 		return -EINVAL;
+
+	/* Keep this as warning only */
+	if (ioctl(fd, BLKSSZGET, &device_block_bytes) < 0 ||
+	    (uint32_t)device_block_bytes != opal_block_bytes)
+		log_err(cd, _("Bogus OPAL logical block size differs from device block size."));
 
 	lrs = crypt_safe_alloc(sizeof(*lrs));
 	if (!lrs)
