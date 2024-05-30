@@ -75,6 +75,35 @@ test-mergerq-rawhide-sn740:
     PCI_PASSTHROUGH_VENDOR_ID: "15b7"
     PCI_PASSTHROUGH_DEVICE_ID: "5017"
 
+# Samsung SSD 980 PRO 1TB (on trantor machine)
+test-commit-rawhide-samsung980pro:
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  extends:
+    - .opal-template-fedora
+  tags:
+    - trantor
+  interruptible: false
+  variables:
+    PCI_PASSTHROUGH_VENDOR_ID: "144d"
+    PCI_PASSTHROUGH_DEVICE_ID: "a80a"
+
+test-mergerq-rawhide-samsung980pro:
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  extends:
+    - .opal-template-fedora
+  tags:
+    - trantor
+  interruptible: false
+  variables:
+    PCI_PASSTHROUGH_VENDOR_ID: "144d"
+    PCI_PASSTHROUGH_DEVICE_ID: "a80a"
+
 # # UMIS RPETJ256MGE2MDQ (on tiber machine)
 # test-commit-rawhide-umis:
 #   rules:
