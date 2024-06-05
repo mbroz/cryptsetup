@@ -412,6 +412,7 @@ function test_device_detached_header() #hdr, #opal_mode, #format_params, #--inte
 	$CRYPTSETUP close $DEV_NAME --header $1 || fail
 	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && fail
 	echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q --header $1 || fail
+	$CRYPTSETUP isLuks --type luks2 $1 && fail
 	rm -f $1
 }
 
