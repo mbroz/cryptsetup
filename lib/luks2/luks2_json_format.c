@@ -336,7 +336,7 @@ int LUKS2_wipe_header_areas(struct crypt_device *cd,
 		length = device_size_bytes;
 
 	log_dbg(cd, "Wiping LUKS areas (0x%06" PRIx64 " - 0x%06" PRIx64") with zeroes.",
-		0, length);
+		0ULL, length);
 
 	r = crypt_wipe_device(cd, crypt_metadata_device(cd), CRYPT_WIPE_ZERO, 0,
 			      length, wipe_block, NULL, NULL);
