@@ -102,7 +102,7 @@ test-main-commit-rhel8-fips:
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
   script:
-    - fips-mode-setup --check || exit 1
+    - sudo fips-mode-setup --check || exit 1
     - make -j
     - make -j -C tests check-programs
     - sudo -E make check
@@ -126,7 +126,7 @@ test-main-commit-rhel9-fips:
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
   script:
-    - fips-mode-setup --check || exit 1
+    - sudo fips-mode-setup --check || exit 1
     - make -j
     - make -j -C tests check-programs
     - sudo -E make check
@@ -150,7 +150,7 @@ test-main-commit-rhel10-fips:
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
   script:
-    - fips-mode-setup --check || exit 1
+    - sudo fips-mode-setup --check || exit 1
     - make -j
     - make -j -C tests check-programs
     - sudo -E make check
