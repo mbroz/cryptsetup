@@ -27,6 +27,7 @@ test-commit-rawhide-samsung980:
     - .opal-template-fedora
   tags:
     - tiber
+  resource_group: samsung980-on-tiber
   interruptible: false
   variables:
     PCI_PASSTHROUGH_VENDOR_ID: "144d"
@@ -41,6 +42,7 @@ test-mergerq-rawhide-samsung980:
     - .opal-template-fedora
   tags:
     - tiber
+  resource_group: samsung980-on-tiber
   interruptible: false
   variables:
     PCI_PASSTHROUGH_VENDOR_ID: "144d"
@@ -56,6 +58,7 @@ test-commit-rawhide-sn740:
     - .opal-template-fedora
   tags:
     - tiber
+  resource_group: sn740-on-tiber
   interruptible: false
   variables:
     PCI_PASSTHROUGH_VENDOR_ID: "15b7"
@@ -70,6 +73,7 @@ test-mergerq-rawhide-sn740:
     - .opal-template-fedora
   tags:
     - tiber
+  resource_group: sn740-on-tiber
   interruptible: false
   variables:
     PCI_PASSTHROUGH_VENDOR_ID: "15b7"
@@ -85,6 +89,7 @@ test-commit-rawhide-samsung980pro:
     - .opal-template-fedora
   tags:
     - trantor
+  resource_group: samsung980pro-on-trantor
   interruptible: false
   variables:
     PCI_PASSTHROUGH_VENDOR_ID: "144d"
@@ -99,6 +104,7 @@ test-mergerq-rawhide-samsung980pro:
     - .opal-template-fedora
   tags:
     - trantor
+  resource_group: samsung980pro-on-trantor
   interruptible: false
   variables:
     PCI_PASSTHROUGH_VENDOR_ID: "144d"
@@ -114,6 +120,7 @@ test-mergerq-rawhide-samsung980pro:
 #     - .opal-template-fedora
 #   tags:
 #     - tiber
+#   resource_group: umis-on-tiber
 #   stage: test
 #   interruptible: false
 #   variables:
@@ -129,6 +136,7 @@ test-mergerq-rawhide-samsung980pro:
 #     - .opal-template-fedora
 #   tags:
 #     - tiber
+#   resource_group: umis-on-tiber
 #   stage: test
 #   interruptible: false
 #   variables:
