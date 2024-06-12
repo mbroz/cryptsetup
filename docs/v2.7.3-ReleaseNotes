@@ -1,0 +1,114 @@
+Cryptsetup 2.7.3 Release Notes
+==============================
+Stable bug-fix release with security fixes.
+
+All users of cryptsetup 2.7 must upgrade to this version.
+
+Changes since version 2.7.2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Do not allow formatting LUKS2 with Opal SED (hardware encryption)
+  if the reported logical sector size for the block device and Opal
+  encryption logical block differs.
+
+  Such a configuration can lead to a partially encrypted Opal locking
+  range or data destruction following the expected locking range.
+
+  Some NVMe drives support multiple LBAF profiles (typically supporting
+  512-byte and 4096-byte sector size). Some broken Opal NVMe firmware can
+  report bogus encryption size that disagrees with real used sector size.
+  This usually happens after low-level NVMe reformatting (LBAF profile
+  change with nvme utility) to different sector size.
+  Moreover, some firmware versions do not properly reset this even after
+  explicit PSID revert.
+
+  Cryptsetup calculates the Opal locking range using the reported block
+  size in Opal geometry ioctl.  Unfortunately, the broken firmware drive
+  internally uses the logical block size of the block device, which can
+  differ. This can lead to two possible situations:
+
+  - Opal reports a smaller block size (512-byte) while the drive uses
+  a 4096-byte sector. The configured locking range is then much larger,
+  destroying data following the expected locking range setting.
+
+  - Opal reports a larger block size (4096-byte) while the drive uses
+  a 512-byte sector. The configured locking range is then much smaller,
+  leaving the remaining space in the locking range unencrypted (violating
+  the confidentiality of data).
+
+  Cryptsetup now detects this discrepancy and disallows LUKS2 format with
+  Opal hardware encryption in such a case.
+
+  For already formatted devices, you will see this warning:
+    "Bogus OPAL logical block size differs from device block size."
+
+  If you also used software encryption (dm-crypt over Opal), data will
+  still be fully encrypted with software dm-crypt.
+  With hw-only encryption,  your configuration is probably already broken
+  (insecure or accessing data beyond the assigned area).
+
+  Note that this is caused by bad firmware (seen with multiple vendors),
+  and the problem was reported, at least for drives we have access to.
+
+* Fixes to wiping LUKS2 headers after Opal locking area erase.
+
+  As the hardware locking range is destroyed (cryptsetup erase command),
+  the LUKS2 header is no longer usable and was partially wiped.
+  Now the code fully wipes also the secondary header, as the previous
+  code wiped only the primary LUKS area.
+
+  Note that this is an exception, as the normal erase command wipes only
+  the keyslots, keeping the LUKS2 header in place.  With Opal encryption,
+  the data segment is no longer valid, so the whole LUKS2 header is no
+  longer usable.
+
+* Mention the need for possible PSID revert before Opal format for some
+  drives (man page).
+
+* Fix Bitlocker-compatible code to ignore newly seen metadata entries.
+
+  Recent Windows OS versions started to include new (undocumented)
+  metadata entries in Bitlocker. These entries are now quietly ignored,
+  allowing Bitlocker images to open with cryptsetup again.
+
+* Fix interactive query retry if LUKS2 unbound keyslot is present.
+
+  If an unbound keyslot is present, the password query retry count is
+  now properly applied.
+
+* Detect unsupported zoned devices for LUKS header devices.
+
+  Zoned devices cannot be written with direct-io and used for LUKS header
+  logic in general. Code now rejects placing the LUKS header on a zoned
+  device, while you can still create a detached header and use a zoned
+  device for encrypted data.
+
+* Allow "capi" cipher format for benchmark command and fix parsing
+  of plain IV in "capi" format.
+
+  Some ciphers can be specified only in Linux kernel crypto notation
+  (in short, "capi"). Code now allows this format also for benchmark,
+  for example, "benchmark -c capi:xts\(aes\)-plain64"
+  (that is equivalent to -c aes-xts-plain64).
+
+* Add support for HCTR2 encryption mode.
+
+  The HCTR2 encryption mode was added to the Linux kernel for fscrypt,
+  but as it is a length-preserving mode (with sector tweak), it can be
+  easily used for disk encryption, too.
+  The mode has the same property as wide modes (any change is propagated
+  to the whole sector instead of only one block as in XTS mode).
+
+  As it needs a larger initialization vector (32 bytes), we need to add
+  an exception in the userspace format code.
+  You can now use --cipher aes-hctr2-plain64 for the format operation.
+
+* Source code now uses SPDX license identifiers instead of full
+  license preambles.
+
+* Fix missing includes for cryptographic backend that could cause
+  compilation errors for some systems.
+
+* Fix tests to work correctly in FIPS mode with recent OpenSSL 3.2.
+
+* Fix various (mostly false positive) issues detected by Coverity.
