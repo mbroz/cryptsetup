@@ -1075,13 +1075,15 @@ static int action_status(void)
 				 CRYPT_ACTIVATE_SAME_CPU_CRYPT|
 				 CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS|
 				 CRYPT_ACTIVATE_NO_READ_WORKQUEUE|
-				 CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE))
-			log_std("  flags:   %s%s%s%s%s\n",
+				 CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE|
+				 CRYPT_ACTIVATE_HIGH_PRIORITY))
+			log_std("  flags:   %s%s%s%s%s%s\n",
 				(cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? "discards " : "",
 				(cad.flags & CRYPT_ACTIVATE_SAME_CPU_CRYPT) ? "same_cpu_crypt " : "",
 				(cad.flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? "submit_from_crypt_cpus " : "",
 				(cad.flags & CRYPT_ACTIVATE_NO_READ_WORKQUEUE) ? "no_read_workqueue " : "",
-				(cad.flags & CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE) ? "no_write_workqueue" : "");
+				(cad.flags & CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE) ? "no_write_workqueue" : "",
+				(cad.flags & CRYPT_ACTIVATE_HIGH_PRIORITY) ? "high_priority" : "");
 	}
 out:
 	crypt_free(cd);
