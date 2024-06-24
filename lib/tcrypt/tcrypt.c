@@ -1119,9 +1119,14 @@ int TCRYPT_dump(struct crypt_device *cd,
 		log_std(cd, "Version:       \t%d\n", hdr->d.version);
 		log_std(cd, "Driver req.:\t%x.%x\n", hdr->d.version_tc >> 8,
 						    hdr->d.version_tc & 0xFF);
+		log_std(cd, "Flags:       \t0x%x\n", hdr->d.flags);
 
-		log_std(cd, "Sector size:\t%" PRIu32 "\n", hdr->d.sector_size);
-		log_std(cd, "MK offset:\t%" PRIu64 "\n", hdr->d.mk_offset);
+		log_std(cd, "Sector size:\t%" PRIu32 " [bytes]\n", hdr->d.sector_size);
+		log_std(cd, "MK offset:\t%" PRIu64 " [bytes]\n", hdr->d.mk_offset);
+		if (hdr->d.volume_size)
+			log_std(cd, "Volume size:\t%" PRIu64 " [bytes]\n", hdr->d.volume_size);
+		if (hdr->d.hidden_volume_size)
+			log_std(cd, "Hidden size:\t%" PRIu64 " [bytes]\n", hdr->d.hidden_volume_size);
 		log_std(cd, "PBKDF2 hash:\t%s\n", params->hash_name);
 	}
 	log_std(cd, "Cipher chain:\t%s\n", params->cipher);
