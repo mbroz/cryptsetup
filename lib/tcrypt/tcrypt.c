@@ -735,7 +735,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	uint32_t req_flags, dmc_flags;
 	struct tcrypt_algs *algs;
 	enum devcheck device_check;
-	uint64_t offset = crypt_get_data_offset(cd);
+	uint64_t offset, iv_offset;
 	struct volume_key *vk = NULL;
 	struct device  *ptr_dev = crypt_data_device(cd), *device = NULL, *part_device = NULL;
 	struct crypt_dm_active_device dmd = {
@@ -779,24 +779,64 @@ int TCRYPT_activate(struct crypt_device *cd,
 	else
 		device_check = DEV_EXCL;
 
-	if ((params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) &&
-	     !crypt_dev_is_partition(device_path(crypt_data_device(cd)))) {
-		part_path = crypt_get_partition_device(device_path(crypt_data_device(cd)),
-						       crypt_get_data_offset(cd), dmd.size);
-		if (part_path) {
-			if (!device_alloc(cd, &part_device, part_path)) {
-				log_verbose(cd, _("Activating TCRYPT system encryption for partition %s."),
-					    part_path);
-				ptr_dev = part_device;
+	offset = crypt_get_data_offset(cd);
+	iv_offset = crypt_get_iv_offset(cd);
+
+	/*
+	 * System encryption is tricky, as the TCRYPT header is outside the partition area.
+	 * It can be a system partition only (TCRYPT header offset contains MK offset to
+	 * a particular partition) or the whole system (then MK offset starts on the header itself).
+	 * IV offset is always partition offset, but device offset depends on whether the user
+	 * copied the whole disk or just one encrypted partition.
+	 * This code tries to guess the most common situations but can still fail and use wrong offsets.
+	 * Recent UEFI systems never use whole system encryption.
+	 */
+	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
+		if (crypt_dev_is_partition(device_path(crypt_data_device(cd)))) {
+			/* One partition */
+			offset = 0;
+			iv_offset = crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
+		} else if (crypt_dev_is_partition(device_path(crypt_metadata_device(cd)))) {
+			/* One partition image, header is the original partition */
+			offset = 0;
+			iv_offset = crypt_dev_partition_offset(device_path(crypt_metadata_device(cd)));
+		} else {
+			/* No partition info, try partition-only mode searching for partition. */
+			part_path = crypt_get_partition_device(device_path(crypt_data_device(cd)),
+							       iv_offset, hdr->d.volume_size / SECTOR_SIZE);
+			if (!part_path)
+				part_path = crypt_get_partition_device(device_path(crypt_metadata_device(cd)),
+								       iv_offset, hdr->d.volume_size / SECTOR_SIZE);
+			if (part_path) {
+				if (!device_alloc(cd, &part_device, part_path)) {
+					log_verbose(cd, _("Activating TCRYPT system encryption for partition %s."),
+						part_path);
+					ptr_dev = part_device;
+					offset = 0;
+					iv_offset = crypt_dev_partition_offset(part_path);
+				}
+				free(part_path);
+			} else if (device_is_identical(crypt_metadata_device(cd), crypt_data_device(cd))) {
+				/*
+				 * We have no partition offset and TCRYPT system header is on the data device.
+				 * Use the whole device mapping.
+				 * There can be active partitions, do not use exclusive flag.
+				 */
+				device_check = DEV_OK;
+				dmd.size = hdr->d.volume_size / SECTOR_SIZE;
+				log_err(cd, _("Cannot determine TCRYPT system partition offset, activating whole encrypted area."));
+			} else {
+				/*
+				 * We have no partition offset and TCRYPT system header is on the metadata device
+				 * (TCRYPT system header was NOT read from data device).
+				 * Expect that data device is a copy of partition and not the whole device.
+				 * This will not work for whole system encryption, though.
+				 */
 				offset = 0;
+				log_err(cd, _("Cannot determine TCRYPT system partition offset, activating device as a system partition."));
 			}
-			free(part_path);
-		} else
-			/*
-			 * System encryption use the whole device mapping, there can
-			 * be active partitions.
-			 */
-			device_check = DEV_OK;
+		}
+		log_dbg(cd, "TCRYPT system encryption data_offset %" PRIu64 ", iv_offset %" PRIu64 ".", offset, iv_offset);
 	}
 
 	r = device_block_adjust(cd, ptr_dev, device_check,
@@ -847,7 +887,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 		}
 
 		r = dm_crypt_target_set(&dmd.segment, 0, dmd.size, ptr_dev, vk,
-				cipher_spec, crypt_get_iv_offset(cd), offset,
+				cipher_spec, iv_offset, offset,
 				crypt_get_integrity(cd),
 				crypt_get_integrity_tag_size(cd),
 				crypt_get_sector_size(cd));
@@ -1028,9 +1068,7 @@ uint64_t TCRYPT_get_data_offset(struct crypt_device *cd,
 	if (!hdr->d.version) {
 		/* No real header loaded, initialized by active device, use default mk_offset */
 	} else if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
-		/* Mapping through whole device, not partition! */
-		if (crypt_dev_is_partition(device_path(crypt_data_device(cd))))
-			return 0;
+		/* Mapping through whole device or partition, return mk_offset */
 	} else if (params->mode && !strncmp(params->mode, "xts", 3)) {
 		if (hdr->d.version < 3)
 			return 1;
@@ -1057,25 +1095,12 @@ uint64_t TCRYPT_get_iv_offset(struct crypt_device *cd,
 			      struct tcrypt_phdr *hdr,
 			      struct crypt_params_tcrypt *params)
 {
-	uint64_t iv_offset, partition_offset;
-
 	if (params->mode && !strncmp(params->mode, "xts", 3))
-		iv_offset = TCRYPT_get_data_offset(cd, hdr, params);
+		return TCRYPT_get_data_offset(cd, hdr, params);
 	else if (params->mode && !strncmp(params->mode, "lrw", 3))
-		iv_offset = 0;
-	else
-		iv_offset = hdr->d.mk_offset / SECTOR_SIZE;
+		return 0;
 
-	if (params->flags & CRYPT_TCRYPT_SYSTEM_HEADER) {
-		partition_offset = crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
-		/* FIXME: we need to deal with overflow sooner */
-		if (iv_offset > (UINT64_MAX - partition_offset))
-			iv_offset = UINT64_MAX;
-		else
-			iv_offset += partition_offset;
-	}
-
-	return iv_offset;
+	return hdr->d.mk_offset / SECTOR_SIZE;
 }
 
 int TCRYPT_get_volume_key(struct crypt_device *cd,

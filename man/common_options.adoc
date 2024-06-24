@@ -1052,6 +1052,32 @@ ifdef::ACTION_OPEN,ACTION_TCRYPTDUMP[]
 Specify which TrueCrypt on-disk
 header will be used to open the device. See _TCRYPT_ section in
 *cryptsetup*(8) for more info.
++
+Using a system-encrypted device with the *--tcrypt-system* option
+requires specific settings to work as expected.
++
+TrueCrypt/VeraCrypt supports full system encryption
+(only a partition table is not encrypted) or system partition encryption
+(only a system partition is encrypted).
+The metadata header then contains the offset and size of the encrypted area.
+Cryptsetup needs to know the specific partition offset to calculate
+encryption parameters. To properly map a partition, you must specify
+a real partition device so cryptsetup can calculate this offset.
++
+While you can use a full device as a parameter (/dev/sdb), always prefer
+to specify the partition you want to map (/dev/sdb1) as only system partition
+mode can be detected this way.
++
+For mapping images (stored in a file), you can use the additional
+*--header* option with the real partition device.
+If the *--header* is used (and it is different from the data image),
+cryptsetup expects that the data image contains a snapshot of the data partition only.
++
+If *--header* is not used (or points to the same image), cryptsetup expects that
+the image contains a full disk (including the partition table).
+This can map a full encrypted area not directly mountable as a filesystem.
+Please prefer creating a loop device with partitions (*losetup -P*,
+see *losetup(8)* man page) and use a real partition (/dev/loopXp1) as the device parameter.
 endif::[]
 
 ifdef::ACTION_OPEN[]
