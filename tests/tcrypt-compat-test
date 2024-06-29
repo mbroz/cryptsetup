@@ -10,6 +10,8 @@ PASSWORD="aaaaaaaaaaaa"
 PASSWORD_HIDDEN="bbbbbbbbbbbb"
 PASSWORD_72C="aaaaaaaaaaaabbbbbbbbbbbbccccccccccccddddddddddddeeeeeeeeeeeeffffffffffff"
 PIM=1234
+LOOP_SYS=""
+PART_IMG=tctst-part-img
 
 if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 	CRYPTSETUP_VALGRIND=$CRYPTSETUP
@@ -25,7 +27,8 @@ function remove_mapping()
 	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
 	[ -b /dev/mapper/"$MAP"_1 ] && dmsetup remove --retry "$MAP"_1
 	[ -b /dev/mapper/"$MAP"_2 ] && dmsetup remove --retry "$MAP"_2
-	rm -rf $TST_DIR
+	[ -n "$LOOP_SYS" ] && losetup -d $LOOP_SYS
+	rm -rf $TST_DIR $PART_IMG
 }
 
 function fail()
@@ -52,7 +55,6 @@ function test_one() # cipher mode keysize rm_pattern
 		echo "$1-$2 [N/A]"
 		IMGS=$(ls $TST_DIR/[tv]c* | grep "$4")
 		[ -n "$IMGS" ] && rm $IMGS
-		#echo $IMGS
 	else
 		echo "$1-$2 [OK]"
 	fi
@@ -113,6 +115,12 @@ function test_required()
 	test_one kuznyechik xts 512 kuznyechik
 
 	ls $TST_DIR/[tv]c* >/dev/null 2>&1 || skip "No remaining images, test skipped."
+}
+
+function check_uuid()
+{
+	UUID=$(blkid -p -o value -s UUID /dev/mapper/$MAP)
+	[ "$UUID" != "$1" ] && fail "UUID check failed."
 }
 
 function valgrind_setup()
@@ -184,7 +192,6 @@ for file in $(ls $TST_DIR/[tv]ck_*) ; do
 	echo " [OK]"
 done
 
-
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run activation part of test, test skipped."
 	remove_mapping
@@ -192,23 +199,64 @@ if [ $(id -u) != 0 ]; then
 fi
 
 echo "ACTIVATION FS UUID CHECK"
-for file in $(ls $TST_DIR/[tv]c_* $TST_DIR/vcpim_* $TST_DIR/sys_[tv]c_*) ; do
+for file in $(ls $TST_DIR/[tv]c_* $TST_DIR/vcpim_*) ; do
 	echo -n " $file"
 	PIM_OPT=""
 	[[ $file =~ vcpim.* ]] && PIM_OPT="--veracrypt-pim $PIM"
-	SYS_OPT=""
-	[[ $file =~ sys_.* ]] && SYS_OPT="--tcrypt-system"
 	get_HASH_CIPHER $file
-	out=$(echo $PASSWORD | $CRYPTSETUP tcryptOpen $SYS_OPT $PIM_OPT -r -h $HASH -c $CIPHER $file $MAP 2>&1)
+	out=$(echo $PASSWORD | $CRYPTSETUP tcryptOpen $PIM_OPT -r -h $HASH -c $CIPHER $file $MAP 2>&1)
 	ret=$?
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT legacy mode" ) && echo " [N/A]" && continue
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT compatible mapping" ) && echo " [N/A]" && continue
 	[ $ret -ne 0 ] && fail
 	$CRYPTSETUP status $MAP >/dev/null || fail
 	$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
-	UUID=$(blkid -p -o value -s UUID /dev/mapper/$MAP)
-	$CRYPTSETUP remove $MAP || fail
-	[ "$UUID" != "DEAD-BABE" ] && fail "UUID check failed."
+	check_uuid DEAD-BABE
+	$CRYPTSETUP close $MAP || fail
+	echo " [OK]"
+done
+
+echo "ACTIVATION SYSTEM FS UUID CHECK"
+for file in $(ls $TST_DIR/sys_[tv]c_*) ; do
+	echo -n " $file"
+	LOOP_SYS=$(losetup -r -f --show -P $file)
+	if [ -z "$LOOP_SYS" ]; then
+		echo " [N/A]"
+		continue
+	fi
+	if [ -b "$LOOP_SYS"p3 ]; then
+		LOOP_PART="$LOOP_SYS"p3
+	else
+		LOOP_PART="$LOOP_SYS"p1
+	fi
+	get_HASH_CIPHER $file
+	# map through partition name
+	echo -n " [PART]"
+	echo $PASSWORD | $CRYPTSETUP tcryptOpen --tcrypt-system -r -h $HASH -c $CIPHER $LOOP_PART $MAP || fail
+	check_uuid DEAD-BABE
+	$CRYPTSETUP close $MAP || fail
+	if [[ $file =~ _part ]]; then
+		# map through image only (TCRYPT hdr contains partition offset and size)
+		echo -n "[IMG]"
+		echo $PASSWORD | $CRYPTSETUP tcryptOpen --tcrypt-system -r -h $HASH -c $CIPHER $file $MAP 2>/dev/null || fail
+		check_uuid DEAD-BABE
+		$CRYPTSETUP close $MAP || fail
+		# map through full device (TCRYPT hdr contains partition offset and size)
+		echo -n "[DRIVE]"
+		echo $PASSWORD | $CRYPTSETUP tcryptOpen --tcrypt-system -r -h $HASH -c $CIPHER $LOOP_SYS $MAP || fail
+		check_uuid DEAD-BABE
+		$CRYPTSETUP close $MAP || fail
+	elif [[ $file =~ _full ]]; then
+		# map through image + header in real partition (whole system)
+		dd if=$LOOP_PART of=$PART_IMG bs=1M >/dev/null 2>&1
+		echo -n "[PART+IMG]"
+		echo $PASSWORD | $CRYPTSETUP tcryptOpen --tcrypt-system -r -h $HASH -c $CIPHER --header $LOOP_PART $PART_IMG $MAP || fail
+		check_uuid DEAD-BABE
+		$CRYPTSETUP close $MAP || fail
+		rm $PART_IMG
+	fi
+	losetup -d $LOOP_SYS
+	LOOP_SYS=""
 	echo " [OK]"
 done
 
@@ -221,9 +269,8 @@ for file in $(ls $TST_DIR/[tv]c_*-hidden) ; do
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT legacy mode" ) && echo " [N/A]" && continue
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT compatible mapping" ) && echo " [N/A]" && continue
 	[ $ret -ne 0 ] && fail
-	UUID=$(blkid -p -o value -s UUID /dev/mapper/$MAP)
-	$CRYPTSETUP remove $MAP || fail
-	[ "$UUID" != "CAFE-BABE" ] && fail "UUID check failed."
+	check_uuid CAFE-BABE
+	$CRYPTSETUP close $MAP || fail
 	echo " [OK]"
 done
 
