@@ -17,30 +17,30 @@
 
 /* TCRYPT PBKDF variants */
 static const struct {
-	unsigned int legacy:1;
-	unsigned int veracrypt:1;
+	bool legacy;
+	bool veracrypt;
 	const char *name;
 	const char *hash;
 	unsigned int iterations;
 	uint32_t veracrypt_pim_const;
 	uint32_t veracrypt_pim_mult;
 } tcrypt_kdf[] = {
-	{ 0, 0, "pbkdf2", "ripemd160",   2000, 0, 0 },
-	{ 0, 0, "pbkdf2", "ripemd160",   1000, 0, 0 },
-	{ 0, 0, "pbkdf2", "sha512",      1000, 0, 0 },
-	{ 0, 0, "pbkdf2", "whirlpool",   1000, 0, 0 },
-	{ 1, 0, "pbkdf2", "sha1",        2000, 0, 0 },
-	{ 0, 1, "pbkdf2", "sha512",    500000, 15000, 1000 },
-	{ 0, 1, "pbkdf2", "whirlpool", 500000, 15000, 1000 },
-	{ 0, 1, "pbkdf2", "sha256",    500000, 15000, 1000 }, // VeraCrypt 1.0f
-	{ 0, 1, "pbkdf2", "sha256",    200000,     0, 2048 }, // boot only
-	{ 0, 1, "pbkdf2", "blake2s-256", 500000, 15000, 1000 }, // VeraCrypt 1.26.2
-	{ 0, 1, "pbkdf2", "blake2s-256", 200000,     0, 2048 }, // boot only
-	{ 0, 1, "pbkdf2", "ripemd160", 655331, 15000, 1000 },
-	{ 0, 1, "pbkdf2", "ripemd160", 327661,     0, 2048 }, // boot only
-	{ 0, 1, "pbkdf2", "stribog512",500000, 15000, 1000 },
-//	{ 0, 1, "pbkdf2", "stribog512",200000,     0, 2048 }, // boot only
-	{ 0, 0,     NULL,        NULL,      0,     0,    0 }
+	{ false, false, "pbkdf2", "ripemd160",   2000, 0, 0 },
+	{ false, false, "pbkdf2", "ripemd160",   1000, 0, 0 },
+	{ false, false, "pbkdf2", "sha512",      1000, 0, 0 },
+	{ false, false, "pbkdf2", "whirlpool",   1000, 0, 0 },
+	{  true, false, "pbkdf2", "sha1",        2000, 0, 0 },
+	{ false,  true, "pbkdf2", "sha512",    500000, 15000, 1000 },
+	{ false,  true, "pbkdf2", "whirlpool", 500000, 15000, 1000 },
+	{ false,  true, "pbkdf2", "sha256",    500000, 15000, 1000 }, // VeraCrypt 1.0f
+	{ false,  true, "pbkdf2", "sha256",    200000,     0, 2048 }, // boot only
+	{ false,  true, "pbkdf2", "blake2s-256", 500000, 15000, 1000 }, // VeraCrypt 1.26.2
+	{ false,  true, "pbkdf2", "blake2s-256", 200000,     0, 2048 }, // boot only
+	{ false,  true, "pbkdf2", "ripemd160", 655331, 15000, 1000 },
+	{ false,  true, "pbkdf2", "ripemd160", 327661,     0, 2048 }, // boot only
+	{ false,  true, "pbkdf2", "stribog512",500000, 15000, 1000 },
+//	{ false,  true, "pbkdf2", "stribog512",200000,     0, 2048 }, // boot only
+	{ false, false,     NULL,        NULL,      0,     0,    0 }
 };
 
 struct tcrypt_alg {
@@ -53,7 +53,7 @@ struct tcrypt_alg {
 };
 
 struct tcrypt_algs {
-	unsigned int legacy:1;
+	bool legacy;
 	unsigned int chain_count;
 	unsigned int chain_key_size;
 	const char *long_name;
@@ -64,84 +64,84 @@ struct tcrypt_algs {
 /* TCRYPT cipher variants */
 static struct tcrypt_algs tcrypt_cipher[] = {
 /* XTS mode */
-{0,1,64,"aes","xts-plain64",
+{false,1,64,"aes","xts-plain64",
 	{{"aes",    64,16,0,32,0}}},
-{0,1,64,"serpent","xts-plain64",
+{false,1,64,"serpent","xts-plain64",
 	{{"serpent",64,16,0,32,0}}},
-{0,1,64,"twofish","xts-plain64",
+{false,1,64,"twofish","xts-plain64",
 	{{"twofish",64,16,0,32,0}}},
-{0,2,128,"twofish-aes","xts-plain64",
+{false,2,128,"twofish-aes","xts-plain64",
 	{{"twofish",64,16, 0,64,0},
 	 {"aes",    64,16,32,96,0}}},
-{0,3,192,"serpent-twofish-aes","xts-plain64",
+{false,3,192,"serpent-twofish-aes","xts-plain64",
 	{{"serpent",64,16, 0, 96,0},
 	 {"twofish",64,16,32,128,0},
 	 {"aes",    64,16,64,160,0}}},
-{0,2,128,"aes-serpent","xts-plain64",
+{false,2,128,"aes-serpent","xts-plain64",
 	{{"aes",    64,16, 0,64,0},
 	 {"serpent",64,16,32,96,0}}},
-{0,3,192,"aes-twofish-serpent","xts-plain64",
+{false,3,192,"aes-twofish-serpent","xts-plain64",
 	{{"aes",    64,16, 0, 96,0},
 	 {"twofish",64,16,32,128,0},
 	 {"serpent",64,16,64,160,0}}},
-{0,2,128,"serpent-twofish","xts-plain64",
+{false,2,128,"serpent-twofish","xts-plain64",
 	{{"serpent",64,16, 0,64,0},
 	 {"twofish",64,16,32,96,0}}},
-{0,1,64,"camellia","xts-plain64",
+{false,1,64,"camellia","xts-plain64",
 	{{"camellia",    64,16,0,32,0}}},
-{0,1,64,"kuznyechik","xts-plain64",
+{false,1,64,"kuznyechik","xts-plain64",
 	{{"kuznyechik",  64,16,0,32,0}}},
-{0,2,128,"kuznyechik-camellia","xts-plain64",
+{false,2,128,"kuznyechik-camellia","xts-plain64",
 	{{"kuznyechik",64,16, 0,64,0},
 	 {"camellia",  64,16,32,96,0}}},
-{0,2,128,"twofish-kuznyechik","xts-plain64",
+{false,2,128,"twofish-kuznyechik","xts-plain64",
 	{{"twofish",   64,16, 0,64,0},
 	 {"kuznyechik",64,16,32,96,0}}},
-{0,2,128,"serpent-camellia","xts-plain64",
+{false,2,128,"serpent-camellia","xts-plain64",
 	{{"serpent",   64,16, 0,64,0},
 	 {"camellia",  64,16,32,96,0}}},
-{0,2,128,"aes-kuznyechik","xts-plain64",
+{false,2,128,"aes-kuznyechik","xts-plain64",
 	{{"aes",       64,16, 0,64,0},
 	 {"kuznyechik",64,16,32,96,0}}},
-{0,3,192,"camellia-serpent-kuznyechik","xts-plain64",
+{false,3,192,"camellia-serpent-kuznyechik","xts-plain64",
 	{{"camellia",  64,16, 0, 96,0},
 	 {"serpent",   64,16,32,128,0},
 	 {"kuznyechik",64,16,64,160,0}}},
 
 /* LRW mode */
-{0,1,48,"aes","lrw-benbi",
+{false,1,48,"aes","lrw-benbi",
 	{{"aes",    48,16,32,0,0}}},
-{0,1,48,"serpent","lrw-benbi",
+{false,1,48,"serpent","lrw-benbi",
 	{{"serpent",48,16,32,0,0}}},
-{0,1,48,"twofish","lrw-benbi",
+{false,1,48,"twofish","lrw-benbi",
 	{{"twofish",48,16,32,0,0}}},
-{0,2,96,"twofish-aes","lrw-benbi",
+{false,2,96,"twofish-aes","lrw-benbi",
 	{{"twofish",48,16,32,0,0},
 	 {"aes",    48,16,64,0,0}}},
-{0,3,144,"serpent-twofish-aes","lrw-benbi",
+{false,3,144,"serpent-twofish-aes","lrw-benbi",
 	{{"serpent",48,16,32,0,0},
 	 {"twofish",48,16,64,0,0},
 	 {"aes",    48,16,96,0,0}}},
-{0,2,96,"aes-serpent","lrw-benbi",
+{false,2,96,"aes-serpent","lrw-benbi",
 	{{"aes",    48,16,32,0,0},
 	 {"serpent",48,16,64,0,0}}},
-{0,3,144,"aes-twofish-serpent","lrw-benbi",
+{false,3,144,"aes-twofish-serpent","lrw-benbi",
 	{{"aes",    48,16,32,0,0},
 	 {"twofish",48,16,64,0,0},
 	 {"serpent",48,16,96,0,0}}},
-{0,2,96,"serpent-twofish", "lrw-benbi",
+{false,2,96,"serpent-twofish", "lrw-benbi",
 	{{"serpent",48,16,32,0,0},
 	 {"twofish",48,16,64,0,0}}},
 
 /* Kernel LRW block size is fixed to 16 bytes for GF(2^128)
  * thus cannot be used with blowfish where block is 8 bytes.
  * There also no GF(2^64) support.
-{1,1,64,"blowfish_le","lrw-benbi",
+{true,1,64,"blowfish_le","lrw-benbi",
 	 {{"blowfish_le",64,8,32,0,0}}},
-{1,2,112,"blowfish_le-aes","lrw-benbi",
+{true,2,112,"blowfish_le-aes","lrw-benbi",
 	 {{"blowfish_le",64, 8,32,0,0},
 	  {"aes",        48,16,88,0,0}}},
-{1,3,160,"serpent-blowfish_le-aes","lrw-benbi",
+{true,3,160,"serpent-blowfish_le-aes","lrw-benbi",
 	  {{"serpent",    48,16, 32,0,0},
 	   {"blowfish_le",64, 8, 64,0,0},
 	   {"aes",        48,16,120,0,0}}},*/
@@ -150,39 +150,39 @@ static struct tcrypt_algs tcrypt_cipher[] = {
  * CBC + "outer" CBC (both with whitening)
  * chain_key_size: alg_keys_bytes + IV_seed_bytes + whitening_bytes
  */
-{1,1,32+16+16,"aes","cbc-tcw",
+{true,1,32+16+16,"aes","cbc-tcw",
 	{{"aes",    32,16,32,0,32}}},
-{1,1,32+16+16,"serpent","cbc-tcw",
+{true,1,32+16+16,"serpent","cbc-tcw",
 	{{"serpent",32,16,32,0,32}}},
-{1,1,32+16+16,"twofish","cbc-tcw",
+{true,1,32+16+16,"twofish","cbc-tcw",
 	{{"twofish",32,16,32,0,32}}},
-{1,2,64+16+16,"twofish-aes","cbci-tcrypt",
+{true,2,64+16+16,"twofish-aes","cbci-tcrypt",
 	{{"twofish",32,16,32,0,0},
 	 {"aes",    32,16,64,0,32}}},
-{1,3,96+16+16,"serpent-twofish-aes","cbci-tcrypt",
+{true,3,96+16+16,"serpent-twofish-aes","cbci-tcrypt",
 	{{"serpent",32,16,32,0,0},
 	 {"twofish",32,16,64,0,0},
 	 {"aes",    32,16,96,0,32}}},
-{1,2,64+16+16,"aes-serpent","cbci-tcrypt",
+{true,2,64+16+16,"aes-serpent","cbci-tcrypt",
 	{{"aes",    32,16,32,0,0},
 	 {"serpent",32,16,64,0,32}}},
-{1,3,96+16+16,"aes-twofish-serpent", "cbci-tcrypt",
+{true,3,96+16+16,"aes-twofish-serpent", "cbci-tcrypt",
 	{{"aes",    32,16,32,0,0},
 	 {"twofish",32,16,64,0,0},
 	 {"serpent",32,16,96,0,32}}},
-{1,2,64+16+16,"serpent-twofish", "cbci-tcrypt",
+{true,2,64+16+16,"serpent-twofish", "cbci-tcrypt",
 	{{"serpent",32,16,32,0,0},
 	 {"twofish",32,16,64,0,32}}},
-{1,1,16+8+16,"cast5","cbc-tcw",
+{true,1,16+8+16,"cast5","cbc-tcw",
 	{{"cast5",   16,8,32,0,24}}},
-{1,1,24+8+16,"des3_ede","cbc-tcw",
+{true,1,24+8+16,"des3_ede","cbc-tcw",
 	{{"des3_ede",24,8,32,0,24}}},
-{1,1,56+8+16,"blowfish_le","cbc-tcrypt",
+{true,1,56+8+16,"blowfish_le","cbc-tcrypt",
 	{{"blowfish_le",56,8,32,0,24}}},
-{1,2,88+16+16,"blowfish_le-aes","cbc-tcrypt",
+{true,2,88+16+16,"blowfish_le-aes","cbc-tcrypt",
 	{{"blowfish_le",56, 8,32,0,0},
 	 {"aes",        32,16,88,0,32}}},
-{1,3,120+16+16,"serpent-blowfish_le-aes","cbc-tcrypt",
+{true,3,120+16+16,"serpent-blowfish_le-aes","cbc-tcrypt",
 	{{"serpent",    32,16, 32,0,0},
 	 {"blowfish_le",56, 8, 64,0,0},
 	 {"aes",        32,16,120,0,32}}},
