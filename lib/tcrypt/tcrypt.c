@@ -58,11 +58,11 @@ struct tcrypt_algs {
 	unsigned int chain_key_size;
 	const char *long_name;
 	const char *mode;
-	struct tcrypt_alg cipher[3];
+	const struct tcrypt_alg cipher[3];
 };
 
 /* TCRYPT cipher variants */
-static struct tcrypt_algs tcrypt_cipher[] = {
+static const struct tcrypt_algs tcrypt_cipher[] = {
 /* XTS mode */
 {false,1,64,"aes","xts-plain64",
 	{{"aes",    64,16,0,32,0}}},
@@ -258,7 +258,7 @@ static void TCRYPT_swab_le(char *buf)
 	*r = swab32(*r);
 }
 
-static int decrypt_blowfish_le_cbc(struct tcrypt_alg *alg,
+static int decrypt_blowfish_le_cbc(const struct tcrypt_alg *alg,
 				   const char *key, char *buf)
 {
 	int bs = alg->iv_size;
@@ -301,7 +301,7 @@ static void TCRYPT_remove_whitening(char *buf, const char *key)
 		buf[j] ^= key[j % 8];
 }
 
-static void TCRYPT_copy_key(struct tcrypt_alg *alg, const char *mode,
+static void TCRYPT_copy_key(const struct tcrypt_alg *alg, const char *mode,
 			     char *out_key, const char *key)
 {
 	int ks2;
@@ -321,7 +321,7 @@ static void TCRYPT_copy_key(struct tcrypt_alg *alg, const char *mode,
 	}
 }
 
-static int TCRYPT_decrypt_hdr_one(struct tcrypt_alg *alg, const char *mode,
+static int TCRYPT_decrypt_hdr_one(const struct tcrypt_alg *alg, const char *mode,
 				   const char *key,struct tcrypt_phdr *hdr)
 {
 	char backend_key[TCRYPT_HDR_KEY_LEN];
@@ -365,7 +365,7 @@ static int TCRYPT_decrypt_hdr_one(struct tcrypt_alg *alg, const char *mode,
  * For chained ciphers and CBC mode we need "outer" decryption.
  * Backend doesn't provide this, so implement it here directly using ECB.
  */
-static int TCRYPT_decrypt_cbci(struct tcrypt_algs *ciphers,
+static int TCRYPT_decrypt_cbci(const struct tcrypt_algs *ciphers,
 				const char *key, struct tcrypt_phdr *hdr)
 {
 	struct crypt_cipher *cipher[3];
@@ -707,7 +707,7 @@ int TCRYPT_read_phdr(struct crypt_device *cd,
 	return r;
 }
 
-static struct tcrypt_algs *TCRYPT_get_algs(const char *cipher, const char *mode)
+static const struct tcrypt_algs *TCRYPT_get_algs(const char *cipher, const char *mode)
 {
 	int i;
 
@@ -733,7 +733,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	unsigned int i;
 	int r;
 	uint32_t req_flags, dmc_flags;
-	struct tcrypt_algs *algs;
+	const struct tcrypt_algs *algs;
 	enum devcheck device_check;
 	uint64_t offset, iv_offset;
 	struct volume_key *vk = NULL;
@@ -1021,7 +1021,7 @@ int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 			struct crypt_params_tcrypt *tcrypt_params,
 			struct tcrypt_phdr *tcrypt_hdr)
 {
-	struct tcrypt_algs *algs;
+	const struct tcrypt_algs *algs;
 	char cipher[MAX_CIPHER_LEN * 4], mode[MAX_CIPHER_LEN+1], *tmp;
 	size_t key_size;
 	int r;
@@ -1108,7 +1108,7 @@ int TCRYPT_get_volume_key(struct crypt_device *cd,
 			  struct crypt_params_tcrypt *params,
 			  struct volume_key **vk)
 {
-	struct tcrypt_algs *algs;
+	const struct tcrypt_algs *algs;
 	unsigned int i, key_index;
 
 	if (!hdr->d.version) {
