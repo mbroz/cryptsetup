@@ -1,7 +1,7 @@
 option('argon-implementation', type : 'combo', choices : ['none', 'internal', 'libargon2'], description : 'which implementation of Argon2 PBKDF shall be used (cryptsetup internal, external libargon2 (PHC) or disable Argon2 support)', value : 'internal')
 option('asciidoc', type : 'feature', description : 'generate man pages from asciidoc', value : 'enabled')
 option('blkid', type : 'boolean', description : 'use of blkid for device signature detection and wiping', value : true)
-option('crypto-backend', type : 'combo', choices : ['gcrypt', 'openssl', 'nss', 'kernel', 'nettle'], description : 'crypto backend', value : 'openssl')
+option('crypto-backend', type : 'combo', choices : ['gcrypt', 'openssl', 'nss', 'kernel', 'nettle', 'mbedtls'], description : 'crypto backend', value : 'openssl')
 option('cryptsetup', type : 'boolean', description : 'cryptsetup support', value : true)
 option('default-integrity-keyfile-size-maxkb', type : 'integer', description : 'maximum integritysetup keyfile size (in KiB)', value : 4)
 option('default-keyfile-size-maxkb', type : 'integer', description : 'maximum keyfile size (in KiB)', value : 8192)

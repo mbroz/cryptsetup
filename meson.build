@@ -555,6 +555,23 @@ elif get_option('crypto-backend') == 'nettle'
     assert(cc.has_function('nettle_pbkdf2_hmac_sha256',
             dependencies: crypto_backend_library),
         'You need Nettle library version 2.6 or more recent.')
+elif get_option('crypto-backend') == 'mbedtls'
+    if get_option('fips')
+        error('mbedtls crypto backend is not supported with FIPS enabled')
+    endif
+    assert(cc.has_header('mbedtls/version.h'),
+        'You need mbedTLS cryptographic library.')
+    conf.set10('HAVE_MBEDTLS_VERSION_H', cc.has_header('mbedtls/version.h'))
+
+    mbedcrypto = cc.find_library('mbedcrypto',
+        static: enable_static)
+    assert(cc.has_function('mbedtls_md_init',
+            prefix: '#include <mbedtls/md.h>', dependencies: mbedcrypto),
+        'You need mbedcrypto library.')
+
+    crypto_backend_library = mbedcrypto
+    use_internal_pbkdf2 = true
+    use_internal_argon2 = true
 endif
 conf.set10('USE_INTERNAL_PBKDF2', use_internal_pbkdf2)
 

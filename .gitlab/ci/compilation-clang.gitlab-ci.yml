@@ -39,13 +39,14 @@ test-scan-build-backends:
           "gcrypt",
           "nss",
           "kernel",
-          "nettle"
+          "nettle",
+          "mbedtls"
       ]
   rules:
       - changes:
         - lib/crypto_backend/*
   script:
-    - DEBIAN_FRONTEND=noninteractive apt-get -yq install libgcrypt20-dev libnss3-dev nettle-dev
+    - DEBIAN_FRONTEND=noninteractive apt-get -yq install libgcrypt20-dev libnss3-dev nettle-dev libmbedtls-dev
     - ./autogen.sh
     - echo "Configuring with crypto backend $BACKENDS"
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -V ./configure CFLAGS="-g -O0" --with-crypto_backend=$BACKENDS

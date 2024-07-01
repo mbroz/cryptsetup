@@ -399,6 +399,22 @@ AC_DEFUN([CONFIGURE_NETTLE], [
 	NO_FIPS([])
 ])
 
+AC_DEFUN([CONFIGURE_MBEDTLS], [
+	AC_CHECK_HEADERS(mbedtls/version.h,,
+		[AC_MSG_ERROR([You need mbedTLS cryptographic library.])])
+
+	saved_LIBS=$LIBS
+	AC_CHECK_LIB(mbedcrypto, mbedtls_md_init,,
+		[AC_MSG_ERROR([You need mbedTLS cryptographic library.])])
+	CRYPTO_LIBS=$LIBS
+	LIBS=$saved_LIBS
+
+	CRYPTO_STATIC_LIBS=$CRYPTO_LIBS
+	use_internal_pbkdf2=1
+	use_internal_argon2=1
+	NO_FIPS([])
+])
+
 dnl ==========================================================================
 saved_LIBS=$LIBS
 
@@ -481,7 +497,7 @@ fi
 
 dnl Crypto backend configuration.
 AC_ARG_WITH([crypto_backend],
-	AS_HELP_STRING([--with-crypto_backend=BACKEND], [crypto backend (gcrypt/openssl/nss/kernel/nettle) [openssl]]),
+	AS_HELP_STRING([--with-crypto_backend=BACKEND], [crypto backend (gcrypt/openssl/nss/kernel/nettle/mbedtls) [openssl]]),
 	[], [with_crypto_backend=openssl])
 
 dnl Kernel crypto API backend needed for benchmark and tcrypt
@@ -501,6 +517,7 @@ case $with_crypto_backend in
 	nss)     CONFIGURE_NSS([]) ;;
 	kernel)  CONFIGURE_KERNEL([]) ;;
 	nettle)  CONFIGURE_NETTLE([]) ;;
+	mbedtls) CONFIGURE_MBEDTLS([]) ;;
 	*) AC_MSG_ERROR([Unknown crypto backend.]) ;;
 esac
 AM_CONDITIONAL(CRYPTO_BACKEND_GCRYPT,  test "$with_crypto_backend" = "gcrypt")
@@ -508,6 +525,7 @@ AM_CONDITIONAL(CRYPTO_BACKEND_OPENSSL, test "$with_crypto_backend" = "openssl")
 AM_CONDITIONAL(CRYPTO_BACKEND_NSS,     test "$with_crypto_backend" = "nss")
 AM_CONDITIONAL(CRYPTO_BACKEND_KERNEL,  test "$with_crypto_backend" = "kernel")
 AM_CONDITIONAL(CRYPTO_BACKEND_NETTLE,  test "$with_crypto_backend" = "nettle")
+AM_CONDITIONAL(CRYPTO_BACKEND_MBEDTLS, test "$with_crypto_backend" = "mbedtls")
 
 AM_CONDITIONAL(CRYPTO_INTERNAL_PBKDF2, test $use_internal_pbkdf2 = 1)
 AC_DEFINE_UNQUOTED(USE_INTERNAL_PBKDF2, [$use_internal_pbkdf2], [Use internal PBKDF2])
