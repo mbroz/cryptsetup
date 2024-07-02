@@ -31,6 +31,9 @@ endif
 if CRYPTO_BACKEND_NETTLE
 libcrypto_backend_la_SOURCES += lib/crypto_backend/crypto_nettle.c
 endif
+if CRYPTO_BACKEND_MBEDTLS
+libcrypto_backend_la_SOURCES += lib/crypto_backend/crypto_mbedtls.c
+endif
 
 if CRYPTO_INTERNAL_PBKDF2
 libcrypto_backend_la_SOURCES += lib/crypto_backend/pbkdf2_generic.c
