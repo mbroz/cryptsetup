@@ -89,7 +89,7 @@ unit_utils_io = executable('unit-utils-io',
     include_directories: includes_lib)
 
 unit_utils_crypt_test = files('unit-utils-crypt.c',) + lib_utils_crypt_files
-unit_utils_crypt_test = executable('unit-utils-crypt-test-test',
+unit_utils_crypt_test = executable('unit-utils-crypt-test',
     unit_utils_crypt_test,
     link_with: libcryptsetup,
     c_args: [
