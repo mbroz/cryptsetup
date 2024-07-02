@@ -297,19 +297,9 @@ The *tcryptDump* command should work for all recognized TCRYPT devices
 and doesn't require superuser privilege.
 
 To map system device (device with boot loader where the whole encrypted
-system resides) use *--tcrypt-system* option. You can use partition
-device as the parameter (parameter must be real partition device, not an
-image in a file), then only this partition is mapped.
-
-If you have the whole TCRYPT device as a file image and you want to map
-multiple partition encrypted with system encryption, please create
-loopback mapping with partitions first (*losetup -P*, see *losetup(8)*
-man page for more info), and use loop partition as the device parameter.
-
-If you use the whole base device as a parameter, one device for the
-whole system encryption is mapped. This mode is available only for
-backward compatibility with older cryptsetup versions which mapped
-TCRYPT system encryption using the whole device.
+system resides) use *--tcrypt-system* option.
+Please read specific info in *cryptsetup-tcryptOpen*(8) *--tcrypt-system*
+option section as mapping system-encrypted device is tricky.
 
 To use hidden header (and map hidden device, if available), use
 *--tcrypt-hidden* option.
