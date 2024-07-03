@@ -224,10 +224,16 @@ for file in $(ls $TST_DIR/sys_[tv]c_*) ; do
 		echo " [N/A]"
 		continue
 	fi
-	if [ -b "$LOOP_SYS"p3 ]; then
+	if [[ $file =~ _gpt_ ]]; then
 		LOOP_PART="$LOOP_SYS"p3
 	else
 		LOOP_PART="$LOOP_SYS"p1
+	fi
+	if [ ! -b "$LOOP_PART" ]; then
+		echo " [N/A]"
+		losetup -d $LOOP_SYS
+		LOOP_SYS=""
+		continue
 	fi
 	get_HASH_CIPHER $file
 	# map through partition name
