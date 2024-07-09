@@ -3297,7 +3297,7 @@ static int reencrypt_load(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	if (r < 0 || !tmp) {
 		log_err(cd, _("Failed to load LUKS2 reencryption context."));
-		return r;
+		return r < 0 ? r : -EINVAL;
 	}
 
 	*rh = tmp;
