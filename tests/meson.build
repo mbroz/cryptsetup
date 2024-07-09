@@ -365,6 +365,7 @@ if get_option('cryptsetup')
         is_parallel: false,
         depends: [
             cryptsetup,
+            crypto_check,
         ])
     test('luks1-compat-test',
         find_program('./luks1-compat-test'),
@@ -373,6 +374,7 @@ if get_option('cryptsetup')
         is_parallel: false,
         depends: [
             cryptsetup,
+            crypto_check,
         ])
     test('device-test',
         find_program('./device-test'),

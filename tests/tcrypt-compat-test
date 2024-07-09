@@ -13,6 +13,8 @@ PIM=1234
 LOOP_SYS=""
 PART_IMG=tctst-part-img
 
+CRYPTOCHECK=./crypto-check
+
 if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 	CRYPTSETUP_VALGRIND=$CRYPTSETUP
 else
@@ -50,7 +52,7 @@ function skip()
 
 function test_one() # cipher mode keysize rm_pattern
 {
-	$CRYPTSETUP benchmark -c "$1-$2" -s "$3" >/dev/null 2>&1
+	$CRYPTOCHECK cipher $1 $2 $3
 	if [ $? -ne 0 ] ; then
 		echo "$1-$2 [N/A]"
 		IMGS=$(ls $TST_DIR/[tv]c* | grep "$4")
@@ -62,7 +64,7 @@ function test_one() # cipher mode keysize rm_pattern
 
 function test_kdf() # hash img_hash
 {
-	$CRYPTSETUP benchmark -h "$1" >/dev/null 2>&1
+	$CRYPTOCHECK hash $1
 	if [ $? -ne 0 ] ; then
 		echo "pbkdf2-$1 [N/A]"
 		IMGS=$(ls $TST_DIR/[tv]c* | grep "$2")
@@ -82,6 +84,7 @@ function get_HASH_CIPHER() # filename
 function test_required()
 {
 	command -v blkid >/dev/null || skip "blkid tool required, test skipped."
+	[ ! -x "$CRYPTOCHECK" ] && skip "Cannot find $CRYPTOCHECK, test skipped."
 
 	echo "REQUIRED KDF TEST"
 	test_kdf sha256      sha256

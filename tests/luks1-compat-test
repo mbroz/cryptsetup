@@ -6,6 +6,8 @@ TST_DIR=luks1-images
 MAP=luks1tst
 KEYFILE=keyfile1
 
+CRYPTOCHECK=./crypto-check
+
 if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 	CRYPTSETUP_VALGRIND=$CRYPTSETUP
 else
@@ -61,26 +63,25 @@ function remove_imgs()
 
 function test_one()
 {
-	$CRYPTSETUP benchmark -c "$1" -s "$2" | grep -v "#" || remove_imgs $1
+	$CRYPTOCHECK cipher $1 $2 $3 || remove_imgs "$1-$2"
 }
 
 function test_required()
 {
 	echo "REQUIRED KDF TEST"
-	$CRYPTSETUP benchmark -h whirlpool | grep "N/A" && remove_imgs whirlpool
+	$CRYPTOCHECK hash whirlpool || remove_imgs whirlpool
 
 	echo "REQUIRED CIPHERS TEST"
-	echo "#     Algorithm | Key |  Encryption |  Decryption"
-
-	test_one aes-xts 256
-	test_one twofish-xts 256
-	test_one serpent-xts 256
-	test_one aes-cbc 256
-	test_one aes-lrw 256
+	test_one aes xts 256
+	test_one twofish xts 256
+	test_one serpent xts 256
+	test_one aes cbc 256
+	test_one aes lrw 256
 }
 
 export LANG=C
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
+[ ! -x "$CRYPTOCHECK" ] && skip "Cannot find $CRYPTOCHECK, test skipped."
 command -v blkid >/dev/null || skip "blkid tool required, test skipped."
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 [ ! -d $TST_DIR ] && tar xJf $srcdir/luks1-images.tar.xz --no-same-owner
