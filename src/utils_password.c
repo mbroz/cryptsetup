@@ -160,6 +160,7 @@ static int interactive_pass(const char *prompt, char *pass, size_t maxlen,
 	int failed = -1;
 	int infd, outfd;
 	size_t realsize = 0;
+	bool close_fd = false;
 
 	if (maxlen < 1)
 		return failed;
@@ -169,8 +170,10 @@ static int interactive_pass(const char *prompt, char *pass, size_t maxlen,
 	if (infd == -1) {
 		infd = STDIN_FILENO;
 		outfd = STDERR_FILENO;
-	} else
+	} else {
 		outfd = infd;
+		close_fd = true;
+	}
 
 	if (tcgetattr(infd, &orig))
 		goto out;
@@ -193,7 +196,7 @@ out:
 	if (realsize == maxlen)
 		log_dbg("Read stopped at maximal interactive input length, passphrase can be trimmed.");
 
-	if (infd != STDIN_FILENO)
+	if (close_fd)
 		close(infd);
 	return failed;
 }

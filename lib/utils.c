@@ -190,6 +190,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 	size_t buflen, i;
 	uint64_t file_read_size;
 	struct stat st;
+	bool close_fd = false;
 
 	if (!key || !key_size_read)
 		return -EINVAL;
@@ -197,11 +198,15 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 	*key = NULL;
 	*key_size_read = 0;
 
-	fd = keyfile ? open(keyfile, O_RDONLY) : STDIN_FILENO;
-	if (fd < 0) {
-		log_err(cd, _("Failed to open key file."));
-		return -EINVAL;
-	}
+	if (keyfile) {
+		fd = open(keyfile, O_RDONLY);
+		if (fd < 0) {
+			log_err(cd, _("Failed to open key file."));
+			return -EINVAL;
+		}
+		close_fd = true;
+	} else
+		fd = STDIN_FILENO;
 
 	if (isatty(fd)) {
 		log_err(cd, _("Cannot read keyfile from a terminal."));
@@ -315,7 +320,7 @@ int crypt_keyfile_device_read(struct crypt_device *cd,  const char *keyfile,
 	*key_size_read = i;
 	r = 0;
 out:
-	if (fd != STDIN_FILENO)
+	if (close_fd)
 		close(fd);
 
 	if (r)
