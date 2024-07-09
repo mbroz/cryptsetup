@@ -226,27 +226,6 @@ unsigned json_segments_count(json_object *jobj_segments)
 	return count;
 }
 
-static void _get_segment_or_id_by_flag(json_object *jobj_segments, const char *flag, unsigned id, void *retval)
-{
-	json_object *jobj_flags, **jobj_ret = (json_object **)retval;
-	int *ret = (int *)retval;
-
-	if (!flag)
-		return;
-
-	json_object_object_foreach(jobj_segments, key, value) {
-		if (!json_object_object_get_ex(value, "flags", &jobj_flags))
-			continue;
-		if (LUKS2_array_jobj(jobj_flags, flag)) {
-			if (id)
-				*ret = atoi(key);
-			else
-				*jobj_ret = value;
-			return;
-		}
-	}
-}
-
 void json_segment_remove_flag(json_object *jobj_segment, const char *flag)
 {
 	json_object *jobj_flags, *jobj_flags_new;
@@ -574,24 +553,37 @@ int LUKS2_segments_set(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 int LUKS2_get_segment_id_by_flag(struct luks2_hdr *hdr, const char *flag)
 {
-	int ret = -ENOENT;
-	json_object *jobj_segments = LUKS2_get_segments_jobj(hdr);
+	json_object *jobj_flags, *jobj_segments = LUKS2_get_segments_jobj(hdr);
 
-	if (jobj_segments)
-		_get_segment_or_id_by_flag(jobj_segments, flag, 1, &ret);
+	if (!flag || !jobj_segments)
+		return -ENOENT;
 
-	return ret;
+	json_object_object_foreach(jobj_segments, key, value) {
+		if (!json_object_object_get_ex(value, "flags", &jobj_flags))
+			continue;
+		if (LUKS2_array_jobj(jobj_flags, flag))
+			return atoi(key);
+	}
+
+	return -ENOENT;
 }
 
 json_object *LUKS2_get_segment_by_flag(struct luks2_hdr *hdr, const char *flag)
 {
-	json_object *jobj_segment = NULL,
-		    *jobj_segments = LUKS2_get_segments_jobj(hdr);
+	json_object *jobj_flags, *jobj_segments = LUKS2_get_segments_jobj(hdr);
 
-	if (jobj_segments)
-		_get_segment_or_id_by_flag(jobj_segments, flag, 0, &jobj_segment);
+	if (!flag || !jobj_segments)
+		return NULL;
 
-	return jobj_segment;
+	json_object_object_foreach(jobj_segments, key, value) {
+		UNUSED(key);
+		if (!json_object_object_get_ex(value, "flags", &jobj_flags))
+			continue;
+		if (LUKS2_array_jobj(jobj_flags, flag))
+			return value;
+	}
+
+	return NULL;
 }
 
 /* compares key characteristics of both segments */
