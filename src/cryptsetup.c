@@ -1439,7 +1439,7 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	const char *header_device, *type;
 	char *msg = NULL, *key = NULL, *password = NULL;
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN], integrity[MAX_CIPHER_LEN];
-	size_t passwordLen, signatures = 0;
+	size_t passwordLen = 0, signatures = 0;
 	struct crypt_device *cd = NULL;
 	struct crypt_params_luks1 params1 = {
 		.hash = ARG_STR(OPT_HASH_ID) ?: DEFAULT_LUKS1_HASH,
