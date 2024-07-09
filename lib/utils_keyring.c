@@ -171,7 +171,10 @@ static key_serial_t find_key_by_type_and_desc(const char *type, const char *desc
 			}
 
 			buffer_len -= newline - buf + 1;
-			assert(buffer_len <= sizeof(buf) - 1);
+			if (buffer_len >= sizeof(buf)) {
+				close(f);
+				return 0;
+			}
 			memmove(buf, newline + 1, buffer_len);
 			buf[buffer_len] = '\0';
 			newline = strchr(buf, '\n');
