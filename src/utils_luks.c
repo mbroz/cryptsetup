@@ -158,6 +158,7 @@ int tools_read_json_file(const char *file, char **json, size_t *json_size, bool 
 	ssize_t ret;
 	int fd, block, r;
 	void *buf = NULL;
+	bool close_fd = false;
 
 	block = tools_signals_blocked();
 	if (block)
@@ -174,6 +175,7 @@ int tools_read_json_file(const char *file, char **json, size_t *json_size, bool 
 			r = -EINVAL;
 			goto out;
 		}
+		close_fd = true;
 	}
 
 	buf = malloc(LUKS2_MAX_MDA_SIZE);
@@ -205,7 +207,7 @@ int tools_read_json_file(const char *file, char **json, size_t *json_size, bool 
 out:
 	if (block && !quit)
 		set_int_block(1);
-	if (fd >= 0 && fd != STDIN_FILENO)
+	if (close_fd)
 		close(fd);
 	if (r && buf) {
 		memset(buf, 0, LUKS2_MAX_MDA_SIZE);
