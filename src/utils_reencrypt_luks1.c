@@ -132,8 +132,8 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 		goto out;
 	}
 
-	s = read(devfd, buf, buf_size);
-	if (s < 0 || s != (ssize_t)buf_size) {
+	s = read_buffer(devfd, buf, buf_size);
+	if (s != (ssize_t)buf_size) {
 		log_err(_("Cannot read device %s."), device);
 		r = -EIO;
 		goto out;
@@ -159,8 +159,8 @@ static int device_check(struct reenc_ctx *rc, const char *device, header_magic s
 	if (!r && version == 1) {
 		if (lseek(devfd, 0, SEEK_SET) == -1)
 			goto out;
-		s = write(devfd, buf, buf_size);
-		if (s < 0 || s != (ssize_t)buf_size || fsync(devfd) < 0) {
+		s = write_buffer(devfd, buf, buf_size);
+		if (s != (ssize_t)buf_size || fsync(devfd) < 0) {
 			log_err(_("Cannot write device %s."), device);
 			r = -EIO;
 		}
@@ -208,8 +208,8 @@ static int write_log(struct reenc_ctx *rc)
 	if (lseek(rc->log_fd, 0, SEEK_SET) == -1)
 		return -EIO;
 
-	r = write(rc->log_fd, rc->log_buf, SECTOR_SIZE);
-	if (r < 0 || r != SECTOR_SIZE) {
+	r = write_buffer(rc->log_fd, rc->log_buf, SECTOR_SIZE);
+	if (r != SECTOR_SIZE) {
 		log_err(_("Cannot write reencryption log file."));
 		return -EIO;
 	}
@@ -262,10 +262,9 @@ static int parse_line_log(struct reenc_ctx *rc, const char *line)
 static int parse_log(struct reenc_ctx *rc)
 {
 	char *start, *end;
-	ssize_t s;
 
-	s = read(rc->log_fd, rc->log_buf, SECTOR_SIZE);
-	if (s == -1) {
+	if (lseek(rc->log_fd, 0, SEEK_SET) == -1 ||
+	    read_buffer(rc->log_fd, rc->log_buf, SECTOR_SIZE) != SECTOR_SIZE) {
 		log_err(_("Cannot read reencryption log file."));
 		return -EIO;
 	}
@@ -293,6 +292,7 @@ static void close_log(struct reenc_ctx *rc)
 	log_dbg("Closing LUKS reencryption log file %s.", rc->log_file);
 	if (rc->log_fd != -1)
 		close(rc->log_fd);
+	rc->log_fd = -1;
 }
 
 static int open_log(struct reenc_ctx *rc)
@@ -312,10 +312,8 @@ static int open_log(struct reenc_ctx *rc)
 	if (rc->log_fd == -1)
 		return -EINVAL;
 
-	if (!rc->in_progress && write_log(rc) < 0) {
-		close_log(rc);
+	if (!rc->in_progress && write_log(rc) < 0)
 		return -EIO;
-	}
 
 	/* Be sure it is correct format */
 	return parse_log(rc);
@@ -1239,7 +1237,7 @@ int reencrypt_luks1(const char *device)
 
 	set_int_handler(0);
 
-	if (initialize_context(rc, device))
+	if ((r = initialize_context(rc, device)))
 		goto out;
 
 	log_dbg("Running reencryption.");
