@@ -59,6 +59,17 @@ api_test_2 = executable('api-test-2',
     ],
     include_directories: includes_lib)
 
+crypto_check = executable('crypto-check',
+    [
+        'crypto-check.c',
+    ],
+    link_with: libcrypto_backend,
+    c_args: [
+        '-Wall',
+        '-O2',
+    ],
+    include_directories: includes_lib)
+
 vectors_test = executable('vectors-test',
     [
         'crypto-vectors.c',

@@ -129,6 +129,12 @@ vectors_test_LDFLAGS = $(AM_LDFLAGS) -static
 vectors_test_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib @CRYPTO_CFLAGS@
 vectors_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
+crypto_check_SOURCES = crypto-check.c
+crypto_check_LDADD = ../libcrypto_backend.la @CRYPTO_LIBS@ @LIBARGON2_LIBS@
+crypto_check_LDFLAGS = $(AM_LDFLAGS) -static
+crypto_check_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib @CRYPTO_CFLAGS@
+crypto_check_CPPFLAGS = $(AM_CPPFLAGS)
+
 unit_utils_io_SOURCES = unit-utils-io.c
 unit_utils_io_LDADD = ../libutils_io.la
 unit_utils_io_LDFLAGS = $(AM_LDFLAGS) -static
@@ -159,7 +165,7 @@ all_symbols_test_LDFLAGS = $(AM_LDFLAGS) -ldl
 all_symbols_test_CFLAGS = $(AM_CFLAGS)
 all_symbols_test_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
-check_PROGRAMS = api-test api-test-2 differ vectors-test unit-utils-io unit-utils-crypt-test unit-wipe all-symbols-test
+check_PROGRAMS = api-test api-test-2 differ crypto-check vectors-test unit-utils-io unit-utils-crypt-test unit-wipe all-symbols-test
 
 check-programs: test-symbols-list.h $(check_PROGRAMS) fake_systemd_tpm_path.so
 
