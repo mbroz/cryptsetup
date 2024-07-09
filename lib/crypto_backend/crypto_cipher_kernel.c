@@ -200,8 +200,8 @@ int crypt_cipher_check_kernel(const char *name, const char *mode,
 			      const char *integrity, size_t key_length)
 {
 	struct crypt_cipher_kernel c;
-	char mode_name[64], tmp_salg_name[180], *real_mode = NULL, *cipher_iv = NULL, *key;
-	const char *salg_type;
+	char mode_name[64], tmp_salg_name[180], *cipher_iv = NULL, *key;
+	const char *salg_type, *real_mode;
 	bool aead;
 	int r;
 	struct sockaddr_alg sa = {
@@ -209,6 +209,7 @@ int crypt_cipher_check_kernel(const char *name, const char *mode,
 	};
 
 	aead = integrity && strcmp(integrity, "none");
+	real_mode = NULL;
 
 	/* Remove IV if present */
 	if (mode) {
@@ -229,14 +230,22 @@ int crypt_cipher_check_kernel(const char *name, const char *mode,
 	memset(tmp_salg_name, 0, sizeof(tmp_salg_name));
 
 	/* FIXME: this is duplicating a part of devmapper backend */
-	if (aead && !strcmp(integrity, "poly1305"))
-		r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "rfc7539(%s,%s)", name, integrity);
-	else if (!real_mode)
-		r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s", name);
-	else if (aead && !strcmp(real_mode, "ccm"))
-		r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "rfc4309(%s(%s))", real_mode, name);
-	else
-		r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s(%s)", real_mode, name);
+	if (aead) {
+		/* In AEAD, mode parameter can be just IV like "random" */
+		if (!strcmp(integrity, "poly1305"))
+			r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "rfc7539(%s,%s)", name, integrity);
+		else if (!real_mode)
+			r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s", name);
+		else if (!strcmp(real_mode, "ccm"))
+			r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "rfc4309(%s(%s))", real_mode, name);
+		else
+			r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s(%s)", real_mode, name);
+	} else {
+		if (!mode)
+			r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s", name);
+		else
+			r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s(%s)", real_mode ?: mode_name, name);
+	}
 
 	if (r < 0 || (size_t)r >= sizeof(tmp_salg_name))
 		return -EINVAL;

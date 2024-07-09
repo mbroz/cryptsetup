@@ -18,6 +18,8 @@
 # define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
+static bool fips_active = false;
+
 static void printhex(const char *s, const char *buf, size_t len)
 {
 	size_t i;
@@ -1508,6 +1510,57 @@ static int memcmp_test(void)
 	return EXIT_SUCCESS;
 }
 
+#ifdef ENABLE_AF_ALG
+struct capi_test_vector {
+	const char *name;
+	const char *mode;
+	const char *integrity;
+	size_t key_length;
+	bool fips;
+};
+
+static struct capi_test_vector capi_test_vectors[] = {
+	{ "aes", "xts", NULL, 64, true },
+	{ "aes", "xts-plain64", NULL, 32, true },
+	{ "aes", "xts-plain64", NULL, 64, true },
+	{ "aes", "xts-plain64", "none", 64, true },
+	{ "aes", "gcm-random", "aead", 16, true },
+	{ "aes", "gcm-random", "aead", 32, true },
+	{ "aes", "ccm-random", "aead", 19, false },
+	{ "aes", "ccm-random", "aead", 35, false },
+	{ "chacha20", "random", "poly1305", 32, false },
+	{ "aegis128", "random", "aead", 16, false },
+};
+#endif
+
+static int kernel_capi_check_test(void)
+{
+#ifdef ENABLE_AF_ALG
+	unsigned int i;
+	int r;
+
+	for (i = 0; i < ARRAY_SIZE(capi_test_vectors); i++) {
+		printf("CAPI %s/%s/%s/%zu ", capi_test_vectors[i].name,
+			capi_test_vectors[i].mode,
+			capi_test_vectors[i].integrity ?: "NULL",
+			capi_test_vectors[i].key_length);
+
+		r = crypt_cipher_check_kernel(capi_test_vectors[i].name,
+			capi_test_vectors[i].mode,
+			capi_test_vectors[i].integrity,
+			capi_test_vectors[i].key_length);
+		if (!r)
+			printf("[OK]\n");
+		else if (r == -ENOENT || r == -ENOTSUP ||
+			(fips_active && !capi_test_vectors[i].fips))
+			printf("[N/A]\n");
+		else
+			return EXIT_FAILURE;
+	}
+#endif
+	return EXIT_SUCCESS;
+}
+
 static void __attribute__((noreturn)) exit_test(const char *msg, int r)
 {
 	if (msg)
@@ -1527,7 +1580,9 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 	}
 #endif
 
-	if (crypt_backend_init(fips_mode()))
+	fips_active = fips_mode();
+
+	if (crypt_backend_init(fips_active))
 		exit_test("Crypto backend init error.", EXIT_FAILURE);
 
 	printf("Test vectors using %s crypto backend.\n", crypt_backend_version());
@@ -1555,6 +1610,9 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 
 	if (utf8_16_test())
 		exit_test("UTF8/16 test failed.", EXIT_FAILURE);
+
+	if (kernel_capi_check_test())
+		exit_test("Kernel CAPI test failed.", EXIT_FAILURE);
 
 	if (default_alg_test()) {
 		if (fips_mode())
