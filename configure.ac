@@ -132,7 +132,6 @@ AC_C_BIGENDIAN
 AC_TYPE_OFF_T
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
-AC_PROG_GCC_TRADITIONAL
 AC_FUNC_STRERROR_R
 
 dnl ==========================================================================
