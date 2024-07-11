@@ -143,33 +143,39 @@ dmcrypt()
 	[ -z "$OUT" ] && OUT=$1
 	printf "%-31s" "$1"
 
+	echo -n -e "PLAIN:"
 	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c $1 -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	if [ $? -eq 0 ] ; then
-		echo -n -e "PLAIN:"
 		dmcrypt_check "$DEV_NAME"_tstdev $OUT
 	else
 		echo -n "[N/A]"
 	fi
 
+	echo -n -e " LUKS1:"
 	echo $PASSWORD | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF2 -c $1 -s 256 /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	if [ $? -eq 0 ] ; then
-		echo -n -e " LUKS1:"
 		echo $PASSWORD | $CRYPTSETUP luksOpen /dev/mapper/$DEV_NAME "$DEV_NAME"_tstdev >/dev/null 2>&1 || fail
 		dmcrypt_check "$DEV_NAME"_tstdev $OUT
+	else
+		echo -n "[N/A]"
 	fi
 
+	echo -n -e " LUKS2:"
 	echo $PASSWORD | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2 $FAST_PBKDF2 -c $1 -s 256 --offset 8192 /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	if [ $? -eq 0 ] ; then
-		echo -n -e " LUKS2:"
 		echo $PASSWORD | $CRYPTSETUP luksOpen /dev/mapper/$DEV_NAME "$DEV_NAME"_tstdev >/dev/null 2>&1 || fail
 		dmcrypt_check "$DEV_NAME"_tstdev $OUT
+	else
+		echo -n "[N/A]"
 	fi
 
 	# repeated device creation must return the same checksum
+	echo -n -e " CHECKSUM:"
 	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c $1 -s 256 "$DEV_NAME"_tstdev /dev/mapper/$DEV_NAME >/dev/null 2>&1
 	if [ $? -eq 0 ] ; then
-		echo -n -e " CHECKSUM:"
 		dmcrypt_check_sum "$1" "$DEV_NAME"_tstdev
+	else
+		echo -n "[N/A]"
 	fi
 	echo
 }
