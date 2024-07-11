@@ -948,9 +948,9 @@ prepare dev_size_mb=32
 setup_luks2_env
 
 # Check that we can use other ciphers than AES in userspace backend.
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c twofish-xts-plain64 $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c twofish-xts-plain64 $FAST_PBKDF_ARGON $DEV || skip "Cannot use Twofish cipher, test skipped"
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON 2>/dev/null || skip "Cannot use Twofish cipher, test skipped"
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c serpent-xts-plain64 $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c serpent-xts-plain64 $FAST_PBKDF_ARGON $DEV || skip "Cannot use Serpent cipher, test skipped"
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON 2>/dev/null || skip "Cannot use Serpent cipher, test skipped."
 wipe_dev $DEV
 
