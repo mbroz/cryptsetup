@@ -28,3 +28,27 @@ test-scan-build:
     - make clean
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j check-programs
+
+test-scan-build-backends:
+  extends:
+    - .gitlab-shared-clang
+  parallel:
+    matrix:
+      - BACKENDS: [
+          "openssl",
+          "gcrypt",
+          "nss",
+          "kernel",
+          "nettle"
+      ]
+  rules:
+      - changes:
+        - lib/crypto_backend/*
+  script:
+    - DEBIAN_FRONTEND=noninteractive apt-get -yq install libgcrypt20-dev libnss3-dev nettle-dev
+    - ./autogen.sh
+    - echo "Configuring with crypto backend $BACKENDS"
+    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -V ./configure CFLAGS="-g -O0" --with-crypto_backend=$BACKENDS
+    - make clean
+    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j
+    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j check-programs
