@@ -284,8 +284,7 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 	h = malloc(sizeof(*h));
 	if (!h)
 		return -ENOMEM;
-	memset(ctx, 0, sizeof(*ctx));
-
+	memset(h, 0, sizeof(*h));
 
 	h->hash = _get_alg(name);
 	if (!h->hash) {
