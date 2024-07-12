@@ -89,7 +89,7 @@ sharutils device-mapper jq vim-common expect keyutils netcat shadow-utils openss
 **For Debian and Ubuntu**:
 ```
 git gcc make autoconf automake autopoint pkg-config libtool gettext libssl-dev libdevmapper-dev
-libpopt-dev uuid-dev libsepol1-dev libjson-c-dev libssh-dev libblkid-dev tar
+libpopt-dev uuid-dev libsepol-dev libjson-c-dev libssh-dev libblkid-dev tar
 
 Optionally: libargon2-0-dev libpwquality-dev
 ```
