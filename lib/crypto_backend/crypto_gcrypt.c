@@ -51,7 +51,6 @@ static void crypt_hash_test_whirlpool_bug(void)
 {
 	struct crypt_hash *h;
 	char buf[2] = "\0\0", hash_out1[64], hash_out2[64];
-	int r;
 
 	if (crypto_backend_whirlpool_bug >= 0)
 		return;
@@ -61,16 +60,16 @@ static void crypt_hash_test_whirlpool_bug(void)
 		return;
 
 	/* One shot */
-	if ((r = crypt_hash_write(h, &buf[0], 2)) ||
-	    (r = crypt_hash_final(h, hash_out1, 64))) {
+	if (crypt_hash_write(h, &buf[0], 2) ||
+	    crypt_hash_final(h, hash_out1, 64)) {
 		crypt_hash_destroy(h);
 		return;
 	}
 
 	/* Split buf (crypt_hash_final resets hash state) */
-	if ((r = crypt_hash_write(h, &buf[0], 1)) ||
-	    (r = crypt_hash_write(h, &buf[1], 1)) ||
-	    (r = crypt_hash_final(h, hash_out2, 64))) {
+	if (crypt_hash_write(h, &buf[0], 1) ||
+	    crypt_hash_write(h, &buf[1], 1) ||
+	    crypt_hash_final(h, hash_out2, 64)) {
 		crypt_hash_destroy(h);
 		return;
 	}
