@@ -5,7 +5,7 @@ set -ex
 PACKAGES=(
 	git make autoconf automake autopoint pkg-config libtool libtool-bin
 	gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol-dev
-	libjson-c-dev libssh-dev libblkid-dev tar libargon2-0-dev libpwquality-dev
+	libjson-c-dev libssh-dev libblkid-dev tar libargon2-dev libpwquality-dev
 	sharutils dmsetup jq xxd expect keyutils netcat-openbsd passwd openssh-client
 	sshpass asciidoctor
 )
@@ -13,9 +13,12 @@ PACKAGES=(
 COMPILER="${COMPILER:?}"
 COMPILER_VERSION="${COMPILER_VERSION:?}"
 
-grep -E '^deb' /etc/apt/sources.list > /etc/apt/sources.list~
-sed -Ei 's/^deb /deb-src /' /etc/apt/sources.list~
-cat /etc/apt/sources.list~ >> /etc/apt/sources.list
+sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/ubuntu.sources
+
+# use this on older Ubuntu
+# grep -E '^deb' /etc/apt/sources.list > /etc/apt/sources.list~
+# sed -Ei 's/^deb /deb-src /' /etc/apt/sources.list~
+# cat /etc/apt/sources.list~ >> /etc/apt/sources.list
 
 apt-get -y update --fix-missing
 DEBIAN_FRONTEND=noninteractive apt-get -yq install software-properties-common wget lsb-release
