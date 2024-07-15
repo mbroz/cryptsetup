@@ -1148,5 +1148,14 @@ echo $PWD3 | $CRYPTSETUP open -q --test-passphrase -S5 $IMG || fail
 $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S6 --volume-key-file $VK_FILE --new-keyfile $KEY5 $IMG || fail
 $CRYPTSETUP open --test-passphrase -q -S6 -d $KEY5 $IMG || fail
 
+prepare "[40] Early check for active name." wipe
+DM_BAD_NAME=x/x
+DM_LONG_NAME=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+echo $PWD1 | $CRYPTSETUP open --type plain $LOOPDEV $DM_BAD_NAME --hash sha256 --cipher aes-cbc-essiv:sha256 --key-size 256 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP open --type plain $LOOPDEV $DM_LONG_NAME --hash sha256 --cipher aes-cbc-essiv:sha256 --key-size 256 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DM_BAD_NAME 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DM_LONG_NAME 2>/dev/null && fail
+
 remove_mapping
 exit 0

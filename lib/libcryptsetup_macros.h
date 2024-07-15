@@ -49,6 +49,7 @@
 #define DEFAULT_MEM_ALIGNMENT	4096
 
 #define DM_UUID_LEN		129
+#define DM_NAME_LEN		128
 #define DM_BY_ID_PREFIX		"dm-uuid-"
 #define DM_BY_ID_PREFIX_LEN	8
 #define DM_UUID_PREFIX		"CRYPT-"

@@ -458,3 +458,19 @@ void tools_package_version(const char *name, bool use_pwlibs)
 		passwdqc && use_pwlibs ? "PASSWDQC " : "",
 		hw_opal ? "HW_OPAL " : "");
 }
+
+int tools_check_newname(const char *name)
+{
+	if (!name)
+		return 0;
+
+	if (strlen(name) >= DM_NAME_LEN) {
+		log_err(_("Name is too long."));
+		return -EINVAL;
+	} else if (strchr(name, '/')) {
+		log_err(_("Name must not contain '/' character."));
+		return -EINVAL;
+	}
+
+	return 0;
+}

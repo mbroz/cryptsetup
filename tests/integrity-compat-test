@@ -655,4 +655,13 @@ if [ -n "$DM_INTEGRITY_HMAC_FIX" ] ; then
 	test_resize "[INTEGRITY RESIZE KEY DETACHED]" 1 1 "--integrity hmac-sha256 --integrity-key-size 128 --integrity-key-file $KEY_FILE --journal-integrity hmac-sha256 --journal-integrity-key-file $KEY_FILE --journal-integrity-key-size 128 --journal-crypt ctr-aes --journal-crypt-key-size 16 --journal-crypt-key-file $KEY_FILE"
 fi
 
+echo -n "Early check for active name:"
+add_device
+DM_BAD_NAME=x/x
+DM_LONG_NAME=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+$INTSETUP format -q $DEV --no-wipe || fail "Cannot format device."
+$INTSETUP open $DEV $DM_BAD_NAME 2>/dev/null && fail "Cannot activate device."
+$INTSETUP open $DEV $DM_LONG_NAME 2>/dev/null && fail "Cannot activate device."
+echo "[OK]"
+
 cleanup

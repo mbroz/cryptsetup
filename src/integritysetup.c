@@ -348,6 +348,9 @@ static int action_open(void)
 	if (ARG_SET(OPT_ALLOW_DISCARDS_ID))
 		activate_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
 
+	if ((r = tools_check_newname(action_argv[1])))
+		goto out;
+
 	r = _read_keys(&integrity_key, &params);
 	if (r)
 		goto out;

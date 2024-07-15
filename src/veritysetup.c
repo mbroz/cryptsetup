@@ -267,6 +267,9 @@ static int action_open(void)
 		return -EINVAL;
 	}
 
+	if (tools_check_newname(action_argv[1]))
+		return -EINVAL;
+
 	return _activate(action_argv[1],
 			 action_argv[0],
 			 action_argv[2],

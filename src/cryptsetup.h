@@ -90,6 +90,7 @@ struct tools_progress_params {
 
 int tools_progress(uint64_t size, uint64_t offset, void *usrptr);
 const char *tools_get_device_name(const char *device, char **r_backing_file);
+int tools_check_newname(const char *name);
 
 int tools_read_vk(const char *file, char **key, int keysize);
 int tools_write_mk(const char *file, const char *key, int keysize);

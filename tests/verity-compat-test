@@ -563,5 +563,14 @@ else
 	echo "[N/A]"
 fi
 
+echo -n "Early check for active name:"
+prepare 8192 1024
+DM_BAD_NAME=x/x
+DM_LONG_NAME=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+$VERITYSETUP format $LOOPDEV1 $IMG_HASH --format=1 --data-block-size=512 --hash-block-size=512 --hash=sha256 --salt=$SALT >/dev/null 2>&1 || fail "Cannot format device."
+$VERITYSETUP open $LOOPDEV1 $DM_BAD_NAME $DEV $IMG_HASH 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 2>/dev/null && fail
+$VERITYSETUP open $LOOPDEV1 $DM_LONG_NAME $DEV $IMG_HASH 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 2>/dev/null && fail
+echo "[OK]"
+
 remove_mapping
 exit 0
