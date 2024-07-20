@@ -1274,6 +1274,48 @@ err:
 	return r;
 }
 
+static bool device_disappeared(struct crypt_device *cd, struct device *device, const char *type)
+{
+	struct stat st;
+
+	if (!device)
+		return false;
+
+	/*
+	 * Cannot use device_check_access(cd, device, DEV_OK) as it always accesses block device,
+	 * we want to check for underlying file presence (if device is an image).
+	 */
+	if (stat(device_path(device), &st) < 0) {
+		log_dbg(cd, "%s device %s disappeared.", type, device_path(device));
+		return true;
+	}
+
+	log_dbg(cd, "%s device %s is OK.", type, device_path(device));
+	return false;
+}
+
+static bool dm_table_devices_disappeared(struct crypt_device *cd, struct crypt_dm_active_device *dmd)
+{
+	struct dm_target *tgt = &dmd->segment;
+
+	do {
+		if (device_disappeared(cd, tgt->data_device, "Data"))
+			return true;
+		if (tgt->type == DM_VERITY) {
+			if (device_disappeared(cd, tgt->u.verity.hash_device, "Hash"))
+				return true;
+			if (device_disappeared(cd, tgt->u.verity.fec_device, "FEC"))
+				return true;
+		} else if (tgt->type == DM_INTEGRITY) {
+			if (device_disappeared(cd, tgt->u.integrity.meta_device, "Integrity meta"))
+				return true;
+		}
+		tgt = tgt->next;
+	} while (tgt);
+
+	return false;
+}
+
 static int _dm_create_device(struct crypt_device *cd, const char *name, const char *type,
 			     struct crypt_dm_active_device *dmd)
 {
@@ -1324,8 +1366,8 @@ static int _dm_create_device(struct crypt_device *cd, const char *name, const ch
 		goto out;
 
 	if (!dm_task_run(dmt)) {
-
 		r = -dm_task_get_errno(dmt);
+		log_dbg(cd, "DM create task failed, dm_task errno: %i.", r);
 		if (r == -ENOKEY || r == -EKEYREVOKED || r == -EKEYEXPIRED) {
 			/* propagate DM errors around key management as such */
 			r = -ENOKEY;
@@ -1333,10 +1375,34 @@ static int _dm_create_device(struct crypt_device *cd, const char *name, const ch
 		}
 
 		r = dm_status_device(cd, name);
-		if (r >= 0)
+		log_dbg(cd, "Device status returned %i.", r);
+		if (r >= 0 || r == -EEXIST) {
 			r = -EEXIST;
-		if (r != -EEXIST && r != -ENODEV)
+			goto out;
+		}
+
+		/* EEXIST above has priority */
+		if (dm_task_get_errno(dmt) == EBUSY) {
+			r = -EBUSY;
+			goto out;
+		}
+
+		if (r != -ENODEV) {
 			r = -EINVAL;
+			goto out;
+		}
+
+		/* dm-ioctl failed => -ENODEV */
+		if (dm_task_get_errno(dmt) == ENXIO)
+			goto out;
+
+		/* Some device or file node disappeared => -ENODEV */
+		if (dm_table_devices_disappeared(cd, dmd))
+			goto out;
+
+		/* Bail out with EBUSY better than sleep and retry. */
+		log_dbg(cd, "No referenced device missing, some device in use.");
+		r = -EBUSY;
 		goto out;
 	}
 
