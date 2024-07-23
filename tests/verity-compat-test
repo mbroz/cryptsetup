@@ -419,8 +419,8 @@ function check_concurrent() # $1 hash
 	# not gracefully recoverable. Either could fail depending on scheduling, so just check that
 	# the libdevmapper error does not appear in either of the outputs.
 	cat /dev/null >$DEV_OUT
-	$VERITYSETUP create -v $DEV_NAME $DEV_PARAMS $1 >>$DEV_OUT 2>&1 &
-	$VERITYSETUP create -v $DEV_NAME $DEV_PARAMS $1 >>$DEV_OUT 2>&1 &
+	$VERITYSETUP create -v --shared $DEV_NAME $DEV_PARAMS $1 >>$DEV_OUT 2>&1 &
+	$VERITYSETUP create -v --shared $DEV_NAME $DEV_PARAMS $1 >>$DEV_OUT 2>&1 &
 	wait
 	grep -q "Command failed with code .* (wrong or missing parameters)" $DEV_OUT && fail
 	grep -q "Command failed with code .* (wrong device or file specified)." $DEV_OUT && fail
