@@ -338,7 +338,8 @@ int VERITY_activate(struct crypt_device *cd,
 	if (r)
 		goto out;
 
-	r = device_block_adjust(cd, crypt_data_device(cd), DEV_EXCL,
+	r = device_block_adjust(cd, crypt_data_device(cd),
+				activation_flags & CRYPT_ACTIVATE_SHARED ? DEV_OK : DEV_EXCL,
 				0, &dmd.size, &dmd.flags);
 	if (r)
 		goto out;
