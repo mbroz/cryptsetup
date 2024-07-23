@@ -58,7 +58,8 @@ The <root_hash> is a hexadecimal string.
 
 *<options>* can be [--hash-offset, --no-superblock, --ignore-corruption
 or --restart-on-corruption, --panic-on-corruption, --ignore-zero-blocks,
---check-at-most-once, --root-hash-signature, --root-hash-file, --use-tasklets].
+--check-at-most-once, --root-hash-signature, --root-hash-file, --use-tasklets,
+--shared].
 
 If option --root-hash-file is used, the root hash is read from <path>
 instead of from the command line parameter. Expects hex-encoded text,
@@ -222,6 +223,11 @@ recent.
 
 *--salt=hex string*::
 Salt used for format or verification. Format is a hexadecimal string.
+
+*--shared*::
+Allows data device to be used in shared mode. The data device is not checked
+for exclusive access in-before the device activation and may be mapped in multiple
+verity mappings.
 
 *--usage*::
 Show short option help.

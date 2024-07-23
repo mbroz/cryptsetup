@@ -173,6 +173,8 @@ static int _activate(const char *dm_device,
 		activate_flags |= CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE;
 	if (ARG_SET(OPT_USE_TASKLETS_ID))
 		activate_flags |= CRYPT_ACTIVATE_TASKLETS;
+	if (ARG_SET(OPT_SHARED_ID))
+		activate_flags |= CRYPT_ACTIVATE_SHARED;
 
 	if (!ARG_SET(OPT_NO_SUPERBLOCK_ID)) {
 		params.flags = flags;
