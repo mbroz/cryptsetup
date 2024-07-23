@@ -45,7 +45,8 @@ in_oss_fuzz && apt-get update && apt-get install -y \
     bison flex
 
 [ ! -d zlib ]   && git clone --depth 1 https://github.com/madler/zlib.git
-[ ! -d xz ]     && git clone https://git.tukaani.org/xz.git
+# Upstream repo has disabled cloning https://git.tukaani.org/xz.git
+[ ! -d xz ]     && git clone --depth 1 https://github.com/tukaani-project/xz
 [ ! -d json-c ] && git clone --depth 1 https://github.com/json-c/json-c.git
 [ ! -d lvm2 ]   && git clone --depth 1 https://gitlab.com/lvmteam/lvm2
 [ ! -d popt ]   && git clone --depth 1 https://github.com/rpm-software-management/popt.git
