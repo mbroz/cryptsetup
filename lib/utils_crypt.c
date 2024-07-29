@@ -58,7 +58,9 @@ int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
 	}
 
 	if (sscanf(s, "%" MAX_CIPHER_LEN_STR "[^-]", cipher) == 1) {
-		if (strncmp(cipher, "capi:", 5))
+		if (!strncmp(cipher, "capi:", 5))
+			strcpy(cipher_mode, "");
+		else
 			strcpy(cipher_mode, "cbc-plain");
 		if (key_nums)
 			*key_nums = 1;
