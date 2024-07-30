@@ -1622,7 +1622,7 @@ prepare "[46] Blkid disable check" wipe
 if [ "$HAVE_BLKID" -gt 0 ]; then
 	xz -dkf $HEADER_LUKS2_PV.xz
 	# batch mode disables blkid print, use --debug to check it
-	echo $PWD1 | $CRYPTSETUP -q --debug luksFormat $FAST_PBKDF_OPT --type luks2 $HEADER_LUKS2_PV 2>&1 | grep -q "LVM2_member" || fail
+	echo $PWD1 | $CRYPTSETUP -q --debug luksFormat $FAST_PBKDF_OPT --type luks2 $HEADER_LUKS2_PV 2>&1 | grep "signature" | grep -q "LVM2_member" || fail
 	xz -dkf $HEADER_LUKS2_PV.xz
 	echo $PWD1 | $CRYPTSETUP -q --debug --disable-blkid luksFormat $FAST_PBKDF_OPT --type luks2 $HEADER_LUKS2_PV 2>&1 | grep -q "LVM2_member" && fail
 fi
