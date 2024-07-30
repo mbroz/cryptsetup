@@ -1,0 +1,62 @@
+Cryptsetup 2.7.4 Release Notes
+==============================
+Stable bug-fix release.
+
+All users of cryptsetup 2.7 should upgrade to this version.
+
+Changes since version 2.7.3
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Detect device busy failure for device-mapper table-referenced devices.
+
+  Some device-mapper ioctl failures can disappear in libdevmapper,
+  causing the libcryptsetup wrapper to return an invalid error (EINVAL)
+  instead of EEXIST or EBUSY. One such case is when there is a device
+  creation race, and the device-mapper device name is created, but
+  the following mapping table load fails. This can happen because some
+  block devices used in table mapping have already been claimed by
+  another process (the kernel needs exclusive access).
+
+  The kernel ioctl properly returns EBUSY; this errno is lost in
+  libdevmapper (dm_task_get_errno returns 0). It should be fixed by
+  libdevmapper in the future.
+
+  Such behavior was seen in the systemd way of handling dm-verity
+  devices. With these changes, the code should react for EEXIST and
+  EBUSY, as another process has already activated the device.
+
+  Code calling libcryptsetup also must not check the underlying device
+  with an exclusive open flag (O_EXCL). Otherwise, it could cause a race
+  in the kernel device-mapper, resulting in no process succeeding device
+  activation (see also CRYPT_ACTIVATE_SHARED flag below).
+
+* Fix shared activation for dm-verity devices.
+
+  The CRYPT_ACTIVATE_SHARED flag was silently ignored when activating
+  dm-verity devices. Dm-verity shared activation is generally safe
+  since all verity devices are read-only.
+
+  The shared flag is a way to skip the exclusive access check for the
+  device, allowing it to create multiple mappings with the same device or
+  properly handle a racy concurrent activation of devices with the same
+  name from different processes.
+
+* Add --shared option for veritysetup open action.
+
+  The option allows the data device to be used in multiple device-mapper
+  table mappings (skip exclusive access check) or to allow concurrent
+  dm-verity device activation of the same device (only one process
+  succeeds in this case; the other will return EEXIST or EBUSY).
+
+* Do not use exclusive flag for the allocated backing loop files.
+
+  Using this flag is an undefined operation for opening an existing file.
+  The flag should be used only for allocated loop (block) devices.
+
+* Fixes for problems found by static analyzers and Valgrind.
+
+  These include fixes for non-default libgcrypt, NSS, and Nettle
+  cryptographic backends, buffer operations to avoid partial read/write,
+  and several other workarounds for mostly false positive warnings.
+
+* Fixes to tests and CI scripts.
