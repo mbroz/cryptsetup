@@ -23,9 +23,8 @@ test-gcc-fanalyzer:
   extends:
     - .gitlab-shared-gcc
   script:
-    - export CFLAGS="-Wall -Werror -g -O0 -fanalyzer -fdiagnostics-path-format=separate-events"
     - ./autogen.sh
-    - ./configure
+    - ./configure CFLAGS="-Wall -Werror -g -O0 -fanalyzer -fdiagnostics-path-format=separate-events" --host=x86_64
     - make -j
     - make -j check-programs
 

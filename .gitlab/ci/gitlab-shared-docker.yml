@@ -1,5 +1,5 @@
 .gitlab-shared-docker:
-  image: ubuntu:lunar
+  image: ubuntu:noble
   tags:
     - gitlab-org-docker
   stage: test
@@ -19,6 +19,7 @@
   variables:
     COMPILER: "gcc"
     COMPILER_VERSION: "13"
+    CC: "gcc-13"
     RUN_SSH_PLUGIN_TEST: "1"
 
 .gitlab-shared-clang:
@@ -27,4 +28,5 @@
   variables:
     COMPILER: "clang"
     COMPILER_VERSION: "18"
+    CC: "clang-18"
     RUN_SSH_PLUGIN_TEST: "1"
