@@ -11,7 +11,7 @@
 
 #include "crypto_backend.h"
 
-/* internal PBKDF2 implementation */
+/* Internal PBKDF2 implementation */
 int pkcs5_pbkdf2(const char *hash,
 		 const char *P, size_t Plen,
 		 const char *S, size_t Slen,
