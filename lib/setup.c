@@ -2355,6 +2355,10 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 
 	log_dbg(cd, "Formatting device %s as type LUKS2 with OPAL HW encryption.", mdata_device_path(cd) ?: "(none)");
 
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
+
 	if (volume_keys_size < opal_params->user_key_size)
 		return -EINVAL;
 
