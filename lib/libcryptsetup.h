@@ -3019,6 +3019,8 @@ __attribute__((deprecated));
  * @param usrptr progress specific data
  *
  * @return @e 0 on success or negative errno value otherwise.
+ *
+ * @note A @e progress callback can interrupt reencryption process by returning non-zero code.
  */
 int crypt_reencrypt_run(struct crypt_device *cd,
 		    int (*progress)(uint64_t size, uint64_t offset, void *usrptr),
