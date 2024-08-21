@@ -99,7 +99,7 @@ static ssize_t read_tty_eol(int fd, char *pass, size_t maxlen)
 	ssize_t r, read_size = 0;
 
 	if (maxlen > SSIZE_MAX)
-		return -EINVAL;
+		return -1;
 
 	do {
 		r = read(fd, pass, maxlen - read_size);
