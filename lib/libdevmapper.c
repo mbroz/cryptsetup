@@ -1897,7 +1897,7 @@ int dm_status_suspended(struct crypt_device *cd, const char *name)
 	r = dm_status_dmi(name, &dmi, NULL, NULL);
 	dm_exit_context();
 
-	if (r < 0)
+	if (r < 0 && r != -EEXIST)
 		return r;
 
 	return dmi.suspended ? 1 : 0;
