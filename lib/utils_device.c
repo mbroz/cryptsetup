@@ -178,7 +178,7 @@ static int device_ready(struct crypt_device *cd, struct device *device)
 		if (devfd >= 0) {
 			/* skip check for suspended DM devices */
 			dm_name = device_dm_name(device);
-			if (dm_name && dm_status_suspended(cd, dm_name)) {
+			if (dm_name && dm_status_suspended(cd, dm_name) > 0) {
 				close(devfd);
 				devfd = -1;
 			} else if (device_read_test(devfd) == 0) {
