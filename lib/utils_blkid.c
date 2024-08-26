@@ -170,7 +170,7 @@ int blk_is_partition(struct blkid_handle *h)
 
 int blk_is_superblock(struct blkid_handle *h)
 {
-	return blkid_probe_has_value(h->pr, "TYPE");;
+	return blkid_probe_has_value(h->pr, "TYPE");
 }
 
 const char *blk_get_partition_type(struct blkid_handle *h)
