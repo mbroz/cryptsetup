@@ -4853,7 +4853,7 @@ int create_or_reload_device(struct crypt_device *cd, const char *name,
 	if (dmd->flags & CRYPT_ACTIVATE_REFRESH) {
 		/* Refresh and recalculate means increasing dm-integrity device */
 		if (tgt->type == DM_INTEGRITY && dmd->flags & CRYPT_ACTIVATE_RECALCULATE)
-			dmflags = DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH;;
+			dmflags = DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH;
 		r = _reload_device(cd, name, dmd, dmflags);
 	} else {
 		if (tgt->type == DM_CRYPT || tgt->type == DM_LINEAR) {

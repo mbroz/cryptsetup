@@ -624,7 +624,7 @@ static int openssl_argon2(const char *type, const char *password, size_t passwor
 	ctx = EVP_KDF_CTX_new(argon2);
 	if (!ctx) {
 		EVP_KDF_free(argon2);
-		return -EINVAL;;
+		return -EINVAL;
 	}
 
 	if (EVP_KDF_CTX_set_params(ctx, params) != 1) {

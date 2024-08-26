@@ -145,7 +145,7 @@ int LOOPAES_parse_keyfile(struct crypt_device *cd,
 	key_lengths[0] = 0;
 	while (offset < buffer_len && key_index < LOOPAES_KEYS_MAX) {
 		keys[key_index] = &buffer[offset];
-		key_lengths[key_index] = 0;;
+		key_lengths[key_index] = 0;
 		while (offset < buffer_len && buffer[offset]) {
 			offset++;
 			key_lengths[key_index]++;
