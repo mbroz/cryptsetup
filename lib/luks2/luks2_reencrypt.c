@@ -3788,6 +3788,13 @@ static int reencrypt_init_by_passphrase(struct crypt_device *cd,
 	if (flags & CRYPT_REENCRYPT_RECOVERY)
 		return reencrypt_recovery_by_passphrase(cd, hdr, keyslot_old, keyslot_new, passphrase, passphrase_size);
 
+	if (name && !device_direct_io(crypt_data_device(cd))) {
+		log_dbg(cd, "Device %s does not support direct I/O.", device_path(crypt_data_device(cd)));
+		/* FIXME: Add more specific error mesage for translation later. */
+		log_err(cd, _("Failed to initialize reencryption device stack."));
+		return -EINVAL;
+	}
+
 	if (cipher && !crypt_cipher_wrapped_key(cipher, cipher_mode)) {
 		r = crypt_keyslot_get_key_size(cd, keyslot_new);
 		if (r < 0)
