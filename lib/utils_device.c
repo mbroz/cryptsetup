@@ -127,11 +127,19 @@ static size_t device_alignment_fd(int devfd)
 	return (size_t)alignment;
 }
 
-static int device_read_test(int devfd)
+static int device_read_test(struct crypt_device *cd, int devfd, struct device *device)
 {
 	char buffer[512];
 	int r = -EIO;
 	size_t minsize = 0, blocksize, alignment;
+	const char *dm_name;
+
+	/* skip check for suspended DM devices */
+	dm_name = device_dm_name(device);
+	if (dm_name && dm_status_suspended(cd, dm_name) > 0) {
+		log_dbg(cd, "Device %s is suspended, assuming direct-io is supported.", dm_name);
+		return 0;
+	}
 
 	blocksize = device_block_size_fd(devfd, &minsize);
 	alignment = device_alignment_fd(devfd);
@@ -147,6 +155,8 @@ static int device_read_test(int devfd)
 
 	if (read_blockwise(devfd, blocksize, alignment, buffer, minsize) == (ssize_t)minsize)
 		r = 0;
+
+	log_dbg(cd, "Direct-io is supported and works.");
 
 	crypt_safe_memzero(buffer, sizeof(buffer));
 	return r;
@@ -165,7 +175,6 @@ static int device_ready(struct crypt_device *cd, struct device *device)
 	int devfd = -1, r = 0;
 	struct stat st;
 	size_t tmp_size;
-	const char *dm_name;
 
 	if (!device)
 		return -EINVAL;
@@ -176,12 +185,7 @@ static int device_ready(struct crypt_device *cd, struct device *device)
 		device->o_direct = 0;
 		devfd = open(device_path(device), O_RDONLY | O_DIRECT);
 		if (devfd >= 0) {
-			/* skip check for suspended DM devices */
-			dm_name = device_dm_name(device);
-			if (dm_name && dm_status_suspended(cd, dm_name) > 0) {
-				close(devfd);
-				devfd = -1;
-			} else if (device_read_test(devfd) == 0) {
+			if (device_read_test(cd, devfd, device) == 0) {
 				device->o_direct = 1;
 			} else {
 				close(devfd);
