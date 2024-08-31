@@ -39,11 +39,18 @@ int cryptsetup_token_open(struct crypt_device *cd, int token,
 	char **password, size_t *password_len, void *usrptr);
 void cryptsetup_token_dump(struct crypt_device *cd, const char *json);
 int cryptsetup_token_validate(struct crypt_device *cd, const char *json);
-
+void cryptsetup_token_buffer_free(void *buffer, size_t buffer_len);
 
 const char *cryptsetup_token_version(void)
 {
 	return TOKEN_VERSION_MAJOR "." TOKEN_VERSION_MINOR;
+}
+
+void cryptsetup_token_buffer_free(void *buffer, size_t buffer_len)
+{
+	/* libcryptsetup API call */
+	crypt_safe_memzero(buffer, buffer_len);
+	free(buffer);
 }
 
 static json_object *get_token_jobj(struct crypt_device *cd, int token)
