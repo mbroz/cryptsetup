@@ -1,0 +1,23 @@
+Cryptsetup 2.7.5 Release Notes
+==============================
+Stable bug-fix release.
+
+All users of cryptsetup 2.7 must upgrade to this version.
+
+Changes since version 2.7.4
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Fix possible online reencryption data corruption (only in 2.7.x).
+
+  In some situations (initializing a suspended device-mapper device),
+  cryptsetup disabled direct-io device access. This caused unsafe
+  online reencryption operations that could lead to data corruption.
+  The code now adds strict checks (and aborts the operation) and
+  changes direct-io detection code to prevent data corruption.
+
+* Fix a clang compilation error in SSH token plugin.
+
+  As clang linker treats missing symbols as errors, the linker phase
+  for the SSH token failed as the optional cryptsetup_token_buffer_free
+  was not defined.
+
+* Fix crypto backend initialization in crypt_format_luks2_opal API call.
