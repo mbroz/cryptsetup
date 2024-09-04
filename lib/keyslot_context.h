@@ -123,36 +123,36 @@ struct crypt_keyslot_context {
 
 void crypt_keyslot_context_destroy_internal(struct crypt_keyslot_context *method);
 
-void crypt_keyslot_unlock_by_key_init_internal(struct crypt_keyslot_context *kc,
+void crypt_keyslot_context_init_by_key_internal(struct crypt_keyslot_context *kc,
 	const char *volume_key,
 	size_t volume_key_size);
 
-void crypt_keyslot_unlock_by_signed_key_init_internal(struct crypt_keyslot_context *kc,
+void crypt_keyslot_context_init_by_signed_key_internal(struct crypt_keyslot_context *kc,
 	const char *volume_key,
 	size_t volume_key_size,
 	const char *signature,
 	size_t signature_size);
 
-void crypt_keyslot_unlock_by_passphrase_init_internal(struct crypt_keyslot_context *kc,
+void crypt_keyslot_context_init_by_passphrase_internal(struct crypt_keyslot_context *kc,
 	const char *passphrase,
 	size_t passphrase_size);
 
-void crypt_keyslot_unlock_by_keyfile_init_internal(struct crypt_keyslot_context *kc,
+void crypt_keyslot_context_init_by_keyfile_internal(struct crypt_keyslot_context *kc,
 	const char *keyfile,
 	size_t keyfile_size,
 	uint64_t keyfile_offset);
 
-void crypt_keyslot_unlock_by_token_init_internal(struct crypt_keyslot_context *kc,
+void crypt_keyslot_context_init_by_token_internal(struct crypt_keyslot_context *kc,
 	int token,
 	const char *type,
 	const char *pin,
 	size_t pin_size,
 	void *usrptr);
 
-void crypt_keyslot_unlock_by_keyring_internal(struct crypt_keyslot_context *kc,
+void crypt_keyslot_context_init_by_keyring_internal(struct crypt_keyslot_context *kc,
 	const char *key_description);
 
-void crypt_keyslot_unlock_by_vk_in_keyring_internal(struct crypt_keyslot_context *kc,
+void crypt_keyslot_context_init_by_vk_in_keyring_internal(struct crypt_keyslot_context *kc,
 	const char *key_description);
 
 const char *keyslot_context_type_string(const struct crypt_keyslot_context *kc);
