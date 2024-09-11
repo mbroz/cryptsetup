@@ -354,7 +354,7 @@ static int get_luks2_key_by_keyring(struct crypt_device *cd,
 	if (r < 0)
 		kc->error = r;
 
-	return 0;
+	return r;
 }
 
 static int get_luks2_volume_key_by_keyring(struct crypt_device *cd,

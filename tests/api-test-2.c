@@ -5161,7 +5161,7 @@ static void VolumeKeyGet(void)
 	struct crypt_params_luks2 params = {
 		.sector_size = 512
 	};
-	char key[256], key2[256];
+	char key[256], key2[256], key3[256];
 #ifdef KERNEL_KEYRING
 	key_serial_t kid;
 	const struct crypt_token_params_luks2_keyring tparams = {
@@ -5170,7 +5170,9 @@ static void VolumeKeyGet(void)
 #endif
 
 	const char *vk_hex =  "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a"
-			      "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1b";
+			      "bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1b",
+		   *vk2_hex = "cb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a"
+			      "cb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1c";
 	size_t key_size = strlen(vk_hex) / 2;
 	const char *cipher = "aes";
 	const char *cipher_mode = "xts-plain64";
@@ -5178,6 +5180,7 @@ static void VolumeKeyGet(void)
 	struct crypt_keyslot_context *um1, *um2;
 
 	crypt_decode_key(key, vk_hex, key_size);
+	crypt_decode_key(key3, vk2_hex, key_size);
 
 	OK_(prepare_keyfile(KEYFILE1, PASSPHRASE1, strlen(PASSPHRASE1)));
 
@@ -5233,6 +5236,11 @@ static void VolumeKeyGet(void)
 	EQ_(crypt_token_assign_keyslot(cd, 0, 1), 0);
 #endif
 	crypt_keyslot_context_free(um1);
+	OK_(crypt_keyslot_context_init_by_volume_key(cd, key3, key_size, &um1));
+	OK_(crypt_keyslot_context_init_by_passphrase(cd, PASSPHRASE1, strlen(PASSPHRASE1), &um2));
+	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, um1, 4, um2, CRYPT_VOLUME_KEY_NO_SEGMENT), 4);
+	crypt_keyslot_context_free(um1);
+	crypt_keyslot_context_free(um2);
 	CRYPT_FREE(cd);
 
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
@@ -5264,6 +5272,20 @@ static void VolumeKeyGet(void)
 #ifdef KERNEL_KEYRING
 	// by token
 	OK_(crypt_keyslot_context_init_by_token(cd, CRYPT_ANY_TOKEN, NULL, NULL, 0, NULL, &um1));
+	memset(key2, 0, key_size);
+	EQ_(crypt_volume_key_get_by_keyslot_context(cd, CRYPT_ANY_SLOT, key2, &key_size, um1), 1);
+	OK_(memcmp(key, key2, key_size));
+	crypt_keyslot_context_free(um1);
+
+	// unbound keyslot by passphrase in keyring
+	OK_(crypt_keyslot_context_init_by_keyring(cd, KEY_DESC_TEST0, &um1));
+	memset(key2, 0, key_size);
+	EQ_(crypt_volume_key_get_by_keyslot_context(cd, 4, key2, &key_size, um1), 4);
+	OK_(memcmp(key3, key2, key_size));
+	crypt_keyslot_context_free(um1);
+
+	// by passphrase in keyring
+	OK_(crypt_keyslot_context_init_by_keyring(cd, KEY_DESC_TEST0, &um1));
 	memset(key2, 0, key_size);
 	EQ_(crypt_volume_key_get_by_keyslot_context(cd, CRYPT_ANY_SLOT, key2, &key_size, um1), 1);
 	OK_(memcmp(key, key2, key_size));
