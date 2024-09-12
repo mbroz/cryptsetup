@@ -243,7 +243,7 @@ static size_t reenc_keyslot_serialize(struct luks2_hdr *hdr, uint8_t *buffer)
 static size_t blob_serialize(void *blob, size_t length, uint8_t *buffer)
 {
 	if (buffer)
-		memcpy(buffer, blob, length);
+		crypt_safe_memcpy(buffer, blob, length);
 
 	return length;
 }
