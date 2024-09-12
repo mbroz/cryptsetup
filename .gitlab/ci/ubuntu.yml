@@ -13,6 +13,8 @@
       libpopt-dev uuid-dev libsepol-dev libjson-c-dev libssh-dev libblkid-dev
       tar libargon2-dev libpwquality-dev sharutils dmsetup jq xxd expect
       keyutils netcat-openbsd passwd openssh-client sshpass asciidoctor
+    # scsi_debug, gost crypto
+    - sudo apt-get -y install dkms linux-headers-$(uname -r) linux-modules-extra-$(uname -r) gost-crypto-dkms
     - sudo apt-get -y build-dep cryptsetup
     - sudo -E git clean -xdf
     - ./autogen.sh
