@@ -456,17 +456,11 @@ void crypt_keyslot_context_init_by_keyring_internal(struct crypt_keyslot_context
 
 	kc->type = CRYPT_KC_TYPE_KEYRING;
 	kc->u.kr.key_description = key_description;
-	kc->u.kr.i_key_description = NULL;
 
 	kc->get_luks2_key = get_luks2_key_by_keyring;
-	kc->get_luks2_volume_key = get_luks2_volume_key_by_keyring;
 	kc->get_luks1_volume_key = get_luks1_volume_key_by_keyring;
+	kc->get_luks2_volume_key = get_luks2_volume_key_by_keyring;
 	kc->get_passphrase = get_passphrase_by_keyring;
-	kc->get_plain_volume_key = NULL;
-	kc->get_bitlk_volume_key = NULL;
-	kc->get_fvault2_volume_key = NULL;
-	kc->get_verity_volume_key = NULL;
-	kc->get_integrity_volume_key = NULL;
 	kc->context_free = keyring_context_free;
 	crypt_keyslot_context_init_common(kc);
 }
@@ -486,12 +480,11 @@ void crypt_keyslot_context_init_by_key_internal(struct crypt_keyslot_context *kc
 
 	kc->type = CRYPT_KC_TYPE_KEY;
 	kc->u.k.volume_key = volume_key;
-	kc->u.k.i_vk = NULL;
 	kc->u.k.volume_key_size = volume_key_size;
+
 	kc->get_luks2_key = get_key_by_key;
-	kc->get_luks2_volume_key = get_volume_key_by_key;
 	kc->get_luks1_volume_key = get_volume_key_by_key;
-	kc->get_passphrase = NULL; /* keyslot key context does not provide passphrase */
+	kc->get_luks2_volume_key = get_volume_key_by_key;
 	kc->get_plain_volume_key = get_generic_volume_key_by_key;
 	kc->get_bitlk_volume_key = get_generic_volume_key_by_key;
 	kc->get_fvault2_volume_key = get_generic_volume_key_by_key;
@@ -522,17 +515,8 @@ void crypt_keyslot_context_init_by_signed_key_internal(struct crypt_keyslot_cont
 	kc->u.ks.volume_key_size = volume_key_size;
 	kc->u.ks.signature = signature;
 	kc->u.ks.signature_size = signature_size;
-	kc->u.ks.i_vk = NULL;
-	kc->u.ks.i_vk_sig = NULL;
-	kc->get_luks2_key = NULL;
-	kc->get_luks2_volume_key = NULL;
-	kc->get_luks1_volume_key = NULL;
-	kc->get_passphrase = NULL;
-	kc->get_plain_volume_key = NULL;
-	kc->get_bitlk_volume_key = NULL;
-	kc->get_fvault2_volume_key = NULL;
+
 	kc->get_verity_volume_key = get_generic_signed_key_by_key;
-	kc->get_integrity_volume_key = NULL;
 	kc->context_free = signed_key_context_free;
 	crypt_keyslot_context_init_common(kc);
 }
@@ -547,15 +531,9 @@ void crypt_keyslot_context_init_by_passphrase_internal(struct crypt_keyslot_cont
 	kc->u.p.passphrase = passphrase;
 	kc->u.p.passphrase_size = passphrase_size;
 	kc->get_luks2_key = get_luks2_key_by_passphrase;
-	kc->get_luks2_volume_key = get_luks2_volume_key_by_passphrase;
 	kc->get_luks1_volume_key = get_luks1_volume_key_by_passphrase;
+	kc->get_luks2_volume_key = get_luks2_volume_key_by_passphrase;
 	kc->get_passphrase = get_passphrase_by_passphrase;
-	kc->get_plain_volume_key = NULL;
-	kc->get_bitlk_volume_key = NULL;
-	kc->get_fvault2_volume_key = NULL;
-	kc->get_verity_volume_key = NULL;
-	kc->get_integrity_volume_key = NULL;
-	kc->context_free = NULL;
 	crypt_keyslot_context_init_common(kc);
 }
 
@@ -575,19 +553,13 @@ void crypt_keyslot_context_init_by_keyfile_internal(struct crypt_keyslot_context
 
 	kc->type = CRYPT_KC_TYPE_KEYFILE;
 	kc->u.kf.keyfile = keyfile;
-	kc->u.kf.i_keyfile = NULL;
-	kc->u.kf.keyfile_size = keyfile_size;
 	kc->u.kf.keyfile_offset = keyfile_offset;
-	kc->u.kf.i_keyfile = NULL;
+	kc->u.kf.keyfile_size = keyfile_size;
+
 	kc->get_luks2_key = get_luks2_key_by_keyfile;
-	kc->get_luks2_volume_key = get_luks2_volume_key_by_keyfile;
 	kc->get_luks1_volume_key = get_luks1_volume_key_by_keyfile;
+	kc->get_luks2_volume_key = get_luks2_volume_key_by_keyfile;
 	kc->get_passphrase = get_passphrase_by_keyfile;
-	kc->get_plain_volume_key = NULL;
-	kc->get_bitlk_volume_key = NULL;
-	kc->get_fvault2_volume_key = NULL;
-	kc->get_verity_volume_key = NULL;
-	kc->get_integrity_volume_key = NULL;
 	kc->context_free = keyfile_context_free;
 	crypt_keyslot_context_init_common(kc);
 }
@@ -612,20 +584,13 @@ void crypt_keyslot_context_init_by_token_internal(struct crypt_keyslot_context *
 	kc->type = CRYPT_KC_TYPE_TOKEN;
 	kc->u.t.id = token;
 	kc->u.t.type = type;
-	kc->u.t.i_type = NULL;
 	kc->u.t.pin = pin;
-	kc->u.t.i_pin = NULL;
 	kc->u.t.pin_size = pin_size;
 	kc->u.t.usrptr = usrptr;
+
 	kc->get_luks2_key = get_luks2_key_by_token;
 	kc->get_luks2_volume_key = get_luks2_volume_key_by_token;
-	kc->get_luks1_volume_key = NULL; /* LUKS1 is not supported */
 	kc->get_passphrase = get_passphrase_by_token;
-	kc->get_plain_volume_key = NULL;
-	kc->get_bitlk_volume_key = NULL;
-	kc->get_fvault2_volume_key = NULL;
-	kc->get_verity_volume_key = NULL;
-	kc->get_integrity_volume_key = NULL;
 	kc->context_free = token_context_free;
 	crypt_keyslot_context_init_common(kc);
 }
@@ -644,17 +609,9 @@ void crypt_keyslot_context_init_by_vk_in_keyring_internal(struct crypt_keyslot_c
 
 	kc->type = CRYPT_KC_TYPE_VK_KEYRING;
 	kc->u.vk_kr.key_description = key_description;
-	kc->u.vk_kr.i_key_description = NULL;
 
 	kc->get_luks2_key = get_key_by_vk_in_keyring;
 	kc->get_luks2_volume_key = get_volume_key_by_vk_in_keyring;
-	kc->get_luks1_volume_key = NULL;
-	kc->get_passphrase = NULL; /* keyslot key context does not provide passphrase */
-	kc->get_plain_volume_key = NULL;
-	kc->get_bitlk_volume_key = NULL;
-	kc->get_fvault2_volume_key = NULL;
-	kc->get_verity_volume_key = NULL;
-	kc->get_integrity_volume_key = NULL;
 	kc->context_free = vk_in_keyring_context_free;
 	crypt_keyslot_context_init_common(kc);
 }
@@ -668,8 +625,6 @@ void crypt_keyslot_context_destroy_internal(struct crypt_keyslot_context *kc)
 		kc->context_free(kc);
 
 	crypt_safe_free(kc->i_passphrase);
-	kc->i_passphrase = NULL;
-	kc->i_passphrase_size = 0;
 }
 
 void crypt_keyslot_context_free(struct crypt_keyslot_context *kc)
@@ -689,7 +644,7 @@ static int _crypt_keyslot_context_init_by_passphrase(const char *passphrase,
 	if (!kc || !passphrase)
 		return -EINVAL;
 
-	tmp = malloc(sizeof(*tmp));
+	tmp = crypt_zalloc(sizeof(*tmp));
 	if (!tmp)
 		return -ENOMEM;
 
@@ -755,7 +710,7 @@ static int _crypt_keyslot_context_init_by_keyfile(const char *keyfile,
 	if (!kc || !keyfile)
 		return -EINVAL;
 
-	tmp = malloc(sizeof(*tmp));
+	tmp = crypt_zalloc(sizeof(*tmp));
 	if (!tmp)
 		return -ENOMEM;
 
@@ -816,7 +771,7 @@ static int _crypt_keyslot_context_init_by_token(int token,
 	    (pin && !pin_size))
 		return -EINVAL;
 
-	tmp = malloc(sizeof(*tmp));
+	tmp = crypt_zalloc(sizeof(*tmp));
 	if (!tmp)
 		return -ENOMEM;
 
@@ -887,7 +842,7 @@ static int _crypt_keyslot_context_init_by_volume_key(const char *volume_key,
 	if (!kc)
 		return -EINVAL;
 
-	tmp = malloc(sizeof(*tmp));
+	tmp = crypt_zalloc(sizeof(*tmp));
 	if (!tmp)
 		return -ENOMEM;
 
@@ -944,7 +899,7 @@ static int _crypt_keyslot_context_init_by_signed_key(const char *volume_key,
 	if (!kc)
 		return -EINVAL;
 
-	tmp = malloc(sizeof(*tmp));
+	tmp = crypt_zalloc(sizeof(*tmp));
 	if (!tmp)
 		return -ENOMEM;
 
@@ -1014,7 +969,7 @@ static int _crypt_keyslot_context_init_by_keyring(const char *key_description,
 	if (!kc || !key_description)
 		return -EINVAL;
 
-	tmp = malloc(sizeof(*tmp));
+	tmp = crypt_zalloc(sizeof(*tmp));
 	if (!tmp)
 		return -ENOMEM;
 
@@ -1066,7 +1021,7 @@ static int _crypt_keyslot_context_init_by_vk_in_keyring(const char *key_descript
 	if (!kc || !key_description)
 		return -EINVAL;
 
-	tmp = malloc(sizeof(*tmp));
+	tmp = crypt_zalloc(sizeof(*tmp));
 	if (!tmp)
 		return -ENOMEM;
 
