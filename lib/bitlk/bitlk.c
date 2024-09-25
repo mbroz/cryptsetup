@@ -1401,34 +1401,6 @@ out:
 	return r;
 }
 
-int BITLK_activate_by_passphrase(struct crypt_device *cd,
-				 const char *name,
-				 const char *password,
-				 size_t passwordLen,
-				 const struct bitlk_metadata *params,
-				 uint32_t flags)
-{
-	int r = 0;
-	struct volume_key *open_fvek_key = NULL;
-
-	r = _activate_check(cd, params);
-	if (r)
-		return r;
-
-	r = BITLK_get_volume_key(cd, password, passwordLen, params, &open_fvek_key);
-	if (r < 0)
-		goto out;
-
-	/* Password verify only */
-	if (!name)
-		goto out;
-
-	r = _activate(cd, name, open_fvek_key, params, flags);
-out:
-	crypt_free_volume_key(open_fvek_key);
-	return r;
-}
-
 int BITLK_activate_by_volume_key(struct crypt_device *cd,
 				 const char *name,
 				 struct volume_key *vk,

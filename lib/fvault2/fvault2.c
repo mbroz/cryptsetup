@@ -997,28 +997,6 @@ int FVAULT2_dump(
 	return 0;
 }
 
-int FVAULT2_activate_by_passphrase(
-	struct crypt_device *cd,
-	const char *name,
-	const char *passphrase,
-	size_t passphrase_len,
-	const struct fvault2_params *params,
-	uint32_t flags)
-{
-	int r;
-	struct volume_key *vol_key = NULL;
-
-	r = FVAULT2_get_volume_key(cd, passphrase, passphrase_len, params, &vol_key);
-	if (r < 0)
-		return r;
-
-	if (name)
-	    r = _activate(cd, name, vol_key, params, flags);
-
-	crypt_free_volume_key(vol_key);
-	return r;
-}
-
 int FVAULT2_activate_by_volume_key(
 	struct crypt_device *cd,
 	const char *name,

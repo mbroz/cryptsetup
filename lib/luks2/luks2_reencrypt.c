@@ -4452,54 +4452,6 @@ int LUKS2_reencrypt_check_device_size(struct crypt_device *cd, struct luks2_hdr 
 }
 #if USE_LUKS2_REENCRYPTION
 /* returns keyslot number on success (>= 0) or negative errnor otherwise */
-int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
-	int keyslot_old,
-	int keyslot_new,
-	const char *passphrase,
-	size_t passphrase_size,
-	struct volume_key **vks)
-{
-	uint64_t minimal_size, device_size;
-	int keyslot, r = -EINVAL;
-	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
-	struct volume_key *vk = NULL, *_vks = NULL;
-
-	log_dbg(cd, "Entering reencryption crash recovery.");
-
-	if (LUKS2_get_data_size(hdr, &minimal_size, NULL))
-		return r;
-
-	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new,
-			passphrase, passphrase_size, &_vks);
-	if (r < 0)
-		goto out;
-	keyslot = r;
-
-	if (crypt_use_keyring_for_vk(cd))
-		vk = _vks;
-
-	while (vk) {
-		r = LUKS2_volume_key_load_in_keyring_by_digest(cd, vk, crypt_volume_key_get_id(vk));
-		if (r < 0)
-			goto out;
-		vk = crypt_volume_key_next(vk);
-	}
-
-	if (LUKS2_reencrypt_check_device_size(cd, hdr, minimal_size, &device_size, true, false))
-		goto out;
-
-	r = reencrypt_recovery(cd, hdr, device_size, _vks);
-
-	if (!r && vks)
-		MOVE_REF(*vks, _vks);
-out:
-	if (r < 0)
-		crypt_drop_keyring_key(cd, _vks);
-	crypt_free_volume_key(_vks);
-
-	return r < 0 ? r : keyslot;
-}
-
 int LUKS2_reencrypt_locked_recovery_by_vks(struct crypt_device *cd,
 	struct volume_key *vks)
 {

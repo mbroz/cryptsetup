@@ -4919,85 +4919,6 @@ out:
 	return r;
 }
 
-static int _open_and_activate(struct crypt_device *cd,
-	int keyslot,
-	const char *name,
-	const char *passphrase,
-	size_t passphrase_size,
-	uint32_t flags)
-{
-	bool use_keyring;
-	int r;
-	struct volume_key *p_crypt = NULL, *p_opal = NULL, *crypt_key = NULL, *opal_key = NULL, *vk = NULL;
-	key_serial_t kid1 = 0, kid2 = 0;
-
-	r = LUKS2_keyslot_open(cd, keyslot,
-			       (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ?
-			       CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT,
-			       passphrase, passphrase_size, &vk);
-	if (r < 0)
-		return r;
-	keyslot = r;
-
-	/* split the key only if we do activation */
-	if (name && LUKS2_segment_is_hw_opal(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT)) {
-		r = LUKS2_split_crypt_and_opal_keys(cd, &cd->u.luks2.hdr,
-						    vk, &crypt_key,
-						    &opal_key);
-		if (r < 0)
-			goto out;
-
-		/* copy volume key digest id in crypt subkey */
-		crypt_volume_key_set_id(crypt_key, crypt_volume_key_get_id(vk));
-
-		p_crypt = crypt_key;
-		p_opal = opal_key ?: vk;
-	} else
-		p_crypt = vk;
-
-	if (!crypt_use_keyring_for_vk(cd))
-		use_keyring = false;
-	else
-		use_keyring = ((name && !crypt_is_cipher_null(crypt_get_cipher(cd))) ||
-			       (flags & CRYPT_ACTIVATE_KEYRING_KEY));
-
-	if (use_keyring) {
-		/* upload dm-crypt part of volume key in thread keyring if requested */
-		if (p_crypt) {
-			r = LUKS2_volume_key_load_in_keyring_by_digest(cd, p_crypt,
-								       crypt_volume_key_get_id(p_crypt));
-			if (r < 0)
-				goto out;
-			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
-		}
-
-		/* upload the volume key in custom user keyring if requested */
-		if (cd->link_vk_to_keyring) {
-			r = crypt_volume_key_load_in_user_keyring(cd, vk, &kid1, &kid2);
-			if (r < 0) {
-				log_err(cd, _("Failed to link volume key in user defined keyring."));
-				goto out;
-			}
-		}
-	}
-
-	if (name)
-		r = LUKS2_activate(cd, name, p_crypt, p_opal, flags);
-out:
-	if (r < 0) {
-		crypt_drop_keyring_key(cd, p_crypt);
-		if (cd->link_vk_to_keyring && kid1)
-			crypt_unlink_key_from_custom_keyring(cd, kid1);
-		if (cd->link_vk_to_keyring && kid2)
-			crypt_unlink_key_from_custom_keyring(cd, kid2);
-	}
-	crypt_free_volume_key(vk);
-	crypt_free_volume_key(crypt_key);
-	crypt_free_volume_key(opal_key);
-
-	return r < 0 ? r : keyslot;
-}
-
 static int load_all_keys(struct crypt_device *cd, struct volume_key *vks)
 {
 	int r;
@@ -5014,54 +4935,6 @@ static int load_all_keys(struct crypt_device *cd, struct volume_key *vks)
 }
 
 #if USE_LUKS2_REENCRYPTION
-static int _open_all_keys(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int keyslot,
-	const char *passphrase,
-	size_t passphrase_size,
-	uint32_t flags,
-	struct volume_key **vks)
-{
-	int r, segment;
-	struct volume_key *_vks = NULL;
-	crypt_reencrypt_info ri = LUKS2_reencrypt_status(hdr);
-
-	segment = (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) ? CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT;
-
-	switch (ri) {
-	case CRYPT_REENCRYPT_NONE:
-		r = LUKS2_keyslot_open(cd, keyslot, segment, passphrase, passphrase_size, &_vks);
-		break;
-	case CRYPT_REENCRYPT_CLEAN:
-	case CRYPT_REENCRYPT_CRASH:
-		if (segment == CRYPT_ANY_SEGMENT)
-			r = LUKS2_keyslot_open(cd, keyslot, segment, passphrase,
-					       passphrase_size, &_vks);
-		else
-			r = LUKS2_keyslot_open_all_segments(cd, keyslot,
-					keyslot, passphrase, passphrase_size,
-					&_vks);
-		break;
-	default:
-		r = -EINVAL;
-	}
-
-	if (keyslot == CRYPT_ANY_SLOT)
-		keyslot = r;
-
-	if (r >= 0 && (flags & CRYPT_ACTIVATE_KEYRING_KEY))
-		r = load_all_keys(cd, _vks);
-
-	if (r >= 0 && vks)
-		MOVE_REF(*vks, _vks);
-
-	if (r < 0)
-		crypt_drop_keyring_key(cd, _vks);
-	crypt_free_volume_key(_vks);
-
-	return r < 0 ? r : keyslot;
-}
-
 static int _activate_reencrypt_device_by_vk(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const char *name,
@@ -5150,152 +5023,9 @@ out:
 	return r;
 }
 
-static int _open_and_activate_reencrypt_device(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int keyslot,
-	const char *name,
-	const char *passphrase,
-	size_t passphrase_size,
-	uint32_t flags)
-{
-	bool dynamic_size;
-	crypt_reencrypt_info ri;
-	uint64_t minimal_size, device_size;
-	struct volume_key *vks = NULL;
-	int r = 0;
-	struct crypt_lock_handle *reencrypt_lock = NULL;
-	key_serial_t kid1 = 0, kid2 = 0;
-
-	if (crypt_use_keyring_for_vk(cd))
-		flags |= CRYPT_ACTIVATE_KEYRING_KEY;
-
-	r = LUKS2_reencrypt_lock(cd, &reencrypt_lock);
-	if (r) {
-		if (r == -EBUSY)
-			log_err(cd, _("Reencryption in-progress. Cannot activate device."));
-		else
-			log_err(cd, _("Failed to get reencryption lock."));
-		return r;
-	}
-
-	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL)))
-		goto out;
-
-	ri = LUKS2_reencrypt_status(hdr);
-
-	if (ri == CRYPT_REENCRYPT_CRASH) {
-		r = LUKS2_reencrypt_locked_recovery_by_passphrase(cd, keyslot,
-				keyslot, passphrase, passphrase_size, &vks);
-		if (r < 0) {
-			log_err(cd, _("LUKS2 reencryption recovery failed."));
-			goto out;
-		}
-		keyslot = r;
-
-		ri = LUKS2_reencrypt_status(hdr);
-	}
-
-	/* recovery finished reencryption or it's already finished */
-	if (ri == CRYPT_REENCRYPT_NONE) {
-		crypt_drop_keyring_key(cd, vks);
-		crypt_free_volume_key(vks);
-		LUKS2_reencrypt_unlock(cd, reencrypt_lock);
-		return _open_and_activate(cd, keyslot, name, passphrase, passphrase_size, flags);
-	}
-
-	if (ri > CRYPT_REENCRYPT_CLEAN) {
-		r = -EINVAL;
-		goto out;
-	}
-
-	if (LUKS2_get_data_size(hdr, &minimal_size, &dynamic_size))
-		goto out;
-
-	if (!vks) {
-		r = _open_all_keys(cd, hdr, keyslot, passphrase, passphrase_size, flags, &vks);
-		if (r >= 0)
-			keyslot = r;
-	}
-
-	if (r >= 0) {
-		r = LUKS2_reencrypt_digest_verify(cd, hdr, vks);
-		if (r < 0)
-			goto out;
-	}
-
-	log_dbg(cd, "Entering clean reencryption state mode.");
-
-	if (cd->link_vk_to_keyring) {
-		r = crypt_volume_key_load_in_user_keyring(cd, vks, &kid1, &kid2);
-		if (r < 0) {
-			log_err(cd, _("Failed to link volume keys in user defined keyring."));
-			goto out;
-		}
-	}
-
-	if (r >= 0)
-		r = LUKS2_reencrypt_check_device_size(cd, hdr, minimal_size, &device_size,
-						      !(flags & CRYPT_ACTIVATE_SHARED),
-						      dynamic_size);
-
-	if (r >= 0)
-		r = LUKS2_activate_multi(cd, name, vks, device_size >> SECTOR_SHIFT, flags);
-out:
-	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
-	if (r < 0) {
-		crypt_drop_keyring_key(cd, vks);
-		if (cd->link_vk_to_keyring && kid1)
-			crypt_unlink_key_from_custom_keyring(cd, kid1);
-		if (cd->link_vk_to_keyring && kid2)
-			crypt_unlink_key_from_custom_keyring(cd, kid2);
-	}
-
-	crypt_free_volume_key(vks);
-
-	return r < 0 ? r : keyslot;
-}
-
 /*
  * Activation/deactivation of a device
  */
-static int _open_and_activate_luks2(struct crypt_device *cd,
-	int keyslot,
-	const char *name,
-	const char *passphrase,
-	size_t passphrase_size,
-	uint32_t flags)
-{
-	crypt_reencrypt_info ri;
-	int r, rv;
-	struct luks2_hdr *hdr = &cd->u.luks2.hdr;
-	struct volume_key *vks = NULL;
-
-	ri = LUKS2_reencrypt_status(hdr);
-	if (ri == CRYPT_REENCRYPT_INVALID)
-		return -EINVAL;
-
-	if (ri > CRYPT_REENCRYPT_NONE) {
-		if (name)
-			r = _open_and_activate_reencrypt_device(cd, hdr, keyslot, name, passphrase,
-					passphrase_size, flags);
-		else {
-			r = _open_all_keys(cd, hdr, keyslot, passphrase,
-					   passphrase_size, flags, &vks);
-			if (r < 0)
-				return r;
-
-			rv = LUKS2_reencrypt_digest_verify(cd, hdr, vks);
-			crypt_free_volume_key(vks);
-			if (rv < 0)
-				return rv;
-		}
-	} else
-		r = _open_and_activate(cd, keyslot, name, passphrase,
-				passphrase_size, flags);
-
-	return r;
-}
-
 static int _activate_luks2_by_volume_key(struct crypt_device *cd,
 	const char *name,
 	struct volume_key *vk,
@@ -5320,27 +5050,6 @@ static int _activate_luks2_by_volume_key(struct crypt_device *cd,
 	return r;
 }
 #else
-static int _open_and_activate_luks2(struct crypt_device *cd,
-	int keyslot,
-	const char *name,
-	const char *passphrase,
-	size_t passphrase_size,
-	uint32_t flags)
-{
-	crypt_reencrypt_info ri;
-
-	ri = LUKS2_reencrypt_status(&cd->u.luks2.hdr);
-	if (ri == CRYPT_REENCRYPT_INVALID)
-		return -EINVAL;
-
-	if (ri > CRYPT_REENCRYPT_NONE) {
-		log_err(cd, _("This operation is not supported for this device type."));
-		return -ENOTSUP;
-	}
-
-	return _open_and_activate(cd, keyslot, name, passphrase, passphrase_size, flags);
-}
-
 static int _activate_luks2_by_volume_key(struct crypt_device *cd,
 	const char *name,
 	struct volume_key *vk,
@@ -5364,76 +5073,6 @@ static int _activate_luks2_by_volume_key(struct crypt_device *cd,
 	return r;
 }
 #endif
-
-static int _activate_by_passphrase(struct crypt_device *cd,
-	const char *name,
-	int keyslot,
-	const char *passphrase,
-	size_t passphrase_size,
-	uint32_t flags)
-{
-	int r;
-	struct volume_key *vk = NULL;
-
-	if ((flags & CRYPT_ACTIVATE_KEYRING_KEY) && !crypt_use_keyring_for_vk(cd))
-		return -EINVAL;
-
-	if ((flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) && name)
-		return -EINVAL;
-
-	r = _check_header_data_overlap(cd, name);
-	if (r < 0)
-		return r;
-
-	if (flags & CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF)
-		cd->memory_hard_pbkdf_lock_enabled = true;
-
-	/* plain, use hashed passphrase */
-	if (isPLAIN(cd->type)) {
-		r = -EINVAL;
-		if (!name)
-			goto out;
-
-		r = process_key(cd, cd->u.plain.hdr.hash,
-				cd->u.plain.key_size,
-				passphrase, passphrase_size, &vk);
-		if (r < 0)
-			goto out;
-
-		r = PLAIN_activate(cd, name, vk, cd->u.plain.hdr.size, flags);
-		keyslot = 0;
-	} else if (isLUKS1(cd->type)) {
-		r = LUKS_open_key_with_hdr(keyslot, passphrase,
-					   passphrase_size, &cd->u.luks1.hdr, &vk, cd);
-		if (r >= 0) {
-			keyslot = r;
-			if (name)
-				r = LUKS1_activate(cd, name, vk, flags);
-		}
-	} else if (isLUKS2(cd->type)) {
-		r = _open_and_activate_luks2(cd, keyslot, name, passphrase, passphrase_size, flags);
-		keyslot = r;
-	} else if (isBITLK(cd->type)) {
-		r = BITLK_activate_by_passphrase(cd, name, passphrase, passphrase_size,
-						 &cd->u.bitlk.params, flags);
-		keyslot = 0;
-	} else if (isFVAULT2(cd->type)) {
-		r = FVAULT2_activate_by_passphrase(cd, name, passphrase, passphrase_size,
-			&cd->u.fvault2.params, flags);
-		keyslot = 0;
-	} else {
-		log_err(cd, _("Device type is not properly initialized."));
-		r = -EINVAL;
-	}
-out:
-	if (r < 0)
-		crypt_drop_keyring_key(cd, vk);
-	crypt_free_volume_key(vk);
-
-	cd->memory_hard_pbkdf_lock_enabled = false;
-
-	return r < 0 ? r : keyslot;
-}
 
 static int _activate_loopaes(struct crypt_device *cd,
 	const char *name,
@@ -5598,6 +5237,7 @@ static int _activate_by_volume_key(struct crypt_device *cd,
 				       cd->u.integrity.sb_flags);
 	} else if (isBITLK(cd->type)) {
 		assert(!external_key);
+		assert(crypt_volume_key_get_id(vk) == KEY_VERIFIED);
 		r = BITLK_activate_by_volume_key(cd, name, vk, &cd->u.bitlk.params, flags);
 	} else if (isFVAULT2(cd->type)) {
 		assert(!external_key);
@@ -5656,23 +5296,14 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	/* for TCRYPT and token skip passphrase activation */
 	if (kc->get_passphrase && kc->type != CRYPT_KC_TYPE_TOKEN &&
-	    !isTCRYPT(cd->type) && !isLUKS(cd->type)) {
+	    isLOOPAES(cd->type)) {
 		r = kc->get_passphrase(cd, kc, &passphrase, &passphrase_size);
 		if (r < 0)
 			return r;
-		/* TODO: Only loopaes should by activated by passphrase method */
-		if (passphrase) {
-			if (isLOOPAES(cd->type))
-				return _activate_loopaes(cd, name, passphrase, passphrase_size, flags);
-			else
-				return _activate_by_passphrase(cd, name, keyslot, passphrase, passphrase_size, flags);
-		}
+
+		return _activate_loopaes(cd, name, passphrase, passphrase_size, flags);
 	}
-	/* only passphrase unlock is supported with loopaes */
-	if (isLOOPAES(cd->type))
-		return -EINVAL;
 
 	/* aquire the volume key(s) */
 	r = -EINVAL;
@@ -5701,14 +5332,21 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	} else if (isTCRYPT(cd->type)) {
 		r = 0;
 	} else if (name && isPLAIN(cd->type)) {
-		if (kc->get_plain_volume_key)
+		if (kc->get_passphrase && kc->type != CRYPT_KC_TYPE_TOKEN) {
+			r = kc->get_passphrase(cd, kc, &passphrase, &passphrase_size);
+			if (r < 0)
+				return r;
+			r = process_key(cd, cd->u.plain.hdr.hash,
+					cd->u.plain.key_size,
+					passphrase, passphrase_size, &vk);
+		} else if (kc->get_plain_volume_key)
 			r = kc->get_plain_volume_key(cd, kc, &vk);
-	} else if (name && isBITLK(cd->type)) {
-		if (kc->get_bitlk_volume_key)
-			r = kc->get_bitlk_volume_key(cd, kc, &vk);
+	} else if (isBITLK(cd->type)) {
+		if (kc->get_bitlk_volume_key && (name || kc->type != CRYPT_KC_TYPE_KEY))
+			r = kc->get_bitlk_volume_key(cd, kc, &cd->u.bitlk.params, &vk);
 	} else if (isFVAULT2(cd->type)) {
 		if (kc->get_fvault2_volume_key)
-			r = kc->get_fvault2_volume_key(cd, kc, &vk);
+			r = kc->get_fvault2_volume_key(cd, kc, &cd->u.fvault2.params, &vk);
 	} else if (isVERITY(cd->type) && (name || kc->type != CRYPT_KC_TYPE_SIGNED_KEY)) {
 		if (kc->get_verity_volume_key)
 			r = kc->get_verity_volume_key(cd, kc, &vk, &vk_sign);
@@ -6148,12 +5786,6 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 	if (kc && (!kc->get_passphrase || kc->type == CRYPT_KC_TYPE_KEY))
 		return -EINVAL;
 
-	if (kc) {
-		r = kc->get_passphrase(cd, kc, &passphrase, &passphrase_size);
-		if (r < 0)
-			return r;
-	}
-
 	r = -EINVAL;
 
 	if (isLUKS2(cd->type)) {
@@ -6172,10 +5804,14 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 			r = -ENOENT;
 		else
 			r = kc->get_luks1_volume_key(cd, kc, keyslot, &vk);
-	} else if (isPLAIN(cd->type)) {
-		if (passphrase && cd->u.plain.hdr.hash)
+	} else if (isPLAIN(cd->type) && cd->u.plain.hdr.hash) {
+		if (kc && kc->get_passphrase && kc->type != CRYPT_KC_TYPE_TOKEN) {
+			r = kc->get_passphrase(cd, kc, &passphrase, &passphrase_size);
+			if (r < 0)
+				return r;
 			r = process_key(cd, cd->u.plain.hdr.hash, key_len,
 					passphrase, passphrase_size, &vk);
+		}
 		if (r < 0)
 			log_err(cd, _("Cannot retrieve volume key for plain device."));
 	} else if (isVERITY(cd->type)) {
@@ -6189,13 +5825,13 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 	} else if (isTCRYPT(cd->type)) {
 		r = TCRYPT_get_volume_key(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params, &vk);
 	} else if (isBITLK(cd->type)) {
-		if (passphrase)
-			r = BITLK_get_volume_key(cd, passphrase, passphrase_size, &cd->u.bitlk.params, &vk);
+		if (kc && kc->get_bitlk_volume_key)
+			r = kc->get_bitlk_volume_key(cd, kc, &cd->u.bitlk.params, &vk);
 		if (r < 0)
 			log_err(cd, _("Cannot retrieve volume key for BITLK device."));
 	} else if (isFVAULT2(cd->type)) {
-		if (passphrase)
-			r = FVAULT2_get_volume_key(cd, passphrase, passphrase_size, &cd->u.fvault2.params, &vk);
+		if (kc && kc->get_fvault2_volume_key)
+			r = kc->get_fvault2_volume_key(cd, kc, &cd->u.fvault2.params, &vk);
 		if (r < 0)
 			log_err(cd, _("Cannot retrieve volume key for FVAULT2 device."));
 	} else

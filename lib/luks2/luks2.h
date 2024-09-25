@@ -196,13 +196,6 @@ int LUKS2_keyslot_open(struct crypt_device *cd,
 	size_t password_len,
 	struct volume_key **vk);
 
-int LUKS2_keyslot_open_all_segments(struct crypt_device *cd,
-	int keyslot_old,
-	int keyslot_new,
-	const char *password,
-	size_t password_len,
-	struct volume_key **vks);
-
 int LUKS2_keyslot_context_open_all_segments(struct crypt_device *cd,
 	int keyslot_old,
 	int keyslot_new,
@@ -269,17 +262,6 @@ crypt_token_info LUKS2_token_status(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int token,
 	const char **type);
-
-int LUKS2_token_open_and_activate(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	int keyslot,
-	int token,
-	const char *name,
-	const char *type,
-	const char *pin,
-	size_t pin_size,
-	uint32_t flags,
-	void *usrptr);
 
 int LUKS2_token_unlock_key(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
@@ -445,8 +427,6 @@ int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uin
 
 int LUKS2_key_description_by_segment(struct crypt_device *cd,
 		struct luks2_hdr *hdr, struct volume_key *vk, int segment);
-int LUKS2_volume_key_load_in_keyring_by_keyslot(struct crypt_device *cd,
-		struct luks2_hdr *hdr, struct volume_key *vk, int keyslot);
 int LUKS2_volume_key_load_in_keyring_by_digest(struct crypt_device *cd,
 		struct volume_key *vk, int digest);
 
@@ -460,13 +440,6 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd,
 /*
  * LUKS2 reencryption
  */
-int LUKS2_reencrypt_locked_recovery_by_passphrase(struct crypt_device *cd,
-	int keyslot_old,
-	int keyslot_new,
-	const char *passphrase,
-	size_t passphrase_size,
-	struct volume_key **vks);
-
 int LUKS2_reencrypt_locked_recovery_by_vks(struct crypt_device *cd,
 	struct volume_key *vks);
 
@@ -494,10 +467,6 @@ int LUKS2_reencrypt_check_device_size(struct crypt_device *cd,
 	uint64_t *dev_size,
 	bool device_exclusive_check,
 	bool dynamic);
-
-void LUKS2_reencrypt_lookup_key_ids(struct crypt_device *cd,
-        struct luks2_hdr *hdr,
-        struct volume_key *vk);
 
 int LUKS2_reencrypt_digest_verify(struct crypt_device *cd,
 	struct luks2_hdr *hdr,

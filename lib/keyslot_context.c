@@ -8,6 +8,8 @@
 
 #include <errno.h>
 
+#include "bitlk/bitlk.h"
+#include "fvault2/fvault2.h"
 #include "luks1/luks.h"
 #include "luks2/luks2.h"
 #include "keyslot_context.h"
@@ -56,6 +58,44 @@ static int get_luks2_volume_key_by_passphrase(struct crypt_device *cd,
 	struct volume_key **r_vk)
 {
 	return get_luks2_key_by_passphrase(cd, kc, keyslot, CRYPT_DEFAULT_SEGMENT, r_vk);
+}
+
+static int get_bitlk_volume_key_by_passphrase(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	const struct bitlk_metadata *params,
+	struct volume_key **r_vk)
+{
+	int r;
+
+	assert(cd);
+	assert(kc && kc->type == CRYPT_KC_TYPE_PASSPHRASE);
+	assert(params);
+	assert(r_vk);
+
+	r = BITLK_get_volume_key(cd, kc->u.p.passphrase, kc->u.p.passphrase_size, params, r_vk);
+	if (r < 0)
+		kc->error = r;
+
+	return r;
+}
+
+static int get_fvault2_volume_key_by_passphrase(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	const struct fvault2_params *params,
+	struct volume_key **r_vk)
+{
+	int r;
+
+	assert(cd);
+	assert(kc && kc->type == CRYPT_KC_TYPE_PASSPHRASE);
+	assert(params);
+	assert(r_vk);
+
+	r = FVAULT2_get_volume_key(cd, kc->u.p.passphrase, kc->u.p.passphrase_size, params, r_vk);
+	if (r < 0)
+		kc->error = r;
+
+	return r;
 }
 
 static int get_passphrase_by_passphrase(struct crypt_device *cd,
@@ -160,6 +200,56 @@ static int get_luks1_volume_key_by_keyfile(struct crypt_device *cd,
 	return r;
 }
 
+static int get_bitlk_volume_key_by_keyfile(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	const struct bitlk_metadata *params,
+	struct volume_key **r_vk)
+{
+	int r;
+	const char *passphrase;
+	size_t passphrase_size;
+
+	assert(cd);
+	assert(kc && kc->type == CRYPT_KC_TYPE_KEYFILE);
+	assert(params);
+	assert(r_vk);
+
+	r = get_passphrase_by_keyfile(cd, kc, &passphrase, &passphrase_size);
+	if (r < 0)
+		return r;
+
+	r = BITLK_get_volume_key(cd, passphrase, passphrase_size, params, r_vk);
+	if (r < 0)
+		kc->error = r;
+
+	return r;
+}
+
+static int get_fvault2_volume_key_by_keyfile(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	const struct fvault2_params *params,
+	struct volume_key **r_vk)
+{
+	int r;
+	const char *passphrase;
+	size_t passphrase_size;
+
+	assert(cd);
+	assert(kc && kc->type == CRYPT_KC_TYPE_KEYFILE);
+	assert(params);
+	assert(r_vk);
+
+	r = get_passphrase_by_keyfile(cd, kc, &passphrase, &passphrase_size);
+	if (r < 0)
+		return r;
+
+	r = FVAULT2_get_volume_key(cd, passphrase, passphrase_size, params, r_vk);
+	if (r < 0)
+		kc->error = r;
+
+	return r;
+}
+
 static int get_key_by_key(struct crypt_device *cd __attribute__((unused)),
 	struct crypt_keyslot_context *kc,
 	int keyslot __attribute__((unused)),
@@ -193,6 +283,22 @@ static int get_volume_key_by_key(struct crypt_device *cd,
 
 static int get_generic_volume_key_by_key(struct crypt_device *cd,
 	struct crypt_keyslot_context *kc,
+	struct volume_key **r_vk)
+{
+	return get_key_by_key(cd, kc, -2 /* unused */, -2 /* unused */, r_vk);
+}
+
+static int get_bitlk_volume_key_by_key(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	const struct bitlk_metadata *params __attribute__((unused)),
+	struct volume_key **r_vk)
+{
+	return get_key_by_key(cd, kc, -2 /* unused */, -2 /* unused */, r_vk);
+}
+
+static int get_fvault2_volume_key_by_key(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	const struct fvault2_params *params __attribute__((unused)),
 	struct volume_key **r_vk)
 {
 	return get_key_by_key(cd, kc, -2 /* unused */, -2 /* unused */, r_vk);
@@ -486,8 +592,8 @@ void crypt_keyslot_context_init_by_key_internal(struct crypt_keyslot_context *kc
 	kc->get_luks1_volume_key = get_volume_key_by_key;
 	kc->get_luks2_volume_key = get_volume_key_by_key;
 	kc->get_plain_volume_key = get_generic_volume_key_by_key;
-	kc->get_bitlk_volume_key = get_generic_volume_key_by_key;
-	kc->get_fvault2_volume_key = get_generic_volume_key_by_key;
+	kc->get_bitlk_volume_key = get_bitlk_volume_key_by_key;
+	kc->get_fvault2_volume_key = get_fvault2_volume_key_by_key;
 	kc->get_verity_volume_key = get_generic_signed_key_by_key;
 	kc->get_integrity_volume_key = get_generic_volume_key_by_key;
 	kc->context_free = key_context_free;
@@ -530,9 +636,12 @@ void crypt_keyslot_context_init_by_passphrase_internal(struct crypt_keyslot_cont
 	kc->type = CRYPT_KC_TYPE_PASSPHRASE;
 	kc->u.p.passphrase = passphrase;
 	kc->u.p.passphrase_size = passphrase_size;
+
 	kc->get_luks2_key = get_luks2_key_by_passphrase;
 	kc->get_luks1_volume_key = get_luks1_volume_key_by_passphrase;
 	kc->get_luks2_volume_key = get_luks2_volume_key_by_passphrase;
+	kc->get_bitlk_volume_key = get_bitlk_volume_key_by_passphrase;
+	kc->get_fvault2_volume_key = get_fvault2_volume_key_by_passphrase;
 	kc->get_passphrase = get_passphrase_by_passphrase;
 	crypt_keyslot_context_init_common(kc);
 }
@@ -559,6 +668,8 @@ void crypt_keyslot_context_init_by_keyfile_internal(struct crypt_keyslot_context
 	kc->get_luks2_key = get_luks2_key_by_keyfile;
 	kc->get_luks1_volume_key = get_luks1_volume_key_by_keyfile;
 	kc->get_luks2_volume_key = get_luks2_volume_key_by_keyfile;
+	kc->get_bitlk_volume_key = get_bitlk_volume_key_by_keyfile;
+	kc->get_fvault2_volume_key = get_fvault2_volume_key_by_keyfile;
 	kc->get_passphrase = get_passphrase_by_keyfile;
 	kc->context_free = keyfile_context_free;
 	crypt_keyslot_context_init_common(kc);
@@ -600,20 +711,6 @@ static void vk_in_keyring_context_free(struct crypt_keyslot_context *kc)
 	assert(kc && kc->type == CRYPT_KC_TYPE_VK_KEYRING);
 
 	free(kc->u.vk_kr.i_key_description);
-}
-
-void crypt_keyslot_context_init_by_vk_in_keyring_internal(struct crypt_keyslot_context *kc,
-	const char *key_description)
-{
-	assert(kc);
-
-	kc->type = CRYPT_KC_TYPE_VK_KEYRING;
-	kc->u.vk_kr.key_description = key_description;
-
-	kc->get_luks2_key = get_key_by_vk_in_keyring;
-	kc->get_luks2_volume_key = get_volume_key_by_vk_in_keyring;
-	kc->context_free = vk_in_keyring_context_free;
-	crypt_keyslot_context_init_common(kc);
 }
 
 void crypt_keyslot_context_destroy_internal(struct crypt_keyslot_context *kc)
@@ -1033,7 +1130,13 @@ static int _crypt_keyslot_context_init_by_vk_in_keyring(const char *key_descript
 		key_description = i_key_description;
 	}
 
-	crypt_keyslot_context_init_by_vk_in_keyring_internal(tmp, key_description);
+	tmp->type = CRYPT_KC_TYPE_VK_KEYRING;
+	tmp->u.vk_kr.key_description = key_description;
+
+	tmp->get_luks2_key = get_key_by_vk_in_keyring;
+	tmp->get_luks2_volume_key = get_volume_key_by_vk_in_keyring;
+	tmp->context_free = vk_in_keyring_context_free;
+	crypt_keyslot_context_init_common(tmp);
 
 	if (self_contained) {
 		tmp->u.vk_kr.i_key_description = i_key_description;

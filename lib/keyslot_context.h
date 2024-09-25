@@ -14,6 +14,9 @@
 
 #include "internal.h"
 
+struct bitlk_metadata;
+struct fvault2_params;
+
 typedef int (*keyslot_context_get_key) (
 	struct crypt_device *cd,
 	struct crypt_keyslot_context *kc,
@@ -31,6 +34,19 @@ typedef int (*keyslot_context_get_generic_volume_key) (
 	struct crypt_device *cd,
 	struct crypt_keyslot_context *kc,
 	struct volume_key **r_vk);
+
+typedef int (*keyslot_context_get_bitlk_volume_key) (
+	struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	const struct bitlk_metadata *params,
+	struct volume_key **r_vk);
+
+typedef int (*keyslot_context_get_fvault2_volume_key) (
+	struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	const struct fvault2_params *params,
+	struct volume_key **r_vk);
+
 
 typedef int (*keyslot_context_get_generic_signed_key) (
 	struct crypt_device *cd,
@@ -113,8 +129,8 @@ struct crypt_keyslot_context {
 	keyslot_context_get_volume_key		get_luks1_volume_key;
 	keyslot_context_get_volume_key		get_luks2_volume_key;
 	keyslot_context_get_generic_volume_key	get_plain_volume_key;
-	keyslot_context_get_generic_volume_key	get_bitlk_volume_key;
-	keyslot_context_get_generic_volume_key	get_fvault2_volume_key;
+	keyslot_context_get_bitlk_volume_key	get_bitlk_volume_key;
+	keyslot_context_get_fvault2_volume_key	get_fvault2_volume_key;
 	keyslot_context_get_generic_signed_key	get_verity_volume_key;
 	keyslot_context_get_generic_volume_key	get_integrity_volume_key;
 	keyslot_context_get_passphrase		get_passphrase;
@@ -150,9 +166,6 @@ void crypt_keyslot_context_init_by_token_internal(struct crypt_keyslot_context *
 	void *usrptr);
 
 void crypt_keyslot_context_init_by_keyring_internal(struct crypt_keyslot_context *kc,
-	const char *key_description);
-
-void crypt_keyslot_context_init_by_vk_in_keyring_internal(struct crypt_keyslot_context *kc,
 	const char *key_description);
 
 const char *keyslot_context_type_string(const struct crypt_keyslot_context *kc);
