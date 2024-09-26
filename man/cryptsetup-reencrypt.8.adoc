@@ -34,6 +34,9 @@ You can regenerate *volume key* (the real key used in on-disk encryption
 unlocked by passphrase), *cipher*, *cipher mode* or *encryption sector size*
 (LUKS2 only).
 
+*WARNING:* If you need to use both luksChangeKey and reencrypt (e.g. to recover
+from a leak) you need to use them in that order to not leak the new volume key.
+
 Reencryption process may be safely interrupted by a user via SIGINT
 signal (ctrl+c). Same applies to SIGTERM signal (i.e. issued by systemd
 during system shutdown).
