@@ -83,8 +83,8 @@ struct crypt_keyslot_context {
 	} t;
 	struct {
 		const char *volume_key;
-		struct volume_key *i_vk;
 		size_t volume_key_size;
+		struct volume_key *i_vk;
 	} k;
 	struct {
 		const char *volume_key;
