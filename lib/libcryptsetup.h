@@ -1204,6 +1204,10 @@ void crypt_keyslot_context_free(struct crypt_keyslot_context *kc);
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_PASSPHRASE
  *
  * @return zero on success or negative errno otherwise.
+ *
+ * @note The original buffer containing passphrase passed in parameters does
+ * 	 not have to be valid after context initialization. The context
+ * 	 contains copy of the original before freed with @link crypt_keyslot_context_free @endlink.
  */
 int crypt_keyslot_context_init_by_passphrase(struct crypt_device *cd,
 	const char *passphrase,
