@@ -34,6 +34,10 @@ been wiped and make the LUKS container inaccessible. LUKS2 mitigates
 that by never overwriting existing keyslot area as long as there's
 a free space in keyslots area at least for one more LUKS2 keyslot.
 
+*WARNING:* If you need to use both luksChangeKey and reencrypt (e.g.
+to recover from a leak) you need to use them in that order to not leak
+the new volume key.
+
 *NOTE:* some parameters are effective only if used with LUKS2 format
 that supports per-keyslot parameters. For LUKS1, PBKDF type and hash
 algorithm is always the same for all keyslots.
