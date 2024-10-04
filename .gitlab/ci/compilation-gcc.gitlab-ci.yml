@@ -54,3 +54,4 @@ test-gcc-fanalyzer-backends:
     - ./configure CFLAGS="-Wall -Werror -g -O0 -fanalyzer -fdiagnostics-path-format=separate-events" --host=x86_64 --with-crypto_backend=$BACKENDS
     - make -j
     - make -j check-programs
+    - ./tests/vectors-test
