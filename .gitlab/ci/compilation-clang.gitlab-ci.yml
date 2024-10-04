@@ -56,3 +56,4 @@ test-scan-build-backends:
     - make clean
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j check-programs
+    - ./tests/vectors-test
