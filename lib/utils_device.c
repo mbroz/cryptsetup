@@ -127,19 +127,19 @@ static size_t device_alignment_fd(int devfd)
 	return (size_t)alignment;
 }
 
-static int device_read_test(struct crypt_device *cd, int devfd, struct device *device)
+static int device_read_test(struct crypt_device *cd, int devfd)
 {
 	char buffer[512];
 	int r;
 	size_t minsize = 0, blocksize, alignment;
-	const char *dm_name;
+	struct stat st;
 
-	/* skip check for suspended DM devices */
-	dm_name = device_dm_name(device);
-	if (dm_name && dm_status_suspended(cd, dm_name) > 0) {
-		log_dbg(cd, "Device %s is suspended, assuming direct-io is supported.", dm_name);
+	/* skip check for block devices, direct-io must work there  */
+	if (fstat(devfd, &st) < 0)
+		return -EINVAL;
+
+	if (S_ISBLK(st.st_mode))
 		return 0;
-	}
 
 	blocksize = device_block_size_fd(devfd, &minsize);
 	alignment = device_alignment_fd(devfd);
@@ -154,7 +154,7 @@ static int device_read_test(struct crypt_device *cd, int devfd, struct device *d
 		minsize = sizeof(buffer);
 
 	if (read_blockwise(devfd, blocksize, alignment, buffer, minsize) == (ssize_t)minsize) {
-		log_dbg(cd, "Direct-io is supported and works.");
+		log_dbg(cd, "Direct-io read works.");
 		r = 0;
 	} else {
 		log_dbg(cd, "Direct-io read failed.");
@@ -183,12 +183,12 @@ static int device_ready(struct crypt_device *cd, struct device *device)
 		return -EINVAL;
 
 	if (device->o_direct) {
-		log_dbg(cd, "Trying to open and read device %s with direct-io.",
+		log_dbg(cd, "Trying to open device %s with direct-io.",
 			device_path(device));
 		device->o_direct = 0;
 		devfd = open(device_path(device), O_RDONLY | O_DIRECT);
 		if (devfd >= 0) {
-			if (device_read_test(cd, devfd, device) == 0) {
+			if (device_read_test(cd, devfd) == 0) {
 				device->o_direct = 1;
 			} else {
 				close(devfd);
