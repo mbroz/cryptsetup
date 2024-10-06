@@ -130,7 +130,7 @@ static size_t device_alignment_fd(int devfd)
 static int device_read_test(struct crypt_device *cd, int devfd, struct device *device)
 {
 	char buffer[512];
-	int r = -EIO;
+	int r;
 	size_t minsize = 0, blocksize, alignment;
 	const char *dm_name;
 
@@ -153,10 +153,13 @@ static int device_read_test(struct crypt_device *cd, int devfd, struct device *d
 	if (minsize > sizeof(buffer))
 		minsize = sizeof(buffer);
 
-	if (read_blockwise(devfd, blocksize, alignment, buffer, minsize) == (ssize_t)minsize)
+	if (read_blockwise(devfd, blocksize, alignment, buffer, minsize) == (ssize_t)minsize) {
+		log_dbg(cd, "Direct-io is supported and works.");
 		r = 0;
-
-	log_dbg(cd, "Direct-io is supported and works.");
+	} else {
+		log_dbg(cd, "Direct-io read failed.");
+		r = -EIO;
+	}
 
 	crypt_safe_memzero(buffer, sizeof(buffer));
 	return r;
