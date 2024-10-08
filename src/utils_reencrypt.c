@@ -33,6 +33,10 @@ static void _set_reencryption_flags(uint32_t *flags)
 
 	if (ARG_SET(OPT_RESUME_ONLY_ID))
 		*flags |= CRYPT_REENCRYPT_RESUME_ONLY;
+
+	if ((ARG_SET(OPT_VOLUME_KEY_FILE_ID) || ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) &&
+	    (ARG_SET(OPT_NEW_VOLUME_KEY_FILE_ID) || ARG_SET(OPT_NEW_VOLUME_KEY_KEYRING_ID)))
+		*flags |= CRYPT_REENCRYPT_CREATE_NEW_DIGEST;
 }
 
 static int set_keyslot_params(struct crypt_device *cd, int keyslot)
@@ -1060,89 +1064,425 @@ out:
 	return r;
 }
 
-struct keyslot_passwords {
-	char *password;
-	size_t passwordLen;
-	int new;
+struct unlocked_token {
+	/* token keyslot context */
+	struct crypt_keyslot_context *p_kc;
+	int id;
 };
 
-static struct keyslot_passwords *init_keyslot_passwords(size_t count)
+struct unlocked_keyslot {
+	/* just pointer */
+	struct crypt_keyslot_context *p_kc;
+	int id;
+	int new_id;
+};
+
+struct keyslot_contexts {
+	struct unlocked_keyslot ks[16];
+	struct unlocked_token tkns[16];
+
+	/* available unlock methods linked in keyslot struct */
+	struct crypt_keyslot_context *kc[16];
+
+	/* contains pointer to context unlocking existing volume key */
+	struct crypt_keyslot_context *p_old_kc;
+	struct crypt_keyslot_context *p_new_kc;
+
+	/* contains new generated volume key in CRYPT_KC_TYPE_KEY context type */
+	struct crypt_keyslot_context *new_kc;
+
+	bool vk_generated;
+
+	/* contains new keyslot id for reencryption initialization */
+	int new_key_id;
+	int old_key_id;
+
+	unsigned last_ks;
+	unsigned last_kc;
+	unsigned last_tkn;
+};
+
+static struct crypt_keyslot_context *try_token(struct crypt_device *cd,
+					       struct keyslot_contexts *kcs,
+					       int keyslot)
 {
-	size_t i;
-	struct keyslot_passwords *tmp = calloc(count, sizeof(struct keyslot_passwords));
+	unsigned i;
+	struct crypt_keyslot_context *pkc;
 
-	if (!tmp)
-		return tmp;
+	assert(cd);
+	assert(kcs);
+	assert(kcs->last_tkn < ARRAY_SIZE(kcs->tkns));
+	assert(keyslot >= 0);
 
-	for (i = 0; i < count; i++)
-		tmp[i].new = -1;
+	for (i = 0; i < kcs->last_tkn; i++) {
+		pkc = kcs->tkns[i].p_kc;
 
-	return tmp;
+		if (crypt_token_is_assigned(cd, kcs->tkns[i].id, keyslot) == 0 &&
+		    crypt_activate_by_keyslot_context(cd, NULL, keyslot, pkc, CRYPT_ANY_SLOT, NULL, 0) == keyslot) {
+				tools_keyslot_msg(keyslot, UNLOCKED);
+				return pkc;
+		}
+	}
+
+	return NULL;
 }
 
-static int init_passphrase(struct keyslot_passwords *kp, size_t keyslot_passwords_length,
-			   struct crypt_device *cd, const char *msg, int slot_to_check)
+static bool reencrypt_keyslot_for_unlock(struct keyslot_contexts *kcs, int keyslot)
 {
-	crypt_keyslot_info ki;
-	char *password;
-	int r = -EINVAL, retry_count;
-	size_t passwordLen;
+	unsigned i;
 
-	if (slot_to_check != CRYPT_ANY_SLOT) {
-		ki = crypt_keyslot_status(cd, slot_to_check);
-		if (ki < CRYPT_SLOT_ACTIVE || ki == CRYPT_SLOT_UNBOUND)
-			return -ENOENT;
+	for (i = 0; i < kcs->last_ks; i++) {
+		if (kcs->ks[i].id == keyslot)
+			return true;
 	}
 
-	retry_count = set_tries_tty(false);
+	return false;
+}
 
-	while (retry_count--) {
-		r = tools_get_key(msg,  &password, &passwordLen, 0, 0,
-				  ARG_STR(OPT_KEY_FILE_ID), 0, 0, 0 /*pwquality*/, cd);
-		if (r < 0)
-			return r;
-		if (quit) {
-			crypt_safe_free(password);
-			password = NULL;
-			passwordLen = 0;
-			return -EAGAIN;
-		}
+static bool reencrypt_keyslot_is_unlocked(struct keyslot_contexts *kcs, int keyslot)
+{
+	unsigned i;
 
-		r = crypt_activate_by_passphrase(cd, NULL, slot_to_check,
-						 password, passwordLen, 0);
-		if (r < 0) {
-			crypt_safe_free(password);
-			password = NULL;
-			passwordLen = 0;
-		}
-		if (r < 0 && r != -EPERM)
-			return r;
-
-		if (r >= 0) {
-			tools_keyslot_msg(r, UNLOCKED);
-			if ((size_t)r >= keyslot_passwords_length) {
-				crypt_safe_free(password);
-				return -EINVAL;
-			}
-			kp[r].password = password;
-			kp[r].passwordLen = passwordLen;
-			break;
-		}
-		tools_passphrase_msg(r);
+	for (i = 0; i < kcs->last_ks; i++) {
+		if (kcs->ks[i].id == keyslot)
+			return (kcs->ks[i].p_kc != NULL);
 	}
 
-	password = NULL;
-	passwordLen = 0;
+	return false;
+}
+
+static bool reencrypt_token_for_unlock(struct keyslot_contexts *kcs, int token)
+{
+	unsigned i;
+
+	for (i = 0; i < kcs->last_tkn; i++) {
+		if (kcs->tkns[i].id == token)
+			return true;
+	}
+
+	return false;
+}
+
+static struct crypt_keyslot_context *reencrypt_get_token_context(struct keyslot_contexts *kcs,
+								 int token)
+{
+	unsigned i;
+
+	for (i = 0; i < kcs->last_tkn; i++) {
+		if (kcs->tkns[i].id == token)
+			return kcs->tkns[i].p_kc;
+	}
+
+	return NULL;
+}
+
+static void reencrypt_token_add_for_unlock(struct keyslot_contexts *kcs, int token)
+{
+	assert(kcs);
+	assert(token >= 0);
+
+	if (reencrypt_token_for_unlock(kcs, token))
+		return;
+
+	kcs->tkns[kcs->last_tkn++].id = token;
+
+	log_dbg("Token %d candidate for keyslot unlock.", token);
+}
+
+static void reencrypt_token_add(struct keyslot_contexts *kcs,
+				int token,
+				struct crypt_keyslot_context *token_kc)
+{
+	unsigned i;
+
+	assert(kcs);
+	assert(token >= 0);
+	assert(token_kc);
+
+	for (i = 0; i < kcs->last_tkn; i++) {
+		if (kcs->tkns[i].id == token) {
+			kcs->kc[kcs->last_kc++] = kcs->tkns[i].p_kc = token_kc;
+			return;
+		}
+	}
+
+	abort();
+}
+
+static void reencrypt_keyslot_unlocked_by_context(struct keyslot_contexts *kcs,
+						  int keyslot,
+						  struct crypt_keyslot_context *kc)
+{
+	unsigned i;
+
+	assert(kcs);
+	assert(kc);
+	assert(keyslot >= 0);
+
+	for (i = 0; i < kcs->last_ks; i++) {
+		if (kcs->ks[i].id == keyslot) {
+			kcs->ks[i].p_kc = kc;
+			kcs->ks[i].new_id = -1;
+			return;
+		}
+	}
+
+	abort();
+}
+
+/* Add keyslot in unlock candidates */
+static void reencrypt_keyslot_add_for_unlock(struct keyslot_contexts *kcs, int keyslot)
+{
+	assert(kcs);
+	assert(keyslot >= 0);
+
+	kcs->ks[kcs->last_ks].id = keyslot;
+	kcs->ks[kcs->last_ks++].new_id = -1;
+}
+
+static void reencrypt_token_unlocks_keyslot(struct keyslot_contexts *kcs,
+					    int token,
+					    int keyslot,
+					    struct crypt_keyslot_context *token_kc)
+{
+	assert(kcs);
+	assert(token_kc);
+
+	reencrypt_token_add(kcs, token, token_kc);
+	reencrypt_keyslot_unlocked_by_context(kcs, keyslot, token_kc);
+}
+
+static void reencrypt_keyslot_unlocked_by_context_new(struct keyslot_contexts *kcs,
+						      int keyslot,
+						      struct crypt_keyslot_context *kc)
+{
+	assert(kcs);
+	assert(kc);
+	assert(keyslot >= 0);
+
+	kcs->kc[kcs->last_kc++] = kc;
+	reencrypt_keyslot_unlocked_by_context(kcs, keyslot, kc);
+}
+
+/* returns unlocked keyslot id or negative errno */
+static int single_token(struct crypt_device *cd,
+			int token,
+			int slot_to_check,
+			struct keyslot_contexts *kcs)
+{
+	int r;
+	struct crypt_keyslot_context *kc;
+
+	r = crypt_token_is_assigned(cd, token, slot_to_check);
+	if (r != 0)
+		return r;
+
+	if (reencrypt_keyslot_is_unlocked(kcs, slot_to_check)) {
+		log_dbg("Keyslot %d already unlocked.", slot_to_check);
+		return slot_to_check;
+	}
+
+	kc = reencrypt_get_token_context(kcs, token);
+	if (kc) {
+		r = crypt_activate_by_keyslot_context(cd, NULL, slot_to_check, kc,
+						      CRYPT_ANY_SLOT, NULL, 0);
+		if (r == slot_to_check) {
+			log_dbg("Token %d unlocks keyslot %d", token, slot_to_check);
+			reencrypt_keyslot_unlocked_by_context(kcs, slot_to_check, kc);
+		}
+
+		return r;
+	}
+
+	r = luks_try_token_unlock(cd, slot_to_check, token, NULL,
+				  ARG_STR(OPT_TOKEN_TYPE_ID), 0, /* FIXME: do we need any? */
+				  set_tries_tty(false), true, true, &kc);
+	if (r == slot_to_check) {
+		log_dbg("Token %d unlocks keyslot %d", token, slot_to_check);
+		reencrypt_token_unlocks_keyslot(kcs, token, slot_to_check, kc);
+	}
 
 	return r;
 }
 
-static int _check_luks2_keyslots(struct crypt_device *cd, bool vk_change)
+static int reencrypt_unlock_keyslot(struct keyslot_contexts *kcs,
+			   struct crypt_device *cd,
+			   const char *msg,
+			   int slot_to_check)
 {
-	int i, new_vk_slot = (vk_change ? 1 : 0), max = crypt_keyslot_max(CRYPT_LUKS2), active = 0, unbound = 0;
+	struct crypt_keyslot_context *kc;
+	int retry_count, r = -EINVAL;
 
-	if (max < 0)
-		return max;
+	assert(cd);
+	assert(kcs);
+	assert(slot_to_check >= 0);
+
+	if (reencrypt_keyslot_is_unlocked(kcs, slot_to_check))
+		return slot_to_check;
+
+	/* try already initialized token kc */
+	kc = try_token(cd, kcs, slot_to_check);
+	if (kc) {
+		reencrypt_keyslot_unlocked_by_context(kcs, slot_to_check, kc);
+
+		return slot_to_check;
+	}
+
+	retry_count = set_tries_tty(false);
+	do {
+		r = luks_init_keyslot_context(cd, msg, verify_passphrase(0), false, &kc);
+		if (r < 0)
+			return r;
+
+		r = crypt_activate_by_keyslot_context(cd, NULL, slot_to_check,
+						      kc, CRYPT_ANY_SLOT, NULL, 0);
+		tools_keyslot_msg(r, UNLOCKED);
+		if (r == slot_to_check) {
+			reencrypt_keyslot_unlocked_by_context_new(kcs, slot_to_check, kc);
+
+			return slot_to_check;
+		}
+		crypt_keyslot_context_free(kc);
+		tools_passphrase_msg(r);
+		check_signal(&r);
+	} while ((r == -EPERM || r == -ERANGE) && (--retry_count > 0));
+
+	return r;
+}
+
+/*
+ * Returns 1 if keyslot should be unlocked and it
+ * was not added in unlock queue yet.
+ *
+ * Return 0 if keyslot can not be used or
+ * already added in unlock queue.
+ *
+ * Negative errno on error.
+ */
+static int reencrypt_add_token_keyslot(struct crypt_device *cd,
+		struct keyslot_contexts *kcs,
+		int token,
+		int keyslot)
+{
+	assert(kcs);
+	assert(token >= 0);
+	assert(keyslot >= 0);
+
+	switch (crypt_keyslot_status(cd, keyslot)) {
+	case CRYPT_SLOT_INVALID:
+		return -EINVAL;
+	case CRYPT_SLOT_ACTIVE:
+	case CRYPT_SLOT_ACTIVE_LAST:
+		break;
+	default:
+		return 0;
+	}
+
+	if (crypt_token_is_assigned(cd, token, keyslot))
+		return 0;
+
+	reencrypt_token_add_for_unlock(kcs, token);
+
+	/* continue if keyslot is already added in unlock queue */
+	if (reencrypt_keyslot_for_unlock(kcs, keyslot))
+		return 0;
+
+	log_dbg("Keyslot %d candidate for unlock.", keyslot);
+
+	reencrypt_keyslot_add_for_unlock(kcs, keyslot);
+	return 1;
+}
+
+static int reencrypt_add_single_token_keyslots(struct crypt_device *cd,
+		struct keyslot_contexts *kcs,
+		int token,
+		int keyslot,
+		const char *token_type)
+{
+	int ks, r;
+	const char *type;
+	unsigned count = 0;
+
+	assert(token >= 0);
+
+	switch (crypt_token_status(cd, token, &type)) {
+	case CRYPT_TOKEN_INVALID:
+		return -EINVAL;
+	case CRYPT_TOKEN_INACTIVE:
+		return 0;
+	default:
+		break;
+	}
+
+	if (token_type && strcmp(token_type, type))
+		return 0;
+
+	if (keyslot != CRYPT_ANY_SLOT)
+		return reencrypt_add_token_keyslot(cd, kcs, token, keyslot);
+
+	for (ks = 0; ks < crypt_keyslot_max(CRYPT_LUKS2); ks++) {
+		r = reencrypt_add_token_keyslot(cd, kcs, token, ks);
+		if (r < 0)
+			return r;
+
+		count += r;
+	}
+
+	return count;
+}
+
+static int reencrypt_add_token_keyslots_for_unlock(struct crypt_device *cd,
+						   struct keyslot_contexts *kcs,
+						   int token,
+						   const char *token_type,
+						   int keyslot)
+{
+	int r;
+	unsigned count = 0;
+
+	if (token != CRYPT_ANY_TOKEN)
+		return reencrypt_add_single_token_keyslots(cd, kcs, token, keyslot, token_type);
+
+	for (token = 0; token < crypt_token_max(CRYPT_LUKS2); token++) {
+		r = reencrypt_add_single_token_keyslots(cd, kcs, token, keyslot, token_type);
+		if (r < 0)
+			return r;
+
+		count += r;
+	}
+
+	return count;
+}
+
+static int reencrypt_add_keyslots_for_unlock(struct crypt_device *cd,
+					   struct keyslot_contexts *kcs,
+					   bool vk_change,
+					   bool only_token_keyslots)
+{
+	int i, new_vk_slot = (vk_change ? 1 : 0), max = crypt_keyslot_max(CRYPT_LUKS2),
+	    unlocked, active = 0, unbound = 0;
+
+	/*
+	 * Returns negative errno on error or count of added candidate keyslots
+	 * suitable for device activation using the token based on input
+	 * parameters and token<->keyslot assignment.
+	 *
+	 * Every keyslot is counted at most once.
+	 */
+	i = reencrypt_add_token_keyslots_for_unlock(cd, kcs, ARG_INT32(OPT_TOKEN_ID_ID),
+						    ARG_STR(OPT_TOKEN_TYPE_ID),
+						    ARG_INT32(OPT_KEY_SLOT_ID));
+	if (i < 0)
+		return i;
+
+	/* token based reencryption preferred and no keyslot
+	 * could be used for reencryption */
+	if (!i && only_token_keyslots) {
+		log_err(_("No token could unlock the device."));
+		return -ENOENT;
+	}
+
+	unlocked = i;
 
 	for (i = 0; i < max; i++) {
 		switch (crypt_keyslot_status(cd, i)) {
@@ -1151,7 +1491,14 @@ static int _check_luks2_keyslots(struct crypt_device *cd, bool vk_change)
 		case CRYPT_SLOT_ACTIVE:
 			/* fall-through */
 		case CRYPT_SLOT_ACTIVE_LAST:
+			/* only count additional keyslots added in the loop */
 			active++;
+			if (!only_token_keyslots && !reencrypt_keyslot_for_unlock(kcs, i) &&
+			    (!ARG_SET(OPT_KEY_SLOT_ID) || ARG_INT32(OPT_KEY_SLOT_ID) == i)) {
+				reencrypt_keyslot_add_for_unlock(kcs, i);
+				unlocked++;
+				log_dbg("Keyslot %d candidate for unlock by passphrase prompt.", i);
+			}
 			break;
 		case CRYPT_SLOT_UNBOUND:
 			unbound++;
@@ -1171,7 +1518,7 @@ static int _check_luks2_keyslots(struct crypt_device *cd, bool vk_change)
 		return 0;
 
 	if ((ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT) &&
-            (2 * active + unbound + 1 > max)) {
+            (2 * unlocked + unbound + 1 > max)) {
 		log_err(_("Not enough free keyslots for reencryption."));
 		return -EINVAL;
 	}
@@ -1179,46 +1526,56 @@ static int _check_luks2_keyslots(struct crypt_device *cd, bool vk_change)
 	return 0;
 }
 
-static int fill_keyslot_passwords(struct crypt_device *cd,
-		struct keyslot_passwords *kp, size_t kp_size,
-		bool vk_change)
+static int reencrypt_unlock_keyslots(struct crypt_device *cd,
+				     struct keyslot_contexts *kcs,
+				     bool vk_change)
 {
+	bool only_single_keyslot;
 	char msg[128];
 	crypt_keyslot_info ki;
 	int i, r = 0;
 
-	if (vk_change && ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT && ARG_SET(OPT_KEY_FILE_ID)) {
-		for (i = 0; (size_t)i < kp_size; i++) {
-			ki = crypt_keyslot_status(cd, i);
-			if (ki == CRYPT_SLOT_INVALID)
-				return -EINVAL;
-			if (ki == CRYPT_SLOT_ACTIVE) {
-				log_err(_("Key file can be used only with --key-slot or with "
-					  "exactly one key slot active."));
-				return -EINVAL;
-			}
-		}
-	}
+	assert(cd);
+	assert(kcs);
+
+	only_single_keyslot = (vk_change && ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT &&
+			       (ARG_SET(OPT_KEY_FILE_ID) || ARG_SET(OPT_KEY_DESCRIPTION_ID)));
 
 	if (ARG_INT32(OPT_KEY_SLOT_ID) == CRYPT_ANY_SLOT) {
-		for (i = 0; (size_t)i < kp_size; i++) {
-			if (snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %d: "), i) < 0)
-				return -EINVAL;
-			r = init_passphrase(kp, kp_size, cd, msg, i);
-			/* no need to initialize all keyslots with --keep-key */
-			if (r >= 0 && !vk_change)
+		for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS2); i++) {
+			ki = crypt_keyslot_status(cd, i);
+			switch (ki) {
+			case CRYPT_SLOT_INVALID:
+				r = -EINVAL;
+				goto out;
+			case CRYPT_SLOT_ACTIVE:
+				if (only_single_keyslot) {
+					log_err(_("Key file or keyring key description can be used only with "
+						  "--key-slot or with exactly one key slot active."));
+					r = -EINVAL;
+					goto out;
+				}
+				/* fall-through */
+			case CRYPT_SLOT_ACTIVE_LAST:
+				if (snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %d: "), i) < 0)
+					return -EINVAL;
+				r = reencrypt_unlock_keyslot(kcs, cd, msg, i);
+				if (r < 0 || !vk_change)
+					goto out;
 				break;
-			if (r == -ENOENT)
+			case CRYPT_SLOT_INACTIVE:
+			case CRYPT_SLOT_UNBOUND:
 				r = 0;
-			if (r < 0)
 				break;
+			}
 		}
 	} else {
-		if (snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %d: "), ARG_INT32(OPT_KEY_SLOT_ID)) < 0)
+		if (snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %d: "),
+			     ARG_INT32(OPT_KEY_SLOT_ID)) < 0)
 			return -EINVAL;
-		r = init_passphrase(kp, kp_size, cd, msg, ARG_INT32(OPT_KEY_SLOT_ID));
+		r = reencrypt_unlock_keyslot(kcs, cd, msg, ARG_INT32(OPT_KEY_SLOT_ID));
 	}
-
+out:
 	return r < 0 ? r : 0;
 }
 
@@ -1237,14 +1594,258 @@ static int assign_tokens(struct crypt_device *cd, int keyslot_old, int keyslot_n
 	return 0;
 }
 
+static void reencrypt_keyslot_contexts_destroy(struct keyslot_contexts *kcs)
+{
+	unsigned i;
+
+	if (!kcs)
+		return;
+
+	crypt_keyslot_context_free(kcs->new_kc);
+
+	for (i = 0; i < kcs->last_kc; i++)
+		crypt_keyslot_context_free(kcs->kc[i]);
+}
+
+static bool token_error_unavailable(int r)
+{
+	return (r == -ENOENT || r == -EPERM || r == -ENOANO || r == -EAGAIN);
+}
+
+/* returns count of unlocked keyslots or negative errno */
+static int init_token_keyslot_context(struct crypt_device *cd,
+				      int token,
+				      struct keyslot_contexts *kcs)
+{
+	int r;
+	unsigned i, count = 0;
+
+	assert(kcs);
+
+	for (i = 0; i < kcs->last_ks; i++) {
+		r = single_token(cd, token, kcs->ks[i].id, kcs);
+		if (r < 0 && !token_error_unavailable(r))
+			return r;
+		if (r >= 0)
+			count++;
+	}
+
+	return count ? 0 : -ENOENT;
+}
+
+static int reencrypt_unlock_keyslots_by_tokens(struct crypt_device *cd,
+					  struct keyslot_contexts *kcs)
+{
+	int r;
+	unsigned i, count = 0;
+
+	assert(kcs);
+
+	for (i = 0; i < kcs->last_tkn; i++) {
+		r = init_token_keyslot_context(cd, kcs->tkns[i].id, kcs);
+		if (r < 0 && !token_error_unavailable(r))
+			return r;
+		if (r >= 0)
+			count++;
+	}
+
+	return count;
+}
+
+static int reencrypt_initialize_keyslot_contexts(struct crypt_device *cd,
+		bool vk_generated,
+		bool prefer_token,
+		struct crypt_keyslot_context *old_kc,
+		struct crypt_keyslot_context *new_kc,
+		struct keyslot_contexts *kcs)
+{
+	int r;
+
+	assert(cd);
+	assert(kcs);
+
+	if (new_kc) {
+		kcs->vk_generated = vk_generated;
+		kcs->new_key_id = CRYPT_ANY_SLOT;
+		kcs->p_new_kc = new_kc;
+	}
+
+	if (old_kc) {
+		kcs->p_old_kc = old_kc;
+		if (!new_kc)
+			kcs->p_new_kc = old_kc;
+
+		kcs->old_key_id = CRYPT_ANY_SLOT;
+		return 0;
+	}
+
+	/* Based on input parameters (--token-id, --token-type, --keyslot, ...)
+	 * it will create a list of keyslots and tokens suitable for reencryption.
+	 * No keyslot or token is unlocked yet. First we need to establish if there
+	 * are enough free keyslots to proceed with the reencryption */
+	r = reencrypt_add_keyslots_for_unlock(cd, kcs, new_kc != NULL, prefer_token);
+	if (r)
+		return r;
+
+	/*  First unlock keyslots by tokens */
+	r = reencrypt_unlock_keyslots_by_tokens(cd, kcs);
+	if (r < 0)
+		return r;
+
+	/* if tokens were preferred and no keyslot
+	 * could be unlocked, abort */
+	if (!r && prefer_token)
+		return -ENOENT;
+
+	/* unlock remaining keyslots only if token
+	 * based reencryption was not requested */
+	if (!prefer_token) {
+		r = reencrypt_unlock_keyslots(cd, kcs, new_kc != NULL);
+		if (r < 0)
+			return r;
+	}
+
+	if (!kcs->p_old_kc) {
+		assert(kcs->ks[0].p_kc);
+		assert(kcs->ks[0].id >= 0);
+		kcs->p_old_kc = kcs->ks[0].p_kc;
+		kcs->old_key_id = kcs->ks[0].id;
+	}
+
+	return 0;
+}
+
+static int reencrypt_active_keyslots_count(struct crypt_device *cd)
+{
+	int i;
+	unsigned count = 0;
+
+	assert(cd);
+	assert(isLUKS2(crypt_get_type(cd)));
+
+	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS2); i++) {
+		switch (crypt_keyslot_status(cd, i)) {
+		case CRYPT_SLOT_INVALID:
+			return -EINVAL;
+		case CRYPT_SLOT_ACTIVE: /* fall-through */
+		case CRYPT_SLOT_ACTIVE_LAST:
+			count++;
+			break;
+		case CRYPT_SLOT_INACTIVE: /* fall-through */
+		case CRYPT_SLOT_UNBOUND:
+			break;
+		}
+	}
+
+	return count;
+}
+
+static int reencrypt_add_new_keyslots(struct crypt_device *cd,
+				      bool prefer_token,
+				      struct keyslot_contexts *kcs)
+{
+	char *vk_new;
+	int r, new_key_size;
+	unsigned i;
+	uint32_t new_key_flags = CRYPT_VOLUME_KEY_NO_SEGMENT;
+
+	assert(cd);
+	assert(kcs);
+
+	if (!kcs->last_ks)
+		return -ENOENT;
+
+	for (i = 0; i < kcs->last_ks; i++) {
+		if (!kcs->ks[i].p_kc) {
+			/*
+			 * A token may be assigned to multiple
+			 * keyslots and not be able to open all
+			 */
+			if (!prefer_token)
+				return -EINVAL;
+			continue;
+		}
+
+		r = set_keyslot_params(cd, kcs->ks[i].id);
+		if (r < 0)
+			return r;
+
+		/* new volume key has no digest yet */
+		if (!(new_key_flags & CRYPT_VOLUME_KEY_DIGEST_REUSE)) {
+			r = crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, kcs->p_new_kc,
+								 CRYPT_ANY_SLOT, kcs->ks[i].p_kc,
+								 new_key_flags);
+			tools_keyslot_msg(r, CREATED);
+			if (r < 0)
+				return r;
+
+			kcs->ks[i].new_id = r;
+
+			/* key was generated in crypt_keyslot_add_by_keyslot_context() above.
+			 * I need to extract actual new key for additional keyslots and reencrypt
+			 * init call later */
+			if (kcs->vk_generated) {
+				new_key_size = crypt_keyslot_get_key_size(cd, kcs->ks[i].new_id);
+				if (new_key_size <= 0)
+					return r;
+
+				vk_new = crypt_safe_alloc((size_t)new_key_size);
+				if (!vk_new)
+					return -ENOMEM;
+
+				r = crypt_volume_key_get_by_keyslot_context(cd, kcs->ks[i].new_id,
+									    vk_new,
+									    &(size_t){new_key_size},
+									    kcs->ks[i].p_kc);
+				if (r < 0) {
+					crypt_safe_free(vk_new);
+					return r;
+				}
+
+				r = crypt_keyslot_context_init_by_volume_key(cd, vk_new,
+									     (size_t)new_key_size,
+									     &kcs->new_kc);
+				crypt_safe_free(vk_new);
+				if (r < 0)
+					return r;
+				kcs->p_new_kc = kcs->new_kc;
+			}
+			r = assign_tokens(cd, kcs->ks[i].id, kcs->ks[i].new_id);
+			if (r < 0)
+				return r;
+
+			kcs->new_key_id = kcs->ks[i].new_id;
+			new_key_flags |= CRYPT_VOLUME_KEY_DIGEST_REUSE;
+		} else {
+			r = crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, kcs->new_kc,
+					CRYPT_ANY_SLOT, kcs->ks[i].p_kc, new_key_flags);
+
+			tools_keyslot_msg(r, CREATED);
+			if (r < 0)
+				return r;
+
+			kcs->ks[i].new_id = r;
+			r = assign_tokens(cd, kcs->ks[i].id, kcs->ks[i].new_id);
+			if (r < 0)
+				return r;
+		}
+	}
+
+	return 0;
+}
+
 static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 {
-	bool sector_size_change, sector_size_increase, vk_change;
-	size_t i, vk_size, kp_size;
-	int r, keyslot_old = CRYPT_ANY_SLOT, keyslot_new = CRYPT_ANY_SLOT, key_size;
-	char cipher[MAX_CIPHER_LEN], mode[MAX_CIPHER_LEN], *vk = NULL, *active_name = NULL;
+	bool sector_size_change, sector_size_increase, vk_change, vk_generated = false,
+	     prefer_token = (ARG_SET(OPT_TOKEN_ONLY_ID) || ARG_SET(OPT_TOKEN_ID_ID) || ARG_SET(OPT_TOKEN_TYPE_ID));
+	size_t i;
+	int r, new_key_size = 0, key_size = 0;
+	char cipher[MAX_CIPHER_LEN], mode[MAX_CIPHER_LEN], *vk, *vk_new, *vk_description,
+	     *active_name = NULL;
+	uint32_t active_slots;
 	const char *new_cipher = NULL;
-	struct keyslot_passwords *kp = NULL;
+	struct crypt_keyslot_context *old_key_kc = NULL, *new_key_kc = NULL;
+	struct keyslot_contexts kcs = {};
 	struct crypt_params_luks2 luks2_params = {};
 	struct crypt_params_reencrypt params = {
 		.mode = CRYPT_REENCRYPT_REENCRYPT,
@@ -1292,30 +1893,135 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 	sector_size_increase = luks2_params.sector_size > (uint32_t)crypt_get_sector_size(cd);
 
 	/* key size */
-	if (ARG_SET(OPT_KEY_SIZE_ID) || new_cipher)
-		key_size = get_adjusted_key_size(mode, ARG_UINT32(OPT_KEY_SIZE_ID),
-						 DEFAULT_LUKS1_KEYBITS, 0);
-	else
-		key_size = crypt_get_volume_key_size(cd);
-
-	if (!key_size)
+	key_size = crypt_get_volume_key_size(cd);
+	if (!key_size && ARG_SET(OPT_KEY_SIZE_ID))
+		key_size = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
+	if (!key_size && !ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
+		/* No keyslot assigned to default segment */
+		log_err(_("Cannot determine volume key size for LUKS without keyslots, please use --key-size option."));
 		return -EINVAL;
-	vk_size = key_size;
+	}
+
+	/* new key size */
+	if (!ARG_SET(OPT_NEW_VOLUME_KEY_KEYRING_ID)) {
+		if (ARG_SET(OPT_NEW_KEY_SIZE_ID))
+			new_key_size = ARG_UINT32(OPT_NEW_KEY_SIZE_ID);
+
+		if (new_key_size || new_cipher)
+			new_key_size = get_adjusted_key_size(mode, new_key_size,
+							 DEFAULT_LUKS1_KEYBITS, 0);
+		else
+			new_key_size = key_size;
+
+		if (new_key_size <= 0) {
+			log_err(_("Cannot determine volume key size for LUKS without keyslots, please use --new-key-size option."));
+			return -EINVAL;
+		}
+	}
+
+	/* get active slots count */
+	r = reencrypt_active_keyslots_count(cd);
+	if (r < 0)
+		return r;
+	active_slots = r;
 
 	/* volume key */
 	vk_change = !ARG_SET(OPT_KEEP_KEY_ID);
 
-	if (vk_change && ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+	/*
+	 * --volume-key-keyring must take precedence over --volume-key-file due
+	 * to possibly unset key_size
+	 */
+	if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
+		r = tools_parse_vk_description(ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &vk_description);
+		if (r < 0)
+			goto out;
+		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description, &old_key_kc);
+		free(vk_description);
+		if (r < 0)
+			goto out;
+	}
+
+	if (!old_key_kc && ARG_SET(OPT_VOLUME_KEY_FILE_ID) && key_size > 0) {
 		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &vk, key_size);
 		if (r < 0)
 			goto out;
+		r = crypt_keyslot_context_init_by_volume_key(cd, vk, (size_t)key_size, &old_key_kc);
+		crypt_safe_free(vk);
+		if (r < 0)
+			goto out;
+	}
 
-		if (!crypt_volume_key_verify(cd, vk, key_size)) {
-			/* passed key was valid volume key */
-			vk_change = false;
-			crypt_safe_free(vk);
-			vk = NULL;
+	if (old_key_kc) {
+		r = crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, old_key_kc,
+						      CRYPT_ANY_SLOT, NULL, 0);
+		if (r == -EPERM)
+			log_err(_("Volume key does not match the volume."));
+		if (r < 0)
+			goto out;
+	}
+
+	/*
+	 * --new-volume-key-keyring must take precedence over --new-volume-key-file due
+	 * to possibly unset new_key_size
+	 */
+	if (vk_change && ARG_SET(OPT_NEW_VOLUME_KEY_KEYRING_ID)) {
+		if (active_slots && old_key_kc && !ARG_SET(OPT_FORCE_NO_KEYSLOTS_ID)) {
+			log_err(_("Use --force-no-keyslots to reencrypt device with active keyslots by passing volume keys directly."));
+			return -EINVAL;
 		}
+
+		r = tools_parse_vk_description(ARG_STR(OPT_NEW_VOLUME_KEY_KEYRING_ID), &vk_description);
+		if (r < 0)
+			goto out;
+
+		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description, &new_key_kc);
+		free(vk_description);
+		if (r < 0)
+			goto out;
+	}
+
+	if (vk_change && !new_key_kc && ARG_SET(OPT_NEW_VOLUME_KEY_FILE_ID)) {
+		if (!ARG_SET(OPT_NEW_KEY_SIZE_ID)) {
+			log_err(_("Option --new-volume-key-file must be paired with --new-key-size"));
+			r = -EINVAL;
+			goto out;
+		}
+		if (active_slots && old_key_kc && !ARG_SET(OPT_FORCE_NO_KEYSLOTS_ID)) {
+			log_err(_("Use --force-no-keyslots to reencrypt device with active keyslots by passing volume keys directly."));
+			return -EINVAL;
+		}
+
+		r = tools_read_vk(ARG_STR(OPT_NEW_VOLUME_KEY_FILE_ID), &vk_new, new_key_size);
+		if (r < 0)
+			goto out;
+
+		r = crypt_keyslot_context_init_by_volume_key(cd, vk_new, (size_t)new_key_size,
+							     &new_key_kc);
+		crypt_safe_free(vk_new);
+		if (r < 0)
+			goto out;
+	}
+
+	/* verify if passed new volume key does not match already existing volume key */
+	if (new_key_kc) {
+		r = crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, new_key_kc,
+						      CRYPT_ANY_SLOT, NULL, 0);
+		if (r >= 0) {
+			/* passed key was valid volume key */
+			crypt_keyslot_context_free(new_key_kc);
+			new_key_kc = NULL;
+			vk_change = false;
+		}
+	}
+
+	/* initialize 'empty' new keyslot context to get new volume key generated later */
+	if (vk_change && !new_key_kc) {
+		r = crypt_keyslot_context_init_by_volume_key(cd, NULL, (size_t)new_key_size,
+							     &new_key_kc);
+		if (r < 0)
+			goto out;
+		vk_generated = true;
 	}
 
 	if (!vk_change && !new_cipher && !sector_size_change) {
@@ -1324,88 +2030,23 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 		goto out;
 	}
 
+	/* unlocks keyslots  */
+	r = reencrypt_initialize_keyslot_contexts(cd, vk_generated, prefer_token, old_key_kc,
+						  new_key_kc, &kcs);
+	if (r < 0)
+		goto out;
+
 	if (!ARG_SET(OPT_INIT_ONLY_ID) || (tools_blkid_supported() && sector_size_increase)) {
 		r = reencrypt_hint_force_offline_reencrypt(data_device);
 		if (r < 0)
 			goto out;
 	}
 
-	r = _check_luks2_keyslots(cd, vk_change);
-	if (r)
-		goto out;
-
-	r = crypt_keyslot_max(CRYPT_LUKS2);
-	if (r < 0)
-		goto out;
-	kp_size = r;
-
-	kp = init_keyslot_passwords(kp_size);
-	if (!kp) {
-		r = -ENOMEM;
-		goto out;
+	if (vk_change && active_slots && !ARG_SET(OPT_FORCE_NO_KEYSLOTS_ID)) {
+		r = reencrypt_add_new_keyslots(cd, prefer_token, &kcs);
+		if (r < 0)
+			goto out;
 	}
-
-	/* coverity[overrun-call] */
-	r = fill_keyslot_passwords(cd, kp, kp_size, vk_change);
-	if (r)
-		goto out;
-
-	r = -ENOENT;
-
-	for (i = 0; i < kp_size; i++) {
-		if (!vk_change) {
-			if (kp[i].password) {
-				r = keyslot_old = kp[i].new = i;
-				break;
-			}
-			continue;
-		}
-
-		if (kp[i].password && keyslot_new < 0) {
-			r = set_keyslot_params(cd, i);
-			if (r < 0)
-				break;
-			r = crypt_keyslot_add_by_key(cd, CRYPT_ANY_SLOT, vk, key_size,
-					kp[i].password, kp[i].passwordLen, CRYPT_VOLUME_KEY_NO_SEGMENT);
-			tools_keyslot_msg(r, CREATED);
-			if (r < 0)
-				break;
-
-			kp[i].new = r;
-			keyslot_new = r;
-			keyslot_old = i;
-			if (!vk) {
-				/* key generated in crypt_keyslot_add_by_key() call above */
-				vk = crypt_safe_alloc(key_size);
-				if (!vk) {
-					r = -ENOMEM;
-					break;
-				}
-				r = crypt_volume_key_get(cd, keyslot_new, vk, &vk_size, kp[i].password, kp[i].passwordLen);
-				if (r < 0)
-					break;
-			}
-			r = assign_tokens(cd, i, r);
-			if (r < 0)
-				break;
-		} else if (kp[i].password) {
-			r = set_keyslot_params(cd, i);
-			if (r < 0)
-				break;
-			r = crypt_keyslot_add_by_key(cd, CRYPT_ANY_SLOT, vk, key_size,
-					kp[i].password, kp[i].passwordLen, CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_DIGEST_REUSE);
-			tools_keyslot_msg(r, CREATED);
-			if (r < 0)
-				break;
-			kp[i].new = r;
-			r = assign_tokens(cd, i, r);
-			if (r < 0)
-				break;
-		}
-	}
-
-	if (r < 0)
-		goto out;
 
 	/*
 	 * with --init-only lookup active device only if
@@ -1433,22 +2074,24 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 			goto out;
 	}
 
-	r = crypt_reencrypt_init_by_passphrase(cd,
+	r = crypt_reencrypt_init_by_keyslot_context(cd,
 			ARG_SET(OPT_INIT_ONLY_ID) ? NULL : active_name,
-			kp[keyslot_old].password, kp[keyslot_old].passwordLen,
-			keyslot_old, kp[keyslot_old].new, cipher, mode, &params);
+			kcs.p_old_kc, kcs.p_new_kc,
+			kcs.old_key_id, kcs.new_key_id,
+			cipher, mode, &params);
+
 out:
-	crypt_safe_free(vk);
-	if (kp) {
-		for (i = 0; i < kp_size; i++) {
-			crypt_safe_free(kp[i].password);
-			if (r < 0 && kp[i].new >= 0 && kp[i].new != (int)i &&
-			    crypt_reencrypt_status(cd, NULL) == CRYPT_REENCRYPT_NONE &&
-			    crypt_keyslot_destroy(cd, kp[i].new))
-				log_dbg("Failed to remove keyslot %d with unbound key.", kp[i].new);
+	crypt_keyslot_context_free(old_key_kc);
+	crypt_keyslot_context_free(new_key_kc);
+	if (r < 0 && crypt_reencrypt_status(cd, NULL) == CRYPT_REENCRYPT_NONE) {
+		for (i = 0; i < kcs.last_ks; i++) {
+			if (kcs.ks[i].new_id >= 0 && kcs.ks[i].new_id != kcs.ks[i].id &&
+			    crypt_keyslot_destroy(cd, kcs.ks[i].new_id))
+				log_dbg("Failed to remove keyslot %d with unbound key.",
+					kcs.ks[i].new_id);
 		}
-		free(kp);
 	}
+	reencrypt_keyslot_contexts_destroy(&kcs);
 	free(active_name);
 	return r;
 }

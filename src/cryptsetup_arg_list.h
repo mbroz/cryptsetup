@@ -52,6 +52,8 @@ ARG(OPT_FORCE_PASSWORD, '\0', POPT_ARG_NONE, N_("Disable password quality check 
 
 ARG(OPT_FORCE_OFFLINE_REENCRYPT, '\0', POPT_ARG_NONE, N_("Force offline LUKS2 reencryption and bypass active device detection"), NULL, CRYPT_ARG_BOOL, {}, OPT_FORCE_OFFLINE_REENCRYPT_ACTIONS)
 
+ARG(OPT_FORCE_NO_KEYSLOTS, '\0', POPT_ARG_NONE, N_("Force dangerous reencryption operation erasing all remaining keyslots"), NULL, CRYPT_ARG_BOOL, {}, OPT_FORCE_NO_KEYSLOTS_ACTIONS)
+
 ARG(OPT_HASH, 'h', POPT_ARG_STRING, N_("The hash used to create the encryption key from the passphrase"), NULL, CRYPT_ARG_STRING, {}, {})
 
 ARG(OPT_HEADER, '\0', POPT_ARG_STRING, N_("Device or file with separated LUKS header"), NULL, CRYPT_ARG_STRING, {}, {})

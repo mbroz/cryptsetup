@@ -3364,6 +3364,12 @@ static const char *verify_reencrypt(void)
 	if (ARG_SET(OPT_ACTIVE_NAME_ID) && ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID))
 		return _("Options --active-name and --force-offline-reencrypt cannot be combined.");
 
+	if (ARG_SET(OPT_NEW_VOLUME_KEY_FILE_ID) && ARG_SET(OPT_KEEP_KEY_ID))
+		return _("Options --new-volume-key-file and --keep-key cannot be combined.");
+
+	if (ARG_SET(OPT_NEW_VOLUME_KEY_KEYRING_ID) && ARG_SET(OPT_KEEP_KEY_ID))
+		return _("Options --new-volume-key-keyring and --keep-key cannot be combined.");
+
 	return NULL;
 }
 

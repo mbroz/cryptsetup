@@ -198,6 +198,20 @@ handlers (or token plugins). It must be absolute path (starting with '/' charact
 endif::[]
 
 ifdef::ACTION_REENCRYPT[]
+*--force-no-keyslots (LUKS2 only)*::
+Enforce initialization of reencryption operation with additional --volume-key-file,
+--new-volume-key-file, --volume-key-keyring or --new-volume-key-keyring parameters
+that would result in deletion of all remaining LUKS2 keyslots containing volume key.
++
+*NOTE:* LUKS2 keyslot with new volume key may be added after the reencryption
+operation is finished. See *cryptsetup-luksAddKey*(8) command.
++
+*WARNING:* Use with extreme caution! If you loose volume key stored in a file or
+in a kernel keyring before adding LUKS2 keyslot containing new volume key
+the device will become unusable and all data will be lost.
+endif::[]
+
+ifdef::ACTION_REENCRYPT[]
 *--force-offline-reencrypt (LUKS2 only)*::
 Bypass active device auto-detection and enforce offline reencryption.
 +
@@ -1158,8 +1172,18 @@ does not input a passphrase, e.g. during boot. The default is a value
 of 0 seconds, which means to wait forever.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_LUKSADDKEY[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_LUKSADDKEY,ACTION_REENCRYPT[]
 *--token-id*::
+ifdef::ACTION_REENCRYPT[]
+*LUKS2 reencryption initialization:*
+Specify what keyslots (associated with selected token) to use for LUKS2 reencryption.
+If reencryption operation changes effective volume key only keyslots associated
+the token and unlocked successfully will be available after the reencryption operation
+is finished.
++
+*LUKS2 reencryption resume:*
+// paragraph continues below
+endif::[]
 ifndef::ACTION_TOKEN,ACTION_LUKSADDKEY[]
 Specify what token to use and allow token PIN prompt to take precedence over interactive
 keyslot passphrase prompt. If omitted, all available tokens (not protected by PIN)
@@ -1174,8 +1198,17 @@ new token.
 endif::[]
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_REENCRYPT[]
 *--token-only*::
+ifdef::ACTION_REENCRYPT[]
+*LUKS2 reencryption initialization:*
+Specify all keyslots associated with any token will be used for LUKS2 reencryption.
+If reencryption operation changes effective volume key only keyslots associated
+with any token will be available after the reencryption operation is finished.
++
+*LUKS2 reencryption resume:*
+// paragraph continues below
+endif::[]
 ifndef::ACTION_LUKSADDKEY[]
 Do not proceed further with action if token based keyslot unlock failed. Without the
 option, action asks for passphrase to proceed further.
@@ -1196,8 +1229,18 @@ Replace an existing token when adding or importing a token with the
 --token-id option.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_REENCRYPT[]
 *--token-type* _type_::
+ifdef::ACTION_REENCRYPT[]
+*LUKS2 reencryption initialization:*
+Specify what keyslots (associated with selected token type) to use for LUKS2 reencryption.
+If reencryption operation changes effective volume key only keyslots associated
+the token type and unlocked successfully will be available after the reencryption operation
+is finished.
++
+*LUKS2 reencryption resume:*
+// paragraph continues below
+endif::[]
 ifndef::ACTION_LUKSADDKEY[]
 Restrict tokens eligible for operation to specific token _type_.
 Mostly useful when no --token-id is specified.
