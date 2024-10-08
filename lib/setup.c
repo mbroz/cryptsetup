@@ -7081,12 +7081,15 @@ int crypt_convert(struct crypt_device *cd,
 /* Internal access function to header pointer */
 void *crypt_get_hdr(struct crypt_device *cd, const char *type)
 {
+	assert(cd);
+	assert(type);
+
 	/* One type can be OPAL */
 	if (isLUKS2(type) && isLUKS2(cd->type))
 		return &cd->u.luks2.hdr;
 
 	/* If requested type differs, ignore it */
-	if (strcmp(cd->type, type))
+	if (!cd->type || strcmp(cd->type, type))
 		return NULL;
 
 	if (isPLAIN(cd->type))

@@ -868,6 +868,9 @@ else
 	$CRYPTSETUP close $DEV_NAME2 >/dev/null 2>&1
 	$CRYPTSETUP close $DEV_NAME >/dev/null 2>&1
 fi
+# Deferred remove of device without DM-UUID
+dmsetup create $DEV_NAME --table "0 8 crypt aes-xts-plain64 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 0 $LOOPDEV 0" || fail
+$CRYPTSETUP close --deferred $DEV_NAME || fail
 
 # Interactive tests
 # Do not remove sleep 0.1 below, the password query flushes TTY buffer (so the code is racy).
