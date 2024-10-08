@@ -16,12 +16,16 @@
 
 static char *keyfiles[MAX_KEYFILES];
 static char *keyring_links[MAX_KEYRING_LINKS];
-static char *vks_in_keyring[MAX_VK_IN_KEYRING];
+char *vks_in_keyring[MAX_VK_IN_KEYRING];
+char *vk_files[2];
 static char *keyfile_stdin = NULL;
+uint32_t key_sizes[2];
 
 static int keyfiles_count = 0;
 static int keyring_links_count = 0;
-static int vks_in_keyring_count = 0;
+int vks_in_keyring_count = 0;
+int vk_files_count = 0;
+int key_sizes_count = 0;
 int64_t data_shift = 0;
 
 const char *device_type = "luks";
@@ -52,6 +56,8 @@ void tools_cleanup(void)
 		free(keyring_links[--keyring_links_count]);
 	while (vks_in_keyring_count)
 		free(vks_in_keyring[--vks_in_keyring_count]);
+	while (vk_files_count)
+		free(vk_files[--vk_files_count]);
 
 	total_keyfiles = 0;
 }
@@ -1783,20 +1789,15 @@ static int action_open_luks(void)
 	}
 
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID) || ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
-		r = init_keyslot_contexts_by_volume_keys(cd, ARG_STR(OPT_VOLUME_KEY_FILE_ID),
-							 NULL /* unused */,
-							 ARG_UINT32(OPT_KEY_SIZE_ID) / 8,
-							 0 /* unused */,
-							 vks_in_keyring[0],
-							 vks_in_keyring[1],
+		r = init_keyslot_contexts_by_volume_keys(cd, vk_files[0], vk_files[1],
+							 key_sizes[0] / 8, key_sizes[1] / 8,
+							 vks_in_keyring[0], vks_in_keyring[1],
 							 &kc1, &kc2);
 		if (r < 0)
 			goto out;
 
 		r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT,
 						      kc1, CRYPT_ANY_SLOT, kc2, activate_flags);
-
-
 	} else {
 		r = try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID),
 				     ARG_INT32(OPT_TOKEN_ID_ID), activated_name,
@@ -3326,6 +3327,12 @@ static const char *verify_reencrypt(void)
 	if (ARG_SET(OPT_ACTIVE_NAME_ID) && ARG_SET(OPT_FORCE_OFFLINE_REENCRYPT_ID))
 		return _("Options --active-name and --force-offline-reencrypt cannot be combined.");
 
+	if (ARG_SET(OPT_NEW_VOLUME_KEY_FILE_ID) && ARG_SET(OPT_KEEP_KEY_ID))
+		return _("Options --new-volume-key-file and --keep-key cannot be combined.");
+
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID) && ARG_SET(OPT_KEEP_KEY_ID) && !ARG_SET(OPT_NEW_VOLUME_KEY_FILE_ID))
+		return _("Options --volume-key-file (compatible option for new volume key) and --keep-key cannot be combined.");
+
 	return NULL;
 }
 
@@ -3609,6 +3616,16 @@ static void basic_options_cb(poptContext popt_context,
 			usage(popt_context, EXIT_FAILURE,
 			      _("Key size must be a multiple of 8 bits"),
 			      poptGetInvocationName(popt_context));
+
+		if (key_sizes_count < 2)
+			key_sizes[key_sizes_count++] = ARG_UINT32(OPT_KEY_SIZE_ID);
+		else {
+			if (snprintf(buf, sizeof(buf), _("At most %d key size specifications can be supplied."), 2) < 0)
+				buf[0] = '\0';
+			usage(popt_context, EXIT_FAILURE,
+			      buf,
+			      poptGetInvocationName(popt_context));
+		}
 		break;
 	case OPT_INTEGRITY_KEY_SIZE_ID:
 		if (ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID) == 0)
@@ -3636,6 +3653,17 @@ static void basic_options_cb(poptContext popt_context,
 			vks_in_keyring[vks_in_keyring_count++] = strdup(ARG_STR(OPT_VOLUME_KEY_KEYRING_ID));
 		else {
 			if (snprintf(buf, sizeof(buf), _("At most %d volume key specifications can be supplied."), MAX_KEYRING_LINKS) < 0)
+				buf[0] = '\0';
+			usage(popt_context, EXIT_FAILURE,
+			      buf,
+			      poptGetInvocationName(popt_context));
+		}
+		break;
+	case OPT_VOLUME_KEY_FILE_ID:
+		if (vk_files_count < 2)
+			vk_files[vk_files_count++] = strdup(ARG_STR(OPT_VOLUME_KEY_FILE_ID));
+		else {
+			if (snprintf(buf, sizeof(buf), _("At most %d volume key specifications can be supplied."), 2) < 0)
 				buf[0] = '\0';
 			usage(popt_context, EXIT_FAILURE,
 			      buf,

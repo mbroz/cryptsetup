@@ -64,4 +64,14 @@ int init_keyslot_contexts_by_volume_keys(struct crypt_device *cd,
 					 struct crypt_keyslot_context **r_kc1,
 					 struct crypt_keyslot_context **r_kc2);
 
+int init_keyslot_contexts_non_interactive(struct crypt_device *cd,
+		const char *vk_file1,
+		const char *vk_file2,
+		int keysize1_bytes,
+		int keysize2_bytes,
+		const char *vk_in_keyring1,
+		const char *vk_in_keyring2,
+		struct crypt_keyslot_context **r_kc1,
+		struct crypt_keyslot_context **r_kc2);
+
 #endif /* UTILS_LUKS_H */
