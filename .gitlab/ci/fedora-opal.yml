@@ -110,23 +110,22 @@ test-mergerq-rawhide-samsung980pro:
     PCI_PASSTHROUGH_VENDOR_ID: "144d"
     PCI_PASSTHROUGH_DEVICE_ID: "a80a"
 
-# # UMIS RPETJ256MGE2MDQ (on tiber machine)
-# test-commit-rawhide-umis:
-#   rules:
-#     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
-#       when: never
-#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
-#   extends:
-#     - .opal-template-fedora
-#   tags:
-#     - tiber
-#   resource_group: umis-on-tiber
-#   stage: test
-#   interruptible: false
-#   variables:
-#     PCI_PASSTHROUGH_VENDOR_ID: "1cc4"
-#     PCI_PASSTHROUGH_DEVICE_ID: "6302"
-#
+# UMIS RPETJ256MGE2MDQ (on tiber machine)
+test-commit-rawhide-umis:
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/ || $CI_COMMIT_BRANCH =~ /wip-luks2/
+  extends:
+    - .opal-template-fedora
+  tags:
+    - tiber
+  resource_group: umis-on-tiber
+  interruptible: false
+  variables:
+    PCI_PASSTHROUGH_VENDOR_ID: "1cc4"
+    PCI_PASSTHROUGH_DEVICE_ID: "6302"
+
 # test-mergerq-rawhide-umis:
 #   rules:
 #     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
@@ -137,7 +136,6 @@ test-mergerq-rawhide-samsung980pro:
 #   tags:
 #     - tiber
 #   resource_group: umis-on-tiber
-#   stage: test
 #   interruptible: false
 #   variables:
 #     PCI_PASSTHROUGH_VENDOR_ID: "1cc4"
