@@ -41,6 +41,7 @@
 
 #define DEFAULT_WIPE_BLOCK	1048576 /* 1 MiB */
 #define MAX_ACTIONS 16
+#define MAX_VOLUME_KEY_FILES 2
 
 /* Common tools */
 void tool_log(int level, const char *msg, void *usrptr __attribute__((unused)));
