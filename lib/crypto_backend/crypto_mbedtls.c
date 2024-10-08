@@ -16,23 +16,10 @@
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
 #include <mbedtls/md.h>
+#include <mbedtls/pkcs5.h>
 #include <mbedtls/version.h>
 
 #include "crypto_backend_internal.h"
-
-static const struct hash_alg {
-	const char *name;
-	mbedtls_md_type_t type;
-	unsigned int block_length;
-} kHash[] = {
-	{"sha1",      MBEDTLS_MD_SHA1,       64},
-	{"sha224",    MBEDTLS_MD_SHA224,     64},
-	{"sha256",    MBEDTLS_MD_SHA256,     64},
-	{"sha384",    MBEDTLS_MD_SHA384,    128},
-	{"sha512",    MBEDTLS_MD_SHA512,    128},
-	{"ripemd160", MBEDTLS_MD_RIPEMD160,  64},
-	{NULL,        0,                      0}
-};
 
 struct crypt_hash {
 	const mbedtls_md_info_t *info;
@@ -58,6 +45,19 @@ static mbedtls_ctr_drbg_context g_ctr_drbg;
 
 static const mbedtls_md_info_t *crypt_get_hash(const char *name)
 {
+	static const struct hash_alg {
+		const char *name;
+		mbedtls_md_type_t type;
+	} kHash[] = {
+		{"sha1",      MBEDTLS_MD_SHA1     },
+		{"sha224",    MBEDTLS_MD_SHA224   },
+		{"sha256",    MBEDTLS_MD_SHA256   },
+		{"sha384",    MBEDTLS_MD_SHA384   },
+		{"sha512",    MBEDTLS_MD_SHA512   },
+		{"ripemd160", MBEDTLS_MD_RIPEMD160},
+		{NULL,        0,                  }
+	};
+
 	size_t i = 0;
 
 	while (name && kHash[i].name) {
@@ -67,19 +67,6 @@ static const mbedtls_md_info_t *crypt_get_hash(const char *name)
 	}
 
 	return NULL;
-}
-
-static unsigned int crypt_get_hash_block_length(const char *name)
-{
-	size_t i = 0;
-
-	while (name && kHash[i].name) {
-		if (strcmp(kHash[i].name, name) == 0)
-			return kHash[i].block_length;
-		i++;
-	}
-
-	return 0;
 }
 
 int crypt_backend_init(bool fips)
@@ -467,18 +454,44 @@ int crypt_pbkdf(const char *kdf, const char *hash,
                 char *key, size_t key_length,
                 uint32_t iterations, uint32_t memory, uint32_t parallel)
 {
-	unsigned int block_length;
+	const mbedtls_md_info_t *info;
+#if !HAVE_MBEDTLS_PKCS5_PBKDF2_HMAC_EXT
+	mbedtls_md_context_t md;
+#endif
 
 	if (!kdf)
 		return -EINVAL;
 
-        if (strcmp(kdf, "pbkdf2") == 0) {
-		block_length = crypt_get_hash_block_length(hash);
-		if (!block_length)
+	if (strcmp(kdf, "pbkdf2") == 0) {
+		info = crypt_get_hash(hash);
+		if (!info)
 			return -EINVAL;
 
-		return pkcs5_pbkdf2(hash, password, password_length, salt, salt_length,
-				    iterations, key_length, key, block_length);
+#if HAVE_MBEDTLS_PKCS5_PBKDF2_HMAC_EXT
+		if (mbedtls_pkcs5_pbkdf2_hmac_ext(mbedtls_md_get_type(info),
+						  (const unsigned char *)password, password_length,
+						  (const unsigned char *)salt, salt_length,
+						  iterations, key_length, (unsigned char *)key)) {
+
+			return -EINVAL;
+		}
+#else
+		mbedtls_md_init(&md);
+		if (mbedtls_md_setup(&md, info, 1))
+			return -EINVAL;
+
+		if (mbedtls_pkcs5_pbkdf2_hmac(&md,
+					      (const unsigned char *)password, password_length,
+					      (const unsigned char *)salt, salt_length,
+					      iterations, key_length, (unsigned char *)key)) {
+
+			mbedtls_md_free(&md);
+			return -EINVAL;
+		}
+
+		mbedtls_md_free(&md);
+#endif
+		return 0;
 
 	} else if (strncmp(kdf, "argon2", 6) == 0) {
 		return argon2(kdf, password, password_length, salt, salt_length,

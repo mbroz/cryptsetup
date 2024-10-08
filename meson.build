@@ -559,9 +559,9 @@ elif get_option('crypto-backend') == 'mbedtls'
     if get_option('fips')
         error('mbedtls crypto backend is not supported with FIPS enabled')
     endif
+
     assert(cc.has_header('mbedtls/version.h'),
         'You need mbedTLS cryptographic library.')
-    conf.set10('HAVE_MBEDTLS_VERSION_H', cc.has_header('mbedtls/version.h'))
 
     mbedcrypto = cc.find_library('mbedcrypto',
         static: enable_static)
@@ -569,8 +569,13 @@ elif get_option('crypto-backend') == 'mbedtls'
             prefix: '#include <mbedtls/md.h>', dependencies: mbedcrypto),
         'You need mbedcrypto library.')
 
+    conf.set10('HAVE_MBEDTLS_PKCS5_PBKDF2_HMAC_EXT',
+        cc.has_function('mbedtls_pkcs5_pbkdf2_hmac_ext',
+            prefix: '#include <mbedtls/pkcs5.h>', dependencies: mbedcrypto),
+        description: 'Define to 1 if you have the `mbedtls_pkcs5_pbkdf2_hmac_ext\' function.')
+
     crypto_backend_library = mbedcrypto
-    use_internal_pbkdf2 = true
+    use_internal_pbkdf2 = false
     use_internal_argon2 = true
 endif
 conf.set10('USE_INTERNAL_PBKDF2', use_internal_pbkdf2)

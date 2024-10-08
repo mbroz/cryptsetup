@@ -406,11 +406,12 @@ AC_DEFUN([CONFIGURE_MBEDTLS], [
 	saved_LIBS=$LIBS
 	AC_CHECK_LIB(mbedcrypto, mbedtls_md_init,,
 		[AC_MSG_ERROR([You need mbedTLS cryptographic library.])])
+	AC_CHECK_FUNCS(mbedtls_pkcs5_pbkdf2_hmac_ext)
 	CRYPTO_LIBS=$LIBS
 	LIBS=$saved_LIBS
 
 	CRYPTO_STATIC_LIBS=$CRYPTO_LIBS
-	use_internal_pbkdf2=1
+	use_internal_pbkdf2=0
 	use_internal_argon2=1
 	NO_FIPS([])
 ])
