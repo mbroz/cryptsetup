@@ -391,6 +391,8 @@ function test_device() #opal_mode, #format_params, #--integrity-no-wipe
 	dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
 	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME || fail
 	dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 || fail
+	$CRYPTSETUP close --cancel-deferred $DEV_NAME 2>/dev/null && fail
+	$CRYPTSETUP close --deferred $DEV_NAME 2>/dev/null && fail
 	$CRYPTSETUP close $DEV_NAME || fail
 	dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
 	echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
@@ -406,9 +408,13 @@ function test_device_detached_header() #hdr, #opal_mode, #format_params, #--inte
 	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
 	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $1 || fail
 	dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 || fail
+	$CRYPTSETUP close --cancel-deferred $DEV_NAME 2>/dev/null && fail
+	$CRYPTSETUP close --deferred $DEV_NAME 2>/dev/null && fail
 	$CRYPTSETUP close $DEV_NAME || fail
 	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && fail
 	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --header $1 || fail
+	$CRYPTSETUP close $DEV_NAME --header $1 --cancel-deferred 2>/dev/null && fail
+	$CRYPTSETUP close $DEV_NAME --header $1 --deferred 2>/dev/null && fail
 	$CRYPTSETUP close $DEV_NAME --header $1 || fail
 	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && fail
 	echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q --header $1 || fail
