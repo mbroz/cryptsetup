@@ -836,7 +836,7 @@ static int _activate(
 		crypt_data_device(cd), vol_key, cipher,
 		crypt_get_iv_offset(cd), crypt_get_data_offset(cd),
 		crypt_get_integrity(cd), crypt_get_integrity_tag_size(cd),
-		crypt_get_sector_size(cd));
+		crypt_get_sector_size(cd), crypt_get_integrity_key_size(cd, true));
 
 	if (!r)
 		r = dm_create_device(cd, name, CRYPT_FVAULT2, &dm_dev);

@@ -2364,6 +2364,23 @@ const char *LUKS2_get_integrity(struct luks2_hdr *hdr, int segment)
 	return json_object_get_string(jobj3);
 }
 
+int LUKS2_get_integrity_key_size(struct luks2_hdr *hdr, int segment)
+{
+	json_object *jobj1, *jobj2, *jobj3;
+
+	jobj1 = LUKS2_get_segment_jobj(hdr, segment);
+	if (!jobj1)
+		return -1;
+
+	if (!json_object_object_get_ex(jobj1, "integrity", &jobj2))
+		return -1;
+
+	if (!json_object_object_get_ex(jobj2, "key_size", &jobj3))
+		return -1;
+
+	return json_object_get_int(jobj3);
+}
+
 /* FIXME: this only ensures that once we have journal encryption, it is not ignored. */
 /* implement segment count and type restrictions (crypt and only single crypt) */
 static int LUKS2_integrity_compatible(struct luks2_hdr *hdr)
@@ -2520,7 +2537,8 @@ int LUKS2_assembly_multisegment_dmd(struct crypt_device *cd,
 					json_segment_get_cipher(jobj),
 					json_segment_get_iv_offset(jobj),
 					segment_offset, "none", 0,
-					json_segment_get_sector_size(jobj));
+					json_segment_get_sector_size(jobj),
+					0);
 			if (r) {
 				log_err(cd, _("Failed to set dm-crypt segment."));
 				goto err;
@@ -2716,7 +2734,8 @@ int LUKS2_activate(struct crypt_device *cd,
 					crypt_get_iv_offset(cd), crypt_get_data_offset(cd),
 					crypt_get_integrity(cd) ?: "none",
 					crypt_get_integrity_tag_size(cd),
-					crypt_get_sector_size(cd));
+					crypt_get_sector_size(cd),
+					crypt_get_integrity_key_size(cd, true));
 	} else
 		r = dm_linear_target_set(&dmd.segment, 0,
 					 dmd.size, crypt_data_device(cd),

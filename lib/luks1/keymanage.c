@@ -1205,7 +1205,8 @@ int LUKS1_activate(struct crypt_device *cd,
 	r = dm_crypt_target_set(&dmd.segment, 0, dmd.size, crypt_data_device(cd),
 			vk, crypt_get_cipher_spec(cd), crypt_get_iv_offset(cd),
 			crypt_get_data_offset(cd), crypt_get_integrity(cd),
-			crypt_get_integrity_tag_size(cd), crypt_get_sector_size(cd));
+			crypt_get_integrity_tag_size(cd), crypt_get_sector_size(cd),
+			crypt_get_integrity_key_size(cd, true));
 	if (!r)
 		r = create_or_reload_device(cd, name, CRYPT_LUKS1, &dmd);
 

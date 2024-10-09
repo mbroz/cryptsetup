@@ -117,6 +117,15 @@ int crypt_parse_integrity_mode(const char *s, char *integrity,
 	} else if (!strcmp(s, "hmac-sha512")) {
 		ks = 64;
 		strncpy(integrity, "hmac(sha512)", MAX_CIPHER_LEN);
+	} else if (!strcmp(s, "phmac-sha1")) {
+		strncpy(integrity, "phmac(sha1)", MAX_CIPHER_LEN);
+		ks = -1; /* Indicate wrapped key HMAC, key size unknown */
+	} else if (!strcmp(s, "phmac-sha256")) {
+		strncpy(integrity, "phmac(sha256)", MAX_CIPHER_LEN);
+		ks = -1; /* Indicate wrapped key HMAC, key size unknown */
+	} else if (!strcmp(s, "phmac-sha512")) {
+		ks = -1; /* Indicate wrapped key HMAC, key size unknown */
+		strncpy(integrity, "phmac(sha512)", MAX_CIPHER_LEN);
 	} else if (!strcmp(s, "cmac-aes")) {
 		ks = 16;
 		strncpy(integrity, "cmac(aes)", MAX_CIPHER_LEN);
