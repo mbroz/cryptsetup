@@ -5957,13 +5957,10 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 	}
 
 	if (flags & (CRYPT_DEACTIVATE_DEFERRED | CRYPT_DEACTIVATE_DEFERRED_CANCEL)) {
-		struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
-		if (hdr) {
-			json_object *jobj = json_segments_get_segment(LUKS2_get_segments_jobj(hdr), 0);
-			if (jobj && !strcmp(json_segment_type(jobj), "hw-opal")) {
-				log_err(cd, _("OPAL does not support deferred deactivation."));
-				return -EINVAL;
-			}
+		r = crypt_get_hw_encryption_type(cd);
+		if (r == CRYPT_SW_AND_OPAL_HW || r == CRYPT_OPAL_HW_ONLY) {
+			log_err(cd, _("OPAL does not support deferred deactivation."));
+			return -EINVAL;
 		}
 	}
 
@@ -5974,13 +5971,6 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 	switch (crypt_status(cd, name)) {
 		case CRYPT_ACTIVE:
 		case CRYPT_BUSY:
-			if (flags & CRYPT_DEACTIVATE_DEFERRED_CANCEL) {
-				r = dm_cancel_deferred_removal(name);
-				if (r < 0)
-					log_err(cd, _("Could not cancel deferred remove from device %s."), name);
-				break;
-			}
-
 			r = dm_query_device(cd, name, get_flags, &dmd);
 			if (r >= 0) {
 				if (dmd.holders) {
@@ -5990,8 +5980,23 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 				}
 			}
 
-			if (isLUKS2(cd->type))
-				hdr2 = crypt_get_hdr(cd, CRYPT_LUKS2);
+			/* For detached header case or missing metadata we need to check for OPAL2 devices
+			 * from DM UUID */
+			if (dmd.uuid && (flags & (CRYPT_DEACTIVATE_DEFERRED | CRYPT_DEACTIVATE_DEFERRED_CANCEL)) &&
+			    !strncmp(CRYPT_LUKS2_HW_OPAL, dmd.uuid, sizeof(CRYPT_LUKS2_HW_OPAL)-1)) {
+				log_err(cd, _("OPAL does not support deferred deactivation."));
+				r = -EINVAL;
+				break;
+			}
+
+			if (flags & CRYPT_DEACTIVATE_DEFERRED_CANCEL) {
+				r = dm_cancel_deferred_removal(name);
+				if (r < 0)
+					log_err(cd, _("Could not cancel deferred remove from device %s."), name);
+				break;
+			}
+
+			hdr2 = crypt_get_hdr(cd, CRYPT_LUKS2);
 
 			if ((dmd.uuid && !strncmp(CRYPT_LUKS2, dmd.uuid, sizeof(CRYPT_LUKS2)-1)) || hdr2)
 				r = LUKS2_deactivate(cd, name, hdr2, &dmd, flags);
