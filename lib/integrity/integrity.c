@@ -138,6 +138,12 @@ int INTEGRITY_key_size(const char *integrity)
 		return 32;
 	else if (!strcmp(integrity, "hmac(sha512)"))
 		return 64;
+	else if (!strcmp(integrity, "phmac(sha1)"))
+		return -1; /* Indicate wrapped key HMAC, key size unknown */
+	else if (!strcmp(integrity, "phmac(sha256)"))
+		return -1; /* Indicate wrapped key HMAC, key size unknown */
+	else if (!strcmp(integrity, "phmac(sha512)"))
+		return -1; /* Indicate wrapped key HMAC, key size unknown */
 	else if (!strcmp(integrity, "poly1305"))
 		return 0;
 	else if (!strcmp(integrity, "none"))
@@ -162,6 +168,8 @@ int INTEGRITY_hash_tag_size(const char *integrity)
 		return 8;
 
 	r = sscanf(integrity, "hmac(%" MAX_CIPHER_LEN_STR "[^)]s", hash);
+	if (r != 1)
+		r = sscanf(integrity, "phmac(%" MAX_CIPHER_LEN_STR "[^)]s", hash);
 	if (r == 1)
 		r = crypt_hash_size(hash);
 	else
@@ -203,6 +211,12 @@ int INTEGRITY_tag_size(const char *integrity,
 	else if (!strcmp(integrity, "hmac(sha256)"))
 		auth_tag_size = 32;
 	else if (!strcmp(integrity, "hmac(sha512)"))
+		auth_tag_size = 64;
+	else if (!strcmp(integrity, "phmac(sha1)"))
+		auth_tag_size = 20;
+	else if (!strcmp(integrity, "phmac(sha256)"))
+		auth_tag_size = 32;
+	else if (!strcmp(integrity, "phmac(sha512)"))
 		auth_tag_size = 64;
 	else if (!strcmp(integrity, "poly1305")) {
 		if (iv_tag_size)

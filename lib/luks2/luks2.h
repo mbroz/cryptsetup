@@ -371,6 +371,7 @@ int LUKS2_generate_hdr(
 	const struct volume_key *vk,
 	const char *cipher_spec,
 	const char *integrity,
+	uint32_t integrity_key_size,
 	const char *uuid,
 	unsigned int sector_size,
 	uint64_t data_offset,
@@ -398,6 +399,7 @@ int LUKS2_get_data_size(struct luks2_hdr *hdr, uint64_t *size, bool *dynamic);
 uint32_t LUKS2_get_sector_size(struct luks2_hdr *hdr);
 const char *LUKS2_get_cipher(struct luks2_hdr *hdr, int segment);
 const char *LUKS2_get_integrity(struct luks2_hdr *hdr, int segment);
+int LUKS2_get_integrity_key_size(struct luks2_hdr *hdr, int segment);
 int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
 	 struct luks2_keyslot_params *params);
 int LUKS2_get_volume_key_size(struct luks2_hdr *hdr, int segment);

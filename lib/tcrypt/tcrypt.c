@@ -890,7 +890,8 @@ int TCRYPT_activate(struct crypt_device *cd,
 				cipher_spec, iv_offset, offset,
 				crypt_get_integrity(cd),
 				crypt_get_integrity_tag_size(cd),
-				crypt_get_sector_size(cd));
+				crypt_get_sector_size(cd),
+				crypt_get_integrity_key_size(cd, true));
 		if (r)
 			break;
 
