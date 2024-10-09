@@ -1067,7 +1067,7 @@ static int fill_keyslot_passwords(struct crypt_device *cd,
 				break;
 		}
 	} else {
-		if (snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %u: "), ARG_INT32(OPT_KEY_SLOT_ID)) < 0)
+		if (snprintf(msg, sizeof(msg), _("Enter passphrase for key slot %d: "), ARG_INT32(OPT_KEY_SLOT_ID)) < 0)
 			return -EINVAL;
 		r = init_passphrase(kp, kp_size, cd, msg, ARG_INT32(OPT_KEY_SLOT_ID));
 	}
