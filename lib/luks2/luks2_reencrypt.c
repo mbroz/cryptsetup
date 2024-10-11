@@ -1994,12 +1994,16 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 	uint64_t moved_segment_length,
 	crypt_reencrypt_direction_info di)
 {
-	int r;
+	int digest, r;
 	uint64_t data_offset = LUKS2_get_data_offset(hdr) << SECTOR_SHIFT;
 	json_object *jobj_segment_first = NULL, *jobj_segment_second = NULL, *jobj_segments;
 
 	if (di == CRYPT_REENCRYPT_BACKWARD)
 		return -ENOTSUP;
+
+	digest = LUKS2_digest_by_segment(hdr, CRYPT_DEFAULT_SEGMENT);
+	if (digest < 0)
+		return -EINVAL;
 
 	/*
 	 * future data_device layout:
@@ -2042,7 +2046,7 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 	}
 
 	if (!(r = LUKS2_segments_set(cd, hdr, jobj_segments, 0)))
-		return LUKS2_digest_segment_assign(cd, hdr, CRYPT_ANY_SEGMENT, 0, 1, 0);
+		return LUKS2_digest_segment_assign(cd, hdr, CRYPT_ANY_SEGMENT, digest, 1, 0);
 err:
 	json_object_put(jobj_segment_first);
 	json_object_put(jobj_segment_second);
