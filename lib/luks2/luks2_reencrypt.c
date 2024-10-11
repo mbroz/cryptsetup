@@ -2042,7 +2042,7 @@ static int reencrypt_set_decrypt_shift_segments(struct crypt_device *cd,
 	}
 
 	if (!(r = LUKS2_segments_set(cd, hdr, jobj_segments, 0)))
-		return LUKS2_digest_segment_assign(cd, hdr, CRYPT_ANY_SEGMENT, 0, 1, 0);
+		return LUKS2_digest_segment_assign(cd, hdr, CRYPT_ANY_SEGMENT, CRYPT_ANY_DIGEST, 1, 0);
 err:
 	json_object_put(jobj_segment_first);
 	json_object_put(jobj_segment_second);
