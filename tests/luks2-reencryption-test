@@ -37,6 +37,8 @@ KEY_NAME2="luks2-reencryption-test2"
 KEY_SPEC1="${KEYRING}::%${KEY_TYPE}:${KEY_NAME1}"
 KEY_SPEC2="${KEYRING}::%${KEY_TYPE}:${KEY_NAME2}"
 HAVE_KEYRING=0
+JSON_MSIZE=16384
+IMG_JSON=luks2-digest-1.json
 
 FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
@@ -111,7 +113,7 @@ function remove_mapping()
 	[ -b /dev/mapper/$OVRDEV-err ] && dmsetup remove --retry $OVRDEV-err 2>/dev/null
 	[ -n "$LOOPDEV" ] && losetup -d $LOOPDEV
 	unset LOOPDEV
-	rm -f $IMG $IMG_HDR $KEY1 $VKEY1 $DEVBIG $DEV_LINK $HEADER_LUKS2_PV $IMG_FS >/dev/null 2>&1
+	rm -f $IMG $IMG_JSON $IMG_HDR $KEY1 $VKEY1 $DEVBIG $DEV_LINK $HEADER_LUKS2_PV $IMG_FS >/dev/null 2>&1
 	rmmod scsi_debug >/dev/null 2>&1
 	scsi_debug_teardown $DEV
 }
@@ -901,6 +903,57 @@ function bin_check()
 	command -v $1 >/dev/null || skip "WARNING: test require $1 binary, test skipped."
 }
 
+function _dd()
+{
+	dd $@ status=none conv=notrunc bs=1
+}
+
+function img_json_save()
+{
+	local _hdr=$IMG
+	[ -z "$1" ] || _hdr="$1"
+	# FIXME: why --json-file cannot be used?
+	$CRYPTSETUP luksDump --dump-json-metadata $_hdr | jq -c -M . | tr -d '\n' >$IMG_JSON
+}
+
+# header mangle functions
+function img_update_json()
+{
+	local _hdr="$IMG"
+	local LUKS2_BIN1_OFFSET=448
+	local LUKS2_BIN2_OFFSET=$((LUKS2_BIN1_OFFSET + $JSON_MSIZE))
+	local LUKS2_JSON_SIZE=$(($JSON_MSIZE - 4096))
+
+	# if present jq script, mangle JSON
+	if [ -n "$1" ]; then
+		local JSON=$(cat $IMG_JSON)
+		echo $JSON | jq -M -c "$1" >$IMG_JSON || fail
+		local JSON=$(cat $IMG_JSON)
+		echo $JSON | tr -d '\n' >$IMG_JSON || fail
+	fi
+
+	[ -z "$2" ] || _hdr="$2"
+
+	# wipe JSON areas
+	_dd if=/dev/zero of=$_hdr count=$LUKS2_JSON_SIZE seek=4096
+	_dd if=/dev/zero of=$_hdr count=$LUKS2_JSON_SIZE seek=$(($JSON_MSIZE + 4096))
+
+	# write JSON data
+	_dd if=$IMG_JSON of=$_hdr count=$LUKS2_JSON_SIZE seek=4096
+	_dd if=$IMG_JSON of=$_hdr count=$LUKS2_JSON_SIZE seek=$(($JSON_MSIZE + 4096))
+
+	# erase sha256 checksums
+	_dd if=/dev/zero of=$_hdr count=64 seek=$LUKS2_BIN1_OFFSET
+	_dd if=/dev/zero of=$_hdr count=64 seek=$LUKS2_BIN2_OFFSET
+
+	# calculate sha256 and write chexksums
+	local SUM1_HEX=$(_dd if=$_hdr count=$JSON_MSIZE | sha256sum | cut -d ' ' -f 1)
+	echo $SUM1_HEX | xxd -r -p | _dd of=$_hdr seek=$LUKS2_BIN1_OFFSET count=64 || fail
+
+	local SUM2_HEX=$(_dd if=$_hdr skip=$JSON_MSIZE count=$JSON_MSIZE | sha256sum | cut -d ' ' -f 1)
+	echo $SUM2_HEX | xxd -r -p | _dd of=$_hdr seek=$LUKS2_BIN2_OFFSET count=64 || fail
+}
+
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 fips_mode && skip "This test cannot be run in FIPS mode."
@@ -908,6 +961,9 @@ modprobe --dry-run scsi_debug >/dev/null 2>&1 || skip "This kernel seems to not 
 modprobe dm-crypt >/dev/null 2>&1 || fail "dm-crypt failed to load"
 modprobe dm-delay > /dev/null 2>&1
 dm_crypt_features
+bin_check jq
+bin_check sha256sum
+bin_check xxd
 
 if [ -n "$DM_SECTOR_SIZE" ]; then
 	TEST_SECTORS="512 4096"
@@ -2157,6 +2213,17 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --off
 echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
 wipe_dev /dev/mapper/$DEV_NAME
 echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --header $IMG_HDR --active-name $DEV_NAME || fail
+check_hash_dev_head $DEV 2048 $HASH2
+rm -f $IMG_HDR
+
+# Regression test for decryption with detached header and digest id != 0
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 $FAST_PBKDF_ARGON $DEV --offset 8192 || fail
+img_json_save $DEV
+# replace digest id 0 with 1
+img_update_json '.digests."1" = .digests."0" | del(.digests."0")' $DEV
+wipe $PWD1
+check_hash $PWD1 $HASH2
+echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --header $IMG_HDR $DEV || fail
 check_hash_dev_head $DEV 2048 $HASH2
 rm -f $IMG_HDR
 
