@@ -8,6 +8,7 @@
 
 #include "luks2_internal.h"
 #include "utils_device_locking.h"
+#include "keyslot_context.h"
 
 struct luks2_reencrypt {
 	/* reencryption window attributes */
@@ -168,6 +169,16 @@ int LUKS2_reencrypt_digest_new(struct luks2_hdr *hdr)
 int LUKS2_reencrypt_digest_old(struct luks2_hdr *hdr)
 {
 	return reencrypt_digest(hdr, 0);
+}
+
+int LUKS2_reencrypt_segment_new(struct luks2_hdr *hdr)
+{
+	return LUKS2_get_segment_id_by_flag(hdr, "backup-final");
+}
+
+int LUKS2_reencrypt_segment_old(struct luks2_hdr *hdr)
+{
+	return LUKS2_get_segment_id_by_flag(hdr, "backup-previous");
 }
 
 unsigned LUKS2_reencrypt_vks_count(struct luks2_hdr *hdr)
@@ -2783,8 +2794,7 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 		uint32_t sector_size,
 		uint64_t data_size,
 		uint64_t data_offset,
-		const char *passphrase,
-		size_t passphrase_size,
+		struct crypt_keyslot_context *kc_old,
 		int keyslot_old,
 		const struct crypt_params_reencrypt *params,
 		struct volume_key **vks)
@@ -2879,8 +2889,8 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, CRYPT_ANY_SLOT,
-					    passphrase, passphrase_size, vks);
+	r = LUKS2_keyslot_context_open_all_segments(cd, keyslot_old, CRYPT_ANY_SLOT,
+						    kc_old, NULL, vks);
 	if (r < 0)
 		goto out;
 
@@ -2975,8 +2985,8 @@ out:
 static int reencrypt_init(struct crypt_device *cd,
 		const char *name,
 		struct luks2_hdr *hdr,
-		const char *passphrase,
-		size_t passphrase_size,
+		struct crypt_keyslot_context *kc_old,
+		struct crypt_keyslot_context *kc_new,
 		int keyslot_old,
 		int keyslot_new,
 		const char *cipher,
@@ -3069,12 +3079,10 @@ static int reencrypt_init(struct crypt_device *cd,
 							     check_sector_size,
 							     data_size,
 							     data_offset,
-							     passphrase,
-							     passphrase_size,
+							     kc_old,
 							     keyslot_old,
 							     params,
 							     vks);
-
 
 	/*
 	 * We must perform data move with exclusive open data device
@@ -3125,7 +3133,7 @@ static int reencrypt_init(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, vks);
+	r = LUKS2_keyslot_context_open_all_segments(cd, keyslot_old, keyslot_new, kc_old, kc_new, vks);
 	if (r < 0)
 		goto out;
 
@@ -3164,7 +3172,7 @@ static int reencrypt_init(struct crypt_device *cd,
 		goto out;
 	}
 
-	/* This must be first and only write in LUKS2 metadata during _reencrypt_init */
+	/* This must be first and only write in LUKS2 metadata during reencrypt_init */
 	r = reencrypt_update_flag(cd, LUKS2_REENCRYPT_REQ_VERSION, true, true);
 	if (r) {
 		log_dbg(cd, "Failed to set online-reencryption requirement.");
@@ -3425,10 +3433,10 @@ static int reencrypt_lock_and_verify(struct crypt_device *cd, struct luks2_hdr *
 	return -EINVAL;
 }
 
-static int reencrypt_load_by_passphrase(struct crypt_device *cd,
+static int reencrypt_load_by_keyslot_context(struct crypt_device *cd,
 		const char *name,
-		const char *passphrase,
-		size_t passphrase_size,
+		struct crypt_keyslot_context *kc_old,
+		struct crypt_keyslot_context *kc_new,
 		int keyslot_old,
 		int keyslot_new,
 		struct volume_key **vks,
@@ -3508,7 +3516,8 @@ static int reencrypt_load_by_passphrase(struct crypt_device *cd,
 	r = reencrypt_verify_keys(cd, LUKS2_reencrypt_digest_old(hdr), LUKS2_reencrypt_digest_new(hdr), *vks);
 	if (r == -ENOENT) {
 		log_dbg(cd, "Keys are not ready. Unlocking all volume keys.");
-		r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, vks);
+		r = LUKS2_keyslot_context_open_all_segments(cd, keyslot_old, keyslot_new,
+							    kc_old, kc_new, vks);
 	}
 
 	if (r < 0)
@@ -3633,12 +3642,37 @@ err:
 	return r;
 }
 
-static int reencrypt_recovery_by_passphrase(struct crypt_device *cd,
+static int reencrypt_locked_recovery(struct crypt_device *cd,
+	int keyslot_old,
+	int keyslot_new,
+	struct crypt_keyslot_context *kc_old,
+	struct crypt_keyslot_context *kc_new,
+	struct volume_key **r_vks)
+{
+	int keyslot, r = -EINVAL;
+	struct volume_key *_vks = NULL;
+
+	r = LUKS2_keyslot_context_open_all_segments(cd, keyslot_old, keyslot_new,
+						    kc_old, kc_new, &_vks);
+	if (r < 0)
+		return r;
+	keyslot = r;
+
+	r = LUKS2_reencrypt_locked_recovery_by_vks(cd, _vks);
+	if (!r && r_vks)
+		MOVE_REF(*r_vks, _vks);
+
+	crypt_free_volume_key(_vks);
+
+	return r < 0 ? r : keyslot;
+}
+
+static int reencrypt_recovery_by_keyslot_context(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot_old,
 	int keyslot_new,
-	const char *passphrase,
-	size_t passphrase_size)
+	struct crypt_keyslot_context *kc_old,
+	struct crypt_keyslot_context *kc_new)
 {
 	int r;
 	crypt_reencrypt_info ri;
@@ -3665,8 +3699,8 @@ static int reencrypt_recovery_by_passphrase(struct crypt_device *cd,
 	}
 
 	if (ri == CRYPT_REENCRYPT_CRASH) {
-		r = LUKS2_reencrypt_locked_recovery_by_passphrase(cd, keyslot_old, keyslot_new,
-				passphrase, passphrase_size, NULL);
+		r = reencrypt_locked_recovery(cd, keyslot_old, keyslot_new,
+						    kc_old, kc_new, NULL);
 		if (r < 0)
 			log_err(cd, _("LUKS2 reencryption recovery failed."));
 	} else {
@@ -3678,13 +3712,13 @@ static int reencrypt_recovery_by_passphrase(struct crypt_device *cd,
 	return r;
 }
 
-static int reencrypt_repair_by_passphrase(
+static int reencrypt_repair(
 		struct crypt_device *cd,
 		struct luks2_hdr *hdr,
 		int keyslot_old,
 		int keyslot_new,
-		const char *passphrase,
-		size_t passphrase_size)
+		struct crypt_keyslot_context *kc_old,
+		struct crypt_keyslot_context *kc_new)
 {
 	int r;
 	struct crypt_lock_handle *reencrypt_lock;
@@ -3749,7 +3783,7 @@ static int reencrypt_repair_by_passphrase(
 	else
 		requirement_version = LUKS2_REENCRYPT_REQ_VERSION;
 
-	r = LUKS2_keyslot_open_all_segments(cd, keyslot_old, keyslot_new, passphrase, passphrase_size, &vks);
+	r = LUKS2_keyslot_context_open_all_segments(cd, keyslot_old, keyslot_new, kc_old, kc_new, &vks);
 	if (r < 0)
 		goto out;
 
@@ -3768,10 +3802,10 @@ out:
 
 }
 
-static int reencrypt_init_by_passphrase(struct crypt_device *cd,
+static int reencrypt_init_by_keyslot_context(struct crypt_device *cd,
 	const char *name,
-	const char *passphrase,
-	size_t passphrase_size,
+	struct crypt_keyslot_context *kc_old,
+	struct crypt_keyslot_context *kc_new,
 	int keyslot_old,
 	int keyslot_new,
 	const char *cipher,
@@ -3786,11 +3820,11 @@ static int reencrypt_init_by_passphrase(struct crypt_device *cd,
 
 	/* short-circuit in reencryption metadata update and finish immediately. */
 	if (flags & CRYPT_REENCRYPT_REPAIR_NEEDED)
-		return reencrypt_repair_by_passphrase(cd, hdr, keyslot_old, keyslot_new, passphrase, passphrase_size);
+		return reencrypt_repair(cd, hdr, keyslot_old, keyslot_new, kc_old, kc_new);
 
 	/* short-circuit in recovery and finish immediately. */
 	if (flags & CRYPT_REENCRYPT_RECOVERY)
-		return reencrypt_recovery_by_passphrase(cd, hdr, keyslot_old, keyslot_new, passphrase, passphrase_size);
+		return reencrypt_recovery_by_keyslot_context(cd, hdr, keyslot_old, keyslot_new, kc_old, kc_new);
 
 	if (name && !device_direct_io(crypt_data_device(cd))) {
 		log_dbg(cd, "Device %s does not support direct I/O.", device_path(crypt_data_device(cd)));
@@ -3827,7 +3861,8 @@ static int reencrypt_init_by_passphrase(struct crypt_device *cd,
 	}
 
 	if (ri == CRYPT_REENCRYPT_NONE && !(flags & CRYPT_REENCRYPT_RESUME_ONLY)) {
-		r = reencrypt_init(cd, name, hdr, passphrase, passphrase_size, keyslot_old, keyslot_new, cipher, cipher_mode, params, &vks);
+		r = reencrypt_init(cd, name, hdr, kc_old, kc_new, keyslot_old,
+				   keyslot_new, cipher, cipher_mode, params, &vks);
 		if (r < 0)
 			log_err(cd, _("Failed to initialize LUKS2 reencryption in metadata."));
 	} else if (ri > CRYPT_REENCRYPT_NONE) {
@@ -3840,7 +3875,8 @@ static int reencrypt_init_by_passphrase(struct crypt_device *cd,
 	if (r < 0 || (flags & CRYPT_REENCRYPT_INITIALIZE_ONLY))
 		goto out;
 
-	r = reencrypt_load_by_passphrase(cd, name, passphrase, passphrase_size, keyslot_old, keyslot_new, &vks, params);
+	r = reencrypt_load_by_keyslot_context(cd, name, kc_old, kc_new, keyslot_old,
+					      keyslot_new, &vks, params);
 out:
 	if (r < 0)
 		crypt_drop_keyring_key(cd, vks);
@@ -3848,10 +3884,10 @@ out:
 	return r < 0 ? r : LUKS2_find_keyslot(hdr, "reencrypt");
 }
 #else
-static int reencrypt_init_by_passphrase(struct crypt_device *cd,
+static int reencrypt_init_by_keyslot_context(struct crypt_device *cd,
 	const char *name __attribute__((unused)),
-	const char *passphrase __attribute__((unused)),
-	size_t passphrase_size __attribute__((unused)),
+	struct crypt_keyslot_context *kc_old __attribute__((unused)),
+	struct crypt_keyslot_context *kc_new __attribute__((unused)),
 	int keyslot_old __attribute__((unused)),
 	int keyslot_new __attribute__((unused)),
 	const char *cipher __attribute__((unused)),
@@ -3873,8 +3909,7 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
 	const struct crypt_params_reencrypt *params)
 {
 	int r;
-	char *passphrase;
-	size_t passphrase_size;
+	struct crypt_keyslot_context kc = {0};
 
 	if (onlyLUKS2reencrypt(cd) || !passphrase_description)
 		return -EINVAL;
@@ -3886,17 +3921,11 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	r = crypt_keyring_get_user_key(cd, passphrase_description, &passphrase, &passphrase_size);
-	if (r < 0) {
-		log_dbg(cd, "crypt_keyring_get_user_key failed (error %d)", r);
-		log_err(cd, _("Failed to read passphrase from keyring."));
-		return -EINVAL;
-	}
+	crypt_keyslot_context_init_by_keyring_internal(&kc, passphrase_description);
+	r = reencrypt_init_by_keyslot_context(cd, name, &kc, &kc, keyslot_old,
+					      keyslot_new, cipher, cipher_mode, params);
 
-	r = reencrypt_init_by_passphrase(cd, name, passphrase, passphrase_size, keyslot_old, keyslot_new, cipher, cipher_mode, params);
-
-	crypt_safe_memzero(passphrase, passphrase_size);
-	free(passphrase);
+	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
 }
@@ -3911,6 +3940,9 @@ int crypt_reencrypt_init_by_passphrase(struct crypt_device *cd,
 	const char *cipher_mode,
 	const struct crypt_params_reencrypt *params)
 {
+	int r;
+	struct crypt_keyslot_context kc = {0};
+
 	if (onlyLUKS2reencrypt(cd) || !passphrase)
 		return -EINVAL;
 	if (params && (params->flags & CRYPT_REENCRYPT_INITIALIZE_ONLY) && (params->flags & CRYPT_REENCRYPT_RESUME_ONLY))
@@ -3921,7 +3953,37 @@ int crypt_reencrypt_init_by_passphrase(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	return reencrypt_init_by_passphrase(cd, name, passphrase, passphrase_size, keyslot_old, keyslot_new, cipher, cipher_mode, params);
+	crypt_keyslot_context_init_by_passphrase_internal(&kc, passphrase, passphrase_size);
+
+	r = reencrypt_init_by_keyslot_context(cd, name, &kc, &kc, keyslot_old,
+					      keyslot_new, cipher, cipher_mode, params);
+
+	crypt_keyslot_context_destroy_internal(&kc);
+
+	return r;
+}
+
+int crypt_reencrypt_init_by_keyslot_context(struct crypt_device *cd,
+	const char *name,
+	struct crypt_keyslot_context *kc_old,
+	struct crypt_keyslot_context *kc_new,
+	int keyslot_old,
+	int keyslot_new,
+	const char *cipher,
+	const char *cipher_mode,
+	const struct crypt_params_reencrypt *params)
+{
+	if (onlyLUKS2reencrypt(cd) || (!kc_old && !kc_new))
+		return -EINVAL;
+	if (params && (params->flags & CRYPT_REENCRYPT_INITIALIZE_ONLY) && (params->flags & CRYPT_REENCRYPT_RESUME_ONLY))
+		return -EINVAL;
+
+	if (device_is_dax(crypt_data_device(cd)) > 0) {
+		log_err(cd, _("Reencryption is not supported for DAX (persistent memory) devices."));
+		return -EINVAL;
+	}
+
+	return reencrypt_init_by_keyslot_context(cd, name, kc_old, kc_new, keyslot_old, keyslot_new, cipher, cipher_mode, params);
 }
 
 #if USE_LUKS2_REENCRYPTION

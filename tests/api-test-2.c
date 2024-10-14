@@ -3197,6 +3197,10 @@ static void Luks2KeyslotAdd(void)
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	EQ_(crypt_keyslot_status(cd, 0), CRYPT_SLOT_ACTIVE_LAST);
 	EQ_(crypt_keyslot_status(cd, 1), CRYPT_SLOT_UNBOUND);
+	/* drop the generated volume key from device context cache */
+	CRYPT_FREE(cd);
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	/* must not activate volume with keyslot unassigned to a segment */
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key2, key_size, 0), "Key doesn't match volume key digest");
 	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, PASSPHRASE1, strlen(PASSPHRASE1), 0), "Keyslot not assigned to volume");
@@ -5661,7 +5665,7 @@ static void KeyslotContextAndKeyringLink(void)
 	GE_((vk_len = keyctl_read(linked_kid, vk_buf, sizeof(vk_buf))), 0);
 	vk_buf[0] = ~vk_buf[0];
 	OK_(keyctl_update(linked_kid, vk_buf, vk_len));
-	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), -EINVAL);
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), -EPERM);
 
 	OK_(_drop_keyring_key_from_keyring_name(TEST_KEY_VK_USER, keyring_in_user_id, "user"));
 	OK_(_drop_keyring_key_from_keyring_name(TEST_KEY_VK_USER2, keyring_in_user_id, "user"));
@@ -5685,8 +5689,6 @@ static void KeyslotContextAndKeyringLink(void)
 	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc, 0));
 	// lazy evaluation, if the first context supplies key and only one key is required, the second (invalid) context is not invoked
 	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0));
-	// first context takes precedence, if t fails, the second is not tried
-	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc2, CRYPT_ANY_SLOT, kc, 0), -EINVAL);
 
 	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
@@ -5704,7 +5706,7 @@ static void KeyslotContextAndKeyringLink(void)
 	GE_((vk_len = keyctl_read(linked_kid, vk_buf, sizeof(vk_buf))), 0);
 	vk_buf[0] = ~vk_buf[0];
 	OK_(keyctl_update(linked_kid, vk_buf, vk_len));
-	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), -EINVAL);
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), -EPERM);
 
 	OK_(_drop_keyring_key_from_keyring_name(TEST_KEY_VK_USER, keyring_in_user_id, "user"));
 	CRYPT_FREE(cd);
@@ -5738,8 +5740,6 @@ static void KeyslotContextAndKeyringLink(void)
 	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc, 0));
 	// lazy evaluation, if the first context supplies key and only one key is required, the second (invalid) context is not invoked
 	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0));
-	// first context takes precedence, if t fails, the second is not tried
-	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc2, CRYPT_ANY_SLOT, kc, 0), -EINVAL);
 
 	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
@@ -5757,7 +5757,7 @@ static void KeyslotContextAndKeyringLink(void)
 	GE_((vk_len = keyctl_read(linked_kid, vk_buf, sizeof(vk_buf))), 0);
 	vk_buf[0] = ~vk_buf[0];
 	OK_(keyctl_update(linked_kid, vk_buf, vk_len));
-	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), -EINVAL);
+	FAIL_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, kc2, 0), "Fail to read volume key candidate from keyring");
 
 	OK_(_drop_keyring_key_from_keyring_name(TEST_KEY_VK_USER, keyring_in_user_id, "user"));
 	CRYPT_FREE(cd);

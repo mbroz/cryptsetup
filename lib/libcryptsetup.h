@@ -3002,6 +3002,71 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
 	const struct crypt_params_reencrypt *params);
 
 /**
+ *
+ * Initialize or reload LUKS2 reencryption operation using keyslot contexts.
+ *
+ * The function can initialize reencryption on-disk metadata or reload reencryption
+ * context from on-disk LUSK2 metadata to resume interrupted operation.
+ *
+ * If the device is not in reencryption state (@link crypt_reencrypt_status @endlink
+ * returns @link CRYPT_REENCRYPT_NONE @endlink) the function initializes on-disk
+ * metadata to include all necessary reencryption segments and new encryption
+ * parameters (cipher, cipher mode, encryption sector size) according to the
+ * provided parameters.
+ *
+ * If on-disk metadata already describes reencryption operation
+ * (@link crypt_reencrypt_status @endlink returns @link CRYPT_REENCRYPT_CLEAN @endlink),
+ * it loads these parameters and internally initializes reencryption context. It also verifies
+ * if the device is eligible to resume reencryption operation. Some reencryption parameters
+ * (@link crypt_params_reencrypt @endlink) may be modified depending on the original values in
+ * the initialization call. When resuming the operation, all parameters may be omitted except
+ * @e cd, @e name (offline/online),@e kc_old and @e kc_new.
+ *
+ * If on-disk metadata describes reencryption operation requiring recovery
+ * (@link crypt_reencrypt_status @endlink returns @link CRYPT_REENCRYPT_CRASH @endlink),
+ * it can be recovered by adding @link CRYPT_REENCRYPT_RECOVERY @endlink flag in @link
+ * crypt_params_reencrypt @endlink parameter.
+ *
+ * @param cd crypt device handle
+ * @param name name of the active device or @e NULL for offline reencryption
+ * @param kc_old keyslot context providing access to volume key in keyslot id @e keyslot_old.
+ * @param kc_new keyslot context providing access to volume key in keyslot id @e keyslot_new.
+ * @param keyslot_old keyslot id containing current volume key for the device or CRYPT_ANY_SLOT
+ * @param keyslot_new keyslot id containing (unbound) future volume key in encryption or reencryption
+ *        operation. It must be set in the initialization call except when initializing the decrypt
+ *        operation. In reencryption operation it may contain also the current volume key in case the
+ *        volume key change is not requested.
+ * @param cipher new cipher specification (e.g. "aes") or @e NULL in decryption. Relevant only
+ * 	  during metadata initialization.
+ * @param cipher_mode cipher mode and IV (e.g. "xts-plain64") or @e NULL in decryption.
+ * 	  Relevant only during metadata initialization.
+ * @param params reencryption parameters @link crypt_params_reencrypt @endlink.
+ *
+ * @return reencryption key slot number or negative errno otherwise.
+ *
+ * @note Only after successful reencryption initialization you may run the operation with
+ * 	 @link crypt_reencrypt_run @endlink.
+ *
+ * @note During @link CRYPT_REENCRYPT_REENCRYPT @endlink operation it is highly recommended
+ * 	 to use same keyslot context (same passphrase, token, keyfile, etc) in both @e kc_old
+ * 	 and @e kc_new parameters for at least one keyslot containing future volume key and one
+ * 	 keyslot containing current volume key. If the same keyslot context can not be used
+ * 	 to unlock any current or any future volume key it would be impossible to perform reencryption
+ * 	 crash recovery during device activation for example after system reboot. Any keyslot
+ * 	 passphrase may be changed in-before initializing reencryption operation via @link
+ * 	 crypt_keyslot_change_by_passphrase @endlink.
+ */
+int crypt_reencrypt_init_by_keyslot_context(struct crypt_device *cd,
+	const char *name,
+	struct crypt_keyslot_context *kc_old,
+	struct crypt_keyslot_context *kc_new,
+	int keyslot_old,
+	int keyslot_new,
+	const char *cipher,
+	const char *cipher_mode,
+	const struct crypt_params_reencrypt *params);
+
+/**
  * Legacy data reencryption function.
  *
  * @param cd crypt device handle

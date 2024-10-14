@@ -2045,7 +2045,7 @@ static int action_open_luks(void)
 			password = NULL;
 
 			r = crypt_activate_by_keyslot_context(cd, activated_name, ARG_INT32(OPT_KEY_SLOT_ID),
-							      kc, CRYPT_ANY_SLOT, NULL, activate_flags);
+							      kc, CRYPT_ANY_SLOT, kc, activate_flags);
 			crypt_keyslot_context_free(kc);
 			kc = NULL;
 

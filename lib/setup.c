@@ -5076,8 +5076,8 @@ static int _open_and_activate_reencrypt_device_by_vk(struct crypt_device *cd,
 	key_serial_t kid1 = 0, kid2 = 0;
 	struct volume_key *vk;
 
-	if (!vks)
-		return -EINVAL;
+	assert(hdr);
+	assert(vks);
 
 	if (crypt_use_keyring_for_vk(cd))
 		flags |= CRYPT_ACTIVATE_KEYRING_KEY;
@@ -5160,7 +5160,8 @@ static int _open_and_activate_reencrypt_device_by_vk(struct crypt_device *cd,
 	r = LUKS2_activate_multi(cd, name, vks, device_size >> SECTOR_SHIFT, flags);
 out:
 	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
-	crypt_drop_keyring_key(cd, vks);
+	if (r < 0)
+		crypt_drop_keyring_key(cd, vks);
 
 	return r;
 }
@@ -5629,6 +5630,40 @@ static int _activate_by_volume_key(struct crypt_device *cd,
 	return r;
 }
 
+static int _get_luks2_keys_by_keyslot_context(struct crypt_device *cd,
+       struct luks2_hdr *hdr,
+       struct crypt_keyslot_context *kc1,
+       int keyslot1,
+       struct crypt_keyslot_context *kc2,
+       int keyslot2,
+       uint32_t flags,
+       struct volume_key **r_vks)
+{
+	crypt_reencrypt_info ri;
+	int r = -EINVAL;
+
+	assert(hdr);
+	assert(kc1);
+	assert(r_vks);
+
+	if (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) {
+		if (kc1->get_luks2_key)
+			r = kc1->get_luks2_key(cd, kc1, keyslot1, CRYPT_ANY_SEGMENT, r_vks);
+		return r;
+	}
+
+	ri = LUKS2_reencrypt_status(hdr);
+	if (ri == CRYPT_REENCRYPT_INVALID)
+		return r;
+
+	if (ri > CRYPT_REENCRYPT_NONE)
+		r = LUKS2_keyslot_context_open_all_segments(cd, keyslot1, keyslot2, kc1, kc2, r_vks);
+	else if (kc1->get_luks2_volume_key)
+		r = kc1->get_luks2_volume_key(cd, kc1, keyslot1, r_vks);
+
+	return r;
+}
+
 int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 const char *name,
 	int keyslot,
@@ -5642,7 +5677,7 @@ const char *name,
 		*vk_sign = NULL, *p_crypt = NULL;
 	size_t passphrase_size;
 	const char *passphrase = NULL;
-	int unlocked_keyslot, required_keys, unlocked_keys = 0, r = -EINVAL;
+	int unlocked_keyslot, r = -EINVAL;
 	key_serial_t kid1 = 0, kid2 = 0;
 	struct luks2_hdr *hdr = &cd->u.luks2.hdr;
 
@@ -5656,6 +5691,8 @@ const char *name,
 	if ((flags & CRYPT_ACTIVATE_KEYRING_KEY) && !crypt_use_keyring_for_vk(cd))
 		return -EINVAL;
 	if ((flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY) && name)
+		return -EINVAL;
+	if (!additional_kc && (additional_keyslot != CRYPT_ANY_SLOT))
 		return -EINVAL;
 	if ((kc->type == CRYPT_KC_TYPE_KEYRING) && !kernel_keyring_support()) {
 		log_err(cd, _("Kernel keyring is not supported by the kernel."));
@@ -5673,7 +5710,8 @@ const char *name,
 		return r;
 
 	/* for TCRYPT and token skip passphrase activation */
-	if (kc->get_passphrase && kc->type != CRYPT_KC_TYPE_TOKEN && !isTCRYPT(cd->type)) {
+	if (kc->get_passphrase && kc->type != CRYPT_KC_TYPE_TOKEN &&
+	    !isTCRYPT(cd->type) && !isLUKS(cd->type)) {
 		r = kc->get_passphrase(cd, kc, &passphrase, &passphrase_size);
 		if (r < 0)
 			return r;
@@ -5695,27 +5733,8 @@ const char *name,
 		if (kc->get_luks1_volume_key)
 			r = kc->get_luks1_volume_key(cd, kc, keyslot, &vk);
 	} else if (isLUKS2(cd->type)) {
-		required_keys = LUKS2_reencrypt_vks_count(hdr);
-
-		if (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY && kc->get_luks2_key)
-			r = kc->get_luks2_key(cd, kc, keyslot, CRYPT_ANY_SEGMENT, &vk);
-		else if (kc->get_luks2_volume_key)
-			r = kc->get_luks2_volume_key(cd, kc, keyslot, &vk);
-		if (r >= 0) {
-			unlocked_keys++;
-
-			if (required_keys > 1 && vk && additional_kc) {
-				if (flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY && additional_kc->get_luks2_key)
-					r = additional_kc->get_luks2_key(cd, additional_kc, additional_keyslot, CRYPT_ANY_SEGMENT, &vk->next);
-				else if (additional_kc->get_luks2_volume_key)
-					r = additional_kc->get_luks2_volume_key(cd, additional_kc, additional_keyslot, &vk->next);
-				if (r >= 0)
-					unlocked_keys++;
-			}
-
-			if (unlocked_keys < required_keys)
-				r = -ESRCH;
-		}
+		r = _get_luks2_keys_by_keyslot_context(cd, hdr, kc, keyslot, additional_kc,
+						       additional_keyslot, flags, &vk);
 	} else if (isTCRYPT(cd->type)) {
 		r = 0;
 	} else if (name && isPLAIN(cd->type)) {
@@ -5842,7 +5861,7 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
 	struct crypt_keyslot_context kc = {};
 
 	crypt_keyslot_context_init_by_passphrase_internal(&kc, passphrase, passphrase_size);
-	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, CRYPT_ANY_SLOT, NULL, flags);
+	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, CRYPT_ANY_SLOT, &kc, flags);
 	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
@@ -5860,7 +5879,7 @@ int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
 	struct crypt_keyslot_context kc = {};
 
 	crypt_keyslot_context_init_by_keyfile_internal(&kc, keyfile, keyfile_size, keyfile_offset);
-	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, CRYPT_ANY_SLOT, NULL, flags);
+	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, CRYPT_ANY_SLOT, &kc, flags);
 	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
@@ -5899,7 +5918,7 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
 	struct crypt_keyslot_context kc = {};
 
 	crypt_keyslot_context_init_by_key_internal(&kc, volume_key, volume_key_size);
-	r = crypt_activate_by_keyslot_context(cd, name, CRYPT_ANY_SLOT /* unused */, &kc, CRYPT_ANY_SLOT, NULL, flags);
+	r = crypt_activate_by_keyslot_context(cd, name, CRYPT_ANY_SLOT /* unused */, &kc, CRYPT_ANY_SLOT, &kc, flags);
 	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
@@ -7139,7 +7158,7 @@ int crypt_activate_by_token_pin(struct crypt_device *cd, const char *name,
 	struct crypt_keyslot_context kc = {};
 
 	crypt_keyslot_context_init_by_token_internal(&kc, token, type, pin, pin_size, usrptr);
-	r = crypt_activate_by_keyslot_context(cd, name, CRYPT_ANY_SLOT, &kc, CRYPT_ANY_SLOT, NULL, flags);
+	r = crypt_activate_by_keyslot_context(cd, name, CRYPT_ANY_SLOT, &kc, CRYPT_ANY_SLOT, &kc, flags);
 	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;
@@ -7909,7 +7928,7 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 		return -EINVAL;
 
 	crypt_keyslot_context_init_by_keyring_internal(&kc, key_description);
-	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, CRYPT_ANY_SLOT, NULL, flags);
+	r = crypt_activate_by_keyslot_context(cd, name, keyslot, &kc, CRYPT_ANY_SLOT, &kc, flags);
 	crypt_keyslot_context_destroy_internal(&kc);
 
 	return r;

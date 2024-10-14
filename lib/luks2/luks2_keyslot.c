@@ -7,6 +7,7 @@
  */
 
 #include "luks2_internal.h"
+#include "keyslot_context.h"
 
 /* Internal implementations */
 extern const keyslot_handler luks2_keyslot;
@@ -549,6 +550,105 @@ static int LUKS2_keyslot_open_by_digest(struct crypt_device *cd,
 			r = r_prio;
 	} else
 		r = LUKS2_open_and_verify_by_digest(cd, hdr, keyslot, digest, password, password_len, vk);
+
+	return r;
+}
+
+static int keyslot_context_open_all_segments(struct crypt_device *cd,
+	int keyslot_old,
+	int keyslot_new,
+	struct crypt_keyslot_context *kc_old,
+	struct crypt_keyslot_context *kc_new,
+	struct volume_key **r_vks)
+{
+	int segment_old, segment_new, digest_old = -1, digest_new = -1, r = -ENOENT;
+	struct luks2_hdr *hdr;
+	struct volume_key *vk = NULL;
+
+	assert(cd);
+	assert(!kc_old || kc_old->get_luks2_key);
+	assert(!kc_new || kc_new->get_luks2_key);
+	assert(r_vks);
+
+	hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+
+	segment_old = LUKS2_reencrypt_segment_old(hdr);
+	segment_new = LUKS2_reencrypt_segment_new(hdr);
+
+	if (segment_old < 0 || segment_new < 0)
+		return -EINVAL;
+
+	digest_old = LUKS2_digest_by_segment(hdr, segment_old);
+	digest_new = LUKS2_digest_by_segment(hdr, segment_new);
+
+	if (digest_old >= 0 && digest_new >= 0 && digest_old != digest_new && (!kc_old || !kc_new))
+		return -ESRCH;
+
+	if (digest_old >= 0 && kc_old) {
+		log_dbg(cd, "Checking current volume key (digest %d, segment: %d) using keyslot %d.",
+			    digest_old, segment_old, keyslot_old);
+
+		r = LUKS2_keyslot_for_segment(hdr, keyslot_old, segment_old);
+		if (r < 0)
+			goto out;
+
+		r = kc_old->get_luks2_key(cd, kc_old, keyslot_old, segment_old, &vk);
+		if (r < 0)
+			goto out;
+		crypt_volume_key_add_next(r_vks, vk);
+		if (crypt_volume_key_get_id(vk) < 0 && LUKS2_digest_verify_by_digest(cd, digest_old, vk) == digest_old)
+			crypt_volume_key_set_id(vk, digest_old);
+		if (crypt_volume_key_get_id(vk) != digest_old) {
+			r = -EPERM;
+			goto out;
+		}
+	}
+
+	if (digest_new >= 0 && digest_old != digest_new && kc_new) {
+		log_dbg(cd, "Checking new volume key (digest %d, segment: %d) using keyslot %d.",
+			    digest_new, segment_new, keyslot_new);
+
+		r = LUKS2_keyslot_for_segment(hdr, keyslot_new, segment_new);
+		if (r < 0)
+			goto out;
+
+		r = kc_new->get_luks2_key(cd, kc_new, keyslot_new, segment_new, &vk);
+		if (r < 0)
+			goto out;
+		crypt_volume_key_add_next(r_vks, vk);
+		if (crypt_volume_key_get_id(vk) < 0 && LUKS2_digest_verify_by_digest(cd, digest_new, vk) == digest_new)
+			crypt_volume_key_set_id(vk, digest_new);
+		if (crypt_volume_key_get_id(vk) != digest_new)
+			r = -EPERM;
+	}
+out:
+	if (r < 0) {
+		crypt_free_volume_key(*r_vks);
+		*r_vks = NULL;
+
+		if (r == -ENOMEM)
+			log_err(cd, _("Not enough available memory to open a keyslot."));
+		else if (r != -EPERM && r != -ENOENT)
+			log_err(cd, _("Keyslot open failed."));
+	}
+	return r;
+}
+
+int LUKS2_keyslot_context_open_all_segments(struct crypt_device *cd,
+	int keyslot1,
+	int keyslot2,
+	struct crypt_keyslot_context *kc1,
+	struct crypt_keyslot_context *kc2,
+	struct volume_key **r_vks)
+{
+	int r, r2;
+
+	r = keyslot_context_open_all_segments(cd, keyslot1, keyslot2, kc1, kc2, r_vks);
+	if (r == -EPERM || r == -ENOENT) {
+		r2 = keyslot_context_open_all_segments(cd, keyslot2, keyslot1, kc2, kc1, r_vks);
+		if (r2 != -ENOENT)
+			r = r2;
+	}
 
 	return r;
 }

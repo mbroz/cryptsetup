@@ -203,6 +203,13 @@ int LUKS2_keyslot_open_all_segments(struct crypt_device *cd,
 	size_t password_len,
 	struct volume_key **vks);
 
+int LUKS2_keyslot_context_open_all_segments(struct crypt_device *cd,
+	int keyslot_old,
+	int keyslot_new,
+	struct crypt_keyslot_context *kc_old,
+	struct crypt_keyslot_context *kc_new,
+	struct volume_key **vks);
+
 int LUKS2_keyslot_store(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
