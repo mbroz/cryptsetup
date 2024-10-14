@@ -75,8 +75,38 @@ int LUKS2_keyslot_find_empty(struct crypt_device *cd, struct luks2_hdr *hdr, siz
 /* Check if a keyslot is assigned to specific segment */
 static int _keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 {
-	int keyslot_digest, count = 0;
+	json_object *jobj_keyslots, *jobj;
+	crypt_keyslot_priority slot_priority;
 	unsigned s;
+	int keyslot_digest, count = 0;
+
+	/*
+	 * Must not be called with both keyslot == CRYPT_ANY_SLOT
+	 * and segment == CRYPT_ONE_SEGMENT. The CRYPT_DEFAULT_SEGMENT
+	 * and CRYPT_ANY_SEGMENT are handled properly in upper layer.
+	 */
+	assert(keyslot >= 0 || segment >= 0);
+
+	if (keyslot == CRYPT_ANY_SLOT) {
+		json_object_object_get_ex(hdr->jobj, "keyslots", &jobj_keyslots);
+
+		json_object_object_foreach(jobj_keyslots, slot, val) {
+			if (!json_object_object_get_ex(val, "priority", &jobj))
+				slot_priority = CRYPT_SLOT_PRIORITY_NORMAL;
+			else
+				slot_priority = json_object_get_int(jobj);
+
+			if (slot_priority < CRYPT_SLOT_PRIORITY_NORMAL)
+				continue;
+
+			keyslot_digest = LUKS2_digest_by_keyslot(hdr, atoi(slot));
+			if (keyslot_digest >= 0 &&
+			    keyslot_digest == LUKS2_digest_by_segment(hdr, segment))
+				return 1;
+		}
+
+		return 0;
+	}
 
 	keyslot_digest = LUKS2_digest_by_keyslot(hdr, keyslot);
 	if (keyslot_digest < 0)
