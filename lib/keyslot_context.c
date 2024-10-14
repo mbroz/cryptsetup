@@ -410,8 +410,8 @@ static int get_key_by_vk_in_keyring(struct crypt_device *cd,
 					  &key, &key_size);
 	if (r < 0) {
 		log_err(cd, _("Failed to read volume key candidate from keyring."));
-		kc->error = -EINVAL;
-		return -EINVAL;
+		kc->error = r;
+		return r;
 	}
 
 	*r_vk = crypt_alloc_volume_key(key_size, key);
