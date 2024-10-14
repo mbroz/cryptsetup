@@ -5145,7 +5145,9 @@ static int _open_and_activate_reencrypt_device_by_vk(struct crypt_device *cd,
 
 	log_dbg(cd, "Entering clean reencryption state mode.");
 
-	r = LUKS2_reencrypt_check_device_size(cd, hdr, minimal_size, &device_size, true, dynamic_size);
+	r = LUKS2_reencrypt_check_device_size(cd, hdr, minimal_size, &device_size,
+					      !(flags & CRYPT_ACTIVATE_SHARED),
+					      dynamic_size);
 	if (r < 0)
 		goto out;
 	if (cd->link_vk_to_keyring) {
