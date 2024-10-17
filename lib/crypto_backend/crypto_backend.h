@@ -21,6 +21,10 @@
 #define char16_t uint16_t
 #endif
 
+# ifdef __cplusplus
+extern "C" {
+# endif
+
 struct crypt_hash;
 struct crypt_hmac;
 struct crypt_cipher;
@@ -142,5 +146,9 @@ int crypt_backend_memeq(const void *m1, const void *m2, size_t n);
 
 /* crypto backend running in FIPS mode */
 bool crypt_fips_mode(void);
+
+# ifdef __cplusplus
+}
+# endif
 
 #endif /* _CRYPTO_BACKEND_H */
