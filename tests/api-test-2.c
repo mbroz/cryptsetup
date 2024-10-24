@@ -4123,12 +4123,18 @@ static void Luks2Reencryption(void)
 		.luks2 = &params2,
 	};
 	dev_t devno;
+	key_serial_t kid, kid1;
+	struct crypt_keyslot_context *kc_pass12 = NULL, *kc_pass21 = NULL, *kc_file12 = NULL, *kc_file21 = NULL,
+				     *kc_token12 = NULL, *kc_token21 = NULL, *kc_key = NULL, *kc_key2 = NULL;
 
-	const char *vk_hex = "bb21babe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
-	size_t key_size = strlen(vk_hex) / 2;
-	char key[128];
+	const char *vk_hex = "bb21babe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a",
+		   *vk_hex2 = "bb21bebe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	size_t key_size = strlen(vk_hex) / 2,
+	       key_size2 = strlen(vk_hex2) / 2;
+	char key[128], key2[32];
 
 	crypt_decode_key(key, vk_hex, key_size);
+	crypt_decode_key(key2, vk_hex2, key_size2);
 
 	/* reencryption currently depends on kernel keyring support in dm-crypt */
 	if (!t_dm_crypt_keyring_support())
@@ -5013,6 +5019,146 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
 
 	CRYPT_FREE(cd);
+	_cleanup_dmdevices();
+	_remove_keyfiles();
+
+	OK_(prepare_keyfile(KEYFILE1, PASSPHRASE, strlen(PASSPHRASE)));
+	OK_(prepare_keyfile(KEYFILE2, PASSPHRASE1, strlen(PASSPHRASE1)));
+
+	OK_(create_dmdevice_over_loop(H_DEVICE, r_header_size));
+	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_header_size + 16));
+
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_REENCRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.luks2 = &(struct crypt_params_luks2){ .sector_size = 512 },
+		.resilience = "none",
+	};
+
+	/* FIXME */
+	/* FIXME it breaks when params2.data_device == metadata device */
+	/* FIXME */
+
+	/* create device */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, key, key_size, &(struct crypt_params_luks2){ .sector_size = 512 }));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 21, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), 21);
+
+	/* add unbound key */
+	EQ_(crypt_keyslot_add_by_key(cd, 12, key2, key_size2, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 12);
+	/* add unbound key that will not be used in reencryption */
+	EQ_(crypt_keyslot_add_by_key(cd, 13, NULL, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 13);
+
+	kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE, strlen(PASSPHRASE), KEY_SPEC_THREAD_KEYRING);
+	NOTFAIL_(kid, "Test or kernel keyring are broken.");
+	kid1 = add_key("user", KEY_DESC_TEST1, PASSPHRASE1, strlen(PASSPHRASE1), KEY_SPEC_THREAD_KEYRING);
+	NOTFAIL_(kid1, "Test or kernel keyring are broken.");
+
+	EQ_(crypt_token_luks2_keyring_set(cd, 21, &(const struct crypt_token_params_luks2_keyring){.key_description = KEY_DESC_TEST0}), 21);
+	EQ_(crypt_token_luks2_keyring_set(cd, 12, &(const struct crypt_token_params_luks2_keyring){.key_description = KEY_DESC_TEST1}), 12);
+
+	EQ_(crypt_token_assign_keyslot(cd, 21, 21), 21);
+	EQ_(crypt_token_assign_keyslot(cd, 12, 12), 12);
+
+	// key
+	OK_(crypt_keyslot_context_init_by_volume_key(cd, key, key_size, &kc_key));
+	// key2
+	OK_(crypt_keyslot_context_init_by_volume_key(cd, key2, key_size2, &kc_key2));
+	// token 21, keyslot 21
+	OK_(crypt_keyslot_context_init_by_token(cd, 21, NULL, NULL, 0, NULL, &kc_token21));
+	// token 12, keyslot 12
+	OK_(crypt_keyslot_context_init_by_token(cd, 12, NULL, NULL, 0, NULL, &kc_token12));
+	// keyfile21
+	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE1, 0, 0, &kc_file21));
+	// keyfile12
+	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE2, 0, 0, &kc_file12));
+	// passphrase21
+	OK_(crypt_keyslot_context_init_by_passphrase(cd, PASSPHRASE, strlen(PASSPHRASE), &kc_pass21));
+	// passphrase12
+	OK_(crypt_keyslot_context_init_by_passphrase(cd, PASSPHRASE1, strlen(PASSPHRASE1), &kc_pass12));
+
+	// reencrypt by token
+	NOTFAIL_(crypt_reencrypt_init_by_keyslot_context(cd, NULL, kc_token21, kc_token12, CRYPT_ANY_SLOT, 12, "aes", "xts-plain64", &rparams), "Reencrypt init failed");
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
+	EQ_(crypt_keyslot_status(cd, 13), CRYPT_SLOT_UNBOUND);
+
+	// add previous key as unbound key
+	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, kc_key, 21, kc_token21, CRYPT_VOLUME_KEY_NO_SEGMENT), 21);
+
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, 12, kc_pass12, CRYPT_ANY_SLOT, NULL, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), 12);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, 12, kc_file12, CRYPT_ANY_SLOT, NULL, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), 12);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, 21, kc_file21, CRYPT_ANY_SLOT, NULL, CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY), 21);
+
+	// reencrypt by keyfile
+	NOTFAIL_(crypt_reencrypt_init_by_keyslot_context(cd, NULL, kc_file12, kc_file21, CRYPT_ANY_SLOT, 21, "aes", "xts-plain64", &rparams), "Reencrypt init failed");
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
+	EQ_(crypt_keyslot_status(cd, 13), CRYPT_SLOT_UNBOUND);
+
+	// add previous key as unbound key.
+	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, kc_key2, 12, kc_token12, CRYPT_VOLUME_KEY_NO_SEGMENT), 12);
+
+	// FIXME: This should not require the previous step of adding a keyslot.
+	// reencrypt just by volume keys
+	NOTFAIL_(crypt_reencrypt_init_by_keyslot_context(cd, NULL, kc_key, kc_key2, CRYPT_ANY_SLOT, 12, "aes", "xts-plain64", &rparams), "Reencrypt init failed");
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
+	EQ_(crypt_keyslot_status(cd, 13), CRYPT_SLOT_UNBOUND);
+
+	// add previous key as unbound key.
+	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, kc_key, 21, kc_token21, CRYPT_VOLUME_KEY_NO_SEGMENT), 21);
+
+	NOTFAIL_(crypt_reencrypt_init_by_keyslot_context(cd, NULL, kc_pass12, kc_token21, CRYPT_ANY_SLOT, 21, "aes", "xts-plain64", &rparams), "Reencrypt init failed");
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
+	EQ_(crypt_keyslot_status(cd, 13), CRYPT_SLOT_UNBOUND);
+
+	// add previous key as unbound key.
+	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, kc_key2, 12, kc_token12, CRYPT_VOLUME_KEY_NO_SEGMENT), 12);
+
+	rparams.max_hotzone_size = 1;
+	NOTFAIL_(crypt_reencrypt_init_by_keyslot_context(cd, NULL, kc_key, kc_key2, CRYPT_ANY_SLOT, 12, "aes", "xts-plain64", &rparams), "Reencrypt init failed");
+	test_progress_steps = 2;
+	OK_(crypt_reencrypt_run(cd, &test_progress, NULL));
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_CLEAN);
+
+	// test device activation via additional keyslot
+	// keys
+	EQ_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc_key, CRYPT_ANY_SLOT, NULL, 0), -ESRCH);
+	NOTFAIL_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc_key, CRYPT_ANY_SLOT, kc_key2, 0), "Failed to activate device in reencryption");
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
+	// tokens
+	NOTFAIL_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc_token21, CRYPT_ANY_SLOT, kc_token12, 0), "Failed to activate device in reencryption");
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
+	// files
+	NOTFAIL_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc_file21, CRYPT_ANY_SLOT, kc_file12, 0), "Failed to activate device in reencryption");
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
+	// passphrases
+	NOTFAIL_(crypt_activate_by_keyslot_context(cd, CDEVICE_1, CRYPT_ANY_SLOT, kc_pass21, CRYPT_ANY_SLOT, kc_pass12, 0), "Failed to activate device in reencryption");
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	EQ_(crypt_status(cd, CDEVICE_1), CRYPT_INACTIVE);
+
+	EQ_(crypt_keyslot_status(cd, 13), CRYPT_SLOT_UNBOUND);
+
+	crypt_keyslot_context_free(kc_pass12);
+	crypt_keyslot_context_free(kc_pass21);
+	crypt_keyslot_context_free(kc_key);
+	crypt_keyslot_context_free(kc_key2);
+	crypt_keyslot_context_free(kc_file12);
+	crypt_keyslot_context_free(kc_file21);
+	crypt_keyslot_context_free(kc_token12);
+	crypt_keyslot_context_free(kc_token21);
+
+	CRYPT_FREE(cd);
+
+	NOTFAIL_(keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING), "Test or kernel keyring are broken.");
+	NOTFAIL_(keyctl_unlink(kid1, KEY_SPEC_THREAD_KEYRING), "Test or kernel keyring are broken.");
+
 	_cleanup_dmdevices();
 }
 #endif
