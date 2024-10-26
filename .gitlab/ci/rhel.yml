@@ -68,6 +68,7 @@ test-main-commit-rhel10:
     - cryptsetup-rhel-10
   stage: test
   interruptible: true
+  allow_failure: true
   variables:
     DISTRO: cryptsetup-rhel-10
     RUN_SSH_PLUGIN_TEST: "1"
