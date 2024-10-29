@@ -5565,7 +5565,10 @@ static int _verify_key(struct crypt_device *cd,
 		r = KEY_VERIFIED;
 	else if (isBITLK(cd->type))
 		r = KEY_VERIFIED;
-	else
+	else if (isFVAULT2(cd->type)) {
+		if (vk && vk->keylength == FVAULT2_volume_key_size())
+			r = KEY_VERIFIED;
+	} else
 		log_err(cd, _("Device type is not properly initialized."));
 
 	if (r >= KEY_VERIFIED)
