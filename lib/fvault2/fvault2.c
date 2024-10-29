@@ -1022,25 +1022,13 @@ int FVAULT2_activate_by_passphrase(
 int FVAULT2_activate_by_volume_key(
 	struct crypt_device *cd,
 	const char *name,
-	const char *key,
-	size_t key_size,
+	struct volume_key *vk,
 	const struct fvault2_params *params,
 	uint32_t flags)
 {
-	int r = 0;
-	struct volume_key *vol_key = NULL;
+	assert(vk && vk->keylength == FVAULT2_XTS_KEY_SIZE);
 
-	if (key_size != FVAULT2_XTS_KEY_SIZE)
-		return -EINVAL;
-
-	vol_key = crypt_alloc_volume_key(FVAULT2_XTS_KEY_SIZE, key);
-	if (vol_key == NULL)
-		return -ENOMEM;
-
-	r = _activate(cd, name, vol_key, params, flags);
-
-	crypt_free_volume_key(vol_key);
-	return r;
+	return _activate(cd, name, vk, params, flags);
 }
 
 size_t FVAULT2_volume_key_size(void)

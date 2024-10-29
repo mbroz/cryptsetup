@@ -59,8 +59,7 @@ int FVAULT2_activate_by_passphrase(
 int FVAULT2_activate_by_volume_key(
 	struct crypt_device *cd,
 	const char *name,
-	const char *key,
-	size_t key_size,
+	struct volume_key *vk,
 	const struct fvault2_params *params,
 	uint32_t flags);
 
