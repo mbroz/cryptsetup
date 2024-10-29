@@ -1042,3 +1042,8 @@ int FVAULT2_activate_by_volume_key(
 	crypt_free_volume_key(vol_key);
 	return r;
 }
+
+size_t FVAULT2_volume_key_size(void)
+{
+	return FVAULT2_XTS_KEY_SIZE;
+}

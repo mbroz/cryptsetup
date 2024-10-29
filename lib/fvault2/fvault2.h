@@ -64,4 +64,6 @@ int FVAULT2_activate_by_volume_key(
 	const struct fvault2_params *params,
 	uint32_t flags);
 
+size_t FVAULT2_volume_key_size(void);
+
 #endif
