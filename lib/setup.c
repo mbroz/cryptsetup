@@ -5623,8 +5623,7 @@ static int _activate_by_volume_key(struct crypt_device *cd,
 				       cd->u.integrity.sb_flags);
 	} else if (isBITLK(cd->type)) {
 		assert(!external_key);
-		r = BITLK_activate_by_volume_key(cd, name, vk->key, vk->keylength,
-						 &cd->u.bitlk.params, flags);
+		r = BITLK_activate_by_volume_key(cd, name, vk, &cd->u.bitlk.params, flags);
 	} else if (isFVAULT2(cd->type)) {
 		assert(!external_key);
 		assert(crypt_volume_key_get_id(vk) == KEY_VERIFIED);

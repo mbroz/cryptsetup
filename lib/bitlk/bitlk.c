@@ -1431,24 +1431,15 @@ out:
 
 int BITLK_activate_by_volume_key(struct crypt_device *cd,
 				 const char *name,
-				 const char *volume_key,
-				 size_t volume_key_size,
+				 struct volume_key *vk,
 				 const struct bitlk_metadata *params,
 				 uint32_t flags)
 {
-	int r = 0;
-	struct volume_key *open_fvek_key = NULL;
+	int r;
 
 	r = _activate_check(cd, params);
 	if (r)
 		return r;
 
-	open_fvek_key = crypt_alloc_volume_key(volume_key_size, volume_key);
-	if (!open_fvek_key)
-		return -ENOMEM;
-
-	r = _activate(cd, name, open_fvek_key, params, flags);
-
-	crypt_free_volume_key(open_fvek_key);
-	return r;
+	return _activate(cd, name, vk, params, flags);
 }
