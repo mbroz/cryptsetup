@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	/* run scan in separate processes, it is up to scheduler to assign CPUs inteligently */
+	/* run scan in separate processes, it is up to scheduler to assign CPUs intelligently */
 	for (i = 0; i < procs; i++)
 		check(cd, argv[3], i, procs);
 

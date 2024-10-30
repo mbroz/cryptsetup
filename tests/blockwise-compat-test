@@ -236,7 +236,7 @@ run_all() {
 	RUN "P" $1 read_lseek_blockwise $((2*BSIZE)) $BSIZE $((BSIZE+1))
 	RUN "P" $1 read_lseek_blockwise $((3*BSIZE-2)) $BSIZE $((BSIZE+1))
 
-	# hiting exactly the sector boundary
+	# hitting exactly the sector boundary
 	RUN "P" $1 read_lseek_blockwise $((BSIZE-1)) $BSIZE 1
 	RUN "P" $1 read_lseek_blockwise $((BSIZE-1)) $BSIZE $((BSIZE+1))
 	RUN "P" $1 read_lseek_blockwise $((BSIZE+1)) $BSIZE $((BSIZE-1))
@@ -290,7 +290,7 @@ run_all() {
 	RUN "P" $1 write_lseek_blockwise $((2*BSIZE)) $BSIZE $((BSIZE+1))
 	RUN "P" $1 write_lseek_blockwise $((3*BSIZE-2)) $BSIZE $((BSIZE+1))
 
-	# hiting exactly the sector boundary
+	# hitting exactly the sector boundary
 	RUN "P" $1 write_lseek_blockwise $((BSIZE-1)) $BSIZE 1
 	RUN "P" $1 write_lseek_blockwise $((BSIZE-1)) $BSIZE $((BSIZE+1))
 	RUN "P" $1 write_lseek_blockwise $((BSIZE+1)) $BSIZE $((BSIZE-1))

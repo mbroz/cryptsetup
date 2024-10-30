@@ -2456,7 +2456,7 @@ static void LuksConvert(void)
 	OK_(strcmp(crypt_get_type(cd), CRYPT_LUKS1));
 	CRYPT_FREE(cd);
 
-	// exercice non-pbkdf2 LUKSv2 conversion
+	// exercise non-pbkdf2 LUKSv2 conversion
 	if (!_fips_mode) {
 		OK_(crypt_init(&cd, DEVICE_1));
 		OK_(crypt_set_data_offset(cd, offset));
@@ -2467,7 +2467,7 @@ static void LuksConvert(void)
 		CRYPT_FREE(cd);
 	}
 
-	// exercice non LUKS1 compatible keyslot
+	// exercise non LUKS1 compatible keyslot
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_set_data_offset(cd, offset));
 	OK_(crypt_format(cd, CRYPT_LUKS2, cipher, cipher_mode, NULL, NULL, 32, &luks2));
@@ -2477,7 +2477,7 @@ static void LuksConvert(void)
 	FAIL_(crypt_convert(cd, CRYPT_LUKS1, NULL), "Unassigned keyslots are incompatible with LUKSv1 format");
 	CRYPT_FREE(cd);
 
-	// exercice LUKSv2 conversion with single pbkdf2 keyslot being active
+	// exercise LUKSv2 conversion with single pbkdf2 keyslot being active
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_set_data_offset(cd, offset));
 	OK_(crypt_set_pbkdf_type(cd, &pbkdf2));

@@ -3828,7 +3828,7 @@ static int reencrypt_init_by_keyslot_context(struct crypt_device *cd,
 
 	if (name && !device_direct_io(crypt_data_device(cd))) {
 		log_dbg(cd, "Device %s does not support direct I/O.", device_path(crypt_data_device(cd)));
-		/* FIXME: Add more specific error mesage for translation later. */
+		/* FIXME: Add more specific error message for translation later. */
 		log_err(cd, _("Failed to initialize reencryption device stack."));
 		return -EINVAL;
 	}
