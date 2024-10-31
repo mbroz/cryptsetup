@@ -3213,19 +3213,20 @@ static void Luks2KeyslotAdd(void)
 	/* in general crypt_keyslot_add_by_key must allow any reasonable key size
 	 * even though such keyslot will not be usable for segment encryption */
 	EQ_(crypt_keyslot_add_by_key(cd, 2, key2, key_size-1, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 2);
-	EQ_(crypt_keyslot_add_by_key(cd, 3, key2, 13, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 3);
+	/* As per SP800-132 112 bits (14 bytes) is minimal key length */
+	EQ_(crypt_keyslot_add_by_key(cd, 3, key2, 14, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 3);
 
 	FAIL_(crypt_keyslot_get_key_size(cd, CRYPT_ANY_SLOT), "Bad keyslot specification.");
 	EQ_(crypt_get_volume_key_size(cd), key_size);
 	EQ_(crypt_keyslot_get_key_size(cd, 0), key_size);
 	EQ_(crypt_keyslot_get_key_size(cd, 1), key_size);
 	EQ_(crypt_keyslot_get_key_size(cd, 2), key_size-1);
-	EQ_(crypt_keyslot_get_key_size(cd, 3), 13);
+	EQ_(crypt_keyslot_get_key_size(cd, 3), 14);
 
 	key_ret_len = key_size - 1;
 	FAIL_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, key_ret, &key_ret_len, PASSPHRASE1, strlen(PASSPHRASE1)), "Wrong size");
 
-	key_ret_len = 13;
+	key_ret_len = 14;
 	FAIL_(crypt_volume_key_get(cd, 2, key_ret, &key_ret_len, PASSPHRASE1, strlen(PASSPHRASE1)), "wrong size");
 	EQ_(crypt_volume_key_get(cd, 3, key_ret, &key_ret_len, PASSPHRASE1, strlen(PASSPHRASE1)), 3);
 	FAIL_(crypt_activate_by_volume_key(cd, NULL, key_ret, key_ret_len, 0), "Not a volume key");
