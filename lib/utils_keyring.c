@@ -402,6 +402,44 @@ out:
 	return id;
 }
 
+int keyring_parse_keystring(const char *key_string, int *size, char **type, char **description)
+{
+	char *p, *copy = strdup(key_string);
+	int r = -1;
+	/*
+	 * <key_string>
+	 * The kernel keyring key is identified by string in following format:
+	 * :<key_size>:<key_type>:<key_description>.
+	 */
+
+	p = strtok(copy, ":");
+	if (size) {
+		*size = atoi(p);
+		if (!*size)
+			goto out;
+	}
+
+	p = strtok(NULL, ":");
+	if (!p)
+		goto out;
+
+	if (type)
+		*type = strdup(p);
+
+	p = strtok(NULL, ":");
+	if (!p)
+		goto out;
+
+	if (description)
+		*description = strdup(p);
+
+	r = 0;
+out:
+	if (copy)
+		free(copy);
+	return r;
+}
+
 static bool numbered(const char *str)
 {
 	char *endp;
