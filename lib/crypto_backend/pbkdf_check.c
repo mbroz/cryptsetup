@@ -299,10 +299,8 @@ static int crypt_argon2_check(const char *kdf, const char *password,
 
 	} while (ms < ms_atleast || ms > ms_atmost);
 out:
-	if (key) {
-		crypt_backend_memzero(key, key_length);
-		free(key);
-	}
+	free(key);
+
 	return r;
 }
 
@@ -380,10 +378,8 @@ static int crypt_pbkdf_check(const char *kdf, const char *hash,
 		}
 	}
 out:
-	if (key) {
-		crypt_backend_memzero(key, key_length);
-		free(key);
-	}
+	free(key);
+
 	return r;
 }
 
