@@ -46,6 +46,9 @@ key_serial_t keyring_new_trusted_key(int key_size,
 key_serial_t keyring_load_keyblob_in_thread_keyring(key_type_t ktype,
 		const char *key_description,
 		const char *keyblob);
+int keyring_split_keystring_keyblob(const char* combined,
+		char **keystring,
+		char **keyblob);
 
 key_serial_t keyring_add_key_to_custom_keyring(key_type_t ktype, const char *key_desc, const void *key,
 				      size_t key_size, key_serial_t keyring_to_link);

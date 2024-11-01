@@ -243,6 +243,38 @@ key_serial_t keyring_load_keyblob_in_thread_keyring(key_type_t ktype, const char
 	return r;
 }
 
+int keyring_split_keystring_keyblob(const char* combined, char **keystring, char **keyblob)
+{
+	const char *delimiter = strstr(combined, "::");
+	if (!delimiter) {
+		return -EINVAL;
+	}
+
+	size_t keystring_len = delimiter - combined;
+	size_t keyblob_len = strlen(delimiter + 2);
+
+	assert(keystring);
+	assert(keyblob);
+
+	/* +1 for null terminator */
+	*keystring = (char *)malloc(keystring_len + 1);
+	if (!*keystring)
+		return -ENOMEM;
+	*keyblob = (char *)malloc(keyblob_len + 1);
+	if (!*keyblob) {
+		free(*keystring);
+		return -ENOMEM;
+	}
+
+	strncpy(*keystring, combined, keystring_len);
+	(*keystring)[keystring_len] = '\0';
+
+	/* Skip the "::" and copy the keyblob */
+	strcpy(*keyblob, delimiter + 2);
+
+	return 0;
+}
+
 key_serial_t keyring_request_key_id(key_type_t key_type,
 		const char *key_description)
 {
