@@ -210,6 +210,39 @@ key_serial_t keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key
 	return keyring_add_key_in_keyring(ktype, key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
 }
 
+key_serial_t keyring_new_trusted_key(int key_size, const char *key_description)
+{
+	int r;
+	char command[256];
+	/* the 'add key' syscall has to be fed a 'new' command, with the key size to create a new trusted key
+	 */
+	r = snprintf(command, 8, "new %i", key_size);
+	printf("command = %s, r=%i\n", command, r);
+	if (r < 0)
+		return r;
+	return keyring_add_key_in_keyring(TRUSTED_KEY,
+				key_description, command, r,
+				KEY_SPEC_THREAD_KEYRING);
+}
+
+key_serial_t keyring_load_keyblob_in_thread_keyring(key_type_t ktype, const char *key_description, const char *keyblob)
+{
+	int r;
+	char *command;
+
+	assert(ktype == TRUSTED_KEY || ktype == ENCRYPTED_KEY);
+
+	/* the 'add key' syscall has to be fed a 'load' command, with the keyblob data as the 'key' value */
+	r = asprintf(&command, "load %s", keyblob);
+	if (r < 0)
+		return r;
+	r = keyring_add_key_in_keyring(ktype,
+			key_description, command, r,
+			KEY_SPEC_THREAD_KEYRING);
+	free(command);
+	return r;
+}
+
 key_serial_t keyring_request_key_id(key_type_t key_type,
 		const char *key_description)
 {
