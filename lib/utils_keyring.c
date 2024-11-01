@@ -345,6 +345,8 @@ key_serial_t keyring_find_key_id_by_name(const char *key_name)
 	key_serial_t id = 0;
 	char *end;
 	char *name_copy, *name_copy_p;
+	int key_size;
+	char *key_type = NULL, *key_desc = NULL;
 
 	assert(key_name);
 
@@ -360,12 +362,12 @@ key_serial_t keyring_find_key_id_by_name(const char *key_name)
 		return 0;
 	}
 
-	/* handle a lookup-by-name request "%<type>:<desc>", eg: "%keyring:_ses" */
 	name_copy = strdup(key_name);
 	if (!name_copy)
 		goto out;
 	name_copy_p = name_copy;
 
+	/* handle a lookup-by-name request "%<type>:<desc>", eg: "%keyring:_ses" */
 	if (name_copy_p[0] == '%') {
 		const char *type;
 
@@ -391,6 +393,15 @@ key_serial_t keyring_find_key_id_by_name(const char *key_name)
 		goto out;
 	}
 
+	/* handle a lookup-by-name request ":<key-size>:<type>:<desc>" */
+	if (name_copy_p[0] == ':') {
+		if (keyring_parse_keystring(name_copy_p, &key_size, &key_type, &key_desc))
+			goto out;
+
+		id = find_key_by_type_and_desc(key_type, key_desc, 0);
+		goto out;
+	}
+
 	id = strtoul(key_name, &end, 0);
 	if (*end)
 		id = 0;
@@ -398,6 +409,10 @@ key_serial_t keyring_find_key_id_by_name(const char *key_name)
 out:
 	if (name_copy)
 		free(name_copy);
+	if (key_type)
+		free(key_type);
+	if (key_desc)
+		free(key_desc);
 
 	return id;
 }
