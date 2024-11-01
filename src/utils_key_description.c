@@ -18,11 +18,18 @@ int tools_parse_vk_description(const char *key_description, char **ret_key_descr
 	assert(key_description);
 	assert(ret_key_description);
 
-	/* apply default key type */
-	if (*key_description != '%')
-		r = asprintf(&tmp, "%%user:%s", key_description) < 0 ? -EINVAL : 0;
-	else
+	/*
+	 * the kernel uses a specific key-string format:
+	 * :<key_size>:<key_type>:<key_description>
+	 * whereas the 'keyctl' format is:
+	 * %<type>:<key_description>
+	 */
+	if (*key_description == '%' || *key_description == ':') {
 		r = (tmp = strdup(key_description)) ? 0 : -ENOMEM;
+	} else {
+		/* apply default key type */
+		r = asprintf(&tmp, "%%user:%s", key_description) < 0 ? -EINVAL : 0;
+	}
 	if (!r)
 		*ret_key_description = tmp;
 
