@@ -5533,10 +5533,16 @@ static int _verify_key(struct crypt_device *cd,
 		} else
 			log_err(cd, _("Incorrect volume key specified for plain device."));
 	} else if (isLUKS1(cd->type)) {
+		if (!vk)
+			return -EINVAL;
+
 		r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
 		if (r == -EPERM)
 			log_err(cd, _("Volume key does not match the volume."));
 	} else if (isLUKS2(cd->type)) {
+		if (!vk)
+			return -EINVAL;
+
 		ri = LUKS2_reencrypt_status(&cd->u.luks2.hdr);
 		if (ri == CRYPT_REENCRYPT_INVALID)
 			return -EINVAL;
