@@ -5524,7 +5524,6 @@ static int _verify_key(struct crypt_device *cd,
 {
 	int r = -EINVAL;
 	crypt_reencrypt_info ri;
-	struct luks2_hdr *hdr = &cd->u.luks2.hdr;
 
 	assert(cd);
 
@@ -5538,13 +5537,13 @@ static int _verify_key(struct crypt_device *cd,
 		if (r == -EPERM)
 			log_err(cd, _("Volume key does not match the volume."));
 	} else if (isLUKS2(cd->type)) {
-		ri = LUKS2_reencrypt_status(hdr);
+		ri = LUKS2_reencrypt_status(&cd->u.luks2.hdr);
 		if (ri == CRYPT_REENCRYPT_INVALID)
 			return -EINVAL;
 
 		if (ri > CRYPT_REENCRYPT_NONE) {
-			LUKS2_reencrypt_lookup_key_ids(cd, hdr, vk);
-			r = LUKS2_reencrypt_digest_verify(cd, hdr, vk);
+			LUKS2_reencrypt_lookup_key_ids(cd, &cd->u.luks2.hdr, vk);
+			r = LUKS2_reencrypt_digest_verify(cd, &cd->u.luks2.hdr, vk);
 			if (r == -EPERM || r == -ENOENT || r == -EINVAL)
 				log_err(cd, _("Reencryption volume keys do not match the volume."));
 			return r;
