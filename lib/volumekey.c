@@ -7,6 +7,7 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -145,5 +146,83 @@ struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t key
 		crypt_free_volume_key(vk);
 		return NULL;
 	}
+	return vk;
+}
+
+struct volume_key *crypt_generate_trusted_volume_key(struct crypt_device *cd, const char *key_string, int *out_key_size)
+{
+	int kid;
+	struct volume_key *vk = NULL;
+	int key_size;
+	char *key_type = NULL, *key_desc = NULL;
+	char *buf = NULL;
+	size_t bufsize = 0;
+
+	assert(key_string);
+	assert(out_key_size);
+
+	/*
+	 * parse the whole keystring, to primarily get to the actual
+	 * volume_key_size which is used later during the format step.
+	 */
+	if (keyring_parse_keystring(key_string, &key_size, &key_type, &key_desc))
+		goto out;
+
+	if (!strstr(key_type, "trusted")) {
+		log_err(cd, "expected a 'trusted' kernel key_string");
+		goto out;
+	}
+
+	/* check that the keyring doesn't already hold a key with the user-supplied name*/
+	kid = keyring_find_key_id_by_name(key_string);
+	if (kid > 0) {
+		log_err(cd, "The keyring already has the key: \"%s\", cant create the same.", key_string);
+		goto out;
+	} else {
+		log_dbg(cd, "Generating new trusted key, with size: %i.", key_size);
+		kid = keyring_new_trusted_key(key_size, key_desc);
+		log_dbg(cd, "new kid = %i, size=%i", kid, key_size);
+	}
+
+	/* read back the bin2hex <keyblob> */
+	keyring_read_key(kid, &buf, &bufsize);
+	if (bufsize == 0) {
+		log_err(cd, "Couldn't read keyblobl from trusted kernel keyring.");
+		goto out;
+	}
+	log_dbg(cd, "Read back keyblob for kid: %i, keyblob[%zu] %s", kid, bufsize, buf);
+
+	/*
+	 * store the '<keystring>::<keyblob>' as the key data
+	 * as it is needed to later reconstruct the trusted key during
+	 * other actions like 'open'.
+	*/
+	bufsize = strlen(key_string) + 2 + bufsize;
+	vk = crypt_alloc_volume_key(bufsize, NULL);
+	if (!vk) {
+		log_err(cd, "Failed to allocate a volume key for the key_string: '%s'", key_string);
+		goto out;
+	}
+	bufsize = snprintf(vk->key, bufsize + 1, "%s::%s", key_string, buf);
+
+	/* now that the key has been succesfully created in the keyring, return the
+	 * actual keysize that was requested as part of the key_string
+	 */
+	*out_key_size = key_size;
+
+	/* %trusted: keys are not directly accessible, and can't be verified */
+	vk->id = KEY_VERIFIED;
+
+	/* keep the kernel key-string as volume-key.description,
+	 * so that libdevmapper passes it into the dmsetup table
+	 */
+	vk->key_description = strdup(key_string);
+
+out:
+	if (key_desc)
+		free(key_desc);
+	if (key_type)
+		free(key_type);
+	crypt_safe_free(buf);
 	return vk;
 }
