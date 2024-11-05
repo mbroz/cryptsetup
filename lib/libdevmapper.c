@@ -1352,6 +1352,7 @@ static int _dm_create_device(struct crypt_device *cd, const char *name, const ch
 		goto out;
 
 	r = _create_dm_targets_params(dmd);
+	log_dbg(cd, "assembeld dmsetup table: '%s'", dmd->segment.params);
 	if (r)
 		goto out;
 
@@ -1496,6 +1497,7 @@ static int _dm_reload_device(struct crypt_device *cd, const char *name,
 		goto out;
 
 	r = _create_dm_targets_params(dmd);
+	log_dbg(cd, "assembeld dmsetup table: '%s'", dmd->segment.params);
 	if (r)
 		goto out;
 
