@@ -1911,6 +1911,9 @@ static int action_open_luks(void)
 			r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description_activation1, &kc1);
 			if (r)
 				goto out;
+			if ((vk_description_activation1[0] == ':') && strstr(vk_description_activation1, "trusted:")) {
+				activate_flags |= CRYPT_ACTIVATE_KEYRING_TRUSTED_KEY;
+			}
 			r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT, kc1, CRYPT_ANY_SLOT, NULL, activate_flags);
 		} else if (vks_in_keyring_count == 2) {
 			r = tools_parse_vk_description(vks_in_keyring[0], &vk_description_activation1);

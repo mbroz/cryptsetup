@@ -5029,6 +5029,10 @@ static int _activate_reencrypt_device_by_vk(struct crypt_device *cd,
 		if (r == -EPERM || r == -ENOENT)
 			log_err(cd, _("Volume key does not match the volume."));
 
+		if (*(vk->key) && (vk->key[0] == ':') && strstr(vk->key_description, "trusted:")) {
+			flags |= CRYPT_ACTIVATE_KEYRING_TRUSTED_KEY;
+		}
+
 		if (r >= 0)
 			r = LUKS2_activate(cd, name, vk, NULL, flags);
 		goto out;
@@ -5410,6 +5414,7 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 		if (cd->volume_key->key_description && strstr(cd->volume_key->key_description, "trusted:")) {
 			crypt_volume_key_set_description(vk, cd->volume_key->key_description, TRUSTED_KEY);
 			crypt_set_key_in_keyring(cd, 1);
+			flags |= CRYPT_ACTIVATE_KEYRING_TRUSTED_KEY;
 		}
 	}
 	if (r == -ENOENT && isINTEGRITY(cd->type))
@@ -5470,6 +5475,7 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 				}
 			}
 		}
+
 	} else {
 		p_crypt = vk;
 		p_ext_key = vk_sign;
