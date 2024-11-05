@@ -2063,9 +2063,33 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (!(cd->type = strdup(CRYPT_LUKS2)))
 		return -ENOMEM;
 
-	if (volume_key)
-		cd->volume_key = crypt_alloc_volume_key(volume_key_size,
-						      volume_key);
+	if (volume_key) {
+		/* expecting a 'trusted' type key in the kernels key-string format:
+		 * :<size>:<type>:<name>
+		 * e.g.: :32:trusted:data-crypt
+		 */
+		if ((volume_key[0] == ':') && strstr(volume_key, "trusted:")) {
+			int actual_key_size = -1;
+			cd->volume_key = crypt_generate_trusted_volume_key(cd, volume_key, &actual_key_size);
+			if (!cd->volume_key) {
+				log_err(cd, "Failed to generate a trusted volume key.");
+				return -ENOMEM;
+			}
+			if (actual_key_size <= 0) {
+				log_err(cd, "invalid wrapped keysize.");
+				return -1;
+			}
+			/* keep the actual size, to pass later into
+			 * LUKS2_check_encryption_params call
+			 */
+			volume_key_size = (size_t)actual_key_size;
+
+			cd->key_in_keyring = 1;
+		} else {
+			cd->volume_key = crypt_alloc_volume_key(volume_key_size,
+									volume_key);
+		}
+	}
 	else
 		cd->volume_key = crypt_generate_volume_key(cd, volume_key_size);
 
@@ -5004,6 +5028,7 @@ static int _activate_reencrypt_device_by_vk(struct crypt_device *cd,
 		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
 		if (r == -EPERM || r == -ENOENT)
 			log_err(cd, _("Volume key does not match the volume."));
+
 		if (r >= 0)
 			r = LUKS2_activate(cd, name, vk, NULL, flags);
 		goto out;
@@ -5382,6 +5407,10 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	if (r == -ENOENT && isLUKS(cd->type) && cd->volume_key) {
 		vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
 		r = vk ? 0 : -ENOMEM;
+		if (cd->volume_key->key_description && strstr(cd->volume_key->key_description, "trusted:")) {
+			crypt_volume_key_set_description(vk, cd->volume_key->key_description, TRUSTED_KEY);
+			crypt_set_key_in_keyring(cd, 1);
+		}
 	}
 	if (r == -ENOENT && isINTEGRITY(cd->type))
 		r = 0;
@@ -7262,6 +7291,15 @@ int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
 	else
 		return -EINVAL;
 
+	if (cd->volume_key &&
+			cd->volume_key->key_description &&
+			strstr(cd->volume_key->key_description, ":trusted:")) {
+		if (!(vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key)))
+			return -ENOMEM;
+		r = 0;
+		crypt_volume_key_set_description(vk, cd->volume_key->key_description, TRUSTED_KEY);
+	}
+
 	if (r == -ENOENT) {
 		if ((flags & CRYPT_VOLUME_KEY_NO_SEGMENT) && kc->type == CRYPT_KC_TYPE_KEY) {
 			if (!(vk = crypt_generate_volume_key(cd, kc->u.k.volume_key_size)))
@@ -7329,7 +7367,8 @@ int crypt_volume_key_keyring(struct crypt_device *cd __attribute__((unused)), in
 /* internal only */
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
 {
-	key_serial_t kid;
+	key_serial_t kid = -1;
+	char *keystring = NULL, *keyblob = NULL, *key_description = NULL;
 
 	if (!vk || !cd)
 		return -EINVAL;
@@ -7339,9 +7378,23 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 		return -EINVAL;
 	}
 
-	log_dbg(cd, "Loading key (type logon, name %s) in thread keyring.", vk->key_description);
-
-	kid = keyring_add_key_in_thread_keyring(LOGON_KEY, vk->key_description, vk->key, vk->keylength);
+	if (*(vk->key) && (vk->key[0] == ':') && strstr(vk->key, "trusted:")) {
+		log_dbg(cd, "Restoring key (type trusted) from keyblob.");
+		if (keyring_split_keystring_keyblob(vk->key, &keystring, &keyblob) < 0) {
+			log_err(cd, "unable to split <key_string>::<keyblob>");
+			goto out;
+		}
+		if (strlen(keyblob) == 0) {
+			log_err(cd, "keyblob empty, can't restore trusted key");
+			goto out;
+		}
+		keyring_parse_keystring(keystring, NULL, NULL, &key_description);
+		kid = keyring_load_keyblob_in_thread_keyring(TRUSTED_KEY, key_description, keyblob);
+		crypt_volume_key_set_description(vk, keystring, TRUSTED_KEY);
+	} else {
+		log_dbg(cd, "Loading key (type logon, name %s) in thread keyring.", vk->key_description);
+		kid = keyring_add_key_in_thread_keyring(LOGON_KEY, vk->key_description, vk->key, vk->keylength);
+	}
 	if (kid < 0) {
 		log_dbg(cd, "keyring_add_key_in_thread_keyring failed (error %d)", errno);
 		log_err(cd, _("Failed to load key in kernel keyring."));
@@ -7350,6 +7403,13 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 		vk->uploaded = true;
 	}
 
+out:
+	if (keyblob)
+		free(keyblob);
+	if (key_description)
+		free(key_description);
+	if (keystring)
+		free(keystring);
 	return kid < 0 ? -EINVAL : 0;
 }
 
