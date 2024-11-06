@@ -5062,7 +5062,7 @@ static int _open_all_keys(struct crypt_device *cd,
 	return r < 0 ? r : keyslot;
 }
 
-static int _open_and_activate_reencrypt_device_by_vk(struct crypt_device *cd,
+static int _activate_reencrypt_device_by_vk(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const char *name,
 	struct volume_key *vks,
@@ -5310,7 +5310,7 @@ static int _activate_luks2_by_volume_key(struct crypt_device *cd,
 
 	if (ri > CRYPT_REENCRYPT_NONE) {
 		/* reencryption must reverify keys after taking the reencryption lock and reloading metadata */
-		r = _open_and_activate_reencrypt_device_by_vk(cd, &cd->u.luks2.hdr, name, vk, flags);
+		r = _activate_reencrypt_device_by_vk(cd, &cd->u.luks2.hdr, name, vk, flags);
 	} else {
 		/* hw-opal data segment type does not require volume key for activation */
 		assert(!vk || crypt_volume_key_get_id(vk) == LUKS2_digest_by_segment(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT));
