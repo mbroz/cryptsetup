@@ -4998,7 +4998,6 @@ out:
 	return r < 0 ? r : keyslot;
 }
 
-#if USE_LUKS2_REENCRYPTION
 static int load_all_keys(struct crypt_device *cd, struct volume_key *vks)
 {
 	int r;
@@ -5014,6 +5013,7 @@ static int load_all_keys(struct crypt_device *cd, struct volume_key *vks)
 	return 0;
 }
 
+#if USE_LUKS2_REENCRYPTION
 static int _open_all_keys(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	int keyslot,
@@ -5079,9 +5079,6 @@ static int _open_and_activate_reencrypt_device_by_vk(struct crypt_device *cd,
 	assert(hdr);
 	assert(vks);
 
-	if (crypt_use_keyring_for_vk(cd))
-		flags |= CRYPT_ACTIVATE_KEYRING_KEY;
-
 	r = LUKS2_reencrypt_lock(cd, &reencrypt_lock);
 	if (r) {
 		if (r == -EBUSY)
@@ -5142,12 +5139,6 @@ static int _open_and_activate_reencrypt_device_by_vk(struct crypt_device *cd,
 		goto out;
 	}
 
-	if ((flags & CRYPT_ACTIVATE_KEYRING_KEY)) {
-		r = load_all_keys(cd, vks);
-		if (r < 0)
-			goto out;
-	}
-
 	if ((r = LUKS2_get_data_size(hdr, &minimal_size, &dynamic_size)))
 		goto out;
 
@@ -5168,8 +5159,6 @@ static int _open_and_activate_reencrypt_device_by_vk(struct crypt_device *cd,
 	r = LUKS2_activate_multi(cd, name, vks, device_size >> SECTOR_SHIFT, flags);
 out:
 	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
-	if (r < 0)
-		crypt_drop_keyring_key(cd, vks);
 
 	return r;
 }
@@ -5792,13 +5781,14 @@ const char *name,
 		if (!crypt_use_keyring_for_vk(cd))
 			use_keyring = false;
 		else
-			use_keyring = (name && !crypt_is_cipher_null(crypt_get_cipher(cd))) ||
+			/* Force keyring use for activation of LUKS2 device in reencryption */
+			use_keyring = (name && (luks2_reencryption || !crypt_is_cipher_null(crypt_get_cipher(cd)))) ||
 				      (flags & CRYPT_ACTIVATE_KEYRING_KEY);
 
 		if (use_keyring) {
 			/* upload dm-crypt part of volume key in thread keyring if requested */
 			if (p_crypt) {
-				r = LUKS2_volume_key_load_in_keyring_by_digest(cd, p_crypt, crypt_volume_key_get_id(p_crypt));
+				r = load_all_keys(cd, p_crypt);
 				if (r < 0)
 					goto out;
 				flags |= CRYPT_ACTIVATE_KEYRING_KEY;
