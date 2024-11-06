@@ -5625,7 +5625,7 @@ static int _activate_by_volume_key(struct crypt_device *cd,
 }
 
 int crypt_activate_by_keyslot_context(struct crypt_device *cd,
-const char *name,
+	const char *name,
 	int keyslot,
 	struct crypt_keyslot_context *kc,
 	int additional_keyslot,
@@ -5816,7 +5816,7 @@ const char *name,
 out:
 	if (r < 0) {
 		crypt_drop_keyring_key(cd, vk);
-		crypt_drop_keyring_key(cd, p_crypt);
+		crypt_drop_keyring_key(cd, crypt_key);
 		if (cd->link_vk_to_keyring && kid1)
 			crypt_unlink_key_from_custom_keyring(cd, kid1);
 		if (cd->link_vk_to_keyring && kid2)
