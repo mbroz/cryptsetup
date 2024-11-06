@@ -5073,7 +5073,6 @@ static int _open_and_activate_reencrypt_device_by_vk(struct crypt_device *cd,
 	uint64_t minimal_size, device_size;
 	int r = 0;
 	struct crypt_lock_handle *reencrypt_lock = NULL;
-	key_serial_t kid1 = 0, kid2 = 0;
 	struct volume_key *vk;
 
 	assert(hdr);
@@ -5125,11 +5124,6 @@ static int _open_and_activate_reencrypt_device_by_vk(struct crypt_device *cd,
 		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
 		if (r == -EPERM || r == -ENOENT)
 			log_err(cd, _("Volume key does not match the volume."));
-		if (r >= 0 && cd->link_vk_to_keyring) {
-			kid1 = crypt_single_volume_key_load_in_user_keyring(cd, vk, cd->user_key_name1);
-			if (kid1 <= 0)
-				r = -EINVAL;
-		}
 		if (r >= 0)
 			r = LUKS2_activate(cd, name, vk, NULL, flags);
 		goto out;
@@ -5149,13 +5143,6 @@ static int _open_and_activate_reencrypt_device_by_vk(struct crypt_device *cd,
 					      dynamic_size);
 	if (r < 0)
 		goto out;
-	if (cd->link_vk_to_keyring) {
-		r = crypt_volume_key_load_in_user_keyring(cd, vks, &kid1, &kid2);
-		if (r < 0) {
-			log_err(cd, _("Failed to link volume keys in user defined keyring."));
-			goto out;
-		}
-	}
 	r = LUKS2_activate_multi(cd, name, vks, device_size >> SECTOR_SHIFT, flags);
 out:
 	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
