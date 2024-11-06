@@ -360,7 +360,7 @@ int blake2b_long(void *pout, size_t outlen, const void *in, size_t inlen) {
         TRY(blake2b_final(&blake_state, out, outlen));
     } else {
         uint32_t toproduce;
-        uint8_t out_buffer[BLAKE2B_OUTBYTES];
+        uint8_t out_buffer[BLAKE2B_OUTBYTES] = {0};
         uint8_t in_buffer[BLAKE2B_OUTBYTES];
         TRY(blake2b_init(&blake_state, BLAKE2B_OUTBYTES));
         TRY(blake2b_update(&blake_state, outlen_bytes, sizeof(outlen_bytes)));
