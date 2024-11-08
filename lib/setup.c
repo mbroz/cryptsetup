@@ -5502,7 +5502,7 @@ static int _verify_reencrypt_keys(struct crypt_device *cd, struct volume_key *vk
 }
 
 static int _verify_key(struct crypt_device *cd,
-	int segment,
+	bool unbound_key,
 	struct volume_key *vk)
 {
 	int r = -EINVAL;
@@ -5525,10 +5525,10 @@ static int _verify_key(struct crypt_device *cd,
 		if (!vk)
 			return -EINVAL;
 
-		if (segment == CRYPT_ANY_SEGMENT)
+		if (unbound_key)
 			r = LUKS2_digest_verify_by_any_matching(cd, vk);
 		else {
-			r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, segment, vk);
+			r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
 			if (r == -EPERM || r == -ENOENT)
 				log_err(cd, _("Volume key does not match the volume."));
 		}
@@ -5740,9 +5740,8 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	if (luks2_reencryption)
 		r = _verify_reencrypt_keys(cd, vk);
 	else
-		r = _verify_key(cd,
-				flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY ? CRYPT_ANY_SEGMENT : CRYPT_DEFAULT_SEGMENT,
-				vk);
+		r = _verify_key(cd, flags & CRYPT_ACTIVATE_ALLOW_UNBOUND_KEY, vk);
+
 	if (r < 0)
 		goto out;
 
