@@ -5556,7 +5556,7 @@ static int _verify_key(struct crypt_device *cd,
 		}
 
 		if (segment == CRYPT_ANY_SEGMENT)
-			r = LUKS2_digest_any_matching(cd, &cd->u.luks2.hdr, vk);
+			r = LUKS2_digest_verify_by_any_matching(cd, vk);
 		else {
 			r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, segment, vk);
 			if (r == -EPERM || r == -ENOENT)
@@ -7525,7 +7525,7 @@ static int keyslot_add_by_key(struct crypt_device *cd,
 	else {
 		/* if key matches any existing digest, do not create new digest */
 		if ((flags & CRYPT_VOLUME_KEY_DIGEST_REUSE))
-			digest = LUKS2_digest_any_matching(cd, &cd->u.luks2.hdr, vk);
+			digest = LUKS2_digest_verify_by_any_matching(cd, vk);
 
 		/* no segment flag or new vk flag requires new key digest */
 		if (flags & (CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_SET)) {

@@ -314,8 +314,7 @@ void crypt_token_unload_external_all(struct crypt_device *cd);
 /*
  * Generic LUKS2 digest
  */
-int LUKS2_digest_any_matching(struct crypt_device *cd,
-		struct luks2_hdr *hdr,
+int LUKS2_digest_verify_by_any_matching(struct crypt_device *cd,
 		const struct volume_key *vk);
 
 int LUKS2_digest_verify_by_segment(struct crypt_device *cd,

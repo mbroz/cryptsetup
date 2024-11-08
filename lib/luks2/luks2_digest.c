@@ -143,8 +143,7 @@ int LUKS2_digest_dump(struct crypt_device *cd, int digest)
 	return h->dump(cd, digest);
 }
 
-int LUKS2_digest_any_matching(struct crypt_device *cd,
-		struct luks2_hdr *hdr __attribute__((unused)),
+int LUKS2_digest_verify_by_any_matching(struct crypt_device *cd,
 		const struct volume_key *vk)
 {
 	int digest;
