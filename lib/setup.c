@@ -2069,6 +2069,11 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		 * e.g.: :32:trusted:data-crypt
 		 */
 		if ((volume_key[0] == ':') && strstr(volume_key, "trusted:")) {
+			if (!crypt_use_keyring_for_vk(cd)) {
+				log_err(cd, "Keyring use is disabled.");
+				return -EINVAL;
+			}
+
 			int actual_key_size = -1;
 			cd->volume_key = crypt_generate_trusted_volume_key(cd, volume_key, &actual_key_size);
 			if (!cd->volume_key) {
@@ -5030,7 +5035,12 @@ static int _activate_reencrypt_device_by_vk(struct crypt_device *cd,
 			log_err(cd, _("Volume key does not match the volume."));
 
 		if (*(vk->key) && (vk->key[0] == ':') && strstr(vk->key_description, "trusted:")) {
-			flags |= CRYPT_ACTIVATE_KEYRING_TRUSTED_KEY;
+			if (crypt_use_keyring_for_vk(cd))
+				flags |= CRYPT_ACTIVATE_KEYRING_TRUSTED_KEY;
+			else {
+				log_err(cd, "Keyring usage is disabled, but volume key is a 'trusted' keyblob which needs to be loaded into the keyring.");
+				goto out;
+			}
 		}
 
 		if (r >= 0)
@@ -5411,7 +5421,9 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	if (r == -ENOENT && isLUKS(cd->type) && cd->volume_key) {
 		vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
 		r = vk ? 0 : -ENOMEM;
-		if (cd->volume_key->key_description && strstr(cd->volume_key->key_description, "trusted:")) {
+		if (crypt_use_keyring_for_vk(cd) &&
+			  cd->volume_key->key_description &&
+			  strstr(cd->volume_key->key_description, "trusted:")) {
 			crypt_volume_key_set_description(vk, cd->volume_key->key_description, TRUSTED_KEY);
 			crypt_set_key_in_keyring(cd, 1);
 			flags |= CRYPT_ACTIVATE_KEYRING_TRUSTED_KEY;
@@ -7300,6 +7312,10 @@ int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
 	if (cd->volume_key &&
 			cd->volume_key->key_description &&
 			strstr(cd->volume_key->key_description, ":trusted:")) {
+		if (!crypt_use_keyring_for_vk(cd)) {
+			log_err(cd, "Keyring usage is disabled, but the volume key is of the 'trusted' type, which needs the keyring.");
+			return -EINVAL;
+		}
 		if (!(vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key)))
 			return -ENOMEM;
 		r = 0;
