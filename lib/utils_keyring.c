@@ -550,6 +550,21 @@ key_serial_t keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key
 	return -ENOTSUP;
 }
 
+key_serial_t keyring_new_trusted_key(int key_size, const char *key_description)
+{
+	return -ENOTSUP;
+}
+
+key_serial_t keyring_load_keyblob_in_thread_keyring(key_type_t ktype, const char *key_description, const char *keyblob)
+{
+	return -ENOTSUP;
+}
+
+int keyring_split_keystring_keyblob(const char* combined, char **keystring, char **keyblob)
+{
+	return -ENOTSUP;
+}
+
 key_serial_t keyring_request_key_id(key_type_t key_type,
 		const char *key_description)
 {
@@ -581,6 +596,11 @@ key_type_t keyring_type_and_name(const char *key_name, const char **name)
 key_serial_t keyring_find_key_id_by_name(const char *key_name)
 {
 	return 0;
+}
+
+int keyring_parse_keystring(const char *key_string, int *size, char **type, char **description)
+{
+	return -1;
 }
 
 key_serial_t keyring_find_keyring_id_by_name(const char *keyring_name)
