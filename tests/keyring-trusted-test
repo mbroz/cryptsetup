@@ -1,0 +1,184 @@
+#!/bin/bash
+
+# Encrypted and trusted keyring test; trusted keys can be emulated by TPM2.
+# DO NOT use this in combination with a real TPM data, it can destroy them.
+#
+# Note that if trusted or tpm kernel module is built-in, emulated TPM2 cannot
+# provide trusted keys (only encrypted keys will be tested then).
+
+[ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+
+IMG=keyring_trusted_test.img
+MAP="trusted_test"
+KEYNAME=testxxx
+
+function bin_check()
+{
+    command -v $1 >/dev/null || skip "WARNING: test require $1 binary, test skipped."
+}
+
+function cleanup() {
+    clear_keys
+
+    [ -S $SWTPM_STATE_DIR/ctrl.sock ] && {
+        # shutdown TPM via control socket
+        swtpm_ioctl -s --unix $SWTPM_STATE_DIR/ctrl.sock
+        sleep 1
+    }
+
+    # if graceful shutdown was successful, pidfile should be deleted
+    # if it is still present, we forcefully kill the process
+    [ -f "$SWTPM_PIDFILE" ] && {
+        kill -9 $(cat $SWTPM_PIDFILE) >/dev/null 2>&1
+    }
+
+    [ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
+
+    [ -n "$SWTPM_PIDFILE" ] && rm -f $SWTPM_PIDFILE >/dev/null 2>&1
+    [ -n "$SWTPM_STATE_DIR" ] && rm -rf $SWTPM_STATE_DIR >/dev/null 2>&1
+    rm -f $IMG >/dev/null 2>&1
+
+    cleanup_modules
+}
+
+function cleanup_modules()
+{
+    [ -n "$SKIP_MODULE_UNLOAD" ] && return
+
+    # This is a hack to avoid linking trusted key to another TPM.
+    # Without clean load tests do not work reliably.
+    modprobe -r dm-crypt 2>/dev/null
+    modprobe -r encrypted-keys 2>/dev/null
+    modprobe -r trusted 2>/dev/null
+    modprobe -r tpm_vtpm_proxy 2>/dev/null
+    modprobe -r tpm 2>/dev/null
+}
+
+function fail()
+{
+    echo "[FAILED]"
+    [ -n "$1" ] && echo "$1"
+    echo "FAILED backtrace:"
+    while caller $frame; do ((frame++)); done
+    cleanup
+    exit 2
+}
+
+function skip()
+{
+    [ -n "$1" ] && echo "$1"
+    cleanup
+    exit 77
+}
+
+function prepare_tpm()
+{
+    SWTPM_STATE_DIR=$(mktemp -d /tmp/systemd_swtpm_state.XXXXXX)
+    SWTPM_SEAL_KEY="$SWTPM_STATE_DIR/sealkey.ctxt"
+    SWTPM_PERSISTENT_HANDLE=0x81000001
+
+if [ -z "$TPM_PATH" ]; then
+    bin_check swtpm
+    bin_check swtpm_ioctl
+
+    SWTPM_PIDFILE=$(mktemp /tmp/systemd_swtpm_pid.XXXXXX)
+
+    cleanup_modules
+    modprobe tpm_vtpm_proxy || fail "Failed to load tpm_vtpm_proxy kernel module, required for emulated TPM."
+
+    SWTPM_LOG=$(swtpm chardev --vtpm-proxy --tpm2 --tpmstate dir=$SWTPM_STATE_DIR -d --pid file=$SWTPM_PIDFILE --ctrl type=unixio,path=$SWTPM_STATE_DIR/ctrl.sock)
+    TPM_PATH=$(echo $SWTPM_LOG | grep -Eo /dev/tpm\([0-9]\)+ | sed s/tpm/tpmrm/)
+
+    [ -z "$TPM_PATH" ] && fail "No TPM_PATH set and swtpm failed, test skipped."
+
+    echo "Virtual TPM set up at $TPM_PATH"
+
+    # Trusted module needs to see TPM above.
+    sleep 1
+    modprobe trusted 2>/dev/null || echo "Failed to load trusted keys kernel module."
+else
+    SKIP_MODULE_UNLOAD=1
+    echo "Preconfigured TPM set up at $TPM_PATH"
+fi
+    # Create persistent store
+    tpm2_createprimary -Q -T device:$TPM_PATH --hierarchy o -G rsa2048 -c $SWTPM_SEAL_KEY || fail
+    tpm2_evictcontrol -Q -T device:$TPM_PATH -c $SWTPM_SEAL_KEY $SWTPM_PERSISTENT_HANDLE || fail
+}
+
+function prepare_vk_keyring()
+{
+    local s_desc=$(keyctl rdescribe @s | cut -d';' -f5)
+    local us_desc=$(keyctl rdescribe @us | cut -d';' -f5)
+
+    if [ "$s_desc" = "$us_desc" -a -n "$s_desc" ]; then
+        echo "Session keyring is missing, initializing new one."
+        keyctl new_session > /dev/null || fail
+    fi
+}
+
+clear_keys()
+{
+    keyctl revoke %encrypted:$KEYNAME 2>/dev/null
+    keyctl revoke %user:$KEYNAME 2>/dev/null
+
+    if [ -n "$TRUSTED_SUPPORTED" ]; then
+        keyctl revoke %trusted:$KEYNAME 2>/dev/null
+        tpm2_evictcontrol -Q -T device:$TPM_PATH -C o -c $SWTPM_PERSISTENT_HANDLE 2>/dev/null
+    fi
+}
+
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+bin_check keyctl
+
+prepare_vk_keyring
+
+# Prevent using TPM by default
+if [ -n "$RUN_KEYRING_TRUSTED_TEST" ]; then
+    prepare_tpm
+    # Trusted keyring key
+    keyctl add trusted $KEYNAME "new 32 keyhandle=$SWTPM_PERSISTENT_HANDLE" @s >/dev/null 2>&1 && TRUSTED_SUPPORTED=1
+    if [ -n "$TRUSTED_SUPPORTED" ]; then
+        keyctl print %trusted:$KEYNAME >/dev/null || fail "Cannot read trusted key blob."
+    fi
+else
+    echo "WARNING: Variable RUN_KEYRING_TRUSTED_TEST must be defined, TPM trusted test skipped."
+    TRUSTED_SUPPORTED=
+fi
+
+# Prepare encrypted key
+modprobe encrypted-keys 2>/dev/null || skip "Failed to load encrypted keys kernel module."
+
+# Encrypted keyring key (encrypted with user key)
+# User key needed for encrypted key
+keyctl add -x user $KEYNAME bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a @s >/dev/null || fail "User key failed."
+keyctl print %user:$KEYNAME >/dev/null || fail "Cannot read user key."
+
+keyctl add encrypted $KEYNAME "new user:$KEYNAME 32" @s >/dev/null || fail "Encrypted keys are not supported."
+keyctl print %encrypted:$KEYNAME >/dev/null || fail "Cannot read encrypted key blob."
+
+dd if=/dev/zero of=$IMG bs=1M count=32 >/dev/null 2>&1
+
+echo -n "Plain with trusted volume key "
+if [ -n "$TRUSTED_SUPPORTED" ]; then
+    $CRYPTSETUP open --type plain $IMG $MAP --key-size=256 --cipher=aes-xts-plain64 --volume-key-keyring=%trusted:$KEYNAME || fail
+    dmsetup table --showkeys $MAP | grep -q ":32:trusted:$KEYNAME" || fail
+    $CRYPTSETUP status $MAP | grep -q "key location: keyring" || fail
+    $CRYPTSETUP close $MAP || fail
+    echo "[OK]"
+else
+    echo "[N/A]"
+fi
+
+echo -n "Plain with encrypted volume key "
+$CRYPTSETUP open --type plain $IMG $MAP --key-size=256 --cipher=aes-xts-plain64 --volume-key-keyring=%encrypted:$KEYNAME ||fail
+dmsetup table --showkeys $MAP | grep -q ":32:encrypted:$KEYNAME" || fail
+$CRYPTSETUP status $MAP | grep -q "key location: keyring" || fail
+$CRYPTSETUP resize $MAP --size 100 || fail
+$CRYPTSETUP status  $MAP| grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP resize  $MAP || fail
+$CRYPTSETUP close $MAP || fail
+echo "[OK]"
+
+cleanup
+exit 0

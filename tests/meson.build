@@ -392,6 +392,14 @@ if get_option('cryptsetup')
         depends: [
             cryptsetup,
         ])
+    test('keyring-trusted-test',
+        find_program('./keyring-trusted-test'),
+        workdir: meson.current_build_dir(),
+        timeout: 14400,
+        is_parallel: false,
+        depends: [
+            cryptsetup,
+        ])
     test('luks2-validation-test',
         find_program('./luks2-validation-test'),
         workdir: meson.current_build_dir(),
