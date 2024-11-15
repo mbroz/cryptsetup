@@ -6882,6 +6882,9 @@ int crypt_token_assign_keyslot(struct crypt_device *cd, int token, int keyslot)
 	if ((r = onlyLUKS2(cd)))
 		return r;
 
+	if (token == CRYPT_ANY_TOKEN)
+		return -EINVAL;
+
 	return LUKS2_token_assign(cd, &cd->u.luks2.hdr, keyslot, token, 1, 1);
 }
 
@@ -6891,6 +6894,9 @@ int crypt_token_unassign_keyslot(struct crypt_device *cd, int token, int keyslot
 
 	if ((r = onlyLUKS2(cd)))
 		return r;
+
+	if (token == CRYPT_ANY_TOKEN)
+		return -EINVAL;
 
 	return LUKS2_token_assign(cd, &cd->u.luks2.hdr, keyslot, token, 0, 1);
 }

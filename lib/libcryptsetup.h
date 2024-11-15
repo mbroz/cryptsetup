@@ -2601,11 +2601,11 @@ int crypt_token_luks2_keyring_get(struct crypt_device *cd,
  * (There can be more keyslots assigned to one token id.)
  *
  * @param cd crypt device handle
- * @param token token id
+ * @param token specific token id
  * @param keyslot keyslot to be assigned to token (CRYPT_ANY SLOT
  * 	  assigns all active keyslots to token)
  *
- * @return allocated token id or negative errno otherwise.
+ * @return requested token id to be assigned or negative errno otherwise.
  */
 int crypt_token_assign_keyslot(struct crypt_device *cd,
 	int token,
@@ -2616,11 +2616,11 @@ int crypt_token_assign_keyslot(struct crypt_device *cd,
  * (There can be more keyslots assigned to one token id.)
  *
  * @param cd crypt device handle
- * @param token token id
+ * @param token specific token id
  * @param keyslot keyslot to be unassigned from token (CRYPT_ANY SLOT
  * 	  unassigns all active keyslots from token)
  *
- * @return allocated token id or negative errno otherwise.
+ * @return requested token id to be unassigned or negative errno otherwise.
  */
 int crypt_token_unassign_keyslot(struct crypt_device *cd,
 	int token,

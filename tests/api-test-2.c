@@ -2149,8 +2149,12 @@ static void Tokens(void)
 	EQ_(crypt_token_json_get(cd, 2, &dummy), 2);
 
 	// exercise assign/unassign keyslots API
+	FAIL_(crypt_token_unassign_keyslot(cd, CRYPT_ANY_TOKEN, 1), "Token id must be specific.");
+	OK_(crypt_token_is_assigned(cd, 2, 1));
 	EQ_(crypt_token_unassign_keyslot(cd, 2, 1), 2);
 	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 2, passptr1, 0), "Token assigned to no keyslot");
+	FAIL_(crypt_token_assign_keyslot(cd, CRYPT_ANY_TOKEN, 0), "Token id must be specific.");
+	FAIL_(crypt_token_is_assigned(cd, 2, 0), "Token 2 must not be assigned to keyslot 0.");
 	EQ_(crypt_token_assign_keyslot(cd, 2, 0), 2);
 	FAIL_(crypt_activate_by_token(cd, CDEVICE_1, 2, passptr1, 0), "Wrong passphrase");
 	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 2, passptr, 0), 0);
