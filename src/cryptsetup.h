@@ -117,6 +117,13 @@ int tools_lookup_crypt_device(struct crypt_device *cd, const char *type,
 /* each utility is required to implement it */
 void tools_cleanup(void);
 
+/* keyring helpers */
+int tools_parse_vk_description(const char *key_description, char **ret_key_description);
+int tools_parse_vk_and_keyring_description(
+	struct crypt_device *cd,
+	char **keyring_key_descriptions,
+	int keyring_key_links_count);
+
 /* Log */
 #define log_dbg(x...) crypt_logf(NULL, CRYPT_LOG_DEBUG, x)
 #define log_std(x...) crypt_logf(NULL, CRYPT_LOG_NORMAL, x)
