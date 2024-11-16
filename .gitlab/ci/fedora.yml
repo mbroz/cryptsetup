@@ -5,18 +5,14 @@
     - .fail_if_coredump_generated
   before_script:
     - >
-      [ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] ||
-      sudo dnf -y -q install
-      swtpm meson ninja-build python3-jinja2 gperf libcap-devel tpm2-tss-devel
-      libmount-devel swtpm-tools
-    - >
       sudo dnf -y -q install
       autoconf automake device-mapper-devel gcc gettext-devel json-c-devel
       libargon2-devel libblkid-devel libpwquality-devel libselinux-devel
       libssh-devel libtool libuuid-devel make popt-devel
       libsepol-devel.x86_64 netcat openssh-clients passwd pkgconfig sharutils
       sshpass tar uuid-devel vim-common device-mapper expect gettext git jq
-      keyutils openssl-devel openssl asciidoctor
+      keyutils openssl-devel openssl asciidoctor swtpm meson ninja-build
+      python3-jinja2 gperf libcap-devel tpm2-tss-devel libmount-devel swtpm-tools
     - sudo -E git clean -xdf
     - ./autogen.sh
     - ./configure --enable-fips --enable-pwquality --enable-libargon2 --with-crypto_backend=openssl --enable-asciidoc
@@ -32,6 +28,7 @@ test-main-commit-job-rawhide:
   allow_failure: true
   variables:
     RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
@@ -52,6 +49,7 @@ test-mergerq-job-rawhide:
   allow_failure: true
   variables:
     RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never

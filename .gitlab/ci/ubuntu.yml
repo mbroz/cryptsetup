@@ -4,15 +4,13 @@
   before_script:
     - sudo apt-get -y update
     - >
-      [ -z "$RUN_SYSTEMD_PLUGIN_TEST" ] ||
-      sudo apt-get -y install -y -qq swtpm meson ninja-build python3-jinja2
-      gperf libcap-dev libtss2-dev libmount-dev swtpm-tools
-    - >
       sudo apt-get -y install -y -qq git gcc make autoconf automake autopoint
       pkgconf libtool libtool-bin gettext libssl-dev libdevmapper-dev
       libpopt-dev uuid-dev libsepol-dev libjson-c-dev libssh-dev libblkid-dev
       tar libargon2-dev libpwquality-dev sharutils dmsetup jq xxd expect
       keyutils netcat-openbsd passwd openssh-client sshpass asciidoctor
+      swtpm meson ninja-build python3-jinja2 gperf libcap-dev libtss2-dev
+      libmount-dev swtpm-tools tpm2-tools
     # scsi_debug, gost crypto
     - sudo apt-get -y install dkms linux-headers-$(uname -r) linux-modules-extra-$(uname -r) gost-crypto-dkms
     - sudo apt-get -y build-dep cryptsetup
@@ -31,6 +29,7 @@ test-mergerq-job-ubuntu:
   variables:
     DISTRO: cryptsetup-ubuntu-2404
     RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
@@ -51,6 +50,7 @@ test-main-commit-job-ubuntu:
   variables:
     DISTRO: cryptsetup-ubuntu-2404
     RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
@@ -72,6 +72,7 @@ test-mergerq-job-ubuntu-meson:
   variables:
     DISTRO: cryptsetup-ubuntu-2404
     RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
@@ -93,6 +94,7 @@ test-main-commit-job-ubuntu-meson:
   variables:
     DISTRO: cryptsetup-ubuntu-2404
     RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
