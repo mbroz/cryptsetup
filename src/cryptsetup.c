@@ -974,25 +974,27 @@ static int action_resize(void)
 				goto out;
 		}
 
-		/* try load VK in kernel keyring using token */
-		r = _try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_TOKEN_ID_ID),
-				      NULL, ARG_STR(OPT_TOKEN_TYPE_ID), CRYPT_ACTIVATE_KEYRING_KEY,
-				      1, true, ARG_SET(OPT_TOKEN_ONLY_ID));
+		if (isLUKS2(crypt_get_type(cd))) {
+			/* try load VK in kernel keyring using token */
+			r = _try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_TOKEN_ID_ID),
+					NULL, ARG_STR(OPT_TOKEN_TYPE_ID), CRYPT_ACTIVATE_KEYRING_KEY,
+					1, true, ARG_SET(OPT_TOKEN_ONLY_ID));
 
-		if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
-			goto out;
+			if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
+				goto out;
 
-		r = init_keyslot_context(cd, NULL, &password, &passwordLen, verify_passphrase(0),
-					 false, false, &kc);
-		crypt_safe_free(password);
-		if (r < 0)
-			goto out;
+			r = init_keyslot_context(cd, NULL, &password, &passwordLen, verify_passphrase(0),
+						false, false, &kc);
+			crypt_safe_free(password);
+			if (r < 0)
+				goto out;
 
-		r = crypt_activate_by_keyslot_context(cd, NULL,ARG_INT32(OPT_KEY_SLOT_ID),
-						      kc, CRYPT_ANY_SLOT, NULL,
-						      CRYPT_ACTIVATE_KEYRING_KEY);
-		tools_passphrase_msg(r);
-		tools_keyslot_msg(r, UNLOCKED);
+			r = crypt_activate_by_keyslot_context(cd, NULL,ARG_INT32(OPT_KEY_SLOT_ID),
+							kc, CRYPT_ANY_SLOT, NULL,
+							CRYPT_ACTIVATE_KEYRING_KEY);
+			tools_passphrase_msg(r);
+			tools_keyslot_msg(r, UNLOCKED);
+		}
 	}
 
 out:

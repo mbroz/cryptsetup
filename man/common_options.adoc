@@ -1312,12 +1312,17 @@ partially predictable volume key which will compromise security.
 endif::[]
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSRESUME,ACTION_LUKSADDKEY[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY[]
 *--volume-key-keyring* _<key description>_::
 Use a volume key stored in a keyring.
-This allows one to open _luks_ and device types without giving a passphrase.
-The key and associated type has to be readable from userspace so that volume
+This allows one to open _luks_ and _plain_ device types without giving a passphrase.
++
+For LUKS, the key and associated type has to be readable from userspace so that volume
 key digest may be verified in before activation.
++
+For PLAIN type, the user must ensure that the key in the keyring is unchanged since activation.
+Otherwise, reloading the key can cause data corruption after an unexpected key change.
+
 +
 The _<key description>_ uses keyctl-compatible syntax. This can either be a
 numeric key ID or a string name in the format _%<key type>:<key name>_. See

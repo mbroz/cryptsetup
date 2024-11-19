@@ -1412,6 +1412,8 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		cd->u.plain.cipher = strdup(cipher);
 		MOVE_REF(cd->u.plain.cipher_spec, cipher_spec);
 		cd->u.plain.cipher_mode = cd->u.plain.cipher_spec + strlen(cipher) + 1;
+		if (dmd.flags & CRYPT_ACTIVATE_KEYRING_KEY)
+			crypt_set_key_in_keyring(cd, 1);
 	} else if (isLOOPAES(cd->type) && single_segment(&dmd) && tgt->type == DM_CRYPT) {
 		cd->u.loopaes.hdr.offset = tgt->u.crypt.offset;
 		cd->u.loopaes.cipher = strdup(cipher);
@@ -3609,13 +3611,14 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	}
 
 	if (crypt_key_in_keyring(cd)) {
-		if (!isLUKS2(cd->type)) {
+		if (isLUKS2(cd->type))
+			r = LUKS2_key_description_by_segment(cd, &cd->u.luks2.hdr,
+						tgt->u.crypt.vk, CRYPT_DEFAULT_SEGMENT);
+		else if (isPLAIN(cd->type))
+			r = 0; /* key description was set on table load */
+		else
 			r = -EINVAL;
-			goto out;
-		}
-		r = LUKS2_key_description_by_segment(cd, &cd->u.luks2.hdr,
-					tgt->u.crypt.vk, CRYPT_DEFAULT_SEGMENT);
-		if (r)
+		if (r < 0)
 			goto out;
 
 		dmdq.flags |= CRYPT_ACTIVATE_KEYRING_KEY;
