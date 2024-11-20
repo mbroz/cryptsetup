@@ -247,9 +247,10 @@ void crypt_serialize_unlock(struct crypt_device *cd);
 
 bool crypt_string_in(const char *str, char **list, size_t list_size);
 int crypt_strcmp(const char *a, const char *b);
-int crypt_compare_dm_devices(struct crypt_device *cd,
-			       const struct crypt_dm_active_device *src,
-			       const struct crypt_dm_active_device *tgt);
+int crypt_compare_dm_devices(struct crypt_device* cd,
+			     const struct crypt_dm_active_device* src,
+			     const struct crypt_dm_active_device* tgt,
+			     bool compare_key_content);
 static inline void *crypt_zalloc(size_t size) { return calloc(1, size); }
 
 static inline bool uint64_mult_overflow(uint64_t *u, uint64_t b, size_t size)
