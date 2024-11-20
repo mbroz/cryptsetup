@@ -3102,8 +3102,7 @@ int crypt_repair(struct crypt_device *cd,
 }
 
 /* compare volume keys */
-static int _compare_volume_keys(struct volume_key *svk, unsigned skeyring_only,
-				struct volume_key *tvk, unsigned tkeyring_only)
+static int _compare_volume_keys(struct volume_key *svk, struct volume_key *tvk, bool compare_key_content)
 {
 	if (!svk && !tvk)
 		return 0;
@@ -3113,8 +3112,34 @@ static int _compare_volume_keys(struct volume_key *svk, unsigned skeyring_only,
 	if (svk->keylength != tvk->keylength)
 		return 1;
 
-	if (!skeyring_only && !tkeyring_only)
-		return crypt_backend_memeq(svk->key, tvk->key, svk->keylength);
+	/* No switch between keyring and direct key specification */
+	if ((!svk->key_description && tvk->key_description) ||
+	    (svk->key_description && !tvk->key_description))
+		return 1;
+
+	if (svk->key_description && tvk->key_description &&
+	    strcmp(svk->key_description, tvk->key_description))
+		return 1;
+
+	/* this covers also empty key for external keyring */
+	if (compare_key_content && crypt_backend_memeq(svk->key, tvk->key, svk->keylength))
+		return 1;
+
+	return 0;
+}
+
+static int _compare_volume_keys_luks2(struct volume_key *svk, struct volume_key *tvk, bool compare_key_content)
+{
+	if (!svk && !tvk)
+		return 0;
+	else if (!svk || !tvk)
+		return 1;
+
+	if (svk->keylength != tvk->keylength)
+		return 1;
+
+	if (compare_key_content && crypt_backend_memeq(svk->key, tvk->key, svk->keylength))
+		return 1;
 
 	if (svk->key_description && tvk->key_description)
 		return strcmp(svk->key_description, tvk->key_description);
@@ -3157,7 +3182,8 @@ static int _compare_device_types(struct crypt_device *cd,
 
 static int _compare_crypt_devices(struct crypt_device *cd,
 			       const struct dm_target *src,
-			       const struct dm_target *tgt)
+			       const struct dm_target *tgt,
+			       bool compare_key_content)
 {
 	char *src_cipher = NULL, *src_integrity = NULL;
 	int r = -EINVAL;
@@ -3185,7 +3211,12 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 
 	if (tgt->u.crypt.vk->keylength == 0 && crypt_is_cipher_null(tgt->u.crypt.cipher))
 		log_dbg(cd, "Existing device uses cipher null. Skipping key comparison.");
-	else if (_compare_volume_keys(src->u.crypt.vk, 0, tgt->u.crypt.vk, tgt->u.crypt.vk->key_description != NULL)) {
+	else if (cd && isLUKS2(cd->type)) {
+		if (_compare_volume_keys_luks2(src->u.crypt.vk, tgt->u.crypt.vk, compare_key_content)) {
+			log_dbg(cd, "Keys in LUKS2 context and target device do not match.");
+			goto out;
+		}
+	} else if (_compare_volume_keys(src->u.crypt.vk, tgt->u.crypt.vk, compare_key_content)) {
 		log_dbg(cd, "Keys in context and target device do not match.");
 		goto out;
 	}
@@ -3217,7 +3248,8 @@ out:
 
 static int _compare_integrity_devices(struct crypt_device *cd,
 			       const struct dm_target *src,
-			       const struct dm_target *tgt)
+			       const struct dm_target *tgt,
+			       bool compare_key_content)
 {
 	/*
 	 * some parameters may be implicit (and set in dm-integrity ctor)
@@ -3245,9 +3277,9 @@ static int _compare_integrity_devices(struct crypt_device *cd,
 	}
 
 	/* unfortunately dm-integrity doesn't support keyring */
-	if (_compare_volume_keys(src->u.integrity.vk, 0, tgt->u.integrity.vk, 0) ||
-	    _compare_volume_keys(src->u.integrity.journal_integrity_key, 0, tgt->u.integrity.journal_integrity_key, 0) ||
-	    _compare_volume_keys(src->u.integrity.journal_crypt_key, 0, tgt->u.integrity.journal_crypt_key, 0)) {
+	if (_compare_volume_keys(src->u.integrity.vk, tgt->u.integrity.vk, compare_key_content) ||
+	    _compare_volume_keys(src->u.integrity.journal_integrity_key, tgt->u.integrity.journal_integrity_key, compare_key_content) ||
+	    _compare_volume_keys(src->u.integrity.journal_crypt_key, tgt->u.integrity.journal_crypt_key, compare_key_content)) {
 		log_dbg(cd, "Journal keys do not match.");
 		return -EINVAL;
 	}
@@ -3260,9 +3292,10 @@ static int _compare_integrity_devices(struct crypt_device *cd,
 	return 0;
 }
 
-int crypt_compare_dm_devices(struct crypt_device *cd,
-			       const struct crypt_dm_active_device *src,
-			       const struct crypt_dm_active_device *tgt)
+int crypt_compare_dm_devices(struct crypt_device* cd,
+			     const struct crypt_dm_active_device* src,
+			     const struct crypt_dm_active_device* tgt,
+			     bool compare_key_content)
 {
 	int r;
 	const struct dm_target *s, *t;
@@ -3290,10 +3323,10 @@ int crypt_compare_dm_devices(struct crypt_device *cd,
 
 		switch (s->type) {
 		case DM_CRYPT:
-			r = _compare_crypt_devices(cd, s, t);
+			r = _compare_crypt_devices(cd, s, t, compare_key_content);
 			break;
 		case DM_INTEGRITY:
-			r = _compare_integrity_devices(cd, s, t);
+			r = _compare_integrity_devices(cd, s, t, compare_key_content);
 			break;
 		case DM_LINEAR:
 			r = (s->u.linear.offset == t->u.linear.offset) ? 0 : -EINVAL;
@@ -3339,12 +3372,6 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 		goto out;
 	}
 
-	r = crypt_compare_dm_devices(cd, sdmd, &tdmd);
-	if (r) {
-		log_err(cd, _("Mismatching parameters on device %s."), name);
-		goto out;
-	}
-
 	src = &sdmd->segment;
 
 	/* Changing read only flag for active device makes no sense */
@@ -3353,17 +3380,22 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 	else
 		sdmd->flags &= ~CRYPT_ACTIVATE_READONLY;
 
-	if (tgt->type == DM_CRYPT && sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
-		r = crypt_volume_key_set_description(tgt->u.crypt.vk, src->u.crypt.vk->key_description);
-		if (r)
-			goto out;
-	} else if (tgt->type == DM_CRYPT) {
+	if (isLUKS(cd->type) && tgt->type == DM_CRYPT && src->u.crypt.vk) {
 		crypt_free_volume_key(tgt->u.crypt.vk);
 		tgt->u.crypt.vk = crypt_alloc_volume_key(src->u.crypt.vk->keylength, src->u.crypt.vk->key);
 		if (!tgt->u.crypt.vk) {
 			r = -ENOMEM;
 			goto out;
 		}
+		r = crypt_volume_key_set_description(tgt->u.crypt.vk, src->u.crypt.vk->key_description);
+		if (r < 0)
+			goto out;
+	}
+
+	r = crypt_compare_dm_devices(cd, sdmd, &tdmd, true);
+	if (r) {
+		log_err(cd, _("Mismatching parameters on device %s."), name);
+		goto out;
 	}
 
 	if (tgt->type == DM_CRYPT)
@@ -3432,7 +3464,7 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = crypt_compare_dm_devices(cd, sdmdi, &tdmdi);
+	r = crypt_compare_dm_devices(cd, sdmdi, &tdmdi, true);
 	if (r) {
 		log_err(cd, _("Mismatching parameters on device %s."), iname);
 		goto out;
@@ -3456,12 +3488,6 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 
 	src->data_device = data_device;
 
-	r = crypt_compare_dm_devices(cd, sdmd, &tdmd);
-	if (r) {
-		log_err(cd, _("Crypt devices mismatch."));
-		goto out;
-	}
-
 	/* Changing read only flag for active device makes no sense */
 	if (tdmd.flags & CRYPT_ACTIVATE_READONLY)
 		sdmd->flags |= CRYPT_ACTIVATE_READONLY;
@@ -3473,17 +3499,20 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	else
 		sdmdi->flags &= ~CRYPT_ACTIVATE_READONLY;
 
-	if (sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
-		r = crypt_volume_key_set_description(tgt->u.crypt.vk, src->u.crypt.vk->key_description);
-		if (r)
+	crypt_free_volume_key(tgt->u.crypt.vk);
+	tgt->u.crypt.vk = crypt_alloc_volume_key(src->u.crypt.vk->keylength, src->u.crypt.vk->key);
+	if (!tgt->u.crypt.vk) {
+		r = -ENOMEM;
+		goto out;
+	}
+	r = crypt_volume_key_set_description(tgt->u.crypt.vk, src->u.crypt.vk->key_description);
+	if (r < 0)
 			goto out;
-	} else {
-		crypt_free_volume_key(tgt->u.crypt.vk);
-		tgt->u.crypt.vk = crypt_alloc_volume_key(src->u.crypt.vk->keylength, src->u.crypt.vk->key);
-		if (!tgt->u.crypt.vk) {
-			r = -ENOMEM;
-			goto out;
-		}
+
+	r = crypt_compare_dm_devices(cd, sdmd, &tdmd, true);
+	if (r) {
+		log_err(cd, _("Crypt devices mismatch."));
+		goto out;
 	}
 
 	r = device_block_adjust(cd, src->data_device, DEV_OK,

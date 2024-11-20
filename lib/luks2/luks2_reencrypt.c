@@ -2919,7 +2919,7 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 		}
 		r = LUKS2_assembly_multisegment_dmd(cd, hdr, *vks, jobj_segments_old, &dmd_source);
 		if (!r) {
-			r = crypt_compare_dm_devices(cd, &dmd_source, &dmd_target);
+			r = crypt_compare_dm_devices(cd, &dmd_source, &dmd_target, false);
 			if (r)
 				log_err(cd, _("Mismatching parameters on device %s."), name);
 		}
@@ -3154,7 +3154,7 @@ static int reencrypt_init(struct crypt_device *cd,
 
 		r = LUKS2_assembly_multisegment_dmd(cd, hdr, *vks, LUKS2_get_segments_jobj(hdr), &dmd_source);
 		if (!r) {
-			r = crypt_compare_dm_devices(cd, &dmd_source, &dmd_target);
+			r = crypt_compare_dm_devices(cd, &dmd_source, &dmd_target, false);
 			if (r)
 				log_err(cd, _("Mismatching parameters on device %s."), name);
 		}
@@ -3550,7 +3550,7 @@ static int reencrypt_load_by_keyslot_context(struct crypt_device *cd,
 
 		r = LUKS2_assembly_multisegment_dmd(cd, hdr, *vks, LUKS2_get_segments_jobj(hdr), &dmd_source);
 		if (!r) {
-			r = crypt_compare_dm_devices(cd, &dmd_source, &dmd_target);
+			r = crypt_compare_dm_devices(cd, &dmd_source, &dmd_target, false);
 			if (r)
 				log_err(cd, _("Mismatching parameters on device %s."), name);
 		}
