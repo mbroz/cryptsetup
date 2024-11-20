@@ -3123,6 +3123,36 @@ static int _compare_volume_keys(struct volume_key *svk, struct volume_key *tvk)
 	if (svk->keylength != tvk->keylength)
 		return 1;
 
+	/* No switch between keyring and direct key specification */
+	if ((!svk->key_description && tvk->key_description) ||
+	    (svk->key_description && !tvk->key_description) ||
+	    (!crypt_volume_key_has_data(svk) && crypt_volume_key_has_data(tvk)) ||
+	    (crypt_volume_key_has_data(svk) && !crypt_volume_key_has_data(tvk)))
+		return 1;
+
+	if (svk->key_description &&
+	    (svk->keyring_key_type != tvk->keyring_key_type ||
+	    strcmp(svk->key_description, tvk->key_description)))
+		return 1;
+
+	if (crypt_volume_key_has_data(svk) &&
+	    crypt_backend_memeq(svk->key, tvk->key, svk->keylength))
+		return 1;
+
+	return 0;
+}
+
+static int _compare_volume_keys_luks2(struct volume_key *svk, struct volume_key *tvk)
+{
+	if (svk == tvk)
+		return 0;
+
+	if (!svk || !tvk)
+		return 1;
+
+	if (svk->keylength != tvk->keylength)
+		return 1;
+
 	if (crypt_volume_key_has_data(svk) && crypt_volume_key_has_data(tvk))
 		return crypt_backend_memeq(svk->key, tvk->key, svk->keylength);
 
@@ -3196,7 +3226,12 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 
 	if (tgt->u.crypt.vk->keylength == 0 && crypt_is_cipher_null(tgt->u.crypt.cipher))
 		log_dbg(cd, "Existing device uses cipher null. Skipping key comparison.");
-	else if (_compare_volume_keys(src->u.crypt.vk, tgt->u.crypt.vk)) {
+	else if (cd && isLUKS2(cd->type)) {
+		if (_compare_volume_keys_luks2(src->u.crypt.vk, tgt->u.crypt.vk)) {
+			log_dbg(cd, "Keys in LUKS2 context and target device do not match.");
+			goto out;
+		}
+	} else if (_compare_volume_keys(src->u.crypt.vk, tgt->u.crypt.vk)) {
 		log_dbg(cd, "Keys in context and target device do not match.");
 		goto out;
 	}
@@ -3330,8 +3365,13 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 	struct crypt_dm_active_device tdmd;
 	struct dm_target *src, *tgt = &tdmd.segment;
 
-	if (!cd || !cd->type || !name || !(sdmd->flags & CRYPT_ACTIVATE_REFRESH))
+	assert(cd);
+	assert(sdmd);
+
+	if (!cd->type || !name || !(sdmd->flags & CRYPT_ACTIVATE_REFRESH))
 		return -EINVAL;
+
+	src = &sdmd->segment;
 
 	r = dm_query_device(cd, name, DM_ACTIVE_DEVICE | DM_ACTIVE_CRYPT_CIPHER |
 				  DM_ACTIVE_UUID | DM_ACTIVE_CRYPT_KEYSIZE |
@@ -3356,27 +3396,24 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 		goto out;
 	}
 
-	src = &sdmd->segment;
-
 	/* Changing read only flag for active device makes no sense */
 	if (tdmd.flags & CRYPT_ACTIVATE_READONLY)
 		sdmd->flags |= CRYPT_ACTIVATE_READONLY;
 	else
 		sdmd->flags &= ~CRYPT_ACTIVATE_READONLY;
 
-	if (tgt->type == DM_CRYPT && sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
-		r = crypt_volume_key_set_description(tgt->u.crypt.vk,
-						     src->u.crypt.vk->key_description,
-						     src->u.crypt.vk->keyring_key_type);
-		if (r)
-			goto out;
-	} else if (tgt->type == DM_CRYPT) {
+	/*
+	 * Only LUKS2 allows altering between volume key
+	 * passed by hexbyte representation and reference
+	 * to kernel keyring service.
+	 *
+	 * To make it easier pass src key directly after
+	 * it was properly verified in crypt_compare_dm_devices
+	 * call above.
+	 */
+	if (isLUKS2(cd->type) && tgt->type == DM_CRYPT && src->u.crypt.vk) {
 		crypt_free_volume_key(tgt->u.crypt.vk);
-		tgt->u.crypt.vk = crypt_alloc_volume_key(src->u.crypt.vk->keylength, src->u.crypt.vk->key);
-		if (!tgt->u.crypt.vk) {
-			r = -ENOMEM;
-			goto out;
-		}
+		tgt->u.crypt.vk = src->u.crypt.vk;
 	}
 
 	if (tgt->type == DM_CRYPT)
@@ -3396,6 +3433,10 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 
 	r = dm_reload_device(cd, name, &tdmd, dmflags, 1);
 out:
+	/* otherwise dm_targets_free would free src key */
+	if (src->u.crypt.vk == tgt->u.crypt.vk)
+		tgt->u.crypt.vk = NULL;
+
 	dm_targets_free(cd, &tdmd);
 	free(CONST_CAST(void*)tdmd.uuid);
 
@@ -3415,8 +3456,15 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	struct device *data_device = NULL;
 	bool clear = false;
 
-	if (!cd || !cd->type || !name || !iname || !(sdmd->flags & CRYPT_ACTIVATE_REFRESH))
+	assert(cd);
+	assert(sdmd);
+	assert(sdmdi);
+
+	if (!cd->type || !name || !iname || !(sdmd->flags & CRYPT_ACTIVATE_REFRESH))
 		return -EINVAL;
+
+	src = &sdmd->segment;
+	srci = &sdmdi->segment;
 
 	r = dm_query_device(cd, name, DM_ACTIVE_DEVICE | DM_ACTIVE_CRYPT_CIPHER |
 				  DM_ACTIVE_UUID | DM_ACTIVE_CRYPT_KEYSIZE |
@@ -3455,9 +3503,6 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	if (sdmdi->segment.u.integrity.meta_device || tdmdi.segment.u.integrity.meta_device)
 		return -ENOTSUP;
 
-	src = &sdmd->segment;
-	srci = &sdmdi->segment;
-
 	r = device_alloc(cd, &data_device, ipath);
 	if (r < 0)
 		goto out;
@@ -3486,20 +3531,13 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	else
 		sdmdi->flags &= ~CRYPT_ACTIVATE_READONLY;
 
-	if (sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
-		r = crypt_volume_key_set_description(tgt->u.crypt.vk,
-						     src->u.crypt.vk->key_description,
-						     src->u.crypt.vk->keyring_key_type);
-		if (r)
-			goto out;
-	} else {
-		crypt_free_volume_key(tgt->u.crypt.vk);
-		tgt->u.crypt.vk = crypt_alloc_volume_key(src->u.crypt.vk->keylength, src->u.crypt.vk->key);
-		if (!tgt->u.crypt.vk) {
-			r = -ENOMEM;
-			goto out;
-		}
-	}
+	/*
+	 * To make it easier pass src key directly after
+	 * it was properly verified in crypt_compare_dm_devices
+	 * call above.
+	 */
+	crypt_free_volume_key(tgt->u.crypt.vk);
+	tgt->u.crypt.vk = src->u.crypt.vk;
 
 	r = device_block_adjust(cd, src->data_device, DEV_OK,
 				src->u.crypt.offset, &sdmd->size, NULL);
@@ -3565,6 +3603,9 @@ out:
 			dm_resume_device(cd, iname, 0);
 	}
 
+	/* otherwise dm_targets_free would free src key */
+	if (tgt->u.crypt.vk == src->u.crypt.vk)
+		tgt->u.crypt.vk = NULL;
 	dm_targets_free(cd, &tdmd);
 	dm_targets_free(cd, &tdmdi);
 	free(CONST_CAST(void*)tdmdi.uuid);
