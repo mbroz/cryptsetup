@@ -277,6 +277,36 @@ const char *key_type_name(key_type_t type)
 	return NULL;
 }
 
+key_type_t keyring_type_and_name(const char *key_name, const char **name)
+{
+	char type[16], *name_tmp;
+	size_t type_len;
+
+	if (!key_name || key_name[0] != '%')
+		return INVALID_KEY;
+
+	key_name++;
+	if (!*key_name || *key_name == ':')
+		return INVALID_KEY;
+
+	name_tmp = strchr(key_name, ':');
+	if (!name_tmp)
+		return INVALID_KEY;
+	name_tmp++;
+
+	type_len = name_tmp - key_name - 1;
+	if (type_len >= sizeof(type) - 1)
+		return INVALID_KEY;
+
+	memcpy(type, key_name, type_len);
+	type[type_len] = '\0';
+
+	if (name)
+		*name = name_tmp;
+
+	return key_type_by_name(type);
+}
+
 key_serial_t keyring_find_key_id_by_name(const char *key_name)
 {
 	key_serial_t id = 0;
@@ -423,6 +453,11 @@ int keyring_read_by_id(const char *key_desc, char **passphrase, size_t *passphra
 const char *key_type_name(key_type_t type)
 {
 	return NULL;
+}
+
+key_type_t keyring_type_and_name(const char *key_name, const char **name)
+{
+	return INVALID_KEY;
 }
 
 key_serial_t keyring_find_key_id_by_name(const char *key_name)

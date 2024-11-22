@@ -64,6 +64,7 @@ struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t key
 void crypt_free_volume_key(struct volume_key *vk);
 int crypt_volume_key_set_description(struct volume_key *key,
 				     const char *key_description, key_type_t keyring);
+int crypt_volume_key_set_description_by_name(struct volume_key *vk, const char *key_name);
 void crypt_volume_key_set_id(struct volume_key *vk, int id);
 int crypt_volume_key_get_id(const struct volume_key *vk);
 void crypt_volume_key_add_next(struct volume_key **vks, struct volume_key *vk);

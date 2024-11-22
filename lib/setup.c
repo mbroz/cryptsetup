@@ -5336,7 +5336,14 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	} else if (isTCRYPT(cd->type)) {
 		r = 0;
 	} else if (name && isPLAIN(cd->type)) {
-		if (kc->get_passphrase && kc->type != CRYPT_KC_TYPE_TOKEN) {
+		if (kc->type == CRYPT_KC_TYPE_VK_KEYRING) {
+			vk = crypt_alloc_volume_key(cd->u.plain.key_size, NULL);
+			if (!vk)
+				return -ENOMEM;
+			r = crypt_volume_key_set_description_by_name(vk, kc->u.vk_kr.key_description);
+			if (r < 0)
+				log_err(cd, _("Cannot use keyring key %s."), kc->u.vk_kr.key_description);
+		} else if (kc->get_passphrase && kc->type != CRYPT_KC_TYPE_TOKEN) {
 			r = kc->get_passphrase(cd, kc, &passphrase, &passphrase_size);
 			if (r < 0)
 				return r;
@@ -7295,7 +7302,10 @@ int crypt_use_keyring_for_vk(struct crypt_device *cd)
 	uint32_t dmc_flags;
 
 	/* dm backend must be initialized */
-	if (!cd || !isLUKS2(cd->type))
+	if (!cd)
+		return 0;
+
+	if (!isPLAIN(cd->type) && !isLUKS2(cd->type))
 		return 0;
 
 	if (!_vk_via_keyring || !kernel_keyring_support())

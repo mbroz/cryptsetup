@@ -57,6 +57,17 @@ int crypt_volume_key_set_description(struct volume_key *vk,
 	return 0;
 }
 
+int crypt_volume_key_set_description_by_name(struct volume_key *vk, const char *key_name)
+{
+	const char *key_description = NULL;
+	key_type_t keyring = keyring_type_and_name(key_name, &key_description);
+
+	if (keyring == INVALID_KEY)
+		return -EINVAL;
+
+	return crypt_volume_key_set_description(vk, key_description, keyring);
+}
+
 void crypt_volume_key_set_id(struct volume_key *vk, int id)
 {
 	if (vk && id >= 0)

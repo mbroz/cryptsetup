@@ -21,6 +21,7 @@ typedef enum { LOGON_KEY = 0, USER_KEY, BIG_KEY, TRUSTED_KEY, ENCRYPTED_KEY, INV
 
 const char *key_type_name(key_type_t ktype);
 key_type_t key_type_by_name(const char *name);
+key_type_t keyring_type_and_name(const char *key_name, const char **name);
 key_serial_t keyring_find_key_id_by_name(const char *key_name);
 key_serial_t keyring_find_keyring_id_by_name(const char *keyring_name);
 
