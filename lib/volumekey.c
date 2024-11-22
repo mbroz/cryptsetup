@@ -27,6 +27,7 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 	vk->key_description = NULL;
 	vk->keyring = INVALID_KEY;
 	vk->keylength = keylength;
+	vk->uploaded = false;
 	vk->id = KEY_NOT_VERIFIED;
 	vk->next = NULL;
 

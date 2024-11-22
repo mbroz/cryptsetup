@@ -4159,9 +4159,10 @@ static key_serial_t crypt_single_volume_key_load_in_user_keyring(struct crypt_de
 		    type_name, user_key_name);
 
 	kid = keyring_add_key_to_custom_keyring(cd->keyring_key_type, user_key_name, vk->key, vk->keylength, cd->keyring_to_link_vk);
-	if (kid <= 0) {
+	if (kid <= 0)
 		log_dbg(cd, "The keyring_link_key_to_keyring function failed (error %d).", errno);
-	}
+	else
+		vk->uploaded = true;
 
 	return kid;
 }
@@ -4181,7 +4182,7 @@ static int crypt_volume_key_load_in_user_keyring(struct crypt_device *cd, struct
 	if (kid1 <= 0)
 		return -EINVAL;
 
-	vk = vk->next;
+	vk = crypt_volume_key_next(vk);
 	if (vk) {
 		assert(cd->user_key_name2);
 		kid2 = crypt_single_volume_key_load_in_user_keyring(cd, vk, cd->user_key_name2);
@@ -4298,7 +4299,7 @@ static int resume_luks2_by_volume_key(struct crypt_device *cd,
 
 out:
 	if (r < 0) {
-		crypt_drop_keyring_key(cd, p_crypt);
+		crypt_drop_uploaded_keyring_key(cd, p_crypt);
 		if (cd->link_vk_to_keyring && kid1)
 			crypt_unlink_key_from_custom_keyring(cd, kid1);
 		if (cd->link_vk_to_keyring && kid2)
@@ -5442,8 +5443,8 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 		r = unlocked_keyslot;
 out:
 	if (r < 0) {
-		crypt_drop_keyring_key(cd, vk);
-		crypt_drop_keyring_key(cd, crypt_key);
+		crypt_drop_uploaded_keyring_key(cd, vk);
+		crypt_drop_uploaded_keyring_key(cd, crypt_key);
 		if (cd->link_vk_to_keyring && kid1)
 			crypt_unlink_key_from_custom_keyring(cd, kid1);
 		if (cd->link_vk_to_keyring && kid2)
@@ -7331,8 +7332,10 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 	if (kid < 0) {
 		log_dbg(cd, "keyring_add_key_in_thread_keyring failed (error %d)", errno);
 		log_err(cd, _("Failed to load key in kernel keyring."));
-	} else
+	} else {
 		crypt_set_key_in_keyring(cd, 1);
+		vk->uploaded = true;
+	}
 
 	return kid < 0 ? -EINVAL : 0;
 }
@@ -7516,12 +7519,13 @@ int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_descripti
 }
 
 /* internal only */
-void crypt_drop_keyring_key(struct crypt_device *cd, struct volume_key *vks)
+void crypt_drop_uploaded_keyring_key(struct crypt_device *cd, struct volume_key *vks)
 {
 	struct volume_key *vk = vks;
 
 	while (vk) {
-		crypt_drop_keyring_key_by_description(cd, vk->key_description, LOGON_KEY);
+		if (vk->uploaded)
+			crypt_drop_keyring_key_by_description(cd, vk->key_description, LOGON_KEY);
 		vk = crypt_volume_key_next(vk);
 	}
 }

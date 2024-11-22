@@ -51,9 +51,10 @@ struct luks2_reencrypt;
 
 struct volume_key {
 	int id;
-	size_t keylength;
-	const char *key_description;
-	key_type_t keyring;
+	size_t keylength; /* length in bytes */
+	const char *key_description; /* keyring key name/description */
+	key_type_t keyring; /* type of keyring where the key is stored */
+	bool uploaded; /* uploaded to keyring, can drop it */
 	struct volume_key *next;
 	char key[];
 };
@@ -235,7 +236,7 @@ int crypt_keyring_get_key_by_name(struct crypt_device *cd,
 		size_t *key_size);
 int crypt_use_keyring_for_vk(struct crypt_device *cd);
 void crypt_drop_keyring_key_by_description(struct crypt_device *cd, const char *key_description, key_type_t ktype);
-void crypt_drop_keyring_key(struct crypt_device *cd, struct volume_key *vks);
+void crypt_drop_uploaded_keyring_key(struct crypt_device *cd, struct volume_key *vks);
 
 static inline uint64_t compact_version(uint16_t major, uint16_t minor, uint16_t patch, uint16_t release)
 {
