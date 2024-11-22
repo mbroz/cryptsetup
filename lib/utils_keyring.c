@@ -27,11 +27,11 @@ static const struct {
 	key_type_t type;
 	const char *type_name;
 } key_types[] = {
-	{ LOGON_KEY,	"logon" },
-	{ USER_KEY,	"user"	},
-	{ BIG_KEY,	"big_key"	},
-	{ TRUSTED_KEY,	"trusted"	},
-	{ ENCRYPTED_KEY,	"encrypted"	},
+	{ LOGON_KEY,     "logon" },
+	{ USER_KEY,      "user" },
+	{ BIG_KEY,       "big_key" },
+	{ TRUSTED_KEY,   "trusted" },
+	{ ENCRYPTED_KEY, "encrypted" },
 };
 
 #include <linux/keyctl.h>
