@@ -300,6 +300,7 @@ static int crypt_argon2_check(const char *kdf, const char *password,
 	} while (ms < ms_atleast || ms > ms_atmost);
 out:
 	if (key) {
+		/* Key can be derived from a real provided password */
 		crypt_backend_memzero(key, key_length);
 		free(key);
 	}
@@ -381,6 +382,7 @@ static int crypt_pbkdf_check(const char *kdf, const char *hash,
 	}
 out:
 	if (key) {
+		/* Key can be derived from a real provided password */
 		crypt_backend_memzero(key, key_length);
 		free(key);
 	}
