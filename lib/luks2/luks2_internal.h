@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * LUKS - Linux Unified Key Setup v2
+ * LUKS - Linux Unified Key Setup v2 (with JSON internals)
  *
  * Copyright (C) 2015-2024 Red Hat, Inc. All rights reserved.
  * Copyright (C) 2015-2024 Milan Broz
@@ -89,7 +89,7 @@ json_object *LUKS2_array_remove(json_object *array, const char *num);
  */
 
 /**
- * LUKS2 keyslots handlers (EXPERIMENTAL)
+ * LUKS2 keyslots handlers
  */
 typedef int (*keyslot_alloc_func)(struct crypt_device *cd, int keyslot,
 				  size_t volume_key_len,
@@ -152,7 +152,7 @@ struct reenc_protection {
 };
 
 /**
- * LUKS2 digest handlers (EXPERIMENTAL)
+ * LUKS2 digest handlers
  */
 typedef int (*digest_verify_func)(struct crypt_device *cd, int digest,
 				  const char *volume_key, size_t volume_key_len);
@@ -337,10 +337,6 @@ uint64_t LUKS2_segment_size(struct luks2_hdr *hdr,
 	int segment,
 	unsigned blockwise);
 
-bool LUKS2_segment_set_size(struct luks2_hdr *hdr,
-	int segment,
-	const uint64_t *segment_size_bytes);
-
 uint64_t LUKS2_opal_segment_size(struct luks2_hdr *hdr,
 	int segment,
 	unsigned blockwise);
@@ -348,14 +344,6 @@ uint64_t LUKS2_opal_segment_size(struct luks2_hdr *hdr,
 int LUKS2_segment_is_type(struct luks2_hdr *hdr,
 	int segment,
 	const char *type);
-
-bool LUKS2_segment_is_hw_opal(struct luks2_hdr *hdr, int segment);
-bool LUKS2_segment_is_hw_opal_crypt(struct luks2_hdr *hdr, int segment);
-bool LUKS2_segment_is_hw_opal_only(struct luks2_hdr *hdr, int segment);
-
-int LUKS2_get_opal_segment_number(struct luks2_hdr *hdr, int segment,
-				  uint32_t *ret_opal_segment_number);
-int LUKS2_get_opal_key_size(struct luks2_hdr *hdr, int segment);
 
 int LUKS2_segment_by_type(struct luks2_hdr *hdr,
 	const char *type);
@@ -365,14 +353,19 @@ int LUKS2_last_segment_by_type(struct luks2_hdr *hdr,
 
 int LUKS2_get_default_segment(struct luks2_hdr *hdr);
 
-bool LUKS2_segments_dynamic_size(struct luks2_hdr *hdr);
-
 int LUKS2_reencrypt_digest_new(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_digest_old(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_segment_new(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_segment_old(struct luks2_hdr *hdr);
-unsigned LUKS2_reencrypt_vks_count(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise);
+
+int LUKS2_reencrypt_max_hotzone_size(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	const struct reenc_protection *rp,
+	int reencrypt_keyslot,
+	uint64_t *r_length);
+
+void LUKS2_reencrypt_protection_erase(struct reenc_protection *rp);
 
 /*
  * Generic LUKS2 digest

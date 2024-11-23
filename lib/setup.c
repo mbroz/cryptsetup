@@ -18,7 +18,6 @@
 #include "libcryptsetup.h"
 #include "luks1/luks.h"
 #include "luks2/luks2.h"
-#include "luks2/luks2_internal.h"
 #include "loopaes/loopaes.h"
 #include "verity/verity.h"
 #include "tcrypt/tcrypt.h"

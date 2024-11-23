@@ -229,6 +229,24 @@ int LUKS2_keyslot_swap(struct crypt_device *cd,
 	int keyslot2);
 
 /*
+ * Segments
+ */
+
+bool LUKS2_segment_set_size(struct luks2_hdr *hdr,
+	int segment,
+	const uint64_t *segment_size_bytes);
+
+bool LUKS2_segment_is_hw_opal(struct luks2_hdr *hdr, int segment);
+bool LUKS2_segment_is_hw_opal_crypt(struct luks2_hdr *hdr, int segment);
+bool LUKS2_segment_is_hw_opal_only(struct luks2_hdr *hdr, int segment);
+
+int LUKS2_get_opal_segment_number(struct luks2_hdr *hdr, int segment,
+				  uint32_t *ret_opal_segment_number);
+int LUKS2_get_opal_key_size(struct luks2_hdr *hdr, int segment);
+
+bool LUKS2_segments_dynamic_size(struct luks2_hdr *hdr);
+
+/*
  * Generic LUKS2 token
  */
 int LUKS2_token_json_get(struct luks2_hdr *hdr,
@@ -472,12 +490,6 @@ int LUKS2_reencrypt_digest_verify(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	struct volume_key *vks);
 
-int LUKS2_reencrypt_max_hotzone_size(struct crypt_device *cd,
-	struct luks2_hdr *hdr,
-	const struct reenc_protection *rp,
-	int reencrypt_keyslot,
-	uint64_t *r_length);
-
-void LUKS2_reencrypt_protection_erase(struct reenc_protection *rp);
+unsigned LUKS2_reencrypt_vks_count(struct luks2_hdr *hdr);
 
 #endif
