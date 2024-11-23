@@ -1534,6 +1534,10 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 		type = crypt_get_default_type();
 
 	if (isLUKS2(type)) {
+		if (ARG_SET(OPT_HW_OPAL_ONLY_ID) && (ARG_SET(OPT_CIPHER_ID) || ARG_SET(OPT_KEY_SIZE_ID))) {
+			log_err(_("OPAL hw-only encryption does not support --cipher and --key-size, options ignored."));
+		}
+
 		params = &params2;
 	} else if (isLUKS1(type)) {
 		params = &params1;
@@ -2055,6 +2059,12 @@ static int action_open_luks(void)
 		} while ((r == -EPERM || r == -ERANGE) && (--tries > 0));
 	}
 out:
+	if (r >= 0 && activated_name && activate_flags & (CRYPT_ACTIVATE_ALLOW_DISCARDS |
+	    CRYPT_ACTIVATE_SAME_CPU_CRYPT | CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS|
+	    CRYPT_ACTIVATE_NO_READ_WORKQUEUE | CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE|
+	    CRYPT_ACTIVATE_HIGH_PRIORITY) && crypt_get_hw_encryption_type(cd) == CRYPT_OPAL_HW_ONLY)
+		log_err(_("Some specified activation parameters were ignored with OPAL hw-only encryption."));
+
 	if (r >= 0 && ARG_SET(OPT_PERSISTENT_ID) &&
 	    (crypt_get_active_device(cd, activated_name, &cad) ||
 	     crypt_persistent_flags_set(cd, CRYPT_FLAGS_ACTIVATION, cad.flags & activate_flags)))
