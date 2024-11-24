@@ -28,7 +28,7 @@ int crypt_parse_name_and_mode(const char *s, char *cipher,
 			      int *key_nums, char *cipher_mode);
 int crypt_parse_hash_integrity_mode(const char *s, char *integrity);
 int crypt_parse_integrity_mode(const char *s, char *integrity,
-			       int *integrity_key_size);
+			       int *integrity_key_size, int required_key_size);
 int crypt_parse_pbkdf(const char *s, const char **pbkdf);
 
 ssize_t crypt_hex_to_bytes(const char *hex, char **result, int safe_alloc);

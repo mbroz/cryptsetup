@@ -1892,8 +1892,7 @@ static int LUKS2_check_encryption_params(struct crypt_device *cd,
 	const char **ret_integrity,
 	size_t *ret_integrity_key_size)
 {
-	int r;
-	size_t integrity_key_size = 0;
+	int r, integrity_key_size = 0;
 
 	assert(cipher);
 	assert(cipher_mode);

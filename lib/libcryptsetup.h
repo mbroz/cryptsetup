@@ -594,7 +594,7 @@ struct crypt_params_integrity {
 	uint32_t sector_size;                /**< sector size in bytes */
 	uint32_t buffer_sectors;             /**< number of sectors in one buffer */
 	const char *integrity;               /**< integrity algorithm, NULL for LUKS2 */
-	uint32_t integrity_key_size;         /**< integrity key size in bytes, info only, 0 for LUKS2 */
+	uint32_t integrity_key_size;         /**< integrity key size in bytes, info only */
 
 	const char *journal_integrity;       /**< journal integrity algorithm */
 	const char *journal_integrity_key;   /**< journal integrity key, only for crypt_load */
