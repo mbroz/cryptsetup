@@ -2015,6 +2015,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	char cipher_spec[2*MAX_CAPI_ONE_LEN];
 	const char *integrity = params ? params->integrity : NULL;
 	size_t integrity_key_size = 0; /* only for independent, separate key in HMAC */
+	struct volume_key *integrity_key = NULL;
 	uint64_t data_offset_bytes, dev_size, metadata_size_bytes, keyslots_size_bytes;
 
 	cd->u.luks2.hdr.jobj = NULL;
@@ -2180,10 +2181,19 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			goto out;
 		}
 
-		r = INTEGRITY_format(cd, params ? params->integrity_params : NULL, NULL, NULL, 0);
+		if (integrity_key_size) {
+			integrity_key = crypt_alloc_volume_key(integrity_key_size,
+					cd->volume_key->key + volume_key_size - integrity_key_size);
+			if (!integrity_key) {
+				r = -ENOMEM;
+				goto out;
+			}
+		}
+		r = INTEGRITY_format(cd, params ? params->integrity_params : NULL, integrity_key, NULL, NULL, 0);
 		if (r)
 			log_err(cd, _("Cannot format integrity for device %s."),
 				data_device_path(cd));
+		crypt_free_volume_key(integrity_key);
 	}
 
 	if (r < 0)
@@ -2348,6 +2358,8 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	int r;
 	char cipher_spec[128];
 	const char *integrity = params ? params->integrity : NULL;
+	size_t integrity_key_size = 0; /* only for independent, separate key in HMAC */
+	struct volume_key *integrity_key = NULL;
 	uint32_t sector_size, opal_block_bytes, opal_segment_number = 1; /* We'll use the partition number if available later */
 	uint64_t alignment_offset_bytes, data_offset_bytes, device_size_bytes, opal_alignment_granularity_blocks,
 		 partition_offset_sectors, range_offset_blocks, range_size_bytes,
@@ -2487,9 +2499,12 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 		opal_segment_number = r;
 
 	if (cipher) {
+		if (params->integrity_params && params->integrity_params->integrity_key_size)
+			integrity_key_size = params->integrity_params->integrity_key_size;
+
 		r = LUKS2_check_encryption_params(cd, cipher, cipher_mode, integrity, 0,
 						  volume_keys_size - opal_params->user_key_size,
-						  params, &integrity, NULL);
+						  params, &integrity, &integrity_key_size);
 		if (r < 0)
 			goto out;
 	}
@@ -2536,7 +2551,9 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	}
 
 	r = LUKS2_generate_hdr(cd, &cd->u.luks2.hdr, cd->volume_key,
-			       cipher ? cipher_spec : NULL, integrity, 0, uuid,
+			       cipher ? cipher_spec : NULL,
+			       integrity, integrity_key_size,
+			       uuid,
 			       sector_size,
 			       data_offset_bytes,
 			       metadata_size_bytes, keyslots_size_bytes,
@@ -2615,7 +2632,17 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 			goto out;
 		}
 
-		r = INTEGRITY_format(cd, params->integrity_params, NULL, NULL,
+		if (integrity_key_size) {
+			integrity_key = crypt_alloc_volume_key(integrity_key_size,
+				cd->volume_key->key + volume_keys_size - integrity_key_size);
+
+			if (!integrity_key) {
+				r = -ENOMEM;
+				goto out;
+			}
+		}
+
+		r = INTEGRITY_format(cd, params->integrity_params, integrity_key, NULL, NULL,
 				     /*
 				      * Create reduced dm-integrity device only if locking range size does
 				      * not match device size.
@@ -2624,6 +2651,8 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 		if (r)
 			log_err(cd, _("Cannot format integrity for device %s."),
 				data_device_path(cd));
+
+		crypt_free_volume_key(integrity_key);
 		if (r < 0)
 			goto out;
 
@@ -2899,18 +2928,24 @@ out:
 
 static int _crypt_format_integrity(struct crypt_device *cd,
 				   const char *uuid,
-				   struct crypt_params_integrity *params)
+				   struct crypt_params_integrity *params,
+				   const char *integrity_key, size_t integrity_key_size)
 {
 	int r;
 	uint32_t integrity_tag_size;
 	char *integrity = NULL, *journal_integrity = NULL, *journal_crypt = NULL;
-	struct volume_key *journal_crypt_key = NULL, *journal_mac_key = NULL;
+	struct volume_key *journal_crypt_key = NULL, *journal_mac_key = NULL, *ik = NULL;
 
 	if (!params)
 		return -EINVAL;
 
 	if (uuid) {
 		log_err(cd, _("UUID is not supported for this crypt type."));
+		return -EINVAL;
+	}
+
+	if (integrity_key_size && integrity_key_size != params->integrity_key_size) {
+		log_err(cd, _("Integrity key size mismatch."));
 		return -EINVAL;
 	}
 
@@ -2980,10 +3015,19 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 	cd->u.integrity.params.journal_integrity = journal_integrity;
 	cd->u.integrity.params.journal_crypt = journal_crypt;
 
-	r = INTEGRITY_format(cd, params, cd->u.integrity.journal_crypt_key, cd->u.integrity.journal_mac_key, 0);
+	if (params->integrity_key_size) {
+		ik = crypt_alloc_volume_key(params->integrity_key_size, integrity_key);
+		if (!ik) {
+			r = -ENOMEM;
+			goto out;
+		}
+	}
+
+	r = INTEGRITY_format(cd, params, ik, cd->u.integrity.journal_crypt_key, cd->u.integrity.journal_mac_key, 0);
 	if (r)
-		log_err(cd, _("Cannot format integrity for device %s."),
-			mdata_device_path(cd));
+		log_err(cd, _("Cannot format integrity for device %s."), mdata_device_path(cd));
+
+	crypt_free_volume_key(ik);
 out:
 	if (r) {
 		crypt_free_volume_key(journal_crypt_key);
@@ -3038,7 +3082,7 @@ static int _crypt_format(struct crypt_device *cd,
 	else if (isVERITY(type))
 		r = _crypt_format_verity(cd, uuid, params);
 	else if (isINTEGRITY(type))
-		r = _crypt_format_integrity(cd, uuid, params);
+		r = _crypt_format_integrity(cd, uuid, params, volume_key, volume_key_size);
 	else {
 		log_err(cd, _("Unknown crypt device type %s requested."), type);
 		r = -EINVAL;

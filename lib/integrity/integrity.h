@@ -61,6 +61,7 @@ int INTEGRITY_hash_tag_size(const char *integrity);
 
 int INTEGRITY_format(struct crypt_device *cd,
 		     const struct crypt_params_integrity *params,
+		     struct volume_key *integrity_key,
 		     struct volume_key *journal_crypt_key,
 		     struct volume_key *journal_mac_key,
 		     uint64_t backing_device_sectors);

@@ -386,6 +386,7 @@ static int _create_reduced_device(struct crypt_device *cd,
 
 int INTEGRITY_format(struct crypt_device *cd,
 		     const struct crypt_params_integrity *params,
+		     struct volume_key *integrity_key,
 		     struct volume_key *journal_crypt_key,
 		     struct volume_key *journal_mac_key,
 		     uint64_t backing_device_sectors)
@@ -401,7 +402,6 @@ int INTEGRITY_format(struct crypt_device *cd,
 	uuid_t tmp_uuid_bin;
 	uint64_t data_offset_sectors;
 	struct device *p_metadata_device, *p_data_device, *reduced_device = NULL;
-	struct volume_key *vk = NULL;
 
 	uuid_generate(tmp_uuid_bin);
 	uuid_unparse(tmp_uuid_bin, tmp_uuid);
@@ -436,13 +436,9 @@ int INTEGRITY_format(struct crypt_device *cd,
 		p_data_device = crypt_data_device(cd);
 	}
 
-	/* There is no data area, we can actually use fake zeroed key */
-	if (params && params->integrity_key_size)
-		vk = crypt_alloc_volume_key(params->integrity_key_size, NULL);
-
 	r = dm_integrity_target_set(cd, tgt, 0, dmdi.size, p_metadata_device,
 			p_data_device, crypt_get_integrity_tag_size(cd),
-			data_offset_sectors, crypt_get_sector_size(cd), vk,
+			data_offset_sectors, crypt_get_sector_size(cd), integrity_key,
 			journal_crypt_key, journal_mac_key, params);
 	if (r < 0)
 		goto err;
@@ -471,7 +467,6 @@ int INTEGRITY_format(struct crypt_device *cd,
 	r = dm_remove_device(cd, tmp_name, CRYPT_DEACTIVATE_FORCE);
 err:
 	dm_targets_free(cd, &dmdi);
-	crypt_free_volume_key(vk);
 	if (reduced_device) {
 		dm_remove_device(cd, reduced_device_name, CRYPT_DEACTIVATE_FORCE);
 		device_free(cd, reduced_device);
