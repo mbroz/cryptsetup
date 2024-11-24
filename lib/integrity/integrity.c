@@ -124,26 +124,36 @@ int INTEGRITY_data_sectors(struct crypt_device *cd,
 	return 0;
 }
 
-int INTEGRITY_key_size(const char *integrity)
+int INTEGRITY_key_size(const char *integrity, int required_key_size)
 {
+	int ks = 0;
+
+	if (!integrity && required_key_size)
+		return -EINVAL;
+
 	if (!integrity)
 		return 0;
 
 	//FIXME: use crypto backend hash size
 	if (!strcmp(integrity, "aead"))
-		return 0;
+		ks = 0;
 	else if (!strcmp(integrity, "hmac(sha1)"))
-		return 20;
+		ks = required_key_size ?: 20;
 	else if (!strcmp(integrity, "hmac(sha256)"))
-		return 32;
+		ks = required_key_size ?: 32;
 	else if (!strcmp(integrity, "hmac(sha512)"))
-		return 64;
+		ks = required_key_size ?: 64;
 	else if (!strcmp(integrity, "poly1305"))
-		return 0;
+		ks = 0;
 	else if (!strcmp(integrity, "none"))
-		return 0;
+		ks = 0;
+	else
+		return -EINVAL;
 
-	return -EINVAL;
+	if (required_key_size && ks != required_key_size)
+		return -EINVAL;
+
+	return ks;
 }
 
 /* Return hash or hmac(hash) size, if known */
