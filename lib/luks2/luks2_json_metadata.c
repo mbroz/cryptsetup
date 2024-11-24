@@ -2129,6 +2129,10 @@ static void hdr_dump_segments(struct crypt_device *cd, json_object *hdr_jobj)
 		    json_object_object_get_ex(jobj1, "type", &jobj2))
 			log_std(cd, "\tintegrity: %s\n", json_object_get_string(jobj2));
 
+		if (json_object_object_get_ex(jobj_segment, "integrity", &jobj1) &&
+		    json_object_object_get_ex(jobj1, "key_size", &jobj2))
+			log_std(cd, "\tintegrity key size: %" PRIu32 " [bits]\n", crypt_jobj_get_uint32(jobj2) * 8);
+
 		if (json_object_object_get_ex(jobj_segment, "flags", &jobj1) &&
 		    (flags = (int)json_object_array_length(jobj1)) > 0) {
 			jobj2 = json_object_array_get_idx(jobj1, 0);
@@ -2362,6 +2366,24 @@ const char *LUKS2_get_integrity(struct luks2_hdr *hdr, int segment)
 		return NULL;
 
 	return json_object_get_string(jobj3);
+}
+
+int LUKS2_get_integrity_key_size(struct luks2_hdr *hdr, int segment)
+{
+	json_object *jobj1, *jobj2, *jobj3;
+
+	jobj1 = LUKS2_get_segment_jobj(hdr, segment);
+	if (!jobj1)
+		return -1;
+
+	if (!json_object_object_get_ex(jobj1, "integrity", &jobj2))
+		return -1;
+
+	/* The value is optional, do not fail if not present */
+	if (!json_object_object_get_ex(jobj2, "key_size", &jobj3))
+		return 0;
+
+	return json_object_get_int(jobj3);
 }
 
 /* FIXME: this only ensures that once we have journal encryption, it is not ignored. */
@@ -2715,7 +2737,7 @@ int LUKS2_activate(struct crypt_device *cd,
 					crypt_key, crypt_get_cipher_spec(cd),
 					crypt_get_iv_offset(cd), crypt_get_data_offset(cd),
 					crypt_get_integrity(cd) ?: "none",
-					crypt_get_integrity_tag_size(cd), 0, /* FIXME */
+					crypt_get_integrity_key_size(cd), crypt_get_integrity_tag_size(cd),
 					crypt_get_sector_size(cd));
 	} else
 		r = dm_linear_target_set(&dmd.segment, 0,
