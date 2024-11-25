@@ -16,6 +16,7 @@ TESTS = 00modules-test \
 	device-test \
 	keyring-test \
 	keyring-compat-test \
+	keyring-trusted-test \
 	luks2-validation-test \
 	luks2-integrity-test \
 	vectors-test \
@@ -86,6 +87,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	device-test \
 	keyring-test \
 	keyring-compat-test \
+	keyring-trusted-test \
 	integrity-compat-test \
 	cryptsetup-valg-supps valg.sh valg-api.sh \
 	blockwise-compat-test \

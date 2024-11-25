@@ -11,6 +11,7 @@ if get_option('cryptsetup')
         'utils_reencrypt.c',
         'utils_reencrypt_luks1.c',
         'utils_tools.c',
+        'utils_key_description.c',
     )
     cryptsetup_files += lib_tools_files
     cryptsetup_deps = [

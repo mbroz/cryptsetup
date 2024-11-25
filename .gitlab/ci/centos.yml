@@ -10,7 +10,8 @@
       libblkid-devel libpwquality-devel libselinux-devel libssh-devel libtool
       libuuid-devel make popt-devel libsepol-devel nc openssh-clients passwd
       pkgconfig sharutils sshpass tar uuid-devel vim-common device-mapper
-      expect gettext git jq keyutils openssl-devel openssl gem
+      expect gettext git jq keyutils openssl-devel openssl gem swtpm swtpm-tools
+      tpm2-tools
     - sudo gem install asciidoctor
     - sudo -E git clean -xdf
     - ./autogen.sh
@@ -28,6 +29,7 @@ test-main-commit-centos-stream9:
   interruptible: true
   variables:
     RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
     - if: $RUN_SYSTEMD_PLUGIN_TEST != null
       when: never
@@ -49,6 +51,7 @@ test-mergerq-centos-stream9:
   interruptible: true
   variables:
     RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
     - if: $RUN_SYSTEMD_PLUGIN_TEST != null
       when: never

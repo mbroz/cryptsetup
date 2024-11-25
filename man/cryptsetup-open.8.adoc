@@ -42,18 +42,35 @@ create <name> <device> (*OBSOLETE syntax*)
 Opens (creates a mapping with) <name> backed by device <device>.
 
 *WARNING:* You should always specify options *--cipher*, *--key-size* and
-(if no keyfile is used) then also *--hash* to avoid incompatibility as
+(if no keyfile or keyring is used) then also *--hash* to avoid incompatibility as
 default values can be different in older cryptsetup versions. +
+
+The plain format also allows retrieving a volume key from a kernel keyring
+specified by *--volume-key-keyring*.  Key in kernel keyring must be configured
+before issuing cryptsetup commands, as cryptsetup does not upload any keys to
+the keyring in plain mode. For subsequent commands (like resize), the user must
+ensure that the key in the keyring is unchanged. Otherwise, reloading the key
+can cause data corruption after an unexpected key change.
 
 *<options>* can be [--hash, --cipher, --verify-passphrase, --sector-size,
 --key-file, --keyfile-size, --keyfile-offset, --key-size, --offset,
 --skip, --device-size, --size, --readonly, --shared, --allow-discards,
---refresh, --timeout, --verify-passphrase, --iv-large-sectors].
+--refresh, --timeout, --verify-passphrase, --iv-large-sectors, --volume-key-keyring].
 
-Example: 'cryptsetup open --type plain --cipher aes-cbc-essiv:sha256 --key-size 256 --hash sha256 /dev/sda10 e1' maps the raw
-encrypted device /dev/sda10 to the mapped (decrypted) device
-/dev/mapper/e1, which can then be mounted, fsck-ed or have a filesystem
-created on it.
+*EXAMPLES:*
+
+To map the encrypted device /dev/sda10 to the decrypted device /dev/mapper/e1, you can use
+
+*cryptsetup open --type plain --cipher aes-cbc-essiv:sha256 --key-size 256 --hash sha256 /dev/sda10 e1*
+
+The decrypted device can then be used as a normal block device to mount a filesystem.
+
+To map a device with a volume key in the preconfigured trusted or encrypted keyring, you need to specify
+keyring with the key and remove hash specification, for example, to use *%trusted:mykey*:
+
+*cryptsetup open --type plain /dev/sda10 e1 --volume-key-keyring=%trusted:mykey --cipher aes-xts-plain64 --key-size 256*
+
+Note that the key size must match the preconfigured key in the keyring.
 
 === LUKS
 *open <device> <name>* +
