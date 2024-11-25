@@ -160,6 +160,9 @@ static void _dm_set_crypt_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 26, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_CRYPT_HIGH_PRIORITY_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 28, 0, crypt_maj, crypt_min, crypt_patch))
+		_dm_flags |= DM_CRYPT_INTEGRITY_KEY_SIZE_OPT_SUPPORTED;
+
 	_dm_crypt_checked = true;
 }
 
@@ -540,6 +543,7 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 	int r, max_size, null_cipher = 0, num_options = 0, keystr_len = 0;
 	char *params = NULL, *hexkey = NULL;
 	char sector_feature[32], features[512], integrity_dm[256], cipher_dm[256];
+	char int_ksize_feature[32];
 
 	if (!tgt)
 		return NULL;
@@ -567,9 +571,11 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 		num_options++;
 	if (tgt->u.crypt.sector_size != SECTOR_SIZE)
 		num_options++;
+	if (tgt->u.crypt.integrity && tgt->u.crypt.integrity_key_size)
+		num_options++;
 
-	if (num_options) { /* MAX length  int32 + 15 + 15 + 23 + 18 + 19 + 17 + 14 + 13 + int32 + integrity_str */
-		r = snprintf(features, sizeof(features), " %d%s%s%s%s%s%s%s%s%s", num_options,
+	if (num_options) { /* MAX length  int32 + 15 + 15 + 23 + 18 + 19 + 17 + 14 + 13 + int32 + integrity_str + 21 + int32 */
+		r = snprintf(features, sizeof(features), " %d%s%s%s%s%s%s%s%s%s%s", num_options,
 		(flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? " allow_discards" : "",
 		(flags & CRYPT_ACTIVATE_SAME_CPU_CRYPT) ? " same_cpu_crypt" : "",
 		(flags & CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS) ? " submit_from_crypt_cpus" : "",
@@ -579,7 +585,9 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 		(flags & CRYPT_ACTIVATE_HIGH_PRIORITY) ? " high_priority" : "",
 		(tgt->u.crypt.sector_size != SECTOR_SIZE) ?
 			_uf(sector_feature, sizeof(sector_feature), "sector_size", tgt->u.crypt.sector_size) : "",
-		integrity_dm);
+		integrity_dm,
+		(tgt->u.crypt.integrity && tgt->u.crypt.integrity_key_size) ?
+			_uf(int_ksize_feature, sizeof(int_ksize_feature), "integrity_key_size", tgt->u.crypt.integrity_key_size) : "");
 		if (r < 0 || (size_t)r >= sizeof(features))
 			goto out;
 	} else
@@ -1748,6 +1756,10 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 			log_err(cd, _("The device size is not multiple of the requested sector size."));
 			r = -EINVAL;
 		}
+		if (dmd->segment.u.crypt.integrity_key_size && !(dmt_flags & DM_CRYPT_INTEGRITY_KEY_SIZE_OPT_SUPPORTED)) {
+			log_err(cd, _("Requested integrity_key_size option is not supported."));
+			r = -EINVAL;
+		}
 	}
 
 	if (dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_RECALCULATE) &&
@@ -2065,6 +2077,8 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 				if (!rintegrity)
 					goto err;
 				rintegrity++;
+			} else if (sscanf(arg, "integrity_key_size:%u", &val) == 1) {
+				tgt->u.crypt.integrity_key_size = val;
 			} else if (sscanf(arg, "sector_size:%u", &val) == 1) {
 				tgt->u.crypt.sector_size = val;
 			} else /* unknown option */
@@ -3142,7 +3156,8 @@ int dm_is_dm_kernel_name(const char *name)
 
 int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct volume_key *vk, const char *cipher,
-	uint64_t iv_offset, uint64_t data_offset, const char *integrity, uint32_t tag_size,
+	uint64_t iv_offset, uint64_t data_offset,
+	const char *integrity, uint32_t integrity_key_size, uint32_t tag_size,
 	uint32_t sector_size)
 {
 	char *dm_integrity = NULL;
@@ -3168,6 +3183,7 @@ int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg
 	tgt->u.crypt.offset = data_offset;
 	tgt->u.crypt.tag_size = tag_size;
 	tgt->u.crypt.sector_size = sector_size;
+	tgt->u.crypt.integrity_key_size = integrity_key_size;
 
 	return 0;
 }

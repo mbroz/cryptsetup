@@ -64,6 +64,7 @@ static inline uint32_t act2dmflags(uint32_t act_flags)
 #define DM_INTEGRITY_RESET_RECALC_SUPPORTED (1 << 27) /* dm-integrity automatic recalculation supported */
 #define DM_VERITY_TASKLETS_SUPPORTED (1 << 28) /* dm-verity tasklets supported */
 #define DM_CRYPT_HIGH_PRIORITY_SUPPORTED (1 << 29) /* dm-crypt high priority workqueue flag supported  */
+#define DM_CRYPT_INTEGRITY_KEY_SIZE_OPT_SUPPORTED (1 << 30) /* dm-crypt support for integrity_key_size option */
 
 typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_ZERO, DM_UNKNOWN } dm_target_type;
 enum tdirection { TARGET_EMPTY = 0, TARGET_SET, TARGET_QUERY };
@@ -109,6 +110,7 @@ struct dm_target {
 		uint64_t iv_offset;	/* IV initialisation sector */
 		uint32_t tag_size;	/* additional on-disk tag size */
 		uint32_t sector_size;	/* encryption sector size */
+		uint32_t integrity_key_size; /* for wrapped key HMAC */
 	} crypt;
 	struct {
 		struct device *hash_device;
@@ -183,8 +185,9 @@ void dm_targets_free(struct crypt_device *cd, struct crypt_dm_active_device *dmd
 
 int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct volume_key *vk, const char *cipher,
-	uint64_t iv_offset, uint64_t data_offset, const char *integrity,
-	uint32_t tag_size, uint32_t sector_size);
+	uint64_t iv_offset, uint64_t data_offset,
+	const char *integrity, uint32_t integrity_key_size, uint32_t tag_size,
+	uint32_t sector_size);
 int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
 	struct device *data_device, struct device *hash_device, struct device *fec_device,
 	const char *root_hash, uint32_t root_hash_size, const char* root_hash_sig_key_desc,
