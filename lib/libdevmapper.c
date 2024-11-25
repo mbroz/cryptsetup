@@ -591,12 +591,16 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 	if (null_cipher)
 		hexkey = crypt_bytes_to_hex(0, NULL);
 	else if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
-		keystr_len = strlen(tgt->u.crypt.vk->key_description) + int_log10(tgt->u.crypt.vk->keylength) + 10;
+		if (!tgt->u.crypt.vk->key_description || tgt->u.crypt.vk->keyring == INVALID_KEY)
+			goto out;
+		keystr_len = strlen(tgt->u.crypt.vk->key_description) +
+			int_log10(tgt->u.crypt.vk->keylength) +
+			24 /* type and separators */;
 		hexkey = crypt_safe_alloc(keystr_len);
 		if (!hexkey)
 			goto out;
-		r = snprintf(hexkey, keystr_len, ":%zu:logon:%s", tgt->u.crypt.vk->keylength,
-			     tgt->u.crypt.vk->key_description);
+		r = snprintf(hexkey, keystr_len, ":%zu:%s:%s", tgt->u.crypt.vk->keylength,
+			     key_type_name(tgt->u.crypt.vk->keyring), tgt->u.crypt.vk->key_description);
 		if (r < 0 || r >= keystr_len)
 			goto out;
 	} else
@@ -1977,7 +1981,7 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 				  uint32_t *act_flags)
 {
 	uint64_t val64;
-	char *rcipher, *rintegrity, *key_, *rdevice, *endp, buffer[3], *arg, *key_desc;
+	char *rcipher, *rintegrity, *key_, *rdevice, *endp, buffer[3], *arg, *key_desc, keyring[16];
 	unsigned int i, val;
 	int r;
 	size_t key_size;
@@ -2102,15 +2106,19 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 			if (key_[0] == ':') {
 				/* :<key_size>:<key_type>:<key_description> */
 				key_desc = NULL;
+				r = -ENOMEM;
 				endp = strpbrk(key_ + 1, ":");
-				if (endp)
-					key_desc = strpbrk(endp + 1, ":");
-				if (!key_desc) {
-					r = -ENOMEM;
+				if (!endp)
 					goto err;
-				}
+				key_desc = strpbrk(endp + 1, ":");
+				if (!key_desc)
+					goto err;
+				memcpy(keyring, endp + 1, key_desc - endp - 1);
+				keyring[key_desc - endp - 1] = '\0';
 				key_desc++;
-				crypt_volume_key_set_description(vk, key_desc);
+				r = crypt_volume_key_set_description(vk, key_desc, key_type_by_name(keyring));
+				if (r < 0)
+					goto err;
 			} else {
 				buffer[2] = '\0';
 				for(i = 0; i < vk->keylength; i++) {

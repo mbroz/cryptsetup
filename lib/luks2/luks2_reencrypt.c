@@ -886,7 +886,7 @@ void LUKS2_reencrypt_free(struct crypt_device *cd, struct luks2_reencrypt *rh)
 	free(rh->device_name);
 	free(rh->overlay_name);
 	free(rh->hotzone_name);
-	crypt_drop_keyring_key(cd, rh->vks);
+	crypt_drop_uploaded_keyring_key(cd, rh->vks);
 	crypt_free_volume_key(rh->vks);
 	device_release_excl(cd, crypt_data_device(cd));
 	crypt_unlock_internal(cd, rh->reenc_lock);
@@ -2683,7 +2683,7 @@ static int reencrypt_upload_keys(struct crypt_device *cd,
 
 	if (digest_old >= 0 && !crypt_is_cipher_null(reencrypt_segment_cipher_old(hdr)) &&
 	    (r = reencrypt_upload_single_key(cd, digest_old, vks))) {
-		crypt_drop_keyring_key(cd, vks);
+		crypt_drop_uploaded_keyring_key(cd, vks);
 		return r;
 	}
 
@@ -3879,7 +3879,7 @@ static int reencrypt_init_by_keyslot_context(struct crypt_device *cd,
 					      keyslot_new, &vks, params);
 out:
 	if (r < 0)
-		crypt_drop_keyring_key(cd, vks);
+		crypt_drop_uploaded_keyring_key(cd, vks);
 	crypt_free_volume_key(vks);
 	return r < 0 ? r : LUKS2_find_keyslot(hdr, "reencrypt");
 }
@@ -4470,7 +4470,7 @@ int LUKS2_reencrypt_locked_recovery_by_vks(struct crypt_device *cd,
 
 out:
 	if (r < 0)
-		crypt_drop_keyring_key(cd, vks);
+		crypt_drop_uploaded_keyring_key(cd, vks);
 	return r;
 }
 #endif

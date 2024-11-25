@@ -419,7 +419,7 @@ int LUKS2_key_description_by_segment(struct crypt_device *cd,
 	char *desc = get_key_description_by_digest(cd, LUKS2_digest_by_segment(hdr, segment));
 	int r;
 
-	r = crypt_volume_key_set_description(vk, desc);
+	r = crypt_volume_key_set_description(vk, desc, LOGON_KEY);
 	free(desc);
 	return r;
 }
@@ -430,7 +430,7 @@ int LUKS2_volume_key_load_in_keyring_by_digest(struct crypt_device *cd,
 	char *desc = get_key_description_by_digest(cd, digest);
 	int r;
 
-	r = crypt_volume_key_set_description(vk, desc);
+	r = crypt_volume_key_set_description(vk, desc, LOGON_KEY);
 	if (!r)
 		r = crypt_volume_key_load_in_keyring(cd, vk);
 
