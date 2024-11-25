@@ -106,15 +106,8 @@ static int crypt_storage_dmcrypt_init(
 	if (vk->key_description)
 		dmd.flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 
-	r = dm_crypt_target_set(&dmd.segment, 0, dmd.size,
-			    device,
-			    vk,
-			    cipher_spec,
-			    iv_start,
-			    device_offset,
-			    NULL,
-			    0,
-			    sector_size);
+	r = dm_crypt_target_set(&dmd.segment, 0, dmd.size, device, vk, cipher_spec, iv_start,
+				device_offset, NULL, 0, 0, sector_size);
 	if (r)
 		return r;
 
