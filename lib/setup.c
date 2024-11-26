@@ -1562,7 +1562,7 @@ static int _init_by_name_integrity(struct crypt_device *cd, const char *name)
 		if (tgt->u.integrity.journal_integrity_key)
 			cd->u.integrity.params.journal_integrity_key_size = tgt->u.integrity.journal_integrity_key->keylength;
 		if (tgt->u.integrity.journal_crypt_key)
-			cd->u.integrity.params.integrity_key_size = tgt->u.integrity.journal_crypt_key->keylength;
+			cd->u.integrity.params.journal_crypt_key_size = tgt->u.integrity.journal_crypt_key->keylength;
 		MOVE_REF(cd->metadata_device, tgt->u.integrity.meta_device);
 	}
 out:
@@ -3756,7 +3756,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		r = dm_crypt_target_set(&dmd.segment, 0, new_size, crypt_data_device(cd),
 				tgt->u.crypt.vk, crypt_get_cipher_spec(cd),
 				crypt_get_iv_offset(cd), crypt_get_data_offset(cd),
-				crypt_get_integrity(cd), crypt_get_integrity_key_size(cd), crypt_get_integrity_tag_size(cd),
+				crypt_get_integrity(cd), crypt_get_integrity_key_size(cd, true), crypt_get_integrity_tag_size(cd),
 				crypt_get_sector_size(cd));
 		if (r < 0)
 			goto out;
@@ -6215,13 +6215,17 @@ const char *crypt_get_integrity(struct crypt_device *cd)
 }
 
 /* INTERNAL only */
-int crypt_get_integrity_key_size(struct crypt_device *cd)
+int crypt_get_integrity_key_size(struct crypt_device *cd, bool dm_compat)
 {
 	int key_size = 0;
 
-	if (isLUKS2(cd->type))
+	if (isLUKS2(cd->type)) {
 		key_size = INTEGRITY_key_size(crypt_get_integrity(cd),
 					      LUKS2_get_integrity_key_size(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT));
+		if (dm_compat && key_size > 0 &&
+		    key_size == INTEGRITY_key_size(crypt_get_integrity(cd), 0))
+			return 0;
+	}
 
 	if (isINTEGRITY(cd->type) || !cd->type)
 		key_size = INTEGRITY_key_size(crypt_get_integrity(cd),  0);
@@ -6703,7 +6707,7 @@ int crypt_get_integrity_info(struct crypt_device *cd,
 		ip->buffer_sectors = cd->u.integrity.params.buffer_sectors;
 
 		ip->integrity = cd->u.integrity.params.integrity;
-		ip->integrity_key_size = crypt_get_integrity_key_size(cd);
+		ip->integrity_key_size = crypt_get_integrity_key_size(cd, false);
 
 		ip->journal_integrity = cd->u.integrity.params.journal_integrity;
 		ip->journal_integrity_key_size = cd->u.integrity.params.journal_integrity_key_size;
@@ -6722,7 +6726,7 @@ int crypt_get_integrity_info(struct crypt_device *cd,
 		ip->buffer_sectors = 0; // FIXME
 
 		ip->integrity = LUKS2_get_integrity(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
-		ip->integrity_key_size = crypt_get_integrity_key_size(cd);
+		ip->integrity_key_size = crypt_get_integrity_key_size(cd, false);
 		ip->tag_size = INTEGRITY_tag_size(ip->integrity, crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
 
 		ip->journal_integrity = NULL;
@@ -6736,7 +6740,7 @@ int crypt_get_integrity_info(struct crypt_device *cd,
 	} else if (!cd->type) {
 		memset(ip, 0, sizeof(*ip));
 		ip->integrity = crypt_get_integrity(cd);
-		ip->integrity_key_size = crypt_get_integrity_key_size(cd);
+		ip->integrity_key_size = crypt_get_integrity_key_size(cd, false);
 		ip->tag_size = crypt_get_integrity_tag_size(cd);
 	}
 
