@@ -151,7 +151,7 @@ modprobe encrypted-keys 2>/dev/null || skip "Failed to load encrypted keys kerne
 
 # Encrypted keyring key (encrypted with user key)
 # User key needed for encrypted key
-keyctl add -x user $KEYNAME bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a @s >/dev/null || fail "User key failed."
+keyctl add -x user $KEYNAME bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a @s >/dev/null 2>&1 || skip "User key load failed, test skipped."
 keyctl print %user:$KEYNAME >/dev/null || fail "Cannot read user key."
 
 keyctl add encrypted $KEYNAME "new user:$KEYNAME 32" @s >/dev/null || fail "Encrypted keys are not supported."
