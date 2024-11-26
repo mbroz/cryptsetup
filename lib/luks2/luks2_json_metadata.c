@@ -2737,7 +2737,7 @@ int LUKS2_activate(struct crypt_device *cd,
 					crypt_key, crypt_get_cipher_spec(cd),
 					crypt_get_iv_offset(cd), crypt_get_data_offset(cd),
 					crypt_get_integrity(cd) ?: "none",
-					crypt_get_integrity_key_size(cd), crypt_get_integrity_tag_size(cd),
+					crypt_get_integrity_key_size(cd, true), crypt_get_integrity_tag_size(cd),
 					crypt_get_sector_size(cd));
 	} else
 		r = dm_linear_target_set(&dmd.segment, 0,
