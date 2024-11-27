@@ -147,3 +147,10 @@ struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t key
 	}
 	return vk;
 }
+
+void crypt_volume_key_set_key(struct volume_key *vk, const char *key, size_t key_length)
+{
+	assert(vk && vk->keylength >= key_length);
+
+	crypt_safe_memcpy(vk->key, key, key_length);
+}
