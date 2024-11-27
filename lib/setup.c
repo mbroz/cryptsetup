@@ -3357,7 +3357,7 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 	if (tgt->type == DM_CRYPT && sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
 		r = crypt_volume_key_set_description(tgt->u.crypt.vk,
 						     src->u.crypt.vk->key_description,
-						     src->u.crypt.vk->keyring);
+						     src->u.crypt.vk->keyring_key_type);
 		if (r)
 			goto out;
 	} else if (tgt->type == DM_CRYPT) {
@@ -3479,7 +3479,7 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	if (sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
 		r = crypt_volume_key_set_description(tgt->u.crypt.vk,
 						     src->u.crypt.vk->key_description,
-						     src->u.crypt.vk->keyring);
+						     src->u.crypt.vk->keyring_key_type);
 		if (r)
 			goto out;
 	} else {

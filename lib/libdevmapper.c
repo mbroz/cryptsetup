@@ -591,7 +591,7 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 	if (null_cipher)
 		hexkey = crypt_bytes_to_hex(0, NULL);
 	else if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
-		if (!tgt->u.crypt.vk->key_description || tgt->u.crypt.vk->keyring == INVALID_KEY)
+		if (!tgt->u.crypt.vk->key_description || tgt->u.crypt.vk->keyring_key_type == INVALID_KEY)
 			goto out;
 		keystr_len = strlen(tgt->u.crypt.vk->key_description) +
 			int_log10(tgt->u.crypt.vk->keylength) +
@@ -600,7 +600,7 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 		if (!hexkey)
 			goto out;
 		r = snprintf(hexkey, keystr_len, ":%zu:%s:%s", tgt->u.crypt.vk->keylength,
-			     key_type_name(tgt->u.crypt.vk->keyring), tgt->u.crypt.vk->key_description);
+			     key_type_name(tgt->u.crypt.vk->keyring_key_type), tgt->u.crypt.vk->key_description);
 		if (r < 0 || r >= keystr_len)
 			goto out;
 	} else
