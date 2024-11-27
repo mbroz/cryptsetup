@@ -3112,18 +3112,18 @@ int crypt_repair(struct crypt_device *cd,
 }
 
 /* compare volume keys */
-static int _compare_volume_keys(struct volume_key *svk, unsigned skeyring_only,
-				struct volume_key *tvk, unsigned tkeyring_only)
+static int _compare_volume_keys(struct volume_key *svk, struct volume_key *tvk)
 {
-	if (!svk && !tvk)
+	if (svk == tvk)
 		return 0;
-	else if (!svk || !tvk)
+
+	if (!svk || !tvk)
 		return 1;
 
 	if (svk->keylength != tvk->keylength)
 		return 1;
 
-	if (!skeyring_only && !tkeyring_only)
+	if (crypt_volume_key_has_data(svk) && crypt_volume_key_has_data(tvk))
 		return crypt_backend_memeq(svk->key, tvk->key, svk->keylength);
 
 	if (svk->key_description && tvk->key_description)
@@ -3196,7 +3196,7 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 
 	if (tgt->u.crypt.vk->keylength == 0 && crypt_is_cipher_null(tgt->u.crypt.cipher))
 		log_dbg(cd, "Existing device uses cipher null. Skipping key comparison.");
-	else if (_compare_volume_keys(src->u.crypt.vk, 0, tgt->u.crypt.vk, tgt->u.crypt.vk->key_description != NULL)) {
+	else if (_compare_volume_keys(src->u.crypt.vk, tgt->u.crypt.vk)) {
 		log_dbg(cd, "Keys in context and target device do not match.");
 		goto out;
 	}
@@ -3256,9 +3256,9 @@ static int _compare_integrity_devices(struct crypt_device *cd,
 	}
 
 	/* unfortunately dm-integrity doesn't support keyring */
-	if (_compare_volume_keys(src->u.integrity.vk, 0, tgt->u.integrity.vk, 0) ||
-	    _compare_volume_keys(src->u.integrity.journal_integrity_key, 0, tgt->u.integrity.journal_integrity_key, 0) ||
-	    _compare_volume_keys(src->u.integrity.journal_crypt_key, 0, tgt->u.integrity.journal_crypt_key, 0)) {
+	if (_compare_volume_keys(src->u.integrity.vk, tgt->u.integrity.vk) ||
+	    _compare_volume_keys(src->u.integrity.journal_integrity_key, tgt->u.integrity.journal_integrity_key) ||
+	    _compare_volume_keys(src->u.integrity.journal_crypt_key, tgt->u.integrity.journal_crypt_key)) {
 		log_dbg(cd, "Journal keys do not match.");
 		return -EINVAL;
 	}
