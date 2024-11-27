@@ -3172,19 +3172,21 @@ int crypt_repair(struct crypt_device *cd,
 }
 
 /* compare volume keys */
-static int _compare_volume_keys(struct volume_key *svk, unsigned skeyring_only,
-				struct volume_key *tvk, unsigned tkeyring_only)
+static int _compare_volume_keys(struct volume_key *svk, struct volume_key *tvk)
 {
-	if (!svk && !tvk)
+	if (svk == tvk)
 		return 0;
-	else if (!svk || !tvk)
+
+	if (!svk || !tvk)
 		return 1;
 
 	if (crypt_volume_key_length(svk) != crypt_volume_key_length(tvk))
 		return 1;
 
-	if (!skeyring_only && !tkeyring_only)
-		return crypt_backend_memeq(crypt_volume_key_get_key(svk), crypt_volume_key_get_key(tvk), crypt_volume_key_length(svk));
+	if (crypt_volume_key_is_set(svk) && crypt_volume_key_is_set(tvk))
+		return crypt_backend_memeq(crypt_volume_key_get_key(svk),
+					   crypt_volume_key_get_key(tvk),
+					   crypt_volume_key_length(svk));
 
 	if (crypt_volume_key_description(svk) && crypt_volume_key_description(tvk))
 		return (crypt_volume_key_kernel_key_type(svk) != crypt_volume_key_kernel_key_type(tvk) ||
@@ -3256,7 +3258,7 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 
 	if (crypt_volume_key_length(tgt->u.crypt.vk) == 0 && crypt_is_cipher_null(tgt->u.crypt.cipher))
 		log_dbg(cd, "Existing device uses cipher null. Skipping key comparison.");
-	else if (_compare_volume_keys(src->u.crypt.vk, 0, tgt->u.crypt.vk, crypt_volume_key_description(tgt->u.crypt.vk) != NULL)) {
+	else if (_compare_volume_keys(src->u.crypt.vk, tgt->u.crypt.vk)) {
 		log_dbg(cd, "Keys in context and target device do not match.");
 		goto out;
 	}
@@ -3316,9 +3318,9 @@ static int _compare_integrity_devices(struct crypt_device *cd,
 	}
 
 	/* unfortunately dm-integrity doesn't support keyring */
-	if (_compare_volume_keys(src->u.integrity.vk, 0, tgt->u.integrity.vk, 0) ||
-	    _compare_volume_keys(src->u.integrity.journal_integrity_key, 0, tgt->u.integrity.journal_integrity_key, 0) ||
-	    _compare_volume_keys(src->u.integrity.journal_crypt_key, 0, tgt->u.integrity.journal_crypt_key, 0)) {
+	if (_compare_volume_keys(src->u.integrity.vk, tgt->u.integrity.vk) ||
+	    _compare_volume_keys(src->u.integrity.journal_integrity_key, tgt->u.integrity.journal_integrity_key) ||
+	    _compare_volume_keys(src->u.integrity.journal_crypt_key, tgt->u.integrity.journal_crypt_key)) {
 		log_dbg(cd, "Journal keys do not match.");
 		return -EINVAL;
 	}
