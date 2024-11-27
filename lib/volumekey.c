@@ -226,3 +226,8 @@ struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t key
 
 	return vk;
 }
+
+bool crypt_volume_key_is_set(const struct volume_key *vk)
+{
+	return vk && vk->key;
+}
