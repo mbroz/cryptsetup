@@ -53,7 +53,7 @@ struct volume_key {
 	int id;
 	size_t keylength; /* length in bytes */
 	const char *key_description; /* keyring key name/description */
-	key_type_t keyring; /* type of keyring where the key is stored */
+	key_type_t keyring_key_type; /* kernel keyring key type */
 	bool uploaded; /* uploaded to keyring, can drop it */
 	struct volume_key *next;
 	char key[];
@@ -63,7 +63,7 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key);
 struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t keylength);
 void crypt_free_volume_key(struct volume_key *vk);
 int crypt_volume_key_set_description(struct volume_key *key,
-				     const char *key_description, key_type_t keyring);
+				     const char *key_description, key_type_t keyring_key_type);
 int crypt_volume_key_set_description_by_name(struct volume_key *vk, const char *key_name);
 void crypt_volume_key_set_id(struct volume_key *vk, int id);
 int crypt_volume_key_get_id(const struct volume_key *vk);

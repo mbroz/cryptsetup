@@ -25,7 +25,7 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 		return NULL;
 
 	vk->key_description = NULL;
-	vk->keyring = INVALID_KEY;
+	vk->keyring_key_type = INVALID_KEY;
 	vk->keylength = keylength;
 	vk->uploaded = false;
 	vk->id = KEY_NOT_VERIFIED;
@@ -43,14 +43,14 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 }
 
 int crypt_volume_key_set_description(struct volume_key *vk,
-				     const char *key_description, key_type_t keyring)
+				     const char *key_description, key_type_t keyring_key_type)
 {
 	if (!vk)
 		return -EINVAL;
 
 	free(CONST_CAST(void*)vk->key_description);
 	vk->key_description = NULL;
-	vk->keyring = keyring;
+	vk->keyring_key_type = keyring_key_type;
 	if (key_description && !(vk->key_description = strdup(key_description)))
 		return -ENOMEM;
 
@@ -60,12 +60,12 @@ int crypt_volume_key_set_description(struct volume_key *vk,
 int crypt_volume_key_set_description_by_name(struct volume_key *vk, const char *key_name)
 {
 	const char *key_description = NULL;
-	key_type_t keyring = keyring_type_and_name(key_name, &key_description);
+	key_type_t keyring_key_type = keyring_type_and_name(key_name, &key_description);
 
-	if (keyring == INVALID_KEY)
+	if (keyring_key_type == INVALID_KEY)
 		return -EINVAL;
 
-	return crypt_volume_key_set_description(vk, key_description, keyring);
+	return crypt_volume_key_set_description(vk, key_description, keyring_key_type);
 }
 
 void crypt_volume_key_set_id(struct volume_key *vk, int id)
