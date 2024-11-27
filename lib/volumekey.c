@@ -154,3 +154,29 @@ void crypt_volume_key_set_key(struct volume_key *vk, const char *key, size_t key
 
 	crypt_safe_memcpy(vk->key, key, key_length);
 }
+
+int crypt_volume_key_set_key_from_hexbyte(struct volume_key *vk,
+					  const char *hexkey_string)
+{
+	char *endp, buffer[3];
+	size_t i;
+	int r = -EINVAL;
+
+	if (!vk || !hexkey_string)
+		return r;
+
+	buffer[2] = '\0';
+	for (i = 0; i < vk->keylength; i++) {
+		crypt_safe_memcpy(buffer, &hexkey_string[i * 2], 2);
+		vk->key[i] = strtoul(buffer, &endp, 16);
+		if (endp != &buffer[2])
+			goto out;
+	}
+
+	r = 0;
+out:
+	if (r < 0)
+		crypt_safe_memzero(vk->key, vk->keylength);
+
+	return r;
+}
