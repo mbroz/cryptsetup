@@ -3173,7 +3173,8 @@ static int _compare_volume_keys(struct volume_key *svk, unsigned skeyring_only,
 		return crypt_backend_memeq(svk->key, tvk->key, svk->keylength);
 
 	if (svk->key_description && tvk->key_description)
-		return strcmp(svk->key_description, tvk->key_description);
+		return (svk->keyring_key_type != tvk->keyring_key_type ||
+			strcmp(svk->key_description, tvk->key_description));
 
 	return 0;
 }
