@@ -173,6 +173,9 @@ int crypt_volume_key_set_key_from_hexbyte(struct volume_key *vk,
 			goto out;
 	}
 
+       if (hexkey_string[i*2] != '\0')
+               goto out;
+
 	r = 0;
 out:
 	if (r < 0)
