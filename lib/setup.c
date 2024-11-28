@@ -4552,7 +4552,13 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	}
 	keyslot_old = r;
 
-	if (isLUKS2(cd->type)) {
+	if (isLUKS1(cd->type)) {
+		if (keyslot_new == CRYPT_ANY_SLOT) {
+			keyslot_new = LUKS_keyslot_find_empty(&cd->u.luks1.hdr);
+			if (keyslot_new < 0)
+				keyslot_new = keyslot_old;
+		}
+	} else if (isLUKS2(cd->type)) {
 		/* If there is a free keyslot (both id and binary area) avoid in-place keyslot area overwrite  */
 		if (keyslot_new == CRYPT_ANY_SLOT || keyslot_new == keyslot_old) {
 			keyslot_new = LUKS2_keyslot_find_empty(cd, &cd->u.luks2.hdr, vk->keylength);
@@ -4560,12 +4566,6 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 				keyslot_new = keyslot_old;
 			else
 				keyslot_swap = true;
-		}
-	} else if (isLUKS1(cd->type)) {
-		if (keyslot_new == CRYPT_ANY_SLOT) {
-			keyslot_new = LUKS_keyslot_find_empty(&cd->u.luks1.hdr);
-			if (keyslot_new < 0)
-				keyslot_new = keyslot_old;
 		}
 	}
 	log_dbg(cd, "Key change, old slot %d, new slot %d.", keyslot_old, keyslot_new);
