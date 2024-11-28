@@ -2004,15 +2004,24 @@ static void IntegrityTest(void)
 		.tag_size = 4,
 		.integrity = "crc32c",
 		.sector_size = 4096,
-	}, ip = {};
+	}, ip = {}, params2 = {
+		.tag_size = 32,
+		.integrity = "hmac(sha256)",
+		.sector_size = 4096,
+	};
 	struct crypt_active_device cad;
 	int ret;
 
-	// FIXME: this should be more detailed
+	const char *key_integrity_hex = "e9668637426e277d126fe848e47417953701a511eee43b53c671342cec400d6e";
+	size_t integrity_key_size = strlen(key_integrity_hex) / 2;
+	char integrity_key[128];
 
-	OK_(crypt_init(&cd,DEVICE_1));
-	FAIL_(crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,NULL), "params field required");
-	ret = crypt_format(cd,CRYPT_INTEGRITY,NULL,NULL,NULL,NULL,0,&params);
+	crypt_decode_key(integrity_key, key_integrity_hex, integrity_key_size);
+	params2.integrity_key_size = integrity_key_size;
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	FAIL_(crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL, NULL, 0, NULL), "params field required");
+	ret = crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL, NULL, 0, &params);
 	if (ret < 0) {
 		printf("WARNING: cannot format integrity device, skipping test.\n");
 		CRYPT_FREE(cd);
@@ -2027,7 +2036,7 @@ static void IntegrityTest(void)
 	EQ_(ip.journal_watermark, params.journal_watermark);
 	EQ_(ip.integrity_key_size, 0);
 	OK_(strcmp(ip.integrity,params.integrity));
-	FAIL_(crypt_set_uuid(cd,DEVICE_1_UUID),"can't set uuid to integrity device");
+	FAIL_(crypt_set_uuid(cd,DEVICE_1_UUID), "can't set uuid to integrity device");
 	CRYPT_FREE(cd);
 
 	OK_(crypt_init(&cd, DEVICE_1));
@@ -2047,8 +2056,8 @@ static void IntegrityTest(void)
 	OK_(crypt_init_by_name(&cd, CDEVICE_1));
 	OK_(crypt_get_integrity_info(cd, &ip));
 	EQ_(ip.tag_size, params.tag_size);
-	OK_(strcmp(ip.integrity,params.integrity));
-	OK_(strcmp(CRYPT_INTEGRITY,crypt_get_type(cd)));
+	OK_(strcmp(ip.integrity, params.integrity));
+	OK_(strcmp(CRYPT_INTEGRITY, crypt_get_type(cd)));
 
 	if (t_dm_integrity_recalculate_support()) {
 		OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
@@ -2058,6 +2067,31 @@ static void IntegrityTest(void)
 		EQ_(cad.flags & CRYPT_ACTIVATE_RECALCULATE, CRYPT_ACTIVATE_RECALCULATE);
 	}
 
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	CRYPT_FREE(cd);
+
+	// legacy format with NULL
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL, NULL, 0, &params2));
+	OK_(crypt_get_integrity_info(cd, &ip));
+	EQ_(ip.tag_size, params2.tag_size);
+	EQ_(ip.integrity_key_size, integrity_key_size);
+	OK_(strcmp(ip.integrity, params2.integrity));
+	CRYPT_FREE(cd);
+
+	// provide specific key
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL, integrity_key, integrity_key_size, &params2));
+	OK_(crypt_get_integrity_info(cd, &ip));
+	EQ_(ip.tag_size, params2.tag_size);
+	EQ_(ip.integrity_key_size, integrity_key_size);
+	OK_(strcmp(ip.integrity, params2.integrity));
+	CRYPT_FREE(cd);
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_load(cd, CRYPT_INTEGRITY, NULL));
+	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, 0));
+	GE_(crypt_status(cd, CDEVICE_1), CRYPT_ACTIVE);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 }

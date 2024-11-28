@@ -120,10 +120,18 @@ int_error_detection() # alg int sector_size
 
 intformat() # alg integrity integrity_out key_size int_key_size sector_size csum [test_hdr]
 {
-	echo -n "[$1:$2:$4:$6]"
+	echo -n "[$1:$2:$4:$6:$5]"
 	echo -n "[FORMAT]"
-	$CRYPTSETUP luksFormat --type luks2 -q -c $1 --integrity $2 --sector-size $6 -s $4 \
-		$FAST_PBKDF_OPT -d $KEY_FILE $DEV --offset 8192 --integrity-legacy-padding >/dev/null 2>&1
+
+	# just trick, if int key size is not multiple of 16, use explicit flag
+	if [ $(($5 % 16)) -eq 0 ]; then
+		INT_PARAMS="--integrity $2 --integrity-legacy-padding"
+	else
+		INT_PARAMS="--integrity $2 --integrity-key-size $5 --integrity-legacy-padding"
+	fi
+
+	$CRYPTSETUP luksFormat --type luks2 -q -c $1 $INT_PARAMS --sector-size $6 -s $4 \
+		$FAST_PBKDF_OPT -d $KEY_FILE $DEV --offset 8192 >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
 		echo "[N/A]"
 		return
@@ -205,6 +213,9 @@ intformat aes-xts-random       hmac-sha512 hmac\(sha512\) 512 512 4096 621f6c03f
 
 intformat aes-xts-plain64 hmac-sha1 hmac\(sha1\) 512 160 4096 7370c66a92708fb71b186931468be6aa9b26f4f88373b00b1c57360b9ee1304e
 intformat aes-xts-random  hmac-sha1 hmac\(sha1\) 512 160 4096 8c0463f5ac09613674bdf40b0ff6f985edbc3de04e51fdc688873cb333ef3cda
+
+intformat aes-xts-plain64 hmac-sha256 hmac\(sha256\) 512 264 512 ee501705a084cd0ab6f4a28014bcf62b8bfa3434de00b82743c50b3abf06232c
+intformat aes-xts-plain64 hmac-sha512 hmac\(sha512\) 512 792 512 9040d276d8bfab30bbc4bf389e152e08c13ac6fa84d49d11c1bee6e1638fd8f1
 
 intformat aes-gcm-random aead aead 128 0  512 5f6f3f6be03c74d9aaaeaf40dd310c99a20e2786045f78a1fc6a0b189d231f57
 intformat aes-gcm-random aead aead 128 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b
