@@ -24,6 +24,7 @@ key_type_t key_type_by_name(const char *name);
 key_type_t keyring_type_and_name(const char *key_name, const char **name);
 key_serial_t keyring_find_key_id_by_name(const char *key_name);
 key_serial_t keyring_find_keyring_id_by_name(const char *keyring_name);
+int keyring_parse_keystring(const char *key_string, int *size, char **type, char **description);
 
 int keyring_check(void);
 
@@ -39,6 +40,15 @@ key_serial_t keyring_add_key_in_thread_keyring(
 	const char *key_desc,
 	const void *key,
 	size_t key_size);
+
+key_serial_t keyring_new_trusted_key(int key_size,
+		const char *key_description);
+key_serial_t keyring_load_keyblob_in_thread_keyring(key_type_t ktype,
+		const char *key_description,
+		const char *keyblob);
+int keyring_split_keystring_keyblob(const char* combined,
+		char **keystring,
+		char **keyblob);
 
 key_serial_t keyring_add_key_to_custom_keyring(key_type_t ktype, const char *key_desc, const void *key,
 				      size_t key_size, key_serial_t keyring_to_link);

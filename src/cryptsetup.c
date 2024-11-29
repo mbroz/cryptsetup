@@ -1546,6 +1546,8 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	};
 	void *params;
 	struct crypt_keyslot_context *kc = NULL, *new_kc = NULL;
+	int keystringLen = 0;
+	char *keystring = NULL;
 
 	type = luksType(device_type);
 	if (!type)
@@ -1704,6 +1706,33 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, keysize);
 		if (r < 0)
 			goto out;
+	} else if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
+		r = tools_parse_vk_description(ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &keystring);
+		if (r < 0)
+			goto out;
+		if (keystring[0] != ':') {
+			log_err("invalid keystring, expected: :<key_size>:<key_type>:<key_description>.");
+			r = -EINVAL;
+			goto out;
+		}
+		/* extract the :<key_size>:, which denotes the actual size of the key in the keyring */
+		r = atoi(keystring+1);
+		if (r == 0) {
+			r = -EINVAL;
+			goto out;
+		}
+
+		/*
+		 * save_allocation wrap the string, since it is passed around at the key
+		 * pointer, which is crypt_safe_free'd at the end
+		 */
+		keystringLen = strlen(keystring) + 1;
+		key = crypt_safe_alloc(keystringLen);
+		if (!key)
+			goto out;
+		/* use snprintf instead of strdup to write into the safe_allocation structure */
+		r = snprintf(key, keystringLen, "%s", keystring);
+		free(keystring);
 	}
 
 	r = set_pbkdf_params(cd, type);
@@ -1882,6 +1911,9 @@ static int action_open_luks(void)
 			r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description_activation1, &kc1);
 			if (r)
 				goto out;
+			if ((vk_description_activation1[0] == ':') && strstr(vk_description_activation1, "trusted:")) {
+				activate_flags |= CRYPT_ACTIVATE_KEYRING_TRUSTED_KEY;
+			}
 			r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT, kc1, CRYPT_ANY_SLOT, NULL, activate_flags);
 		} else if (vks_in_keyring_count == 2) {
 			r = tools_parse_vk_description(vks_in_keyring[0], &vk_description_activation1);

@@ -590,7 +590,26 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 
 	if (null_cipher)
 		hexkey = crypt_bytes_to_hex(0, NULL);
-	else if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
+	else if (flags & CRYPT_ACTIVATE_KEYRING_TRUSTED_KEY) {
+		if (!tgt->u.crypt.vk->key_description) {
+			/* having the flag set, but no key_description should never happen */
+			goto out;
+		}
+		/*
+		 * trusted (volume) keys have the original kernel key-string in their
+		 * description, and the key-blob as key; the dmsetup table needs to be
+		 * constructed around the key-string.
+		 */
+		keystr_len = strlen(tgt->u.crypt.vk->key_description) + 1;
+		hexkey = crypt_safe_alloc(keystr_len);
+		if (!hexkey)
+			goto out;
+		/* use snprintf instead of strdup to write into the safe_allocation structure */
+		r = snprintf(hexkey, keystr_len, "%s",
+				tgt->u.crypt.vk->key_description);
+		if (r < 0 || r >= keystr_len)
+			goto out;
+	} else if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
 		if (!tgt->u.crypt.vk->key_description || tgt->u.crypt.vk->keyring_key_type == INVALID_KEY)
 			goto out;
 		keystr_len = strlen(tgt->u.crypt.vk->key_description) +
@@ -1352,6 +1371,7 @@ static int _dm_create_device(struct crypt_device *cd, const char *name, const ch
 		goto out;
 
 	r = _create_dm_targets_params(dmd);
+	log_dbg(cd, "assembeld dmsetup table: '%s'", dmd->segment.params);
 	if (r)
 		goto out;
 
@@ -1496,6 +1516,7 @@ static int _dm_reload_device(struct crypt_device *cd, const char *name,
 		goto out;
 
 	r = _create_dm_targets_params(dmd);
+	log_dbg(cd, "assembeld dmsetup table: '%s'", dmd->segment.params);
 	if (r)
 		goto out;
 

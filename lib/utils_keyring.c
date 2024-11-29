@@ -210,6 +210,71 @@ key_serial_t keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key
 	return keyring_add_key_in_keyring(ktype, key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
 }
 
+key_serial_t keyring_new_trusted_key(int key_size, const char *key_description)
+{
+	int r;
+	char command[256];
+	/* the 'add key' syscall has to be fed a 'new' command, with the key size to create a new trusted key
+	 */
+	r = snprintf(command, 8, "new %i", key_size);
+	printf("command = %s, r=%i\n", command, r);
+	if (r < 0)
+		return r;
+	return keyring_add_key_in_keyring(TRUSTED_KEY,
+				key_description, command, r,
+				KEY_SPEC_THREAD_KEYRING);
+}
+
+key_serial_t keyring_load_keyblob_in_thread_keyring(key_type_t ktype, const char *key_description, const char *keyblob)
+{
+	int r;
+	char *command;
+
+	assert(ktype == TRUSTED_KEY || ktype == ENCRYPTED_KEY);
+
+	/* the 'add key' syscall has to be fed a 'load' command, with the keyblob data as the 'key' value */
+	r = asprintf(&command, "load %s", keyblob);
+	if (r < 0)
+		return r;
+	r = keyring_add_key_in_keyring(ktype,
+			key_description, command, r,
+			KEY_SPEC_THREAD_KEYRING);
+	free(command);
+	return r;
+}
+
+int keyring_split_keystring_keyblob(const char* combined, char **keystring, char **keyblob)
+{
+	const char *delimiter = strstr(combined, "::");
+	if (!delimiter) {
+		return -EINVAL;
+	}
+
+	size_t keystring_len = delimiter - combined;
+	size_t keyblob_len = strlen(delimiter + 2);
+
+	assert(keystring);
+	assert(keyblob);
+
+	/* +1 for null terminator */
+	*keystring = (char *)malloc(keystring_len + 1);
+	if (!*keystring)
+		return -ENOMEM;
+	*keyblob = (char *)malloc(keyblob_len + 1);
+	if (!*keyblob) {
+		free(*keystring);
+		return -ENOMEM;
+	}
+
+	strncpy(*keystring, combined, keystring_len);
+	(*keystring)[keystring_len] = '\0';
+
+	/* Skip the "::" and copy the keyblob */
+	strcpy(*keyblob, delimiter + 2);
+
+	return 0;
+}
+
 key_serial_t keyring_request_key_id(key_type_t key_type,
 		const char *key_description)
 {
@@ -312,6 +377,8 @@ key_serial_t keyring_find_key_id_by_name(const char *key_name)
 	key_serial_t id = 0;
 	char *end;
 	char *name_copy, *name_copy_p;
+	int key_size;
+	char *key_type = NULL, *key_desc = NULL;
 
 	assert(key_name);
 
@@ -327,12 +394,12 @@ key_serial_t keyring_find_key_id_by_name(const char *key_name)
 		return 0;
 	}
 
-	/* handle a lookup-by-name request "%<type>:<desc>", eg: "%keyring:_ses" */
 	name_copy = strdup(key_name);
 	if (!name_copy)
 		goto out;
 	name_copy_p = name_copy;
 
+	/* handle a lookup-by-name request "%<type>:<desc>", eg: "%keyring:_ses" */
 	if (name_copy_p[0] == '%') {
 		const char *type;
 
@@ -358,6 +425,15 @@ key_serial_t keyring_find_key_id_by_name(const char *key_name)
 		goto out;
 	}
 
+	/* handle a lookup-by-name request ":<key-size>:<type>:<desc>" */
+	if (name_copy_p[0] == ':') {
+		if (keyring_parse_keystring(name_copy_p, &key_size, &key_type, &key_desc))
+			goto out;
+
+		id = find_key_by_type_and_desc(key_type, key_desc, 0);
+		goto out;
+	}
+
 	id = strtoul(key_name, &end, 0);
 	if (*end)
 		id = 0;
@@ -365,8 +441,50 @@ key_serial_t keyring_find_key_id_by_name(const char *key_name)
 out:
 	if (name_copy)
 		free(name_copy);
+	if (key_type)
+		free(key_type);
+	if (key_desc)
+		free(key_desc);
 
 	return id;
+}
+
+int keyring_parse_keystring(const char *key_string, int *size, char **type, char **description)
+{
+	char *p, *copy = strdup(key_string);
+	int r = -1;
+	/*
+	 * <key_string>
+	 * The kernel keyring key is identified by string in following format:
+	 * :<key_size>:<key_type>:<key_description>.
+	 */
+
+	p = strtok(copy, ":");
+	if (size) {
+		*size = atoi(p);
+		if (!*size)
+			goto out;
+	}
+
+	p = strtok(NULL, ":");
+	if (!p)
+		goto out;
+
+	if (type)
+		*type = strdup(p);
+
+	p = strtok(NULL, ":");
+	if (!p)
+		goto out;
+
+	if (description)
+		*description = strdup(p);
+
+	r = 0;
+out:
+	if (copy)
+		free(copy);
+	return r;
 }
 
 static bool numbered(const char *str)
@@ -432,6 +550,21 @@ key_serial_t keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key
 	return -ENOTSUP;
 }
 
+key_serial_t keyring_new_trusted_key(int key_size, const char *key_description)
+{
+	return -ENOTSUP;
+}
+
+key_serial_t keyring_load_keyblob_in_thread_keyring(key_type_t ktype, const char *key_description, const char *keyblob)
+{
+	return -ENOTSUP;
+}
+
+int keyring_split_keystring_keyblob(const char* combined, char **keystring, char **keyblob)
+{
+	return -ENOTSUP;
+}
+
 key_serial_t keyring_request_key_id(key_type_t key_type,
 		const char *key_description)
 {
@@ -463,6 +596,11 @@ key_type_t keyring_type_and_name(const char *key_name, const char **name)
 key_serial_t keyring_find_key_id_by_name(const char *key_name)
 {
 	return 0;
+}
+
+int keyring_parse_keystring(const char *key_string, int *size, char **type, char **description)
+{
+	return -1;
 }
 
 key_serial_t keyring_find_keyring_id_by_name(const char *keyring_name)

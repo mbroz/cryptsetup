@@ -1510,6 +1510,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_TASKLETS (UINT32_C(1) << 27)
 /** dm-crypt: use high-priority workqueues */
 #define CRYPT_ACTIVATE_HIGH_PRIORITY (UINT32_C(1) << 28)
+/** (wrapped) key residing in the kernel keyring */
+#define CRYPT_ACTIVATE_KEYRING_TRUSTED_KEY (UINT32_C(1) << 29)
 
 /**
  * Active device runtime attributes
