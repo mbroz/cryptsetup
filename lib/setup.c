@@ -3215,10 +3215,15 @@ static int _compare_volume_keys_luks2(struct volume_key *svk, struct volume_key 
 	if (crypt_volume_key_length(svk) != crypt_volume_key_length(tvk))
 		return 1;
 
-	if (crypt_volume_key_is_set(svk) && crypt_volume_key_is_set(tvk))
-		return crypt_backend_memeq(crypt_volume_key_get_key(svk),
-					   crypt_volume_key_get_key(tvk),
-					   crypt_volume_key_length(svk));
+	if ((!crypt_volume_key_is_set(svk) && !crypt_volume_key_description(svk)) ||
+	    (!crypt_volume_key_is_set(tvk) && !crypt_volume_key_description(tvk)))
+		return 1;
+
+	if (crypt_volume_key_is_set(svk) && crypt_volume_key_is_set(tvk) &&
+	    crypt_backend_memeq(crypt_volume_key_get_key(svk),
+				crypt_volume_key_get_key(tvk),
+				crypt_volume_key_length(svk)))
+		return 1;
 
 	if (crypt_volume_key_description(svk) && crypt_volume_key_description(tvk))
 		return (crypt_volume_key_kernel_key_type(svk) != crypt_volume_key_kernel_key_type(tvk) ||
