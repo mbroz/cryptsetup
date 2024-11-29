@@ -3153,8 +3153,13 @@ static int _compare_volume_keys_luks2(struct volume_key *svk, struct volume_key 
 	if (svk->keylength != tvk->keylength)
 		return 1;
 
-	if (crypt_volume_key_has_data(svk) && crypt_volume_key_has_data(tvk))
-		return crypt_backend_memeq(svk->key, tvk->key, svk->keylength);
+	if ((!crypt_volume_key_has_data(svk) && !svk->key_description) ||
+	    (!crypt_volume_key_has_data(tvk) && !tvk->key_description))
+		return 1;
+
+	if (crypt_volume_key_has_data(svk) && crypt_volume_key_has_data(tvk) &&
+	    crypt_backend_memeq(svk->key, tvk->key, svk->keylength))
+		return 1;
 
 	if (svk->key_description && tvk->key_description)
 		return (svk->keyring_key_type != tvk->keyring_key_type ||
