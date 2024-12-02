@@ -411,13 +411,13 @@ int VERITY_dump(struct crypt_device *cd,
 			verity_blocks += rs_blocks;
 	}
 
-	log_std(cd, "VERITY header information for %s\n", device_path(crypt_metadata_device(cd)));
+	log_std(cd, "VERITY header information for %s.\n", device_path(crypt_metadata_device(cd)));
 	log_std(cd, "UUID:            \t%s\n", crypt_get_uuid(cd) ?: "");
 	log_std(cd, "Hash type:       \t%u\n", verity_hdr->hash_type);
 	log_std(cd, "Data blocks:     \t%" PRIu64 "\n", verity_hdr->data_size);
-	log_std(cd, "Data block size: \t%u\n", verity_hdr->data_block_size);
+	log_std(cd, "Data block size: \t%u [bytes]\n", verity_hdr->data_block_size);
 	log_std(cd, "Hash blocks:     \t%" PRIu64 "\n", hash_blocks);
-	log_std(cd, "Hash block size: \t%u\n", verity_hdr->hash_block_size);
+	log_std(cd, "Hash block size: \t%u [bytes]\n", verity_hdr->hash_block_size);
 	log_std(cd, "Hash algorithm:  \t%s\n", verity_hdr->hash_name);
 	if (fec_device && fec_blocks) {
 		log_std(cd, "FEC RS roots:   \t%" PRIu32 "\n", verity_hdr->fec_roots);
