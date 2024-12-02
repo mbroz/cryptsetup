@@ -555,23 +555,23 @@ $CRYPTSETUP luksDump $LOOPDEV | grep -q "Key Slot 1: DISABLED" || fail
 prepare "[19] create & status & resize" wipe
 echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV --hash xxx --cipher aes-cbc-essiv:sha256 --key-size 256 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP create $DEV_NAME $LOOPDEV $PLAIN_OPT --offset 3 --skip 4 --readonly || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "offset:" | grep -q "3 sectors" || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "skipped:" | grep -q "4 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "offset:" | grep -q "3 \[512-byte units\]" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "skipped:" | grep -q "4 \[512-byte units\]" || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "mode:" | grep -q "readonly" || fail
 $CRYPTSETUP -q resize  $DEV_NAME --size 100 || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 \[512-byte units\]" || fail
 $CRYPTSETUP -q resize  $DEV_NAME || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "19997 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "19997 \[512-byte units\]" || fail
 $CRYPTSETUP -q resize  $DEV_NAME --device-size 1M || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 \[512-byte units\]" || fail
 $CRYPTSETUP -q resize  $DEV_NAME --device-size 512k --size 1023 >/dev/null 2>&1 && fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 \[512-byte units\]" || fail
 $CRYPTSETUP -q resize  $DEV_NAME --device-size 513 >/dev/null 2>&1 && fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 \[512-byte units\]" || fail
 # Resize underlying loop device as well
 truncate -s 16M $IMG || fail
 $CRYPTSETUP -q resize  $DEV_NAME || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "32765 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "32765 \[512-byte units\]" || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME >/dev/null && fail
 echo $PWD1 | $CRYPTSETUP create $DEV_NAME $PLAIN_OPT $LOOPDEV || fail
@@ -579,18 +579,18 @@ $CRYPTSETUP -q remove  $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP -q create $DEV_NAME $PLAIN_OPT $LOOPDEV || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP -q create $DEV_NAME $PLAIN_OPT --size 100 $LOOPDEV || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 \[512-byte units\]" || fail
 $CRYPTSETUP -q remove  $DEV_NAME || fail
 # 4k sector resize (if kernel supports it)
 echo $PWD1 | $CRYPTSETUP -q open --type plain $PLAIN_OPT $LOOPDEV $DEV_NAME --sector-size 4096 --size 8  >/dev/null 2>&1
 if [ $? -eq 0 ] ; then
-	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "8 sectors" || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "8 \[512-byte units\]" || fail
 	$CRYPTSETUP -q resize  $DEV_NAME --size 16 || fail
-	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "16 sectors" || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "16 \[512-byte units\]" || fail
 	$CRYPTSETUP -q resize  $DEV_NAME --size 9 2>/dev/null && fail
-	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "16 sectors" || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "16 \[512-byte units\]" || fail
 	$CRYPTSETUP -q resize  $DEV_NAME --device-size 4608 2>/dev/null && fail
-	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "16 sectors" || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "16 \[512-byte units\]" || fail
 	$CRYPTSETUP -q remove  $DEV_NAME || fail
 fi
 # Resize not aligned to logical block size
@@ -806,9 +806,9 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT $LOOPDEV --h
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV-missing --header $HEADER_IMG $DEV_NAME 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
 $CRYPTSETUP -q resize  $DEV_NAME --size 100 --header $HEADER_IMG || fail
-$CRYPTSETUP -q status  $DEV_NAME --header $HEADER_IMG | grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME --header $HEADER_IMG | grep "size:" | grep -q "100 \[512-byte units\]" || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "type:" | grep -q "n/a" || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 \[512-byte units\]" || fail
 $CRYPTSETUP luksSuspend $DEV_NAME --header $HEADER_IMG || fail
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
 $CRYPTSETUP luksSuspend $DEV_NAME || fail

@@ -1016,6 +1016,7 @@ static int action_status(void)
 	char *backing_file;
 	const char *device;
 	int path = 0, r = 0, hw_enc;
+	uint64_t sector_size;
 
 	/* perhaps a path, not a dm device name */
 	if (strchr(action_argv[0], '/'))
@@ -1072,36 +1073,37 @@ static int action_status(void)
 
 		if (hw_enc == CRYPT_SW_ONLY) {
 			log_std("  cipher:  %s-%s\n", crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
-			log_std("  keysize: %d bits\n", crypt_get_volume_key_size(cd) * 8);
+			log_std("  keysize: %d [bits]\n", crypt_get_volume_key_size(cd) * 8);
 			log_std("  key location: %s\n", (cad.flags & CRYPT_ACTIVATE_KEYRING_KEY) ? "keyring" : "dm-crypt");
 		} else if (hw_enc == CRYPT_OPAL_HW_ONLY) {
 			log_std("  encryption: HW OPAL only\n");
-			log_std("  OPAL keysize: %d bits\n", crypt_get_hw_encryption_key_size(cd) * 8);
+			log_std("  OPAL keysize: %d [bits]\n", crypt_get_hw_encryption_key_size(cd) * 8);
 		} else if (hw_enc == CRYPT_SW_AND_OPAL_HW) {
 			log_std("  encryption: dm-crypt over HW OPAL\n");
-			log_std("  OPAL keysize: %d bits\n", crypt_get_hw_encryption_key_size(cd) * 8);
+			log_std("  OPAL keysize: %d [bits]\n", crypt_get_hw_encryption_key_size(cd) * 8);
 			log_std("  cipher:  %s-%s\n", crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
-			log_std("  keysize: %d bits\n", (crypt_get_volume_key_size(cd) - crypt_get_hw_encryption_key_size(cd)) * 8);
+			log_std("  keysize: %d [bits]\n", (crypt_get_volume_key_size(cd) - crypt_get_hw_encryption_key_size(cd)) * 8);
 			log_std("  key location: %s\n", (cad.flags & CRYPT_ACTIVATE_KEYRING_KEY) ? "keyring" : "dm-crypt");
 		}
 
 		if (ip.integrity)
 			log_std("  integrity: %s\n", ip.integrity);
 		if (ip.integrity_key_size)
-			log_std("  integrity keysize: %d bits\n", ip.integrity_key_size * 8);
+			log_std("  integrity keysize: %d [bits]\n", ip.integrity_key_size * 8);
 		if (ip.tag_size)
-			log_std("  integrity tag size: %u bytes\n", ip.tag_size);
+			log_std("  integrity tag size: %u [bytes]\n", ip.tag_size);
 		device = crypt_get_device_name(cd);
 		log_std("  device:  %s\n", device);
 		if ((backing_file = crypt_loop_backing_file(device))) {
 			log_std("  loop:    %s\n", backing_file);
 			free(backing_file);
 		}
-		log_std("  sector size:  %d\n", crypt_get_sector_size(cd));
-		log_std("  offset:  %" PRIu64 " sectors\n", cad.offset);
-		log_std("  size:    %" PRIu64 " sectors\n", cad.size);
+		sector_size = (uint64_t)crypt_get_sector_size(cd) ?: SECTOR_SIZE;
+		log_std("  sector size:  %d [bytes]\n", sector_size);
+		log_std("  offset:  %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.offset, cad.offset * sector_size);
+		log_std("  size:    %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.size, cad.size * sector_size);
 		if (cad.iv_offset)
-			log_std("  skipped: %" PRIu64 " sectors\n", cad.iv_offset);
+			log_std("  skipped: %" PRIu64 " [512-byte units]\n", cad.iv_offset);
 		log_std("  mode:    %s%s\n", cad.flags & CRYPT_ACTIVATE_READONLY ?
 					   "readonly" : "read/write",
 					   (cad.flags & CRYPT_ACTIVATE_SUSPENDED) ? " (suspended)" : "");

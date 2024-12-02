@@ -769,31 +769,31 @@ if dm_crypt_keyring_support; then
 		load_key user $TEST_KEY_DESC2 $PWD1 "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
 		$CRYPTSETUP token add $LOOPDEV --key-description $TEST_KEY_DESC2 --token-id 1 || fail
 		$CRYPTSETUP -q resize --size 99 $DEV_NAME <&- || fail
-		$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "99 sectors" || fail
+		$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "99 \[512-byte units\]" || fail
 		#replace kernel key with wrong pass
 		load_key user $TEST_KEY_DESC2 $PWD2 "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
 		# must fail due to --token-only
 		echo $PWD1 | $CRYPTSETUP -q resize --token-only --size 100 $DEV_NAME && fail
-		$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" && fail
+		$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 \[512-byte units\]" && fail
 		# resize with keyring description
 		load_key user $TEST_KEY_DESC1 $PWD1 "$TEST_KEYRING" || fail
 		$CRYPTSETUP -q resize --size 99 $DEV_NAME --key-description $TEST_KEY_DESC1 || fail
-		$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "99 sectors" || fail
+		$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "99 \[512-byte units\]" || fail
 	fi
 fi
 echo $PWD1 | $CRYPTSETUP -q resize --size 100 $DEV_NAME || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 \[512-byte units\]" || fail
 echo $PWD1 | $CRYPTSETUP -q resize --device-size 51200 $DEV_NAME || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 \[512-byte units\]" || fail
 echo $PWD1 | $CRYPTSETUP -q resize --device-size 1M $DEV_NAME || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 \[512-byte units\]" || fail
 echo $PWD1 | $CRYPTSETUP -q resize --device-size 512k --size 1024 $DEV_NAME > /dev/null 2>&1 && fail
 echo $PWD1 | $CRYPTSETUP -q resize --device-size 4097 $DEV_NAME > /dev/null 2>&1 && fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 \[512-byte units\]" || fail
 $CRYPTSETUP close $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP luksOpen --disable-keyring $LOOPDEV $DEV_NAME || fail
 echo | $CRYPTSETUP -q resize --size 100 $DEV_NAME || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 \[512-byte units\]" || fail
 $CRYPTSETUP close $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 if dm_crypt_keyring_support; then
@@ -804,10 +804,10 @@ if dm_crypt_sector_size_support; then
 	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 --sector-size 4096 $LOOPDEV > /dev/null || fail
 	echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 	echo $PWD1 | $CRYPTSETUP -q resize --device-size 1M $DEV_NAME || fail
-	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 sectors" || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 \[512-byte units\]" || fail
 	echo $PWD1 | $CRYPTSETUP -q resize --device-size 2049s $DEV_NAME > /dev/null 2>&1 && fail
 	echo $PWD1 | $CRYPTSETUP -q resize --size 2049 $DEV_NAME > /dev/null 2>&1 && fail
-	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 sectors" || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 \[512-byte units\]" || fail
 fi
 $CRYPTSETUP close $DEV_NAME || fail
 # Resize not aligned to logical block size
@@ -1012,9 +1012,9 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --h
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV-missing --header $HEADER_IMG $DEV_NAME 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV --header $HEADER_IMG $DEV_NAME || fail
 echo $PWD1 | $CRYPTSETUP -q resize  $DEV_NAME --size 100 --header $HEADER_IMG || fail
-$CRYPTSETUP -q status  $DEV_NAME --header $HEADER_IMG | grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME --header $HEADER_IMG | grep "size:" | grep -q "100 \[512-byte units\]" || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "type:" | grep -q "n/a" || fail
-$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 \[512-byte units\]" || fail
 $CRYPTSETUP luksSuspend $DEV_NAME --header $HEADER_IMG || fail
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
 $CRYPTSETUP luksSuspend $DEV_NAME || fail

@@ -742,7 +742,7 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 	log_std(cd, "Description:  \t%s\n", params->description);
 	log_std(cd, "Cipher name:  \t%s\n", params->cipher);
 	log_std(cd, "Cipher mode:  \t%s\n", params->cipher_mode);
-	log_std(cd, "Cipher key:   \t%u bits\n", params->key_size);
+	log_std(cd, "Cipher key:   \t%u [bits]\n", params->key_size);
 
 	log_std(cd, "\n");
 

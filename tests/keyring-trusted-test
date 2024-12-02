@@ -175,7 +175,7 @@ $CRYPTSETUP open --type plain $IMG $MAP --key-size=256 --cipher=aes-xts-plain64 
 dmsetup table --showkeys $MAP | grep -q ":32:encrypted:$KEYNAME" || fail
 $CRYPTSETUP status $MAP | grep -q "key location: keyring" || fail
 $CRYPTSETUP resize $MAP --size 100 || fail
-$CRYPTSETUP status  $MAP| grep "size:" | grep -q "100 sectors" || fail
+$CRYPTSETUP status  $MAP | grep "size:" | grep -q "100 \[512-byte units\]" || fail
 $CRYPTSETUP resize  $MAP || fail
 $CRYPTSETUP close $MAP || fail
 echo "[OK]"

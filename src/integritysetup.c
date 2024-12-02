@@ -413,6 +413,7 @@ static int action_status(void)
 	char *backing_file;
 	const char *device, *metadata_device;
 	int path = 0, r = 0;
+	uint64_t sector_size;
 
 	/* perhaps a path, not a dm device name */
 	if (strchr(action_argv[0], '/'))
@@ -454,7 +455,7 @@ static int action_status(void)
 		if (r < 0)
 			goto out;
 
-		log_std("  tag size: %u\n", ip.tag_size);
+		log_std("  tag size: %u [bytes]\n", ip.tag_size);
 		log_std("  integrity: %s\n", ip.integrity ?: "(none)");
 		device = crypt_get_device_name(cd);
 		metadata_device = crypt_get_metadata_device_name(cd);
@@ -470,9 +471,10 @@ static int action_status(void)
 				free(backing_file);
 			}
 		}
-		log_std("  sector size:  %u bytes\n", crypt_get_sector_size(cd));
+		sector_size = (uint64_t)crypt_get_sector_size(cd) ?: SECTOR_SIZE;
+		log_std("  sector size:  %" PRIu64 " [bytes]\n", sector_size);
 		log_std("  interleave sectors: %u\n", ip.interleave_sectors);
-		log_std("  size:    %" PRIu64 " sectors\n", cad.size);
+		log_std("  size:    %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.size, cad.size * sector_size);
 		log_std("  mode:    %s%s\n",
 			cad.flags & CRYPT_ACTIVATE_READONLY ? "readonly" : "read/write",
 			cad.flags & CRYPT_ACTIVATE_RECOVERY ? " recovery" : "");
@@ -480,13 +482,13 @@ static int action_status(void)
 			crypt_get_active_integrity_failures(cd, action_argv[0]));
 		if (cad.flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) {
 			log_std("  bitmap 512-byte sectors per bit: %u\n", ip.journal_watermark);
-			log_std("  bitmap flush interval: %u ms\n", ip.journal_commit_time);
+			log_std("  bitmap flush interval: %u [ms]\n", ip.journal_commit_time);
 		} if (cad.flags & CRYPT_ACTIVATE_NO_JOURNAL) {
 			log_std("  journal: not active\n");
 		} else {
-			log_std("  journal size: %" PRIu64 " bytes\n", ip.journal_size);
+			log_std("  journal size: %" PRIu64 " [bytes]\n", ip.journal_size);
 			log_std("  journal watermark: %u%%\n", ip.journal_watermark);
-			log_std("  journal commit time: %u ms\n", ip.journal_commit_time);
+			log_std("  journal commit time: %u [ms]\n", ip.journal_commit_time);
 			if (ip.journal_integrity)
 				log_std("  journal integrity MAC: %s\n", ip.journal_integrity);
 			if (ip.journal_crypt)
