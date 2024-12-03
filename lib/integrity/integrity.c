@@ -83,23 +83,26 @@ int INTEGRITY_read_sb(struct crypt_device *cd,
 int INTEGRITY_dump(struct crypt_device *cd, struct device *device, uint64_t offset)
 {
 	struct superblock sb;
+	uint64_t sector_size;
 	int r;
 
 	r = INTEGRITY_read_superblock(cd, device, offset, &sb);
 	if (r)
 		return r;
 
-	log_std(cd, "Info for integrity device %s.\n", device_path(device));
-	log_std(cd, "superblock_version %d\n", (unsigned)sb.version);
-	log_std(cd, "log2_interleave_sectors %d\n", sb.log2_interleave_sectors);
-	log_std(cd, "integrity_tag_size %u\n", sb.integrity_tag_size);
-	log_std(cd, "journal_sections %u\n", sb.journal_sections);
-	log_std(cd, "provided_data_sectors %" PRIu64 "\n", sb.provided_data_sectors);
-	log_std(cd, "sector_size %u\n", SECTOR_SIZE << sb.log2_sectors_per_block);
+	sector_size = SECTOR_SIZE << sb.log2_sectors_per_block;
+	log_std(cd, "INTEGRITY header information for %s.\n", device_path(device));
+	log_std(cd, "version: %d\n", (unsigned)sb.version);
+	log_std(cd, "tag size: %u [bytes]\n", sb.integrity_tag_size);
+	log_std(cd, "sector size: %" PRIu64 " [bytes]\n", sector_size);
+	log_std(cd, "data size: %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n",
+		sb.provided_data_sectors, sb.provided_data_sectors * SECTOR_SIZE);
 	if (sb.version >= SB_VERSION_2 && (sb.flags & SB_FLAG_RECALCULATING))
-		log_std(cd, "recalc_sector %" PRIu64 "\n", sb.recalc_sector);
-	log_std(cd, "log2_blocks_per_bitmap %u\n", sb.log2_blocks_per_bitmap_bit);
-	log_std(cd, "flags %s%s%s%s%s\n",
+		log_std(cd, "recalculate sector: %" PRIu64 "\n", sb.recalc_sector);
+	log_std(cd, "journal sections: %u\n", sb.journal_sections);
+	log_std(cd, "log2 interleave sectors: %d\n", sb.log2_interleave_sectors);
+	log_std(cd, "log2 blocks per bitmap: %u\n", sb.log2_blocks_per_bitmap_bit);
+	log_std(cd, "flags: %s%s%s%s%s\n",
 		sb.flags & SB_FLAG_HAVE_JOURNAL_MAC ? "have_journal_mac " : "",
 		sb.flags & SB_FLAG_RECALCULATING ? "recalculating " : "",
 		sb.flags & SB_FLAG_DIRTY_BITMAP ? "dirty_bitmap " : "",

@@ -377,8 +377,8 @@ static int action_status(void)
 			vp.flags & CRYPT_VERITY_ROOT_HASH_SIGNATURE ? " (with signature)" : "");
 
 		log_std("  hash type:   %u\n", vp.hash_type);
-		log_std("  data block:  %u\n", vp.data_block_size);
-		log_std("  hash block:  %u\n", vp.hash_block_size);
+		log_std("  data block:  %u [bytes]\n", vp.data_block_size);
+		log_std("  hash block:  %u [bytes]\n", vp.hash_block_size);
 		log_std("  hash name:   %s\n", vp.hash_name);
 		log_std("  salt:        ");
 		if (vp.salt_size)
@@ -392,7 +392,7 @@ static int action_status(void)
 			log_std("  data loop:   %s\n", backing_file);
 			free(backing_file);
 		}
-		log_std("  size:        %" PRIu64 " sectors\n", cad.size);
+		log_std("  size:        %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.size, cad.size * (uint64_t)SECTOR_SIZE);
 		log_std("  mode:        %s\n", cad.flags & CRYPT_ACTIVATE_READONLY ?
 					   "readonly" : "read/write");
 
@@ -401,8 +401,8 @@ static int action_status(void)
 			log_std("  hash loop:   %s\n", backing_file);
 			free(backing_file);
 		}
-		log_std("  hash offset: %" PRIu64 " sectors\n",
-			vp.hash_area_offset * vp.hash_block_size / 512);
+		log_std("  hash offset: %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n",
+			vp.hash_area_offset * vp.hash_block_size / SECTOR_SIZE, vp.hash_area_offset * vp.hash_block_size);
 
 		if (vp.fec_device) {
 			log_std("  FEC device:  %s\n", vp.fec_device);
@@ -410,8 +410,8 @@ static int action_status(void)
 				log_std("  FEC loop:    %s\n", backing_file);
 				free(backing_file);
 			}
-			log_std("  FEC offset:  %" PRIu64 " sectors\n",
-				vp.fec_area_offset * vp.hash_block_size / 512);
+			log_std("  FEC offset:  %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n",
+				vp.fec_area_offset * vp.hash_block_size / SECTOR_SIZE, vp.fec_area_offset * vp.hash_block_size);
 			log_std("  FEC roots:   %u\n", vp.fec_roots);
 		}
 

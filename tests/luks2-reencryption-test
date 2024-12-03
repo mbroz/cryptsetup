@@ -805,7 +805,7 @@ function reencrypt_online_fixed_size() {
 	echo $PWD1 | $CRYPTSETUP open $DEV $_hdr $DEV_NAME || fail
 	echo $PWD1 | $CRYPTSETUP resize $DEV_NAME $_hdr --size $2 || fail
 	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --sector-size $1 --resilience $4 || fail
-	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "$2 sectors" || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "$2 \[512-byte units\]" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
 	check_hash_head $PWD1 $2 $3 $7
 	wipe $PWD1 $7
@@ -816,7 +816,7 @@ function reencrypt_online_fixed_size() {
 	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --sector-size $1 --init-only || fail
 	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --device-size $(($2-_esz))s --resilience $4 2>/dev/null && fail
 	echo $PWD1 | $CRYPTSETUP reencrypt -q $FAST_PBKDF_ARGON $DEV $_hdr --device-size $2s --resilience $4 || fail
-	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "$2 sectors" || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "$2 \[512-byte units\]" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
 	check_hash_head $PWD1 $2 $3 $7
 
