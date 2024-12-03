@@ -1522,7 +1522,7 @@ static int strcmp_or_null(const char *str, const char *expected)
 int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_passwordLen)
 {
 	bool wipe_signatures = false;
-	int encrypt_type, r = -EINVAL, keysize, integrity_keysize = 0, fd, created = 0;
+	int encrypt_type, r = -EINVAL, keysize, integrity_keysize = 0, required_integrity_key_size = 0, fd, created = 0;
 	struct stat st;
 	const char *header_device, *type;
 	char *msg = NULL, *key = NULL, *password = NULL;
@@ -1544,6 +1544,7 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	struct crypt_params_hw_opal opal_params = {
 		.user_key_size = DEFAULT_LUKS1_KEYBITS / 8
 	};
+	struct crypt_params_integrity integrity_params = {};
 	void *params;
 	struct crypt_keyslot_context *kc = NULL, *new_kc = NULL;
 
@@ -1614,13 +1615,23 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	}
 
 	if (ARG_SET(OPT_INTEGRITY_ID)) {
-		r = crypt_parse_integrity_mode(ARG_STR(OPT_INTEGRITY_ID), integrity, &integrity_keysize);
+		if (ARG_SET(OPT_INTEGRITY_KEY_SIZE_ID))
+			required_integrity_key_size = ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID) / 8;
+		r = crypt_parse_integrity_mode(ARG_STR(OPT_INTEGRITY_ID), integrity,
+					       &integrity_keysize, required_integrity_key_size);
 		if (r < 0) {
 			log_err(_("No known integrity specification pattern detected."));
+			if (ARG_SET(OPT_INTEGRITY_KEY_SIZE_ID) && required_integrity_key_size != integrity_keysize)
+				log_err(_("Cannot use specified integrity key size."));
 			goto out;
 		}
+
 		params2.integrity = integrity;
-		/* FIXME: we use default integrity_params (set to NULL) */
+		/* FIXME: we use default integrity_params except key size */
+		if (required_integrity_key_size) {
+			params2.integrity_params = &integrity_params;
+			integrity_params.integrity_key_size = integrity_keysize;
+		}
 	}
 
 	/* Never call pwquality if using null cipher */
@@ -3711,6 +3722,15 @@ static void basic_options_cb(poptContext popt_context,
 		break;
 	case OPT_KEY_SIZE_ID:
 		if (ARG_UINT32(OPT_KEY_SIZE_ID) % 8)
+			usage(popt_context, EXIT_FAILURE,
+			      _("Key size must be a multiple of 8 bits"),
+			      poptGetInvocationName(popt_context));
+		break;
+	case OPT_INTEGRITY_KEY_SIZE_ID:
+		if (ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID) == 0)
+			usage(popt_context, EXIT_FAILURE, poptStrerror(POPT_ERROR_BADNUMBER),
+			      poptGetInvocationName(popt_context));
+		if (ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID) % 8)
 			usage(popt_context, EXIT_FAILURE,
 			      _("Key size must be a multiple of 8 bits"),
 			      poptGetInvocationName(popt_context));

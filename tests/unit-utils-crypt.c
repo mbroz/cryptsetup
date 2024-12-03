@@ -108,7 +108,7 @@ static int test_parse_integrity_mode(void)
 		key_size = -1;
 		memset(integrity, 0, sizeof(integrity));
 		if (integrity_test_vectors[i].int_mode &&
-		    (crypt_parse_integrity_mode(integrity_test_vectors[i].input, integrity, &key_size) < 0 ||
+		    (crypt_parse_integrity_mode(integrity_test_vectors[i].input, integrity, &key_size, 0) < 0 ||
 			strcmp(integrity_test_vectors[i].integrity, integrity) ||
 			integrity_test_vectors[i].key_size != key_size)) {
 			printf("[FAILED (%s / %i)]\n", integrity, key_size);

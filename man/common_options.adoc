@@ -377,6 +377,12 @@ For more info, see _AUTHENTICATED DISK ENCRYPTION_ section in *cryptsetup*(8).
 endif::[]
 
 ifdef::ACTION_LUKSFORMAT[]
+*--integrity-key-size BYTES*::
+The size of the data integrity key. Configurable only for HMAC integrity.
+Default integrity key size is set to the same as hash output length.
+endif::[]
+
+ifdef::ACTION_LUKSFORMAT[]
 *--integrity-legacy-padding*::
 Use inefficient legacy padding.
 +

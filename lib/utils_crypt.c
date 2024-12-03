@@ -95,7 +95,7 @@ int crypt_parse_hash_integrity_mode(const char *s, char *integrity)
 }
 
 int crypt_parse_integrity_mode(const char *s, char *integrity,
-			       int *integrity_key_size)
+			       int *integrity_key_size, int required_key_size)
 {
 	int ks = 0, r = 0;
 
@@ -108,18 +108,22 @@ int crypt_parse_integrity_mode(const char *s, char *integrity,
 	    !strcmp(s, "none")) {
 		strncpy(integrity, s, MAX_CIPHER_LEN);
 		ks = 0;
+		if (required_key_size != ks)
+			r = -EINVAL;
 	} else if (!strcmp(s, "hmac-sha1")) {
 		strncpy(integrity, "hmac(sha1)", MAX_CIPHER_LEN);
-		ks = 20;
+		ks = required_key_size ?: 20;
 	} else if (!strcmp(s, "hmac-sha256")) {
 		strncpy(integrity, "hmac(sha256)", MAX_CIPHER_LEN);
-		ks = 32;
+		ks = required_key_size ?: 32;
 	} else if (!strcmp(s, "hmac-sha512")) {
-		ks = 64;
 		strncpy(integrity, "hmac(sha512)", MAX_CIPHER_LEN);
+		ks = required_key_size ?: 64;
 	} else if (!strcmp(s, "cmac-aes")) {
-		ks = 16;
 		strncpy(integrity, "cmac(aes)", MAX_CIPHER_LEN);
+		ks = 16;
+		if (required_key_size && required_key_size != ks)
+			r = -EINVAL;
 	} else
 		r = -EINVAL;
 

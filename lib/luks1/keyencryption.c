@@ -88,7 +88,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 
 	r = dm_crypt_target_set(&dmd.segment, 0, dmd.size,
 			crypt_metadata_device(ctx), vk, cipher_spec, 0, sector,
-			NULL, 0, SECTOR_SIZE);
+			NULL, 0, 0, SECTOR_SIZE);
 	if (r)
 		goto out;
 
