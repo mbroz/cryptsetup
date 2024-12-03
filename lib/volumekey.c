@@ -20,7 +20,7 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 	if (keylength > (SIZE_MAX - sizeof(*vk)))
 		return NULL;
 
-	vk = malloc(sizeof(*vk) + keylength);
+	vk = crypt_safe_alloc(sizeof(*vk) + keylength);
 	if (!vk)
 		return NULL;
 
@@ -122,11 +122,9 @@ void crypt_free_volume_key(struct volume_key *vk)
 	struct volume_key *vk_next;
 
 	while (vk) {
-		crypt_safe_memzero(vk->key, vk->keylength);
-		vk->keylength = 0;
 		free(CONST_CAST(void*)vk->key_description);
 		vk_next = vk->next;
-		free(vk);
+		crypt_safe_free(vk);
 		vk = vk_next;
 	}
 }
