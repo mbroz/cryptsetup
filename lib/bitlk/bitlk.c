@@ -1365,7 +1365,7 @@ static int _activate(struct crypt_device *cd,
 						crypt_get_cipher_spec(cd),
 						segments[i].iv_offset,
 						segments[i].iv_offset,
-						NULL, 0,
+						NULL, 0, 0,
 						params->sector_size);
 		if (r)
 			goto out;

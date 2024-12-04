@@ -124,26 +124,42 @@ int INTEGRITY_data_sectors(struct crypt_device *cd,
 	return 0;
 }
 
-int INTEGRITY_key_size(const char *integrity)
+int INTEGRITY_key_size(const char *integrity, int required_key_size)
 {
+	int ks = 0;
+
+	if (!integrity && required_key_size)
+		return -EINVAL;
+
 	if (!integrity)
 		return 0;
 
 	//FIXME: use crypto backend hash size
 	if (!strcmp(integrity, "aead"))
-		return 0;
+		ks = 0;
 	else if (!strcmp(integrity, "hmac(sha1)"))
-		return 20;
+		ks = required_key_size ?: 20;
 	else if (!strcmp(integrity, "hmac(sha256)"))
-		return 32;
+		ks = required_key_size ?: 32;
 	else if (!strcmp(integrity, "hmac(sha512)"))
-		return 64;
+		ks = required_key_size ?: 64;
+	else if (!strcmp(integrity, "phmac(sha1)"))
+		ks = required_key_size ?: -EINVAL;
+	else if (!strcmp(integrity, "phmac(sha256)"))
+		ks = required_key_size ?: -EINVAL;
+	else if (!strcmp(integrity, "phmac(sha512)"))
+		ks = required_key_size ?: -EINVAL;
 	else if (!strcmp(integrity, "poly1305"))
-		return 0;
+		ks = 0;
 	else if (!strcmp(integrity, "none"))
-		return 0;
+		ks = 0;
+	else
+		return -EINVAL;
 
-	return -EINVAL;
+	if (required_key_size && ks != required_key_size)
+		return -EINVAL;
+
+	return ks;
 }
 
 /* Return hash or hmac(hash) size, if known */
@@ -162,6 +178,8 @@ int INTEGRITY_hash_tag_size(const char *integrity)
 		return 8;
 
 	r = sscanf(integrity, "hmac(%" MAX_CIPHER_LEN_STR "[^)]s", hash);
+	if (r != 1)
+		r = sscanf(integrity, "phmac(%" MAX_CIPHER_LEN_STR "[^)]s", hash);
 	if (r == 1)
 		r = crypt_hash_size(hash);
 	else
@@ -203,6 +221,12 @@ int INTEGRITY_tag_size(const char *integrity,
 	else if (!strcmp(integrity, "hmac(sha256)"))
 		auth_tag_size = 32;
 	else if (!strcmp(integrity, "hmac(sha512)"))
+		auth_tag_size = 64;
+	else if (!strcmp(integrity, "phmac(sha1)"))
+		auth_tag_size = 20;
+	else if (!strcmp(integrity, "phmac(sha256)"))
+		auth_tag_size = 32;
+	else if (!strcmp(integrity, "phmac(sha512)"))
 		auth_tag_size = 64;
 	else if (!strcmp(integrity, "poly1305")) {
 		if (iv_tag_size)
@@ -376,6 +400,7 @@ static int _create_reduced_device(struct crypt_device *cd,
 
 int INTEGRITY_format(struct crypt_device *cd,
 		     const struct crypt_params_integrity *params,
+		     struct volume_key *integrity_key,
 		     struct volume_key *journal_crypt_key,
 		     struct volume_key *journal_mac_key,
 		     uint64_t backing_device_sectors)
@@ -391,7 +416,6 @@ int INTEGRITY_format(struct crypt_device *cd,
 	uuid_t tmp_uuid_bin;
 	uint64_t data_offset_sectors;
 	struct device *p_metadata_device, *p_data_device, *reduced_device = NULL;
-	struct volume_key *vk = NULL;
 
 	uuid_generate(tmp_uuid_bin);
 	uuid_unparse(tmp_uuid_bin, tmp_uuid);
@@ -426,13 +450,9 @@ int INTEGRITY_format(struct crypt_device *cd,
 		p_data_device = crypt_data_device(cd);
 	}
 
-	/* There is no data area, we can actually use fake zeroed key */
-	if (params && params->integrity_key_size)
-		vk = crypt_alloc_volume_key(params->integrity_key_size, NULL);
-
 	r = dm_integrity_target_set(cd, tgt, 0, dmdi.size, p_metadata_device,
 			p_data_device, crypt_get_integrity_tag_size(cd),
-			data_offset_sectors, crypt_get_sector_size(cd), vk,
+			data_offset_sectors, crypt_get_sector_size(cd), integrity_key,
 			journal_crypt_key, journal_mac_key, params);
 	if (r < 0)
 		goto err;
@@ -461,7 +481,6 @@ int INTEGRITY_format(struct crypt_device *cd,
 	r = dm_remove_device(cd, tmp_name, CRYPT_DEACTIVATE_FORCE);
 err:
 	dm_targets_free(cd, &dmdi);
-	crypt_free_volume_key(vk);
 	if (reduced_device) {
 		dm_remove_device(cd, reduced_device_name, CRYPT_DEACTIVATE_FORCE);
 		device_free(cd, reduced_device);

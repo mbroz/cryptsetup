@@ -196,7 +196,7 @@ static int action_format(void)
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_HMAC_ID))
 		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC);
 
-	r = crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL, NULL, 0, &params);
+	r = crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL, integrity_key, params.integrity_key_size, &params);
 	if (r < 0) /* FIXME: call wipe signatures again */
 		goto out;
 

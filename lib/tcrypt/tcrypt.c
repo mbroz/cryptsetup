@@ -887,10 +887,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 		}
 
 		r = dm_crypt_target_set(&dmd.segment, 0, dmd.size, ptr_dev, vk,
-				cipher_spec, iv_offset, offset,
-				crypt_get_integrity(cd),
-				crypt_get_integrity_tag_size(cd),
-				crypt_get_sector_size(cd));
+				cipher_spec, iv_offset, offset, NULL, 0, 0, crypt_get_sector_size(cd));
 		if (r)
 			break;
 

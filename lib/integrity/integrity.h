@@ -53,7 +53,7 @@ int INTEGRITY_dump(struct crypt_device *cd, struct device *device, uint64_t offs
 int INTEGRITY_data_sectors(struct crypt_device *cd,
 			   struct device *device, uint64_t offset,
 			   uint64_t *data_sectors);
-int INTEGRITY_key_size(const char *integrity);
+int INTEGRITY_key_size(const char *integrity, int required_key_size);
 int INTEGRITY_tag_size(const char *integrity,
 		       const char *cipher,
 		       const char *cipher_mode);
@@ -61,6 +61,7 @@ int INTEGRITY_hash_tag_size(const char *integrity);
 
 int INTEGRITY_format(struct crypt_device *cd,
 		     const struct crypt_params_integrity *params,
+		     struct volume_key *integrity_key,
 		     struct volume_key *journal_crypt_key,
 		     struct volume_key *journal_mac_key,
 		     uint64_t backing_device_sectors);
