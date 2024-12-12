@@ -451,6 +451,7 @@ static int gcrypt_argon2(const char *type,
 		.dispatch_job = gcrypt_dispatch_job,
 		.wait_all_jobs = gcrypt_wait_all_jobs
 	};
+	gpg_error_t err;
 
 	if (!strcmp(type, "argon2i"))
 		atype = GCRY_KDF_ARGON2I;
@@ -464,12 +465,11 @@ static int gcrypt_argon2(const char *type,
 	param[2] = memory;
 	param[3] = parallel;
 
-	if (gcry_kdf_open(&hd, GCRY_KDF_ARGON2, atype, param, 4,
+	err = gcry_kdf_open(&hd, GCRY_KDF_ARGON2, atype, param, 4,
 			password, password_length, salt, salt_length,
-			NULL, 0, NULL, 0)) {
-		free(threads.jobs_ctx);
-		return -EINVAL;
-	}
+			NULL, 0, NULL, 0);
+	if (err)
+		return ((err & GPG_ERR_CODE_MASK) == GPG_ERR_ENOMEM) ? -ENOMEM : -EINVAL;
 
 	if (parallel == 1) {
 		/* Do not use threads here */

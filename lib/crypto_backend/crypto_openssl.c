@@ -19,6 +19,7 @@
 #include <openssl/provider.h>
 #include <openssl/kdf.h>
 #include <openssl/core_names.h>
+#include <openssl/err.h>
 static OSSL_PROVIDER *ossl_legacy = NULL;
 static OSSL_PROVIDER *ossl_default = NULL;
 static OSSL_LIB_CTX  *ossl_ctx = NULL;
@@ -637,6 +638,10 @@ static int openssl_argon2(const char *type, const char *password, size_t passwor
 
 	EVP_KDF_CTX_free(ctx);
 	EVP_KDF_free(argon2);
+
+	/* Memory allocation is common issue with memory-hard Argon2 */
+	if (r == 0 && ERR_GET_REASON(ERR_get_error()) == ERR_R_MALLOC_FAILURE)
+		return -ENOMEM;
 
 	/* _derive() returns 0 or negative value on error, 1 on success */
 	return r == 1 ? 0 : -EINVAL;

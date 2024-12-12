@@ -159,6 +159,10 @@ int verify_pbkdf_params(struct crypt_device *cd,
 			pbkdf_limits.max_memory);
 		r = -EINVAL;
 	}
+	if (1024ULL * pbkdf->max_memory_kb > SIZE_MAX) {
+		log_err(cd, _("Requested maximum PBKDF memory cost is too high (limited by the integer maximal size)."));
+		r = -EINVAL;
+	}
 	if (!pbkdf->max_memory_kb) {
 		log_err(cd, _("Requested maximum PBKDF memory cannot be zero."));
 		r = -EINVAL;

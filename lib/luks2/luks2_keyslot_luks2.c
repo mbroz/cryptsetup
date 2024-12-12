@@ -255,6 +255,8 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 		if ((crypt_backend_flags() & CRYPT_BACKEND_PBKDF2_INT) &&
 		     pbkdf.iterations > INT_MAX)
 			log_err(cd, _("PBKDF2 iteration value overflow."));
+		if (r == -ENOMEM)
+			log_err(cd, _("Not enough memory for keyslot key derivation."));
 		crypt_free_volume_key(derived_key);
 		return r;
 	}
