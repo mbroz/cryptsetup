@@ -987,12 +987,12 @@ static int LUKS_open_key(unsigned int keyIndex,
 		  const char *password,
 		  size_t passwordLen,
 		  struct luks_phdr *hdr,
-		  struct volume_key **vk,
+		  struct volume_key **r_vk,
 		  struct crypt_device *ctx)
 {
 	crypt_keyslot_info ki = LUKS_keyslot_info(hdr, keyIndex);
-	struct volume_key *derived_key;
-	char *AfKey = NULL;
+	struct volume_key *derived_key, *vk = NULL;
+	char *AfKey = NULL, *key = NULL;
 	size_t AFEKSize;
 	int r;
 
@@ -1006,8 +1006,8 @@ static int LUKS_open_key(unsigned int keyIndex,
 	if (!derived_key)
 		return -ENOMEM;
 
-	*vk = crypt_alloc_volume_key(hdr->keyBytes, NULL);
-	if (!*vk) {
+	key = crypt_safe_alloc(hdr->keyBytes);
+	if (!key) {
 		r = -ENOMEM;
 		goto out;
 	}
@@ -1038,20 +1038,31 @@ static int LUKS_open_key(unsigned int keyIndex,
 	if (r < 0)
 		goto out;
 
-	r = AF_merge(AfKey, (*vk)->key, (*vk)->keylength, hdr->keyblock[keyIndex].stripes, hdr->hashSpec);
+	r = AF_merge(AfKey, key, hdr->keyBytes, hdr->keyblock[keyIndex].stripes, hdr->hashSpec);
 	if (r < 0)
 		goto out;
 
-	r = LUKS_verify_volume_key(hdr, *vk);
+	vk = crypt_alloc_volume_key(hdr->keyBytes, key);
+	if (!vk) {
+		r = -ENOMEM;
+		goto out;
+	}
+
+	r = LUKS_verify_volume_key(hdr, vk);
+	if (r < 0)
+		goto out;
 
 	/* Allow only empty passphrase with null cipher */
-	if (!r && crypt_is_cipher_null(hdr->cipherName) && passwordLen)
+	if (crypt_is_cipher_null(hdr->cipherName) && passwordLen) {
 		r = -EPERM;
-out:
-	if (r < 0) {
-		crypt_free_volume_key(*vk);
-		*vk = NULL;
+		goto out;
 	}
+
+	*r_vk = vk;
+out:
+	if (r < 0)
+		crypt_free_volume_key(vk);
+	crypt_safe_free(key);
 	crypt_safe_free(AfKey);
 	crypt_free_volume_key(derived_key);
 	return r;
