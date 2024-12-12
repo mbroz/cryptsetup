@@ -97,7 +97,7 @@ status_check() # name value
 
 dump_check() # name value
 {
-	X=$($INTSETUP dump $DEV | grep "$1" | cut -d' '  -f 2)
+	X=$($INTSETUP dump $DEV | grep "$1" | sed 's/.*: //' | cut -d' '  -f 1)
 	if [ "$X" != "$2" ] ; then
 		echo "[dump FAIL]"
 		echo " Expecting $1:$2 got \"$X\"."
@@ -185,8 +185,8 @@ intformat() # alg alg_out tagsize outtagsize sector_size csum [keyfile keysize]
 		return
 	fi
 
-	dump_check "tag_size" $4
-	dump_check "sector_size" $5
+	dump_check "tag size" $4
+	dump_check "sector size" $5
 	echo -n "[ACTIVATE]"
 	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS || fail "Cannot activate device."
 	if [ -n "$8" ]; then
@@ -194,9 +194,9 @@ intformat() # alg alg_out tagsize outtagsize sector_size csum [keyfile keysize]
 		[ -z "$KEY_HEX" ] && fail "Cannot decode key."
 		dmsetup table --showkeys $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
 	fi
-	status_check "tag size" $4
+	status_check "tag size" "$4 [bytes]"
 	status_check "integrity" $2
-	status_check "sector size" "$5 bytes"
+	status_check "sector size" "$5 [bytes]"
 	int_check_sum $1 $6 $7 $8
 	echo -n "[REMOVE]"
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
@@ -279,7 +279,7 @@ int_journal() # 1 alg, 2 tagsize, 3 sector_size, 4 watermark, 5 commit_time, 6 j
 	dmsetup table --showkeys $DEV_NAME | grep -q $KEY_HEX || fail "Key mismatch."
 
 	status_check "journal watermark" "${4}%"
-	status_check "journal commit time" "${5} ms"
+	status_check "journal commit time" "${5} [ms]"
 	status_check "journal integrity MAC" $9
 
 	echo -n "[REMOVE]"
@@ -526,7 +526,7 @@ if [ -n "$DM_INTEGRITY_BITMAP" ] ; then
 	$INTSETUP format -q $DEV --integrity-bitmap-mode $DEV2 || fail "Cannot format device."
 	$INTSETUP open $DEV --integrity-bitmap-mode --bitmap-sectors-per-bit 65536 --bitmap-flush-time 5000 $DEV_NAME || fail "Cannot activate device."
 	$INTSETUP status $DEV_NAME | grep -q 'bitmap 512-byte sectors per bit: 65536' || fail
-	$INTSETUP status $DEV_NAME | grep -q 'bitmap flush interval: 5000 ms' || fail
+	$INTSETUP status $DEV_NAME | grep -q 'bitmap flush interval: 5000 \[ms\]' || fail
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo "[OK]"
 	echo "Bitmap error detection tests:"
@@ -551,7 +551,7 @@ EOF
 	[ ! -b /dev/mapper/$DEV_NAME2 ] && fail
 	$INTSETUP format -q -s 512 --no-wipe /dev/mapper/$DEV_NAME2
 	$INTSETUP open /dev/mapper/$DEV_NAME2 $DEV_NAME || fail
-	D_SIZE=$($INTSETUP dump /dev/mapper/$DEV_NAME2 | grep provided_data_sectors | sed -e 's/.*provided_data_sectors\ \+//g')
+	D_SIZE=$($INTSETUP dump /dev/mapper/$DEV_NAME2 | grep "data size:" | cut -d' '  -f 3)
 	A_SIZE=$(blockdev --getsz /dev/mapper/$DEV_NAME)
 	# Compare strings (to avoid 64bit integers), not integers
 	[ -n "$A_SIZE" -a "$D_SIZE" != "$A_SIZE" ] && fail
