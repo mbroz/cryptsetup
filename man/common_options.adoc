@@ -337,7 +337,12 @@ ifdef::ACTION_ERASE[]
 Erase *ALL* data on the OPAL self-encrypted device, regardless of the partition it is ran on, if any,
 and does not require a valid LUKS2 header to be present on the device to run. After providing
 correct PSID via interactive prompt or via *--key-file* parameter the device is erased.
-PSID is usually printed on the OPAL device label (either directly or as a QR code).
++
+PSID is usually printed on the OPAL device label (either directly or as a QR code). 
++
+*NOTE*: PSID should be treated as sensitive information as it allows anyone with remote access to
+the OPAL device to destroy data even if the device is locked. Be sure you do not leak PSID through
+transparent packaging during transport or images of the drive posted online.
 endif::[]
 
 ifdef::ACTION_LUKSFORMAT[]
