@@ -119,6 +119,21 @@ int crypt_parse_integrity_mode(const char *s, char *integrity,
 	} else if (!strcmp(s, "hmac-sha512")) {
 		strncpy(integrity, "hmac(sha512)", MAX_CIPHER_LEN);
 		ks = required_key_size ?: 64;
+	} else if (!strcmp(s, "phmac-sha1")) {
+		strncpy(integrity, "phmac(sha1)", MAX_CIPHER_LEN);
+		ks = required_key_size;
+		if (!required_key_size)
+			r = -EINVAL;
+	} else if (!strcmp(s, "phmac-sha256")) {
+		strncpy(integrity, "phmac(sha256)", MAX_CIPHER_LEN);
+		ks = required_key_size;
+		if (!required_key_size)
+			r = -EINVAL;
+	} else if (!strcmp(s, "phmac-sha512")) {
+		strncpy(integrity, "phmac(sha512)", MAX_CIPHER_LEN);
+		ks = required_key_size;
+		if (!required_key_size)
+			r = -EINVAL;
 	} else if (!strcmp(s, "cmac-aes")) {
 		strncpy(integrity, "cmac(aes)", MAX_CIPHER_LEN);
 		ks = 16;
