@@ -1875,9 +1875,11 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	}
 
 	if (!device_size(crypt_data_device(cd), &dev_size) &&
-	    dev_size <= (crypt_get_data_offset(cd) * SECTOR_SIZE))
+	    dev_size <= (crypt_get_data_offset(cd) * SECTOR_SIZE)) {
 		log_std(cd, _("Device %s is too small for activation, there is no remaining space for data.\n"),
 			      device_path(crypt_data_device(cd)));
+		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -2222,9 +2224,11 @@ out:
 
 	/* Device size can be larger now if it is a file container */
 	if (!device_size(crypt_data_device(cd), &dev_size) &&
-	    dev_size <= (crypt_get_data_offset(cd) * SECTOR_SIZE))
+	    dev_size <= (crypt_get_data_offset(cd) * SECTOR_SIZE)) {
 		log_std(cd, _("Device %s is too small for activation, there is no remaining space for data.\n"),
 			      device_path(crypt_data_device(cd)));
+		return -EINVAL;
+	}
 
 	return 0;
 }
