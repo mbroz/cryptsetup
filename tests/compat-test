@@ -250,7 +250,7 @@ echo $PWD1 | $CRYPTSETUP luksAddKey $IMG $FAST_PBKDF_OPT 2>/dev/null && fail
 echo -e "$PWD1\n$PWD2" | $CRYPTSETUP luksAddKey $IMG $FAST_PBKDF_OPT || fail
 echo -e "$PWD0\n$PWD1" | $CRYPTSETUP luksAddKey $IMG $FAST_PBKDF_OPT 2>/dev/null && fail
 echo "[4] change key"
-echo -e "$PWD1\n$PWD0\n" | $CRYPTSETUP luksChangeKey $FAST_PBKDF_OPT $IMG || fail
+echo -e "$PWD1\n$PWD0\n" | $CRYPTSETUP luksChangeKey --force-password $FAST_PBKDF_OPT $IMG || fail
 echo -e "$PWD1\n$PWD2\n" | $CRYPTSETUP luksChangeKey $FAST_PBKDF_OPT $IMG 2>/dev/null && fail
 [ $? -ne 2 ] && fail "luksChangeKey should return EPERM exit code"
 echo "[5] remove key"
@@ -941,7 +941,7 @@ prepare "[35] Interactive format of device." wipe
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
 set timeout $EXPECT_TIMEOUT
-eval spawn $CRYPTSETUP_RAW luksFormat --type luks1 $FAST_PBKDF_OPT -v $LOOPDEV
+eval spawn $CRYPTSETUP_RAW luksFormat --type luks1 --force-password $FAST_PBKDF_OPT -v $LOOPDEV
 expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
 send "YES\n"
 expect timeout abort "Enter passphrase for $EXPECT_DEV:"
@@ -971,7 +971,7 @@ expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
 send "YES\n"
 expect timeout abort "Command successful."
 expect timeout abort eof
-eval spawn $CRYPTSETUP_RAW luksFormat --type luks1 $FAST_PBKDF_OPT -v $LOOPDEV
+eval spawn $CRYPTSETUP_RAW luksFormat --type luks1 --force-password $FAST_PBKDF_OPT -v $LOOPDEV
 expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
 send "YES\n"
 expect timeout abort "Enter passphrase for $EXPECT_DEV:"
@@ -1105,7 +1105,7 @@ echo -n "$LONG_PWD" >$KEYE
 expect_run - >/dev/null <<EOF
 proc abort {} { send_error "Timeout. "; exit 2 }
 set timeout $EXPECT_TIMEOUT
-eval spawn $CRYPTSETUP_RAW luksFormat --type luks1 $FAST_PBKDF_OPT -v $LOOPDEV
+eval spawn $CRYPTSETUP_RAW luksFormat --type luks1 --force-password $FAST_PBKDF_OPT -v $LOOPDEV
 expect timeout abort "Are you sure? (Type 'yes' in capital letters):"
 send "YES\n"
 expect timeout abort "Enter passphrase for $EXPECT_DEV:"
