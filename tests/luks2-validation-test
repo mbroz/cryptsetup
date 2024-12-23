@@ -125,6 +125,7 @@ function valgrind_run()
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 
 command -v jq >/dev/null || skip "Cannot find jq, test skipped."
+command -v xxd >/dev/null || skip "Cannot find xxd, test skipped."
 
 prepare
 
