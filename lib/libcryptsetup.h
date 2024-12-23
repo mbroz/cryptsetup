@@ -519,8 +519,12 @@ struct crypt_params_verity {
 	const char *data_device;   /**< data_device (CRYPT_VERITY_CREATE_HASH) */
 	const char *hash_device;   /**< hash_device (output only) */
 	const char *fec_device;    /**< fec_device (output only) */
+	const char *hash;          /**< hash */
+	const char *hash_sig;      /**< hash signature */
 	const char *salt;          /**< salt */
 	uint32_t salt_size;        /**< salt size (in bytes) */
+	uint32_t hash_size;        /**< hash size (in bytes) */
+	uint32_t hash_sig_size;    /**< hash signature size (in bytes) */
 	uint32_t hash_type;        /**< in-kernel hashing type */
 	uint32_t data_block_size;  /**< data block size (in bytes) */
 	uint32_t hash_block_size;  /**< hash block size (in bytes) */
@@ -529,6 +533,7 @@ struct crypt_params_verity {
 	uint64_t fec_area_offset;  /**< FEC/header offset (in bytes) */
 	uint32_t fec_roots;        /**< Reed-Solomon FEC roots */
 	uint32_t flags;            /**< CRYPT_VERITY* flags */
+	uint32_t sb_version;       /**< superblock version */
 };
 
 /** No on-disk header (only hashes) */
@@ -539,7 +544,12 @@ struct crypt_params_verity {
 #define CRYPT_VERITY_CREATE_HASH (UINT32_C(1) << 2)
 /** Root hash signature required for activation */
 #define CRYPT_VERITY_ROOT_HASH_SIGNATURE (UINT32_C(1) << 3)
-
+/** Root hash embedded in sb */
+#define CRYPT_VERITY_ROOT_HASH_EMBEDDED (UINT32_C(1) << 4)
+/** Root hash signature embedded in sb */
+#define CRYPT_VERITY_ROOT_HASH_SIG_EMBEDDED (UINT32_C(1) << 5)
+/** Update signature */
+#define CRYPT_VERITY_UPDATE_SIGNATURE (UINT32_C(1) << 6)
 /**
  *
  * Structure used as parameter for TCRYPT device type.
