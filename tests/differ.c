@@ -2,7 +2,7 @@
 /*
  * cryptsetup file differ check (rewritten Clemens' fileDiffer in Python)
  *
- * Copyright (C) 2010-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2010-2025 Red Hat, Inc. All rights reserved.
  */
 
 #include <stdio.h>

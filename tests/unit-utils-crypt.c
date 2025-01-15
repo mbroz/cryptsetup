@@ -2,7 +2,7 @@
 /*
  * cryptsetup crypto name and hex conversion helper test vectors
  *
- * Copyright (C) 2022-2024 Milan Broz
+ * Copyright (C) 2022-2025 Milan Broz
  */
 
 #include <stdio.h>

@@ -2,8 +2,8 @@
 /*
  * LUKS - Linux Unified Key Setup v2, reencryption keyslot handler
  *
- * Copyright (C) 2016-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2016-2024 Ondrej Kozina
+ * Copyright (C) 2016-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2016-2025 Ondrej Kozina
  */
 
 #include "luks2_internal.h"

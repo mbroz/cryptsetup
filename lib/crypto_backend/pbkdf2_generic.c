@@ -5,8 +5,8 @@
  * Copyright (C) 2004 Free Software Foundation
  *
  * cryptsetup related changes
- * Copyright (C) 2012-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2012-2024 Milan Broz
+ * Copyright (C) 2012-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012-2025 Milan Broz
  */
 
 #include <errno.h>

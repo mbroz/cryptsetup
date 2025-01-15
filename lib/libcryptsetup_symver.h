@@ -2,7 +2,7 @@
 /*
  * Helpers for defining versioned symbols
  *
- * Copyright (C) 2021-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2021-2025 Red Hat, Inc. All rights reserved.
  */
 
 #ifndef _LIBCRYPTSETUP_SYMVER_H

@@ -2,9 +2,9 @@
 /*
  * LUKS - Linux Unified Key Setup v2, reencryption digest helpers
  *
- * Copyright (C) 2022-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2022-2024 Ondrej Kozina
- * Copyright (C) 2022-2024 Milan Broz
+ * Copyright (C) 2022-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2022-2025 Ondrej Kozina
+ * Copyright (C) 2022-2025 Milan Broz
  */
 
 #include "luks2_internal.h"

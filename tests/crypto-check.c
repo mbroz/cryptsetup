@@ -2,7 +2,7 @@
 /*
  * Test utility checking availability of crypto primitive in crypto backend.
  *
- * Copyright (C) 2024 Milan Broz
+ * Copyright (C) 2024-2025 Milan Broz
  */
 
 #include <stdio.h>

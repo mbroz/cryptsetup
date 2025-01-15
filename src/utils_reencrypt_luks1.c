@@ -2,8 +2,8 @@
 /*
  * cryptsetup - LUKS1 utility for offline re-encryption
  *
- * Copyright (C) 2012-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2012-2024 Milan Broz
+ * Copyright (C) 2012-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012-2025 Milan Broz
  */
 
 #include <sys/ioctl.h>

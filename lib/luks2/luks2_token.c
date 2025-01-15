@@ -2,8 +2,8 @@
 /*
  * LUKS - Linux Unified Key Setup v2, token handling
  *
- * Copyright (C) 2016-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2016-2024 Milan Broz
+ * Copyright (C) 2016-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2016-2025 Milan Broz
  */
 
 #include <ctype.h>

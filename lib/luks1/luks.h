@@ -3,7 +3,7 @@
  * LUKS - Linux Unified Key Setup
  *
  * Copyright (C) 2004-2006 Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2025 Red Hat, Inc. All rights reserved.
  */
 
 #ifndef INCLUDED_CRYPTSETUP_LUKS_LUKS_H

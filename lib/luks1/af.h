@@ -3,7 +3,7 @@
  * AFsplitter - Anti forensic information splitter
  *
  * Copyright (C) 2004 Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2025 Red Hat, Inc. All rights reserved.
  */
 
 #ifndef INCLUDED_CRYPTSETUP_LUKS_AF_H

@@ -2,8 +2,8 @@
 /*
  * kernel keyring syscall wrappers
  *
- * Copyright (C) 2016-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2016-2024 Ondrej Kozina
+ * Copyright (C) 2016-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2016-2025 Ondrej Kozina
  */
 
 #ifndef _UTILS_KEYRING

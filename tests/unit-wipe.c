@@ -2,7 +2,7 @@
 /*
  * unit test helper for crypt_wipe API call
  *
- * Copyright (C) 2022-2024 Milan Broz
+ * Copyright (C) 2022-2025 Milan Broz
  */
 
 #include <errno.h>
