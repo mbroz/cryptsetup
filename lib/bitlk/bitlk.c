@@ -1212,7 +1212,7 @@ static int _activate_check(struct crypt_device *cd,
 	next_vmk = params->vmks;
 	while (next_vmk) {
 		if (next_vmk->protection == BITLK_PROTECTION_CLEAR_KEY) {
-			log_err(cd, _("Activation of partially decrypted BITLK device is not supported."));
+			log_err(cd, _("Activation of BITLK device with clear key protection is not supported."));
 			return -ENOTSUP;
 		}
 		next_vmk = next_vmk->next;
