@@ -7,11 +7,11 @@
  */
 
 #include <ctype.h>
-#include <dlfcn.h>
 
 #include "luks2_internal.h"
 
 #if USE_EXTERNAL_TOKENS
+#include <dlfcn.h>
 #define TOKENS_PATH_MAX PATH_MAX
 static bool external_tokens_enabled = true;
 static char external_tokens_path[TOKENS_PATH_MAX] = EXTERNAL_LUKS2_TOKENS_PATH;
