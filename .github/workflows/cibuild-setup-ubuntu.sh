@@ -5,9 +5,9 @@ set -ex
 PACKAGES=(
 	git make autoconf automake autopoint pkg-config libtool libtool-bin
 	gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol-dev
-	libjson-c-dev libssh-dev libblkid-dev tar libargon2-0-dev libpwquality-dev
-	sharutils dmsetup jq xxd expect keyutils netcat passwd openssh-client sshpass
-	asciidoctor meson ninja-build
+	libjson-c-dev libssh-dev libblkid-dev tar libargon2-dev libpwquality-dev
+	sharutils dmsetup jq xxd expect keyutils netcat-openbsd passwd openssh-client
+	sshpass asciidoctor meson ninja-build
 )
 
 COMPILER="${COMPILER:?}"
