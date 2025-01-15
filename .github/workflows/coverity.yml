@@ -12,12 +12,12 @@ jobs:
     if: github.repository == 'mbroz/cryptsetup'
     steps:
       - name: Repository checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
       - name: Ubuntu setup
         run: sudo -E .github/workflows/cibuild-setup-ubuntu.sh
         env:
           COMPILER: "gcc"
-          COMPILER_VERSION: "13"
+          COMPILER_VERSION: "14"
       - name: Install Coverity
         run: |
           wget -q https://scan.coverity.com/download/cxx/linux64 --post-data "token=$TOKEN&project=mbroz/cryptsetup" -O cov-analysis-linux64.tar.gz

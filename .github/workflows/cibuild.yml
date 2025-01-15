@@ -16,11 +16,11 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - { COMPILER: "gcc", COMPILER_VERSION: "13",  RUN_SSH_PLUGIN_TEST: "1" }
+          - { COMPILER: "gcc", COMPILER_VERSION: "14",  RUN_SSH_PLUGIN_TEST: "1" }
     env: ${{ matrix.env }}
     steps:
       - name: Repository checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
       - name: Ubuntu setup
         run: sudo -E .github/workflows/cibuild-setup-ubuntu.sh
       - name: Configure & Make
