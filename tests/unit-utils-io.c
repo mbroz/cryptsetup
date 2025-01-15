@@ -2,7 +2,7 @@
 /*
  * simple unit test for utils_io.c (blockwise low level functions)
  *
- * Copyright (C) 2018-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2018-2025 Red Hat, Inc. All rights reserved.
  */
 
 #include <errno.h>

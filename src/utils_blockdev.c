@@ -2,8 +2,8 @@
 /*
  * Linux block devices helpers
  *
- * Copyright (C) 2018-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2018-2024 Ondrej Kozina
+ * Copyright (C) 2018-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2018-2025 Ondrej Kozina
  */
 
 #include "cryptsetup.h"

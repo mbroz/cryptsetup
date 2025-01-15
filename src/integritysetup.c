@@ -2,8 +2,8 @@
 /*
  * integritysetup - setup integrity protected volumes for dm-integrity
  *
- * Copyright (C) 2017-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2017-2024 Milan Broz
+ * Copyright (C) 2017-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2017-2025 Milan Broz
  */
 
 #include <uuid/uuid.h>

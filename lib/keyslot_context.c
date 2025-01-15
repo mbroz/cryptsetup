@@ -2,8 +2,8 @@
 /*
  * LUKS - Linux Unified Key Setup, keyslot unlock helpers
  *
- * Copyright (C) 2022-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2022-2024 Ondrej Kozina
+ * Copyright (C) 2022-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2022-2025 Ondrej Kozina
  */
 
 #include <errno.h>

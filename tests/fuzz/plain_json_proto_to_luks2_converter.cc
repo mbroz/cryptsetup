@@ -2,8 +2,8 @@
 /*
  * cryptsetup LUKS2 custom mutator fuzz target
  *
- * Copyright (C) 2022-2024 Daniel Zatovic <daniel.zatovic@gmail.com>
- * Copyright (C) 2022-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2022-2025 Daniel Zatovic <daniel.zatovic@gmail.com>
+ * Copyright (C) 2022-2025 Red Hat, Inc. All rights reserved.
  */
 
 #include "plain_json_proto_to_luks2_converter.h"

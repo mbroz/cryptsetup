@@ -2,7 +2,7 @@
 /*
  *  libcryptsetup API - using LUKS device example
  *
- * Copyright (C) 2011-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2011-2025 Red Hat, Inc. All rights reserved.
  */
 
 #include <stdio.h>

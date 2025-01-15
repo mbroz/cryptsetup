@@ -3,7 +3,7 @@
  * cryptsetup volume key implementation
  *
  * Copyright (C) 2004-2006 Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2010-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2010-2025 Red Hat, Inc. All rights reserved.
  */
 
 #include <string.h>

@@ -2,7 +2,7 @@
 /*
  * Mbed TLS crypto backend implementation
  *
- * Copyright (C) 2024-2024 Yiyuan Zhong
+ * Copyright (C) 2024-2025 Yiyuan Zhong
  */
 
 #include "crypto_backend.h"

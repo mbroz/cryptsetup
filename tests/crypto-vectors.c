@@ -2,7 +2,7 @@
 /*
  * cryptsetup crypto backend test vectors
  *
- * Copyright (C) 2018-2024 Milan Broz
+ * Copyright (C) 2018-2025 Milan Broz
  */
 
 #include <stdio.h>

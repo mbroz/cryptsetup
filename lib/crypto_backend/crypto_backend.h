@@ -2,8 +2,8 @@
 /*
  * crypto backend implementation
  *
- * Copyright (C) 2010-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2010-2024 Milan Broz
+ * Copyright (C) 2010-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2010-2025 Milan Broz
  */
 
 #ifndef _CRYPTO_BACKEND_H

@@ -4,7 +4,7 @@
  *
  * Copyright (C) 2002, Phil Karn, KA9Q
  * libcryptsetup modifications
- *   Copyright (C) 2017-2024 Red Hat, Inc. All rights reserved.
+ *   Copyright (C) 2017-2025 Red Hat, Inc. All rights reserved.
  */
 
 #include <string.h>

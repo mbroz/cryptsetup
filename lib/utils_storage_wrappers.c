@@ -3,7 +3,7 @@
  * Generic wrapper for storage functions
  * (experimental only)
  *
- * Copyright (C) 2018-2024 Ondrej Kozina
+ * Copyright (C) 2018-2025 Ondrej Kozina
  */
 
 #include <errno.h>

@@ -2,9 +2,9 @@
 /*
  * cryptsetup library LUKS2 API check functions
  *
- * Copyright (C) 2009-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2024 Milan Broz
- * Copyright (C) 2016-2024 Ondrej Kozina
+ * Copyright (C) 2009-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2025 Milan Broz
+ * Copyright (C) 2016-2025 Ondrej Kozina
  */
 
 #include <stdbool.h>

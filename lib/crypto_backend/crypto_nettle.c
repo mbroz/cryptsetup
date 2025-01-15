@@ -2,8 +2,8 @@
 /*
  * Nettle crypto backend implementation
  *
- * Copyright (C) 2011-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2011-2024 Milan Broz
+ * Copyright (C) 2011-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2011-2025 Milan Broz
  */
 
 #include <stdlib.h>

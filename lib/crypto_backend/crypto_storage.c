@@ -3,7 +3,7 @@
  * Generic wrapper for storage encryption modes and Initial Vectors
  * (reimplementation of some functions from Linux dm-crypt kernel)
  *
- * Copyright (C) 2014-2024 Milan Broz
+ * Copyright (C) 2014-2025 Milan Broz
  */
 
 #include <stdlib.h>

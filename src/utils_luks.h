@@ -2,9 +2,9 @@
 /*
  * Helper utilities for LUKS in cryptsetup
  *
- * Copyright (C) 2018-2024 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2018-2024 Milan Broz
- * Copyright (C) 2018-2024 Ondrej Kozina
+ * Copyright (C) 2018-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2018-2025 Milan Broz
+ * Copyright (C) 2018-2025 Ondrej Kozina
  */
 
 #ifndef UTILS_LUKS_H

@@ -2,7 +2,7 @@
 /*
  * dm-verity volume handling
  *
- * Copyright (C) 2012-2024 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012-2025 Red Hat, Inc. All rights reserved.
  */
 
 #include <errno.h>
