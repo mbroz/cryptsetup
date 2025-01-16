@@ -128,7 +128,7 @@ void secure_wipe_memory(void *v, size_t n) {
 void secure_wipe_memory(void *v, size_t n) {
     memset_s(v, n, 0, n);
 }
-#elif defined(HAVE_EXPLICIT_BZERO)
+#elif HAVE_EXPLICIT_BZERO
 void secure_wipe_memory(void *v, size_t n) {
     explicit_bzero(v, n);
 }

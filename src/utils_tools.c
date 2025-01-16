@@ -445,7 +445,7 @@ void tools_package_version(const char *name, bool use_pwlibs)
 #elif defined(ENABLE_PASSWDQC)
 	passwdqc = true;
 #endif
-#ifdef HAVE_HW_OPAL
+#if HAVE_HW_OPAL
 	hw_opal = true;
 #endif
 	log_std("%s %s flags: %s%s%s%s%s%s%s%s\n", name, PACKAGE_VERSION,
