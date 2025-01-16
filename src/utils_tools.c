@@ -428,7 +428,7 @@ void tools_package_version(const char *name, bool use_pwlibs)
 #if USE_UDEV
 	udev = true;
 #endif
-#ifdef HAVE_BLKID
+#if HAVE_BLKID
 	blkid = true;
 #endif
 #if KERNEL_KEYRING

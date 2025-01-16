@@ -5924,7 +5924,7 @@ static void KeyslotContextAndKeyringLink(void)
 
 static int _crypt_load_check(struct crypt_device *_cd)
 {
-#ifdef HAVE_BLKID
+#if HAVE_BLKID
 	return crypt_load(_cd, CRYPT_LUKS, NULL);
 #else
 	return -ENOTSUP;
