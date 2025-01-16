@@ -375,10 +375,8 @@ void BITLK_bitlk_vmk_free(struct bitlk_vmk *vmk)
 	struct bitlk_vmk *vmk_next = NULL;
 
 	while (vmk) {
-		if (vmk->guid)
-			free(vmk->guid);
-		if (vmk->name)
-			free(vmk->name);
+		free(vmk->guid);
+		free(vmk->name);
 		crypt_free_volume_key(vmk->vk);
 		vmk_next = vmk->next;
 		free(vmk);
@@ -392,8 +390,7 @@ void BITLK_bitlk_metadata_free(struct bitlk_metadata *metadata)
 		return;
 
 	free(metadata->guid);
-	if (metadata->description)
-		free(metadata->description);
+	free(metadata->description);
 	BITLK_bitlk_vmk_free(metadata->vmks);
 	BITLK_bitlk_fvek_free(metadata->fvek);
 }
@@ -717,10 +714,8 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 
 		start += entry_size;
 	}
-
 out:
-	if (fve_entries)
-		free(fve_entries);
+	free(fve_entries);
 	return r;
 }
 

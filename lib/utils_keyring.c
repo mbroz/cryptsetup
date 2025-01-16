@@ -363,8 +363,7 @@ key_serial_t keyring_find_key_id_by_name(const char *key_name)
 		id = 0;
 
 out:
-	if (name_copy)
-		free(name_copy);
+	free(name_copy);
 
 	return id;
 }
