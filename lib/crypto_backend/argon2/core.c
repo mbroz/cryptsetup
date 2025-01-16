@@ -356,12 +356,9 @@ static int fill_memory_blocks_mt(argon2_instance_t *instance) {
     }
 
 fail:
-    if (thread != NULL) {
-        free(thread);
-    }
-    if (thr_data != NULL) {
-        free(thr_data);
-    }
+    free(thread);
+    free(thr_data);
+
     return rc;
 }
 

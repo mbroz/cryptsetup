@@ -286,8 +286,7 @@ static int action_resize(void)
 		}
 	}
 out:
-	if (backing_file)
-		free(backing_file);
+	free(backing_file);
 	crypt_free(cd);
 	return r;
 }
