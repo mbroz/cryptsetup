@@ -15,7 +15,7 @@
 #include <libdevmapper.h>
 #include <uuid/uuid.h>
 #include <sys/stat.h>
-#ifdef HAVE_SYS_SYSMACROS_H
+#if HAVE_SYS_SYSMACROS_H
 # include <sys/sysmacros.h>     /* for major, minor */
 #endif
 #include "internal.h"

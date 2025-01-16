@@ -21,7 +21,7 @@
 # include <linux/keyctl.h>
 # include <sys/syscall.h>
 #endif
-#ifdef HAVE_SYS_SYSMACROS_H
+#if HAVE_SYS_SYSMACROS_H
 # include <sys/sysmacros.h>
 #endif
 #include <linux/loop.h>

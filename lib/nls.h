@@ -5,7 +5,7 @@
 #define LOCALEDIR "/usr/share/locale"
 #endif
 
-#ifdef HAVE_LOCALE_H
+#if HAVE_LOCALE_H
 # include <locale.h>
 #else
 # undef setlocale
