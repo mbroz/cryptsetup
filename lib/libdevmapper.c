@@ -61,7 +61,7 @@ static int _dm_udev_wait(uint32_t cookie) { return 0; };
 
 static int _dm_use_udev(void)
 {
-#ifdef USE_UDEV /* cannot be enabled if devmapper is too old */
+#if USE_UDEV /* cannot be enabled if devmapper is too old */
 	return dm_udev_get_sync_support();
 #else
 	return 0;

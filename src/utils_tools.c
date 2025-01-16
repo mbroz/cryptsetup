@@ -425,7 +425,7 @@ void tools_package_version(const char *name, bool use_pwlibs)
 	bool udev = false, blkid = false, keyring = false, fips = false,
 	     kernel_capi = false, pwquality = false, passwdqc = false,
 	     hw_opal = false;
-#ifdef USE_UDEV
+#if USE_UDEV
 	udev = true;
 #endif
 #ifdef HAVE_BLKID
