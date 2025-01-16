@@ -440,9 +440,9 @@ void tools_package_version(const char *name, bool use_pwlibs)
 #if ENABLE_AF_ALG
 	kernel_capi = true;
 #endif
-#if defined(ENABLE_PWQUALITY)
+#if ENABLE_PWQUALITY
 	pwquality = true;
-#elif defined(ENABLE_PASSWDQC)
+#elif ENABLE_PASSWDQC
 	passwdqc = true;
 #endif
 #if HAVE_HW_OPAL
