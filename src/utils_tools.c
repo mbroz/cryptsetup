@@ -434,7 +434,7 @@ void tools_package_version(const char *name, bool use_pwlibs)
 #if KERNEL_KEYRING
 	keyring = true;
 #endif
-#ifdef ENABLE_FIPS
+#if ENABLE_FIPS
 	fips = true;
 #endif
 #if ENABLE_AF_ALG

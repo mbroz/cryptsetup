@@ -12,7 +12,7 @@
 # define setlocale(Category, Locale) /* empty */
 #endif
 
-#ifdef ENABLE_NLS
+#if ENABLE_NLS
 # include <libintl.h>
 # define _(Text) gettext (Text)
 # ifdef gettext_noop
