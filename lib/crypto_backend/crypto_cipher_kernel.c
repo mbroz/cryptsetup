@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include "crypto_backend_internal.h"
 
-#ifdef ENABLE_AF_ALG
+#if ENABLE_AF_ALG
 
 #include <linux/if_alg.h>
 

@@ -1319,7 +1319,7 @@ static int action_benchmark(void)
 
 	if (r == -ENOTSUP) {
 		log_err(_("Required kernel crypto interface not available."));
-#ifdef ENABLE_AF_ALG
+#if ENABLE_AF_ALG
 		log_err( _("Ensure you have algif_skcipher kernel module loaded."));
 #endif
 	}

@@ -437,7 +437,7 @@ void tools_package_version(const char *name, bool use_pwlibs)
 #ifdef ENABLE_FIPS
 	fips = true;
 #endif
-#ifdef ENABLE_AF_ALG
+#if ENABLE_AF_ALG
 	kernel_capi = true;
 #endif
 #if defined(ENABLE_PWQUALITY)
