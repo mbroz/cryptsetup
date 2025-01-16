@@ -1099,7 +1099,7 @@ static int action_status(void)
 			free(backing_file);
 		}
 		sector_size = (uint64_t)crypt_get_sector_size(cd) ?: SECTOR_SIZE;
-		log_std("  sector size:  %d [bytes]\n", sector_size);
+		log_std("  sector size:  %" PRIu64 " [bytes]\n", sector_size);
 		log_std("  offset:  %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.offset, cad.offset * sector_size);
 		log_std("  size:    %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.size, cad.size * sector_size);
 		if (cad.iv_offset)
