@@ -431,7 +431,7 @@ void tools_package_version(const char *name, bool use_pwlibs)
 #ifdef HAVE_BLKID
 	blkid = true;
 #endif
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	keyring = true;
 #endif
 #ifdef ENABLE_FIPS
