@@ -28,14 +28,16 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 	vk->keyring_key_type = INVALID_KEY;
 	vk->keylength = keylength;
 	vk->uploaded = false;
+	vk->has_key_data = false;
 	vk->id = KEY_NOT_VERIFIED;
 	vk->next = NULL;
 
 	/* keylength 0 is valid => no key */
 	if (vk->keylength) {
-		if (key)
+		if (key) {
 			crypt_safe_memcpy(&vk->key, key, keylength);
-		else
+			vk->has_key_data = true;
+		} else
 			crypt_safe_memzero(&vk->key, keylength);
 	}
 
@@ -143,5 +145,52 @@ struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t key
 		crypt_free_volume_key(vk);
 		return NULL;
 	}
+	vk->has_key_data = true;
 	return vk;
+}
+
+void crypt_volume_key_set_key(struct volume_key *vk, const char *key, size_t key_length)
+{
+	assert(vk && vk->keylength >= key_length);
+
+	crypt_safe_memcpy(vk->key, key, key_length);
+
+	vk->has_key_data = true;
+}
+
+int crypt_volume_key_set_key_from_hexbyte(struct volume_key *vk,
+					  const char *hexkey_string)
+{
+	char *endp, buffer[3];
+	size_t i;
+	int r = -EINVAL;
+
+	if (!vk || !hexkey_string)
+		return r;
+
+	buffer[2] = '\0';
+	for (i = 0; i < vk->keylength; i++) {
+		crypt_safe_memcpy(buffer, &hexkey_string[i * 2], 2);
+		vk->key[i] = strtoul(buffer, &endp, 16);
+		if (endp != &buffer[2])
+			goto out;
+	}
+
+       if (hexkey_string[i*2] != '\0')
+               goto out;
+
+	vk->has_key_data = true;
+	r = 0;
+out:
+	if (r < 0) {
+		vk->has_key_data = false;
+		crypt_safe_memzero(vk->key, vk->keylength);
+	}
+
+	return r;
+}
+
+bool crypt_volume_key_has_data(const struct volume_key *vk)
+{
+	return vk && vk->has_key_data;
 }
