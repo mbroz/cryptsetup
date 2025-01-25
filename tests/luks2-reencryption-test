@@ -136,6 +136,9 @@ function fail()
 	exit 2
 }
 
+_sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
+trap _sigchld CHLD
+
 function skip()
 {
 	[ -n "$1" ] && echo "$1"
