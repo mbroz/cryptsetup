@@ -194,7 +194,7 @@ out:
 	if (!failed && write(outfd, "\n", 1)) {};
 
 	if (realsize == maxlen)
-		log_dbg("Read stopped at maximal interactive input length, passphrase can be trimmed.");
+		log_err(_("Read stopped at maximal interactive input length, passphrase can be trimmed."));
 
 	if (close_fd)
 		close(infd);
