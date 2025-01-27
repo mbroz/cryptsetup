@@ -15,7 +15,7 @@
 #include "utils_blkid.h"
 #include "utils_io.h"
 
-#ifdef HAVE_BLKID
+#if HAVE_BLKID
 
 #include <blkid/blkid.h>
 /* make bad checksums flag optional */
@@ -26,7 +26,7 @@ struct blkid_handle {
 	int fd;
 	blkid_probe pr;
 };
-#ifndef HAVE_BLKID_WIPE
+#if !HAVE_BLKID_WIPE
 static size_t crypt_getpagesize(void)
 {
 	long r = sysconf(_SC_PAGESIZE);
@@ -38,7 +38,7 @@ void blk_set_chains_for_wipes(struct blkid_handle *h)
 {
 	blkid_probe_enable_partitions(h->pr, 1);
 	blkid_probe_set_partitions_flags(h->pr, 0
-#ifdef HAVE_BLKID_WIPE
+#if HAVE_BLKID_WIPE
 	| BLKID_PARTS_MAGIC
 #endif
 	);
@@ -198,10 +198,10 @@ void blk_free(struct blkid_handle *h)
 	free(h);
 }
 
-#ifndef HAVE_BLKID_WIPE
+#if !HAVE_BLKID_WIPE
 static int blk_step_back(struct blkid_handle *h)
 {
-#ifdef HAVE_BLKID_STEP_BACK
+#if HAVE_BLKID_STEP_BACK
 	return blkid_probe_step_back(h->pr);
 #else
 	blkid_reset_probe(h->pr);
@@ -213,7 +213,7 @@ static int blk_step_back(struct blkid_handle *h)
 
 int blk_do_wipe(struct blkid_handle *h)
 {
-#ifdef HAVE_BLKID_WIPE
+#if HAVE_BLKID_WIPE
 	return blkid_do_wipe(h->pr, 0);
 #else
 	const char *offset;

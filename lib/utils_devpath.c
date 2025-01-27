@@ -17,7 +17,7 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#ifdef HAVE_SYS_SYSMACROS_H
+#if HAVE_SYS_SYSMACROS_H
 # include <sys/sysmacros.h>     /* for major, minor */
 #endif
 #include "internal.h"

@@ -20,7 +20,7 @@
 ATTR_NOINLINE ATTR_ZERO_REGS
 void crypt_backend_memzero(void *s, size_t n)
 {
-#ifdef HAVE_EXPLICIT_BZERO
+#if HAVE_EXPLICIT_BZERO
 	explicit_bzero(s, n);
 #else
 	volatile uint8_t *p = (volatile uint8_t *)s;

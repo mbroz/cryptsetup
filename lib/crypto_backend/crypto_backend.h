@@ -14,7 +14,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
-#ifdef HAVE_UCHAR_H
+#if HAVE_UCHAR_H
 #include <uchar.h>
 #else
 #define char32_t uint32_t

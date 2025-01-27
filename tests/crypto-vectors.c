@@ -1510,7 +1510,7 @@ static int memcmp_test(void)
 	return EXIT_SUCCESS;
 }
 
-#ifdef ENABLE_AF_ALG
+#if ENABLE_AF_ALG
 struct capi_test_vector {
 	const char *name;
 	const char *mode;
@@ -1535,7 +1535,7 @@ static struct capi_test_vector capi_test_vectors[] = {
 
 static int kernel_capi_check_test(void)
 {
-#ifdef ENABLE_AF_ALG
+#if ENABLE_AF_ALG
 	unsigned int i;
 	int r;
 

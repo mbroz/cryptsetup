@@ -101,7 +101,7 @@ static void *token_dlvsym(struct crypt_device *cd,
 	char *error;
 	void *sym;
 
-#ifdef HAVE_DLVSYM
+#if HAVE_DLVSYM
 	log_dbg(cd, "Loading symbol %s@%s.", symbol, version);
 	sym = dlvsym(handle, symbol, version);
 #else

@@ -25,7 +25,7 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 	struct volume_key *vk, unsigned int sector,
 	struct crypt_device *cd)
 {
-#ifndef ENABLE_AF_ALG /* Support for old kernel without Crypto API */
+#if !ENABLE_AF_ALG /* Support for old kernel without Crypto API */
 	return LUKS_encrypt_to_storage(src, srcLength, cipher, cipher_mode, vk, sector, cd);
 #else
 	struct crypt_storage *s;
@@ -75,7 +75,7 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 	unsigned int sector, struct crypt_device *cd)
 {
 	struct device *device = crypt_metadata_device(cd);
-#ifndef ENABLE_AF_ALG /* Support for old kernel without Crypto API */
+#if !ENABLE_AF_ALG /* Support for old kernel without Crypto API */
 	int r = device_read_lock(cd, device);
 	if (r) {
 		log_err(cd, _("Failed to acquire read lock on device %s."), device_path(device));

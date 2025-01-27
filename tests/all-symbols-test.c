@@ -57,7 +57,7 @@ static void test_logf(int level, const char *format, ...)
 
 static int check_dlvsym(void *h, const char *symbol, const char *version)
 {
-#ifdef HAVE_DLVSYM
+#if HAVE_DLVSYM
 	void *sym;
 	char *err;
 

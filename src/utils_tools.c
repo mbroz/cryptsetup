@@ -425,27 +425,27 @@ void tools_package_version(const char *name, bool use_pwlibs)
 	bool udev = false, blkid = false, keyring = false, fips = false,
 	     kernel_capi = false, pwquality = false, passwdqc = false,
 	     hw_opal = false;
-#ifdef USE_UDEV
+#if USE_UDEV
 	udev = true;
 #endif
-#ifdef HAVE_BLKID
+#if HAVE_BLKID
 	blkid = true;
 #endif
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	keyring = true;
 #endif
-#ifdef ENABLE_FIPS
+#if ENABLE_FIPS
 	fips = true;
 #endif
-#ifdef ENABLE_AF_ALG
+#if ENABLE_AF_ALG
 	kernel_capi = true;
 #endif
-#if defined(ENABLE_PWQUALITY)
+#if ENABLE_PWQUALITY
 	pwquality = true;
-#elif defined(ENABLE_PASSWDQC)
+#elif ENABLE_PASSWDQC
 	passwdqc = true;
 #endif
-#ifdef HAVE_HW_OPAL
+#if HAVE_HW_OPAL
 	hw_opal = true;
 #endif
 	log_std("%s %s flags: %s%s%s%s%s%s%s%s\n", name, PACKAGE_VERSION,

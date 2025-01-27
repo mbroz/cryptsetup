@@ -21,7 +21,7 @@
 #include "libcryptsetup_macros.h"
 #include "utils_keyring.h"
 
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 
 static const struct {
 	key_type_t type;

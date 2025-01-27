@@ -17,11 +17,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 # include <linux/keyctl.h>
 # include <sys/syscall.h>
 #endif
-#ifdef HAVE_SYS_SYSMACROS_H
+#if HAVE_SYS_SYSMACROS_H
 # include <sys/sysmacros.h>
 #endif
 #include <linux/loop.h>
@@ -486,7 +486,7 @@ int _system(const char *command, int warn)
 
 static int _keyring_check(void)
 {
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	return syscall(__NR_request_key, "logon", "dummy", NULL, 0) == -1l && errno != ENOSYS;
 #else
 	return 0;

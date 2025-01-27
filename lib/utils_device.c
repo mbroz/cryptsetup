@@ -16,10 +16,10 @@
 #include <sys/ioctl.h>
 #include <linux/fs.h>
 #include <unistd.h>
-#ifdef HAVE_SYS_SYSMACROS_H
+#if HAVE_SYS_SYSMACROS_H
 # include <sys/sysmacros.h>     /* for major, minor */
 #endif
-#ifdef HAVE_SYS_STATVFS_H
+#if HAVE_SYS_STATVFS_H
 # include <sys/statvfs.h>
 #endif
 #include "internal.h"
@@ -50,7 +50,7 @@ static size_t device_fs_block_size_fd(int fd)
 {
 	size_t page_size = crypt_getpagesize();
 
-#ifdef HAVE_SYS_STATVFS_H
+#if HAVE_SYS_STATVFS_H
 	struct statvfs buf;
 
 	/*

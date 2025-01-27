@@ -98,6 +98,7 @@ required_headers = [
     'locale.h',
     'malloc.h',
     'stdint.h',
+    'sys/endian.h',
     'sys/ioctl.h',
     'sys/mman.h',
     'sys/statvfs.h',

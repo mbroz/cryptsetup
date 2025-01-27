@@ -143,7 +143,7 @@ int get_adjusted_key_size(const char *cipher_mode, uint32_t default_size_bits, i
 {
 	uint32_t keysize_bits = ARG_UINT32(OPT_KEY_SIZE_ID);
 
-#ifdef ENABLE_LUKS_ADJUST_XTS_KEYSIZE
+#if ENABLE_LUKS_ADJUST_XTS_KEYSIZE
 	if (!ARG_SET(OPT_KEY_SIZE_ID) && !strncmp(cipher_mode, "xts-", 4)) {
 		if (default_size_bits == 128)
 			keysize_bits = 256;

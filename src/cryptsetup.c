@@ -1319,7 +1319,7 @@ static int action_benchmark(void)
 
 	if (r == -ENOTSUP) {
 		log_err(_("Required kernel crypto interface not available."));
-#ifdef ENABLE_AF_ALG
+#if ENABLE_AF_ALG
 		log_err( _("Ensure you have algif_skcipher kernel module loaded."));
 #endif
 	}
@@ -3619,7 +3619,7 @@ static void help(poptContext popt_context,
 			 DEFAULT_CIPHER(PLAIN), DEFAULT_PLAIN_KEYBITS, DEFAULT_PLAIN_HASH,
 			 DEFAULT_CIPHER(LUKS1), DEFAULT_LUKS1_KEYBITS, DEFAULT_LUKS1_HASH,
 			 DEFAULT_RNG);
-#if defined(ENABLE_LUKS_ADJUST_XTS_KEYSIZE) && DEFAULT_LUKS1_KEYBITS != 512
+#if ENABLE_LUKS_ADJUST_XTS_KEYSIZE && DEFAULT_LUKS1_KEYBITS != 512
 		log_std(_("\tLUKS: Default keysize with XTS mode (two internal keys) will be doubled.\n"));
 #endif
 		tools_cleanup();

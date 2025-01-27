@@ -10,13 +10,13 @@
 #include <stdint.h>
 #include <sys/param.h>
 
-#if defined(HAVE_BYTESWAP_H)
+#if HAVE_BYTESWAP_H
 # include <byteswap.h>
 #endif
 
-#if defined(HAVE_ENDIAN_H)
+#if HAVE_ENDIAN_H
 #  include <endian.h>
-#elif defined(HAVE_SYS_ENDIAN_H)	/* BSDs have them here */
+#elif HAVE_SYS_ENDIAN_H /* BSDs have them here */
 #  include <sys/endian.h>
 #endif
 

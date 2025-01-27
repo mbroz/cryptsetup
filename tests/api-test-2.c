@@ -17,7 +17,7 @@
 #include <sys/stat.h>
 #include <inttypes.h>
 #include <sys/types.h>
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 #include <linux/keyctl.h>
 #include <sys/syscall.h>
 #ifndef HAVE_KEY_SERIAL_T
@@ -143,7 +143,7 @@ static uint32_t default_luks2_iter_time = 0;
 static uint32_t default_luks2_memory_kb = 0;
 static uint32_t default_luks2_parallel_threads = 0;
 
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 static char keyring_in_user_str_id[32] = {0};
 #endif
 
@@ -415,7 +415,7 @@ static int set_fast_pbkdf(struct crypt_device *_cd)
 	return crypt_set_pbkdf_type(_cd, pbkdf);
 }
 
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 static key_serial_t add_key(const char *type, const char *description, const void *payload, size_t plen, key_serial_t keyring)
 {
 	return syscall(__NR_add_key, type, description, payload, plen, keyring);
@@ -594,7 +594,7 @@ static void _cleanup(void)
 	free(DEVICE_5);
 	free(DEVICE_6);
 
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	char *end;
 	key_serial_t krid;
 
@@ -761,7 +761,7 @@ static void SuspendDevice(void)
 	OK_(suspend_status);
 	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
 	EQ_(CRYPT_ACTIVATE_SUSPENDED, cad.flags & CRYPT_ACTIVATE_SUSPENDED);
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	FAIL_(_volume_key_in_keyring(cd, 0), "");
 #endif
 	FAIL_(crypt_suspend(cd, CDEVICE_1), "already suspended");
@@ -1788,7 +1788,7 @@ static void ResizeDeviceLuks2(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
 
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
 	// enable loading VKs in kernel keyring (default mode)
@@ -1885,7 +1885,7 @@ static void ResizeDeviceLuks2(void)
 
 static void TokenActivationByKeyring(void)
 {
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	key_serial_t kid, kid1;
 	struct crypt_active_device cad;
 
@@ -2186,7 +2186,7 @@ static void Tokens(void)
 	EQ_(crypt_activate_by_token(cd, CDEVICE_1, 2, passptr, 0), 0);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	if (t_dm_crypt_keyring_support()) {
 		EQ_(crypt_activate_by_token(cd, NULL, 2, passptr, CRYPT_ACTIVATE_KEYRING_KEY), 0);
 		OK_(_volume_key_in_keyring(cd, 0));
@@ -3443,7 +3443,7 @@ static void Luks2KeyslotParams(void)
 
 static void Luks2ActivateByKeyring(void)
 {
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 
 	key_serial_t kid, kid1;
 	uint64_t r_payload_offset;
@@ -3517,7 +3517,7 @@ static void Luks2Requirements(void)
 	char key[128];
 	size_t key_size = 128;
 	const struct crypt_pbkdf_type *pbkdf;
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	key_serial_t kid;
 #endif
 	uint32_t flags;
@@ -3652,7 +3652,7 @@ static void Luks2Requirements(void)
 	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, 0));
 	OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, t_dm_crypt_keyring_support() ? CRYPT_ACTIVATE_KEYRING_KEY : 0));
 
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	if (t_dm_crypt_keyring_support()) {
 		kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE, strlen(PASSPHRASE), KEY_SPEC_THREAD_KEYRING);
 		NOTFAIL_(kid, "Test or kernel keyring are broken.");
@@ -3747,7 +3747,7 @@ static void Luks2Requirements(void)
 	EQ_(r, -ETXTBSY);
 
 	/* crypt_activate_by_token (restricted for activation only) */
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	if (t_dm_crypt_keyring_support()) {
 		kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE, strlen(PASSPHRASE), KEY_SPEC_THREAD_KEYRING);
 		NOTFAIL_(kid, "Test or kernel keyring are broken.");
@@ -3835,7 +3835,7 @@ static void Luks2Requirements(void)
 
 	/* crypt_get_active_device (unrestricted) */
 	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	if (t_dm_crypt_keyring_support())
 		EQ_(cad.flags & CRYPT_ACTIVATE_KEYRING_KEY, CRYPT_ACTIVATE_KEYRING_KEY);
 #endif
@@ -3963,7 +3963,7 @@ static void Luks2Refresh(void)
 	FAIL_(check_flag(cad.flags, CRYPT_ACTIVATE_KEYRING_KEY), "Unexpected flag raised.");
 	cad.flags = 0;
 
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	if (t_dm_crypt_keyring_support()) {
 		OK_(crypt_volume_key_keyring(cd, 1));
 		OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, 0, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ACTIVATE_REFRESH));
@@ -5174,7 +5174,7 @@ static void LuksKeyslotAdd(void)
 		.sector_size = 512
 	};
 	char key[128], key3[128];
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	int ks;
 	key_serial_t kid;
 #endif
@@ -5273,7 +5273,7 @@ static void LuksKeyslotAdd(void)
 	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE1, 0, 0, &um2));
 	// passphrase not in keyring
 	FAIL_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, um1, 13, um2, 0), "No token available.");
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	// wrong passphrase in keyring
 	kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE1, strlen(PASSPHRASE1), KEY_SPEC_THREAD_KEYRING);
 	NOTFAIL_(kid, "Test or kernel keyring are broken.");
@@ -5317,7 +5317,7 @@ static void VolumeKeyGet(void)
 		.sector_size = 512
 	};
 	char key[256], key2[256], key3[256];
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	key_serial_t kid;
 	const struct crypt_token_params_luks2_keyring tparams = {
 		.key_description = KEY_DESC_TEST0
@@ -5339,7 +5339,7 @@ static void VolumeKeyGet(void)
 
 	OK_(prepare_keyfile(KEYFILE1, PASSPHRASE1, strlen(PASSPHRASE1)));
 
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	kid = add_key("user", KEY_DESC_TEST0, PASSPHRASE1, strlen(PASSPHRASE1), KEY_SPEC_THREAD_KEYRING);
 	NOTFAIL_(kid, "Test or kernel keyring are broken.");
 #endif
@@ -5386,7 +5386,7 @@ static void VolumeKeyGet(void)
 	OK_(crypt_keyslot_context_init_by_keyfile(cd, KEYFILE1, 0, 0, &um2));
 	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, um1, 1, um2, 0), 1);
 	crypt_keyslot_context_free(um2);
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	EQ_(crypt_token_luks2_keyring_set(cd, 0, &tparams), 0);
 	EQ_(crypt_token_assign_keyslot(cd, 0, 1), 0);
 #endif
@@ -5424,7 +5424,7 @@ static void VolumeKeyGet(void)
 	EQ_(crypt_volume_key_get_by_keyslot_context(cd, 1, key2, &key_size, um1), 1);
 	crypt_keyslot_context_free(um1);
 
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	// by token
 	OK_(crypt_keyslot_context_init_by_token(cd, CRYPT_ANY_TOKEN, NULL, NULL, 0, NULL, &um1));
 	memset(key2, 0, key_size);
@@ -5454,7 +5454,7 @@ static void VolumeKeyGet(void)
 
 static void KeyslotContextAndKeyringLink(void)
 {
-#ifdef KERNEL_KEYRING
+#if KERNEL_KEYRING
 	const char *cipher = "aes";
 	const char *cipher_mode = "xts-plain64";
 	struct crypt_keyslot_context *kc, *kc2;
@@ -5924,7 +5924,7 @@ static void KeyslotContextAndKeyringLink(void)
 
 static int _crypt_load_check(struct crypt_device *_cd)
 {
-#ifdef HAVE_BLKID
+#if HAVE_BLKID
 	return crypt_load(_cd, CRYPT_LUKS, NULL);
 #else
 	return -ENOTSUP;

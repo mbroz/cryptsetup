@@ -8,7 +8,7 @@
 
 #include "cryptsetup.h"
 #include <dirent.h>
-#ifdef HAVE_SYS_SYSMACROS_H
+#if HAVE_SYS_SYSMACROS_H
 # include <sys/sysmacros.h>     /* for major, minor */
 #endif
 #include <uuid/uuid.h>

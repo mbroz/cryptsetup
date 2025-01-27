@@ -15,7 +15,7 @@
 #include <limits.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
-#ifdef HAVE_SYS_SYSMACROS_H
+#if HAVE_SYS_SYSMACROS_H
 # include <sys/sysmacros.h>     /* for major, minor */
 #endif
 #include <linux/types.h>
