@@ -2486,165 +2486,162 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 
 	tgt->u.integrity.sector_size = SECTOR_SIZE;
 
-	/* Features section */
-	if (params) {
-		/* Number of arguments */
-		val64 = strtoull(params, &params, 10);
-		if (*params != ' ')
-			goto err;
-		params++;
+	/* Features section, number of arguments (always included) */
+	val64 = strtoull(params, &params, 10);
+	if (*params != ' ')
+		goto err;
+	params++;
 
-		features = (int)val64;
-		for (i = 0; i < features; i++) {
-			r = -EINVAL;
-			if (!params)
+	features = (int)val64;
+	for (i = 0; i < features; i++) {
+		r = -EINVAL;
+		if (!params)
+			goto err;
+		arg = strsep(&params, " ");
+		if (sscanf(arg, "journal_sectors:%u", &val) == 1)
+			tgt->u.integrity.journal_size = val * SECTOR_SIZE;
+		else if (sscanf(arg, "journal_watermark:%u", &val) == 1)
+			tgt->u.integrity.journal_watermark = val;
+		else if (sscanf(arg, "sectors_per_bit:%" PRIu64, &val64) == 1) {
+			if (val64 > UINT_MAX)
 				goto err;
-			arg = strsep(&params, " ");
-			if (sscanf(arg, "journal_sectors:%u", &val) == 1)
-				tgt->u.integrity.journal_size = val * SECTOR_SIZE;
-			else if (sscanf(arg, "journal_watermark:%u", &val) == 1)
-				tgt->u.integrity.journal_watermark = val;
-			else if (sscanf(arg, "sectors_per_bit:%" PRIu64, &val64) == 1) {
-				if (val64 > UINT_MAX)
+			/* overloaded value for bitmap mode */
+			tgt->u.integrity.journal_watermark = (unsigned int)val64;
+		} else if (sscanf(arg, "commit_time:%u", &val) == 1)
+			tgt->u.integrity.journal_commit_time = val;
+		else if (sscanf(arg, "bitmap_flush_interval:%u", &val) == 1)
+			/* overloaded value for bitmap mode */
+			tgt->u.integrity.journal_commit_time = val;
+		else if (sscanf(arg, "interleave_sectors:%u", &val) == 1)
+			tgt->u.integrity.interleave_sectors = val;
+		else if (sscanf(arg, "block_size:%u", &val) == 1)
+			tgt->u.integrity.sector_size = val;
+		else if (sscanf(arg, "buffer_sectors:%u", &val) == 1)
+			tgt->u.integrity.buffer_sectors = val;
+		else if (!strncmp(arg, "internal_hash:", 14) && !integrity) {
+			str = &arg[14];
+			arg = strsep(&str, ":");
+			if (get_flags & DM_ACTIVE_INTEGRITY_PARAMS) {
+				integrity = strdup(arg);
+				if (!integrity) {
+					r = -ENOMEM;
 					goto err;
-				/* overloaded value for bitmap mode */
-				tgt->u.integrity.journal_watermark = (unsigned int)val64;
-			} else if (sscanf(arg, "commit_time:%u", &val) == 1)
-				tgt->u.integrity.journal_commit_time = val;
-			else if (sscanf(arg, "bitmap_flush_interval:%u", &val) == 1)
-				/* overloaded value for bitmap mode */
-				tgt->u.integrity.journal_commit_time = val;
-			else if (sscanf(arg, "interleave_sectors:%u", &val) == 1)
-				tgt->u.integrity.interleave_sectors = val;
-			else if (sscanf(arg, "block_size:%u", &val) == 1)
-				tgt->u.integrity.sector_size = val;
-			else if (sscanf(arg, "buffer_sectors:%u", &val) == 1)
-				tgt->u.integrity.buffer_sectors = val;
-			else if (!strncmp(arg, "internal_hash:", 14) && !integrity) {
-				str = &arg[14];
-				arg = strsep(&str, ":");
-				if (get_flags & DM_ACTIVE_INTEGRITY_PARAMS) {
-					integrity = strdup(arg);
-					if (!integrity) {
+				}
+			}
+
+			if (str) {
+				len = crypt_hex_to_bytes(str, &str2, 1);
+				if (len < 0) {
+					r = len;
+					goto err;
+				}
+
+				r = 0;
+				if (get_flags & DM_ACTIVE_CRYPT_KEY) {
+					vk = crypt_alloc_volume_key(len, str2);
+					if (!vk)
 						r = -ENOMEM;
-						goto err;
-					}
-				}
-
-				if (str) {
-					len = crypt_hex_to_bytes(str, &str2, 1);
-					if (len < 0) {
-						r = len;
-						goto err;
-					}
-
-					r = 0;
-					if (get_flags & DM_ACTIVE_CRYPT_KEY) {
-						vk = crypt_alloc_volume_key(len, str2);
-						if (!vk)
-							r = -ENOMEM;
-					} else if (get_flags & DM_ACTIVE_CRYPT_KEYSIZE) {
-						vk = crypt_alloc_volume_key(len, NULL);
-						if (!vk)
-							r = -ENOMEM;
-					}
-					crypt_safe_free(str2);
-					if (r < 0)
-						goto err;
-				}
-			} else if (!strncmp(arg, "meta_device:", 12) && !meta_device) {
-				if (get_flags & DM_ACTIVE_DEVICE) {
-					str = crypt_lookup_dev(&arg[12]);
-					r = device_alloc(cd, &meta_device, str);
-					free(str);
-					if (r < 0 && r != -ENOTBLK)
-						goto err;
-				}
-			} else if (!strncmp(arg, "journal_crypt:", 14) && !journal_crypt) {
-				str = &arg[14];
-				arg = strsep(&str, ":");
-				if (get_flags & DM_ACTIVE_INTEGRITY_PARAMS) {
-					journal_crypt = strdup(arg);
-					if (!journal_crypt) {
+				} else if (get_flags & DM_ACTIVE_CRYPT_KEYSIZE) {
+					vk = crypt_alloc_volume_key(len, NULL);
+					if (!vk)
 						r = -ENOMEM;
-						goto err;
-					}
+				}
+				crypt_safe_free(str2);
+				if (r < 0)
+					goto err;
+			}
+		} else if (!strncmp(arg, "meta_device:", 12) && !meta_device) {
+			if (get_flags & DM_ACTIVE_DEVICE) {
+				str = crypt_lookup_dev(&arg[12]);
+				r = device_alloc(cd, &meta_device, str);
+				free(str);
+				if (r < 0 && r != -ENOTBLK)
+					goto err;
+			}
+		} else if (!strncmp(arg, "journal_crypt:", 14) && !journal_crypt) {
+			str = &arg[14];
+			arg = strsep(&str, ":");
+			if (get_flags & DM_ACTIVE_INTEGRITY_PARAMS) {
+				journal_crypt = strdup(arg);
+				if (!journal_crypt) {
+					r = -ENOMEM;
+					goto err;
+				}
+			}
+
+			if (str) {
+				len = crypt_hex_to_bytes(str, &str2, 1);
+				if (len < 0) {
+					r = len;
+					goto err;
 				}
 
-				if (str) {
-					len = crypt_hex_to_bytes(str, &str2, 1);
-					if (len < 0) {
-						r = len;
-						goto err;
-					}
-
-					r = 0;
-					if (get_flags & DM_ACTIVE_JOURNAL_CRYPT_KEY) {
-						journal_crypt_key = crypt_alloc_volume_key(len, str2);
-						if (!journal_crypt_key)
-							r = -ENOMEM;
-					} else if (get_flags & DM_ACTIVE_JOURNAL_CRYPT_KEYSIZE) {
-						journal_crypt_key = crypt_alloc_volume_key(len, NULL);
-						if (!journal_crypt_key)
-							r = -ENOMEM;
-					}
-					crypt_safe_free(str2);
-					if (r < 0)
-						goto err;
-				}
-			} else if (!strncmp(arg, "journal_mac:", 12) && !journal_integrity) {
-				str = &arg[12];
-				arg = strsep(&str, ":");
-				if (get_flags & DM_ACTIVE_INTEGRITY_PARAMS) {
-					journal_integrity = strdup(arg);
-					if (!journal_integrity) {
+				r = 0;
+				if (get_flags & DM_ACTIVE_JOURNAL_CRYPT_KEY) {
+					journal_crypt_key = crypt_alloc_volume_key(len, str2);
+					if (!journal_crypt_key)
 						r = -ENOMEM;
-						goto err;
-					}
+				} else if (get_flags & DM_ACTIVE_JOURNAL_CRYPT_KEYSIZE) {
+					journal_crypt_key = crypt_alloc_volume_key(len, NULL);
+					if (!journal_crypt_key)
+						r = -ENOMEM;
+				}
+				crypt_safe_free(str2);
+				if (r < 0)
+					goto err;
+			}
+		} else if (!strncmp(arg, "journal_mac:", 12) && !journal_integrity) {
+			str = &arg[12];
+			arg = strsep(&str, ":");
+			if (get_flags & DM_ACTIVE_INTEGRITY_PARAMS) {
+				journal_integrity = strdup(arg);
+				if (!journal_integrity) {
+					r = -ENOMEM;
+					goto err;
+				}
+			}
+
+			if (str) {
+				len = crypt_hex_to_bytes(str, &str2, 1);
+				if (len < 0) {
+					r = len;
+					goto err;
 				}
 
-				if (str) {
-					len = crypt_hex_to_bytes(str, &str2, 1);
-					if (len < 0) {
-						r = len;
-						goto err;
-					}
-
-					r = 0;
-					if (get_flags & DM_ACTIVE_JOURNAL_MAC_KEY) {
-						journal_integrity_key = crypt_alloc_volume_key(len, str2);
-						if (!journal_integrity_key)
-							r = -ENOMEM;
-					} else if (get_flags & DM_ACTIVE_JOURNAL_MAC_KEYSIZE) {
-						journal_integrity_key = crypt_alloc_volume_key(len, NULL);
-						if (!journal_integrity_key)
-							r = -ENOMEM;
-					}
-					crypt_safe_free(str2);
-					if (r < 0)
-						goto err;
+				r = 0;
+				if (get_flags & DM_ACTIVE_JOURNAL_MAC_KEY) {
+					journal_integrity_key = crypt_alloc_volume_key(len, str2);
+					if (!journal_integrity_key)
+						r = -ENOMEM;
+				} else if (get_flags & DM_ACTIVE_JOURNAL_MAC_KEYSIZE) {
+					journal_integrity_key = crypt_alloc_volume_key(len, NULL);
+					if (!journal_integrity_key)
+						r = -ENOMEM;
 				}
-			} else if (!strcmp(arg, "recalculate")) {
-				*act_flags |= CRYPT_ACTIVATE_RECALCULATE;
-			} else if (!strcmp(arg, "reset_recalculate")) {
-				*act_flags |= CRYPT_ACTIVATE_RECALCULATE_RESET;
-			} else if (!strcmp(arg, "fix_padding")) {
-				tgt->u.integrity.fix_padding = true;
-			} else if (!strcmp(arg, "fix_hmac")) {
-				tgt->u.integrity.fix_hmac = true;
-			} else if (!strcmp(arg, "legacy_recalculate")) {
-				tgt->u.integrity.legacy_recalc = true;
-			} else if (!strcmp(arg, "allow_discards")) {
-				*act_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
-			} else /* unknown option */
-				goto err;
-		}
-
-		/* All parameters should be processed */
-		if (params && *params) {
-			r = -EINVAL;
+				crypt_safe_free(str2);
+				if (r < 0)
+					goto err;
+			}
+		} else if (!strcmp(arg, "recalculate")) {
+			*act_flags |= CRYPT_ACTIVATE_RECALCULATE;
+		} else if (!strcmp(arg, "reset_recalculate")) {
+			*act_flags |= CRYPT_ACTIVATE_RECALCULATE_RESET;
+		} else if (!strcmp(arg, "fix_padding")) {
+			tgt->u.integrity.fix_padding = true;
+		} else if (!strcmp(arg, "fix_hmac")) {
+			tgt->u.integrity.fix_hmac = true;
+		} else if (!strcmp(arg, "legacy_recalculate")) {
+			tgt->u.integrity.legacy_recalc = true;
+		} else if (!strcmp(arg, "allow_discards")) {
+			*act_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+		} else /* unknown option */
 			goto err;
-		}
+	}
+
+	/* All parameters should be processed */
+	if (params && *params) {
+		r = -EINVAL;
+		goto err;
 	}
 
 	if (data_device)
