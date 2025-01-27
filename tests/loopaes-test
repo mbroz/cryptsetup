@@ -21,12 +21,12 @@ KEYv2=key_v2
 KEYv3=key_v3
 LOOPDEV=$(losetup -f 2>/dev/null)
 
-function dmremove() { # device
+dmremove() { # device
 	udevadm settle >/dev/null 2>&1
 	dmsetup remove --retry $1 >/dev/null 2>&1
 }
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmremove $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmremove $DEV_NAME
@@ -34,7 +34,7 @@ function remove_mapping()
 	rm -f $IMG $KEYv1 $KEYv2 $KEYv3 >/dev/null 2>&1
 }
 
-function fail()
+fail()
 {
 	echo "FAILED backtrace:"
 	while caller $frame; do ((frame++)); done
@@ -42,14 +42,17 @@ function fail()
 	exit 2
 }
 
-function skip()
+_sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
+trap _sigchld CHLD
+
+skip()
 {
 	remove_mapping
 	[ -n "$1" ] && echo "$1"
 	exit 77
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -59,12 +62,12 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
-function prepare()
+prepare()
 {
 	remove_mapping
 	dd if=/dev/zero of=$IMG $LOOP_DD_PARAM >/dev/null 2>&1
@@ -80,12 +83,12 @@ function prepare()
 	[ -n "$1" ] && echo -n "$1 "
 }
 
-function check_exists()
+check_exists()
 {
 	[ -b /dev/mapper/$DEV_NAME ] || fail
 }
 
-function get_offset_params() # $offset
+get_offset_params() # $offset
 {
 	offset=$1
 	if [ "${offset:0:1}" = "@" ] ; then
@@ -95,7 +98,7 @@ function get_offset_params() # $offset
 	fi
 }
 
-function get_expsum() # $offset
+get_expsum() # $offset
 {
 	case $1 in
 	0)
@@ -112,7 +115,7 @@ function get_expsum() # $offset
 	esac
 }
 
-function check_sum() # $key $keysize $offset [stdin|keyfile]
+check_sum() # $key $keysize $offset [stdin|keyfile]
 {
 	$CRYPTSETUP close $DEV_NAME || fail
 
@@ -133,7 +136,7 @@ function check_sum() # $key $keysize $offset [stdin|keyfile]
 	fi
 }
 
-function check_sum_losetup() # $key $alg
+check_sum_losetup() # $key $alg
 {
 	[ ! -x $LOSETUP_AES ] && echo && return
 
@@ -153,7 +156,7 @@ function check_sum_losetup() # $key $alg
 	losetup -d $LOOPDEV >/dev/null 2>&1
 }
 
-function check_version()
+check_version()
 {
 	VER_STR=$(dmsetup version | grep Driver)
 	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)

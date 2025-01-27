@@ -12,7 +12,7 @@
 # $1 full target dir
 # $2 full source luks2 image
 
-function generate()
+generate()
 {
 	json_str=$(jq -c '.keyslots."0"."area".size = "18446744073709551615"' $TMPDIR/json0)
 	test ${#json_str} -lt $((LUKS2_JSON_SIZE*512)) || exit 2
@@ -24,7 +24,7 @@ function generate()
 	lib_mangle_json_hdr1
 }
 
-function check()
+check()
 {
 	lib_hdr0_checksum || exit 2
 	lib_hdr1_checksum || exit 2

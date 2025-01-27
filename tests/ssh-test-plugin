@@ -39,19 +39,19 @@ fi
 	CRYPTSETUP_SSH="$CRYPTSETUP_PATH/../tokens/ssh/cryptsetup-ssh"
 }
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
 	rm -f $IMG >/dev/null 2>&1
 }
 
-function remove_user()
+remove_user()
 {
 	id -u $USER >/dev/null 2>&1 && userdel -r -f $USER >/dev/null 2>&1
 	rm -f $SSH_KEY_PATH "$SSH_KEY_PATH.pub" >/dev/null 2>&1
 }
 
-function create_user()
+create_user()
 {
 	id -u $USER >/dev/null 2>&1
 	[ $? -eq 0 ] && skip "User account $USER exists, aborting."
@@ -63,18 +63,18 @@ function create_user()
 	[ $? -ne 0 ] && remove_user && skip "Failed to create SSH key."
 }
 
-function ssh_check()
+ssh_check()
 {
 	# try to use netcat to check port 22
 	nc -zv $SSH_SERVER 22 >/dev/null 2>&1 || skip "SSH server does not seem to be running, skipping."
 }
 
-function bin_check()
+bin_check()
 {
 	command -v $1 >/dev/null || skip "WARNING: test require $1 binary, test skipped."
 }
 
-function ssh_setup()
+ssh_setup()
 {
 	# copy the ssh key
 	[ -d "/home/$USER/.ssh" ] || mkdir /home/$USER/.ssh
@@ -93,7 +93,7 @@ function ssh_setup()
 	[ $? -ne 0 ] && remove_user && fail "Failed to connect using SSH."
 }
 
-function fail()
+fail()
 {
 	echo "[FAILED]"
 	[ -n "$1" ] && echo "$1"
@@ -104,14 +104,17 @@ function fail()
 	exit 2
 }
 
-function skip()
+_sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
+trap _sigchld CHLD
+
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
 	exit 77
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -121,12 +124,12 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
-function valgrind_run_ssh()
+valgrind_run_ssh()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_SSH_VALGRIND} "$@"
 }

@@ -50,7 +50,7 @@ TEST_UUID="12345678-1234-1234-1234-123456789abc"
 LOOPDEV=$(losetup -f 2>/dev/null)
 FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME3 ] && dmsetup remove --retry $DEV_NAME3
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
@@ -68,13 +68,13 @@ function remove_mapping()
 	scsi_debug_teardown $DEV
 }
 
-function force_uevent()
+force_uevent()
 {
 	DNAME=$(echo $LOOPDEV | cut -f3 -d /)
 	echo "change" >/sys/block/$DNAME/uevent
 }
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
@@ -83,25 +83,28 @@ function fail()
 	exit 2
 }
 
-function fips_mode()
+_sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
+trap _sigchld CHLD
+
+fips_mode()
 {
 	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
 }
 
-function can_fail_fips()
+can_fail_fips()
 {
 	# Ignore this fail if running in FIPS mode
 	fips_mode || fail $1
 }
 
-function skip()
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
 	exit 77
 }
 
-function prepare()
+prepare()
 {
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 
@@ -153,12 +156,12 @@ function prepare()
 	[ -n "$1" ] && echo "CASE: $1"
 }
 
-function check_exists()
+check_exists()
 {
 	[ -b /dev/mapper/$DEV_NAME ] || fail
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -168,12 +171,12 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
-function dm_crypt_capi_support()
+dm_crypt_capi_support()
 {
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
 	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
@@ -187,7 +190,7 @@ function dm_crypt_capi_support()
 	return 1
 }
 
-function dm_crypt_keyring_support()
+dm_crypt_keyring_support()
 {
 	$CRYPTSETUP --version | grep -q KEYRING || return 1
 
@@ -206,7 +209,7 @@ function dm_crypt_keyring_support()
 	return 1
 }
 
-function dm_crypt_keyring_flawed()
+dm_crypt_keyring_flawed()
 {
 	dm_crypt_keyring_support && return 1;
 
@@ -215,7 +218,7 @@ function dm_crypt_keyring_flawed()
 	return 1
 }
 
-function dm_crypt_keyring_new_kernel()
+dm_crypt_keyring_new_kernel()
 {
 	KER_STR=$(uname -r)
 	[ -z "$KER_STR" ] && fail "Failed to parse kernel version."
@@ -227,7 +230,7 @@ function dm_crypt_keyring_new_kernel()
 	return 1
 }
 
-function dm_crypt_sector_size_support()
+dm_crypt_sector_size_support()
 {
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
 	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
@@ -243,7 +246,7 @@ function dm_crypt_sector_size_support()
 	return 1
 }
 
-function test_and_prepare_keyring() {
+test_and_prepare_keyring() {
 	command -v keyctl >/dev/null || skip "Cannot find keyctl, test skipped"
 	keyctl list "@s" > /dev/null || skip "Current session keyring is unreachable, test skipped"
 	TEST_KEYRING=$(keyctl newring $TEST_KEYRING_NAME "@u" 2> /dev/null)
@@ -256,13 +259,13 @@ function test_and_prepare_keyring() {
 # $2 description
 # $3 payload
 # $4 keyring
-function load_key()
+load_key()
 {
 	[ -z "$4" ] && fail "Keyring not defined!"
 	keyctl add $@ >/dev/null
 }
 
-function setup_luks2_env() {
+setup_luks2_env() {
 	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $LOOPDEV || fail
 	$CRYPTSETUP luksDump $LOOPDEV >/dev/null || fail
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME || fail
@@ -295,7 +298,7 @@ scsi_debug_teardown() {
 	test ! -b "$1" || rmmod scsi_debug >/dev/null 2>&1
 }
 
-function add_scsi_device() {
+add_scsi_device() {
 	scsi_debug_teardown $DEV
 	if [ -d /sys/module/scsi_debug ] ; then
 		echo "Cannot use scsi_debug module (in use or compiled-in), test skipped."
@@ -472,7 +475,7 @@ test_reencrypt_vk_link_and_reactivate() {
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-keyring "$KEY_DESC" --volume-key-keyring "$KEY_DESC2" > /dev/null 2>&1 && fail
 }
 
-function expect_run()
+expect_run()
 {
 	export INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}"
 	expect "$@"
@@ -480,7 +483,7 @@ function expect_run()
 
 # expected unlocked keyslot id
 # command arguments
-function expect_unlocked_keyslot()
+expect_unlocked_keyslot()
 {
 	command -v expect >/dev/null || {
 		echo "WARNING: expect tool missing, interactive test will be skipped."
@@ -505,7 +508,7 @@ EOF
 # expected unlocked keyslot id
 # password
 # command arguments
-function expect_retried_unlocked_keyslot()
+expect_retried_unlocked_keyslot()
 {
 	command -v expect >/dev/null || {
 		echo "WARNING: expect tool missing, interactive test will be skipped."

@@ -14,7 +14,7 @@
 # $1 full target dir
 # $2 full source luks2 image
 
-function generate()
+generate()
 {
 	JS=$(((LUKS2_HDR_SIZE-LUKS2_BIN_HDR_SIZE)*512))
 	TEST_MDA_SIZE=$LUKS2_HDR_SIZE_32K
@@ -34,7 +34,7 @@ function generate()
 	lib_mangle_json_hdr1 $TEST_MDA_SIZE $TEST_JSN_SIZE
 }
 
-function check()
+check()
 {
 	read_luks2_bin_hdr0 $TGT_IMG $TMPDIR/hdr_res0
 	local str_res1=$(head -c 4 $TMPDIR/hdr_res0)

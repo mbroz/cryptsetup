@@ -11,7 +11,7 @@
 # $1 full target dir
 # $2 full source luks2 image
 
-function generate()
+generate()
 {
 	read -r json_str < $TMPDIR/json1
 	json_len=${#json_str}
@@ -27,7 +27,7 @@ function generate()
 	lib_mangle_json_hdr1
 }
 
-function check()
+check()
 {
 	lib_hdr1_checksum || exit 2
 

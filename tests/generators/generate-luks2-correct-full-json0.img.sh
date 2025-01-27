@@ -15,7 +15,7 @@
 PATTERN="\"config\":{"
 KEY="\"config_key\":\""
 
-function generate()
+generate()
 {
 	read -r json_str < $TMPDIR/json0
 	json_len=${#json_str}
@@ -41,7 +41,7 @@ function generate()
 	lib_mangle_json_hdr0_kill_hdr1
 }
 
-function check()
+check()
 {
 	lib_hdr1_killed || exit 2
 	lib_hdr0_checksum || exit 2

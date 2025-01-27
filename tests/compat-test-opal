@@ -44,7 +44,7 @@ TEST_UUID="12345678-1234-1234-1234-123456789abc"
 
 FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
@@ -58,7 +58,7 @@ function remove_mapping()
 	unset TEST_KEYRING
 }
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
@@ -68,36 +68,39 @@ function fail()
 	exit 2
 }
 
-function fips_mode()
+_sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
+trap _sigchld CHLD
+
+fips_mode()
 {
 	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
 }
 
-function can_fail_fips()
+can_fail_fips()
 {
 	# Ignore this fail if running in FIPS mode
 	fips_mode || fail $1
 }
 
-function skip()
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
 	exit 77
 }
 
-function reset_device_psid()
+reset_device_psid()
 {
 	$CRYPTSETUP_RAW luksErase --hw-opal-factory-reset --key-file $OPAL2_PSID_FILE $OPAL2_DEV -q || \
 	fail "PSID reset fail, wrong device used?"
 }
 
-function reset_device_psid_nofail()
+reset_device_psid_nofail()
 {
 	$CRYPTSETUP_RAW luksErase --hw-opal-factory-reset --key-file $OPAL2_PSID_FILE $OPAL2_DEV -q 2>/dev/null
 }
 
-function prepare()
+prepare()
 {
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 
@@ -146,12 +149,12 @@ function prepare()
 	[ -n "$1" ] && echo "CASE: $1"
 }
 
-function check_exists()
+check_exists()
 {
 	[ -b /dev/mapper/$DEV_NAME ] || fail
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -161,12 +164,12 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
-function dm_crypt_keyring_support()
+dm_crypt_keyring_support()
 {
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
 	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
@@ -183,7 +186,7 @@ function dm_crypt_keyring_support()
 	return 1
 }
 
-function dm_crypt_keyring_new_kernel()
+dm_crypt_keyring_new_kernel()
 {
 	KER_STR=$(uname -r)
 	[ -z "$KER_STR" ] && fail "Failed to parse kernel version."
@@ -195,7 +198,7 @@ function dm_crypt_keyring_new_kernel()
 	return 1
 }
 
-function test_and_prepare_keyring() {
+test_and_prepare_keyring() {
 	command -v keyctl >/dev/null || skip "Cannot find keyctl, test skipped"
 	keyctl list "@s" > /dev/null || skip "Current session keyring is unreachable, test skipped"
 	TEST_KEYRING=$(keyctl newring $TEST_KEYRING_NAME "@u" 2> /dev/null)
@@ -208,12 +211,12 @@ function test_and_prepare_keyring() {
 # $2 description
 # $3 payload
 # $4 keyring
-function load_key()
+load_key()
 {
 	keyctl add $@ >/dev/null
 }
 
-function setup_luks2_env() {
+setup_luks2_env() {
 	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $OPAL2_DEV || fail
 	$CRYPTSETUP luksDump $OPAL2_DEV >/dev/null || fail
 	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
@@ -310,7 +313,7 @@ test_vk_link_and_reactivate() {
 	keyctl unlink $KEYCTL_KEY_NAME "$2" || fail
 }
 
-function test_reencryption_does_not_init()
+test_reencryption_does_not_init()
 {
 	local _hdr=""
 	local _hdrdev=$NO_HEADER_IMG
@@ -382,7 +385,7 @@ function test_reencryption_does_not_init()
 	$CRYPTSETUP close $DEV_NAME || fail
 }
 
-function test_device() #opal_mode, #format_params, #--integrity-no-wipe
+test_device() #opal_mode, #format_params, #--integrity-no-wipe
 {
 	echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 $1 $2 $3 -q $FAST_PBKDF_OPT $OPAL2_DEV || fail
 	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
@@ -398,7 +401,7 @@ function test_device() #opal_mode, #format_params, #--integrity-no-wipe
 	echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
 }
 
-function test_device_detached_header() #hdr, #opal_mode, #format_params, #--integrity-no-wipe
+test_device_detached_header() #hdr, #opal_mode, #format_params, #--integrity-no-wipe
 {
 	echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 --header $1 $2 $3 $4 -q $FAST_PBKDF_OPT $OPAL2_DEV || fail
 	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --header $1 || fail
@@ -422,7 +425,7 @@ function test_device_detached_header() #hdr, #opal_mode, #format_params, #--inte
 	rm -f $1
 }
 
-function run_token_tests() {
+run_token_tests() {
 	$CRYPTSETUP token add $OPAL2_DEV --key-description $TEST_TOKEN0 --token-id 3 || fail
 	$CRYPTSETUP luksDump $OPAL2_DEV | grep -q -e "3: luks2-keyring" || fail
 	# keyslot 5 is inactive

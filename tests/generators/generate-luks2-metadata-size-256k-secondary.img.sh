@@ -16,7 +16,7 @@
 # $1 full target dir
 # $2 full source luks2 image
 
-function generate()
+generate()
 {
 	# 256 KiB metadata
 	TEST_MDA_SIZE=$LUKS2_HDR_SIZE_256K
@@ -47,7 +47,7 @@ function generate()
 	lib_mangle_json_hdr1 $TEST_MDA_SIZE $TEST_JSN_SIZE
 }
 
-function check()
+check()
 {
 	lib_hdr0_killed $TEST_MDA_SIZE || exit 2
 

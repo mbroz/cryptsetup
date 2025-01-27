@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-function in_oss_fuzz()
+in_oss_fuzz()
 {
     test -n "$FUZZING_ENGINE"
 }

@@ -13,7 +13,7 @@
 # $1 full target dir
 # $2 full source luks2 image
 
-function generate()
+generate()
 {
 	# remove mandatory encryption field
 	json_str=$(jq -c '.segments."0".offset = "-42"' $TMPDIR/json0)
@@ -24,7 +24,7 @@ function generate()
 	lib_mangle_json_hdr0_kill_hdr1
 }
 
-function check()
+check()
 {
 	lib_hdr1_killed || exit 2
 

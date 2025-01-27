@@ -2,7 +2,7 @@
 
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
 
-function pversion() {
+pversion() {
 	if [ ! -x $CRYPTSETUP_PATH/$1 ] ; then
 		return
 	fi

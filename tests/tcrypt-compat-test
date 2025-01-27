@@ -24,7 +24,7 @@ fi
 
 [ -z "$srcdir" ] && srcdir="."
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
 	[ -b /dev/mapper/"$MAP"_1 ] && dmsetup remove --retry "$MAP"_1
@@ -33,7 +33,7 @@ function remove_mapping()
 	rm -rf $TST_DIR $PART_IMG
 }
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	echo " [FAILED]"
@@ -43,14 +43,17 @@ function fail()
 	exit 2
 }
 
-function skip()
+_sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
+trap _sigchld CHLD
+
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
 	exit 77
 }
 
-function test_one() # cipher mode keysize rm_pattern
+test_one() # cipher mode keysize rm_pattern
 {
 	$CRYPTOCHECK cipher $1 $2 $3
 	if [ $? -ne 0 ] ; then
@@ -62,7 +65,7 @@ function test_one() # cipher mode keysize rm_pattern
 	fi
 }
 
-function test_kdf() # hash img_hash
+test_kdf() # hash img_hash
 {
 	$CRYPTOCHECK hash $1
 	if [ $? -ne 0 ] ; then
@@ -74,14 +77,14 @@ function test_kdf() # hash img_hash
 	fi
 }
 
-function get_HASH_CIPHER() # filename
+get_HASH_CIPHER() # filename
 {
 	# speed up the test by limiting options for hash and (first) cipher
 	HASH=$(echo $file | cut -d'-' -f3)
 	CIPHER=$(echo $file | cut -d'-' -f5)
 }
 
-function test_required()
+test_required()
 {
 	command -v blkid >/dev/null || skip "blkid tool required, test skipped."
 	[ ! -x "$CRYPTOCHECK" ] && skip "Cannot find $CRYPTOCHECK, test skipped."
@@ -120,13 +123,13 @@ function test_required()
 	ls $TST_DIR/[tv]c* >/dev/null 2>&1 || skip "No remaining images, test skipped."
 }
 
-function check_uuid()
+check_uuid()
 {
 	UUID=$(blkid -p -o value -s UUID /dev/mapper/$MAP)
 	[ "$UUID" != "$1" ] && fail "UUID check failed."
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -136,7 +139,7 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }

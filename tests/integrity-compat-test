@@ -42,13 +42,16 @@ fail()
 	exit 100
 }
 
+_sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
+trap _sigchld CHLD
+
 skip()
 {
 	[ -n "$1" ] && echo "$1"
 	exit 77
 }
 
-function dm_integrity_features()
+dm_integrity_features()
 {
 	VER_STR=$(dmsetup targets | grep integrity | cut -f2 -dv)
 	[ -z "$VER_STR" ] && skip "Cannot find dm-integrity target, test skipped."
@@ -115,7 +118,7 @@ kernel_param_check() # number value
 	fi
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $INTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -125,7 +128,7 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${INTSETUP_VALGRIND} "$@"
 }

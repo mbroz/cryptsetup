@@ -21,7 +21,7 @@ FEC_DEV=tst_fec123
 DEV_SALT=9e7457222290f1bac0d42ad2de2d602a87bb871c22ab70ca040bad450578a436
 DEV_UUID=a60c98d2-ae9b-4865-bfcb-b4e3ace11033
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2 >/dev/null 2>&1
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
@@ -31,7 +31,7 @@ function remove_mapping()
 	LOOPDEV2=""
 }
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	echo "FAILED backtrace:"
@@ -41,13 +41,16 @@ function fail()
 	exit 2
 }
 
-function skip()
+_sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
+trap _sigchld CHLD
+
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	exit 77
 }
 
-function prepare() # $1 dev1_siz [$2 dev2_size]
+prepare() # $1 dev1_siz [$2 dev2_size]
 {
 	remove_mapping
 
@@ -60,18 +63,18 @@ function prepare() # $1 dev1_siz [$2 dev2_size]
 	LOOPDEV2=$IMG_HASH
 }
 
-function wipe()
+wipe()
 {
 	dd if=/dev/zero of=$LOOPDEV1 bs=256k >/dev/null 2>&1
 	rm -f $IMG_HASH $DEV_OUT >/dev/null 2>&1
 }
 
-function check_exists()
+check_exists()
 {
 	[ -b /dev/mapper/$DEV_NAME ] || fail
 }
 
-function check_version() # MAJ MIN
+check_version() # MAJ MIN
 {
 	VER_STR=$(dmsetup targets | grep verity | cut -f 3 -dv)
 	[ -z "$VER_STR" ] && fail "Failed to parse dm-verity version."
@@ -84,14 +87,14 @@ function check_version() # MAJ MIN
 	return 1
 }
 
-function compare_out() # $1 what, $2 expected
+compare_out() # $1 what, $2 expected
 {
 	OPT=$(grep -v "^#" $DEV_OUT | grep -i "$1" | sed -e s/.*\:\ // )
 	[ -z "$OPT" ] && fail
 	[ $OPT != $2 ] && fail "$1 differs ($2)"
 }
 
-function check_root_hash_fail()
+check_root_hash_fail()
 {
 	echo -n "Root hash check "
 	ROOT_HASH=$($VERITYSETUP format $IMG $IMG_HASH --fec-device $FEC_DEV --fec-roots 2 -h sha256 | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
@@ -116,7 +119,7 @@ function check_root_hash_fail()
 	echo "[OK]"
 }
 
-function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6 offset]
+check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6 offset]
 {
 	local FORMAT_PARAMS
 	local VERIFY_PARAMS
@@ -206,7 +209,7 @@ function check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6
 	done
 }
 
-function corrupt_device() # $1 device, $2 device_size(in bytes), $3 #{corrupted_bytes}
+corrupt_device() # $1 device, $2 device_size(in bytes), $3 #{corrupted_bytes}
 {
 	# Repeatable magic corruption :-)
 	CORRUPT=$3
@@ -222,7 +225,7 @@ function corrupt_device() # $1 device, $2 device_size(in bytes), $3 #{corrupted_
 # $1 data_device, $2 hash_device, $3 fec_device, $4 data/hash_block_size(in bytes),
 # $5 data_size(in blocks), $6 device_size(in blocks), $7 hash_offset(in bytes),
 # $8 fec_offset(in bytes), $9 fec_roots, ${10} corrupted_bytes, [${11} superblock(y/n), ${12} salt]
-function check_fec()
+check_fec()
 {
 	INDEX=25
 	dd if=/dev/zero of=$1 bs=$4 count=$6 > /dev/null 2>&1
@@ -290,7 +293,7 @@ function check_fec()
 	return $RET
 }
 
-function check_option() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, $6 CLI option, $7 status option
+check_option() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, $6 CLI option, $7 status option
 {
 	DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
 	FORMAT_PARAMS="--format=$4 --data-block-size=$1 --hash-block-size=$1 --hash=$5 --salt=$3"
@@ -305,7 +308,7 @@ function check_option() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, $6 CLI
 	echo "[OK]"
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $VERITYSETUP_VALGRIND ] && fail "Unable to get location of veritysetup executable."
@@ -315,12 +318,12 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${VERITYSETUP_VALGRIND} "$@"
 }
 
-function checkOffsetBug() # $1 size, $2 hash-offset, $3 data-blocks
+checkOffsetBug() # $1 size, $2 hash-offset, $3 data-blocks
 {
 	echo -n "Size :: $1 B | Hash-offset :: $2 blocks | Data-blocks :: $3 "
 	dd if=/dev/zero of=$IMG bs=1 count=0 seek=$1 >/dev/null 2>&1
@@ -329,7 +332,7 @@ function checkOffsetBug() # $1 size, $2 hash-offset, $3 data-blocks
 	remove_mapping
 }
 
-function checkOverlapBug() # $1 size, $2 hash-offset, $3 data-blocks, $4 block_size, $5 fec_offset
+checkOverlapBug() # $1 size, $2 hash-offset, $3 data-blocks, $4 block_size, $5 fec_offset
 {
 	echo -n "Device-size :: $1 B | "
 	[ $# -ge 3 ] && echo -n "Data-blocks :: $3 blocks| "
@@ -372,7 +375,7 @@ function checkOverlapBug() # $1 size, $2 hash-offset, $3 data-blocks, $4 block_s
 # $1 size, $2 block size, $3 roots, $4 hash offset, $5 fec offset,
 # $6 one dev(1 - one device, 2 - one device for data and hash, one device for fec data, 3 - three separate devices),
 # $7 #{corrupted bytes}
-function checkUserSpaceRepair()
+checkUserSpaceRepair()
 {
 	BS=512
 	COUNT=50000
@@ -404,7 +407,7 @@ function checkUserSpaceRepair()
 	echo "[OK]"
 }
 
-function check_concurrent() # $1 hash
+check_concurrent() # $1 hash
 {
 	DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
 

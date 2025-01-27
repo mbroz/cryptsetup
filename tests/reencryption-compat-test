@@ -32,18 +32,18 @@ MNT_DIR=./mnt_luks
 START_DIR=$(pwd)
 FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
-function fips_mode()
+fips_mode()
 {
 	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
 }
 
-function del_scsi_device()
+del_scsi_device()
 {
 	rmmod scsi_debug >/dev/null 2>&1
 	sleep 1
 }
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
@@ -55,7 +55,7 @@ function remove_mapping()
 	del_scsi_device
 }
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	echo "FAILED backtrace:"
@@ -65,13 +65,16 @@ function fail()
 	exit 2
 }
 
-function skip()
+_sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
+trap _sigchld CHLD
+
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	exit 77
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -81,12 +84,12 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
-function add_scsi_device() {
+add_scsi_device() {
 	del_scsi_device
 	if [ -d /sys/module/scsi_debug ] ; then
 		echo "Cannot use scsi_debug module (in use or compiled-in), test skipped."
@@ -103,7 +106,7 @@ function add_scsi_device() {
 	[ -b $SCSI_DEV ] || fail "Cannot find $SCSI_DEV."
 }
 
-function open_crypt() # $1 pwd, $2 hdr
+open_crypt() # $1 pwd, $2 hdr
 {
 	if [ -n "$2" ] ; then
 		echo "$1" | $CRYPTSETUP luksOpen $LOOPDEV1 $DEV_NAME --header $2 || fail
@@ -114,12 +117,12 @@ function open_crypt() # $1 pwd, $2 hdr
 	fi
 }
 
-function wipe_dev() # $1 dev
+wipe_dev() # $1 dev
 {
 	dd if=/dev/zero of=$1 bs=256k >/dev/null 2>&1
 }
 
-function wipe() # $1 pass
+wipe() # $1 pass
 {
 	open_crypt $1
 	wipe_dev /dev/mapper/$DEV_NAME
@@ -127,7 +130,7 @@ function wipe() # $1 pass
 	$CRYPTSETUP luksClose $DEV_NAME || fail
 }
 
-function prepare() # $1 dev1_siz
+prepare() # $1 dev1_siz
 {
 	remove_mapping
 
@@ -141,20 +144,20 @@ function prepare() # $1 dev1_siz
 	fi
 }
 
-function check_hash_dev() # $1 dev, $2 hash
+check_hash_dev() # $1 dev, $2 hash
 {
 	HASH=$(sha256sum $1 | cut -d' ' -f 1)
 	[ $HASH != "$2" ] && fail "HASH differs ($HASH)"
 }
 
-function check_hash() # $1 pwd, $2 hash, $3 hdr
+check_hash() # $1 pwd, $2 hash, $3 hdr
 {
 	open_crypt $1 $3
 	check_hash_dev /dev/mapper/$DEV_NAME $2
 	$CRYPTSETUP remove $DEV_NAME || fail
 }
 
-function backup_orig()
+backup_orig()
 {
 	sync
 	losetup -d $LOOPDEV1
@@ -162,7 +165,7 @@ function backup_orig()
 	losetup $LOOPDEV1 $IMG
 }
 
-function rollback()
+rollback()
 {
 	sync
 	losetup -d $LOOPDEV1
@@ -170,7 +173,7 @@ function rollback()
 	losetup $LOOPDEV1 $IMG
 }
 
-function check_slot() #space separated list of ENABLED key slots
+check_slot() #space separated list of ENABLED key slots
 {
 	local _KS0=DISABLED
 	local _KS1=$_KS0 _KS2=$_KS0 _KS3=$_KS0 _KS4=$_KS0 _KS5=$_KS0 _KS6=$_KS0 _KS7=$_KS0
@@ -195,7 +198,7 @@ function check_slot() #space separated list of ENABLED key slots
 	return 0
 }
 
-function simple_scsi_reenc()
+simple_scsi_reenc()
 {
 	echo -n "$1"
 	echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $FAST_PBKDF $SCSI_DEV || fail
@@ -211,7 +214,7 @@ function simple_scsi_reenc()
 	$CRYPTSETUP luksClose $DEV_NAME || fail
 }
 
-function mount_and_test() {
+mount_and_test() {
 	test -d $MNT_DIR || mkdir -p $MNT_DIR
 	mount $@ $MNT_DIR 2>/dev/null || {
 		echo -n "[N/A]"
@@ -232,13 +235,13 @@ function mount_and_test() {
 	echo -n [OK]
 }
 
-function test_logging_tmpfs() {
+test_logging_tmpfs() {
 	echo -n "[tmpfs]"
 	mount_and_test -t tmpfs none -o size=$[25*1024*1024] || return 1
 	echo
 }
 
-function test_logging() {
+test_logging() {
 	echo -n "$1:"
 	for img in $(ls img_fs*img.xz) ; do
 		wipefs -a $SCSI_DEV > /dev/null
@@ -249,7 +252,7 @@ function test_logging() {
 	echo
 }
 
-function check_blkid() {
+check_blkid() {
 	xz -dkf $HEADER_LUKS2_PV.xz
 	if ! $($CRYPTSETUP --version | grep -q "BLKID"); then
 		HAVE_BLKID=0
