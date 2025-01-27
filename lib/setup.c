@@ -3497,8 +3497,10 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	}
 
 	/* unsupported underneath dm-crypt with auth. encryption */
-	if (sdmdi->segment.u.integrity.meta_device || tdmdi.segment.u.integrity.meta_device)
-		return -ENOTSUP;
+	if (sdmdi->segment.u.integrity.meta_device || tdmdi.segment.u.integrity.meta_device) {
+		r = -ENOTSUP;
+		goto out;
+	}
 
 	src = &sdmd->segment;
 	srci = &sdmdi->segment;

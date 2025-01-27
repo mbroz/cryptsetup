@@ -2913,6 +2913,8 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 
 		jobj_segments_old = reencrypt_segments_old(hdr);
 		if (!jobj_segments_old) {
+			dm_targets_free(cd, &dmd_target);
+			free(CONST_CAST(void*)dmd_target.uuid);
 			r = -EINVAL;
 			goto out;
 		}

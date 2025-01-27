@@ -90,7 +90,7 @@ int INTEGRITY_dump(struct crypt_device *cd, struct device *device, uint64_t offs
 	if (r)
 		return r;
 
-	sector_size = SECTOR_SIZE << sb.log2_sectors_per_block;
+	sector_size = (uint64_t)SECTOR_SIZE << sb.log2_sectors_per_block;
 	log_std(cd, "INTEGRITY header information for %s.\n", device_path(device));
 	log_std(cd, "version: %d\n", (unsigned)sb.version);
 	log_std(cd, "tag size: %u [bytes]\n", sb.integrity_tag_size);
