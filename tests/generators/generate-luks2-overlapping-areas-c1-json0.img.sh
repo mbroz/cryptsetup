@@ -13,7 +13,7 @@
 # $1 full target dir
 # $2 full source luks2 image
 
-function generate()
+generate()
 {
 	# make area 7 being included in area 6
 	json_str=$(jq -c '.keyslots."7".area.offset = (.keyslots."6".area.offset | tonumber + 1 | tostring ) |
@@ -25,7 +25,7 @@ function generate()
 	lib_mangle_json_hdr0_kill_hdr1
 }
 
-function check()
+check()
 {
 	lib_hdr1_killed || exit 2
 

@@ -8,12 +8,12 @@ FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 IMG=systemd_token_test.img
 MAP="systemd_tpm2_test"
 
-function bin_check()
+bin_check()
 {
     command -v $1 >/dev/null || skip "WARNING: test require $1 binary, test skipped."
 }
 
-function cleanup() {
+cleanup() {
     [ -S $SWTPM_STATE_DIR/ctrl.sock ] && {
         # shutdown TPM via control socket
         swtpm_ioctl -s --unix $SWTPM_STATE_DIR/ctrl.sock
@@ -33,7 +33,7 @@ function cleanup() {
     rm -f $IMG >/dev/null 2>&1
 }
 
-function fail()
+fail()
 {
     echo "[FAILED]"
     [ -n "$1" ] && echo "$1"
@@ -46,7 +46,7 @@ function fail()
 _sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
 trap _sigchld CHLD
 
-function skip()
+skip()
 {
     [ -n "$1" ] && echo "$1"
     cleanup

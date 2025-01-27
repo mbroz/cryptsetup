@@ -17,13 +17,13 @@ fi
 
 [ -z "$srcdir" ] && srcdir="."
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b /dev/mapper/$MAP ] && dmsetup remove --retry $MAP
 	rm -rf $TST_DIR
 }
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	echo " [FAILED]"
@@ -36,7 +36,7 @@ function fail()
 _sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
 trap _sigchld CHLD
 
-function skip()
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	echo "Test skipped."
@@ -44,13 +44,13 @@ function skip()
 	exit 77
 }
 
-function load_vars()
+load_vars()
 {
 	local file=$(echo $1 | sed -e s/^$TST_DIR\\/// | sed -e s/\.img$//)
 	source <(grep = <(grep -A8 "\[$file\]" $TST_DIR/images.conf))
 }
 
-function check_dump()
+check_dump()
 {
 	dump=$1
 	file=$2
@@ -96,7 +96,7 @@ function check_dump()
 
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -106,7 +106,7 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }

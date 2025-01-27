@@ -42,7 +42,7 @@ IMG_JSON=luks2-digest-1.json
 
 FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
-function dm_crypt_features()
+dm_crypt_features()
 {
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
 	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
@@ -65,7 +65,7 @@ function dm_crypt_features()
 	fi
 }
 
-function dm_delay_features()
+dm_delay_features()
 {
 	local _ver_str=$(dmsetup targets | grep delay | cut -f2 -dv)
 	[ -z "$_ver_str" ] && return 1
@@ -87,7 +87,7 @@ scsi_debug_teardown() {
 	test ! -b "$1" || rmmod scsi_debug >/dev/null 2>&1
 }
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME ] && {
 		dmsetup resume $DEV_NAME
@@ -118,14 +118,14 @@ function remove_mapping()
 	scsi_debug_teardown $DEV
 }
 
-function cleanup_keyring()
+cleanup_keyring()
 {
 	if [ $HAVE_KEYRING -eq 1 ]; then
 		keyctl unlink %:$KEYRING "@s" >/dev/null 2>&1 || echo "Failed to unlink test keyring."
 	fi
 }
 
-function fail()
+fail()
 {
 	local frame=0
 	[ -n "$1" ] && echo "$1"
@@ -139,7 +139,7 @@ function fail()
 _sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
 trap _sigchld CHLD
 
-function skip()
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
@@ -147,12 +147,12 @@ function skip()
 	exit 77
 }
 
-function fips_mode()
+fips_mode()
 {
 	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
 }
 
-function add_scsi_device() {
+add_scsi_device() {
 	scsi_debug_teardown $DEV
 	if [ -d /sys/module/scsi_debug ] ; then
 		echo "Cannot use scsi_debug module (in use or compiled-in), test skipped."
@@ -169,7 +169,7 @@ function add_scsi_device() {
 	[ -b $DEV ] || fail "Cannot find $DEV."
 }
 
-function open_crypt() # $1 pwd, $2 hdr
+open_crypt() # $1 pwd, $2 hdr
 {
 	if [ -n "$2" ] ; then
 		echo "$1" | $CRYPTSETUP luksOpen $DEV $DEV_NAME --header $2 || fail
@@ -180,12 +180,12 @@ function open_crypt() # $1 pwd, $2 hdr
 	fi
 }
 
-function wipe_dev_head() # $1 dev, $2 length (in MiBs)
+wipe_dev_head() # $1 dev, $2 length (in MiBs)
 {
 	dd if=/dev/zero of=$1 bs=1M count=$2 conv=notrunc >/dev/null 2>&1
 }
 
-function wipe_dev() # $1 dev
+wipe_dev() # $1 dev
 {
 	if [ -b $1 ] ; then
 		blkdiscard --zeroout $1 2>/dev/null || dd if=/dev/zero of=$1 bs=1M conv=notrunc >/dev/null 2>&1
@@ -207,7 +207,7 @@ function wipe_dev() # $1 dev
 	fi
 }
 
-function wipe() # $1 pass, $2 hdr
+wipe() # $1 pass, $2 hdr
 {
 	open_crypt $1 $2
 	wipe_dev /dev/mapper/$DEV_NAME
@@ -215,7 +215,7 @@ function wipe() # $1 pass, $2 hdr
 	$CRYPTSETUP luksClose $DEV_NAME || fail
 }
 
-function prepare() # $1 dev1_siz
+prepare() # $1 dev1_siz
 {
 	remove_mapping
 
@@ -231,7 +231,7 @@ function prepare() # $1 dev1_siz
 	add_scsi_device $@
 }
 
-function preparebig() # $1 dev1_siz
+preparebig() # $1 dev1_siz
 {
 	remove_mapping
 
@@ -245,40 +245,40 @@ function preparebig() # $1 dev1_siz
 	DEV=$LOOPDEV
 }
 
-function check_hash_dev() # $1 dev, $2 hash
+check_hash_dev() # $1 dev, $2 hash
 {
 	HASH=$(sha1sum $1 | cut -d' ' -f 1)
 	[ $HASH != "$2" ] && fail "HASH differs (expected: $2) (result $HASH)"
 }
 
-function check_hash() # $1 pwd, $2 hash, $3 hdr
+check_hash() # $1 pwd, $2 hash, $3 hdr
 {
 	open_crypt $1 $3
 	check_hash_dev /dev/mapper/$DEV_NAME $2
 	$CRYPTSETUP remove $DEV_NAME || fail
 }
 
-function check_hash_dev_head() # $1 dev, $2 len, $3 hash
+check_hash_dev_head() # $1 dev, $2 len, $3 hash
 {
 	local hash=$(dd if=$1 bs=512 count=$2 2>/dev/null | sha1sum | cut -d' ' -f1)
 	[ $hash != "$3" ] && fail "HASH differs (expected: $3) (result $hash)"
 }
 
-function check_hash_head() # $1 pwd, $2 len, $3 hash, $4 hdr
+check_hash_head() # $1 pwd, $2 len, $3 hash, $4 hdr
 {
 	open_crypt $1 $4
 	check_hash_dev_head /dev/mapper/$DEV_NAME $2 $3
 	$CRYPTSETUP remove $DEV_NAME || fail
 }
 
-function resize_file() # $1 dev, $2 shrink bytes
+resize_file() # $1 dev, $2 shrink bytes
 {
 	local size=$(stat --printf="%s" $1)
 	truncate -s $(($size + $2)) $1
 	losetup -c $LOOPDEV
 }
 
-function error_writes() { # $1 dmdev, $2 data dev, $3 offset, $4 size
+error_writes() { # $1 dmdev, $2 data dev, $3 offset, $4 size
 	local _dev_size=$(blockdev --getsz /dev/mapper/$1)
 	local _offset=$(($3+$4))
 	local _size=$((_dev_size-_offset))
@@ -302,14 +302,14 @@ function error_writes() { # $1 dmdev, $2 data dev, $3 offset, $4 size
 	blockdev --setra 0 /dev/mapper/$_err
 }
 
-function fix_writes() { # $1 dmdev, $2 data dev
+fix_writes() { # $1 dmdev, $2 data dev
 	local _dev_size=$(blockdev --getsz /dev/mapper/$1)
 	dmsetup load $1 --table "0 $_dev_size linear $2 0" || fail
 	dmsetup resume $1 || fail
 	dmsetup remove --retry $1-err 2>/dev/null || fail
 }
 
-function prepare_linear_dev() {
+prepare_linear_dev() {
 	local _sizemb=$1
 	shift
 
@@ -325,7 +325,7 @@ function prepare_linear_dev() {
 	DEV=/dev/mapper/$OVRDEV
 }
 
-function get_error_offsets() # $1 devsize, $2 minimal offset, $3 sector_size [512 if omitted], $4 max offset
+get_error_offsets() # $1 devsize, $2 minimal offset, $3 sector_size [512 if omitted], $4 max offset
 {
 	local _devsize=$(($1*1024*2))
 	local _sector_size=${3:-512}
@@ -340,7 +340,7 @@ function get_error_offsets() # $1 devsize, $2 minimal offset, $3 sector_size [51
 	ERROFFSET=$(($ERROFFSET-($ERROFFSET%$_sector_size)))
 }
 
-function reencrypt_recover() { # $1 sector size, $2 resilience, $3 digest, [$4 header]
+reencrypt_recover() { # $1 sector size, $2 resilience, $3 digest, [$4 header]
 	echo -n "resilience mode: $2 ..."
 	local _hdr=""
 	test -z "$4" || _hdr="--header $4"
@@ -359,7 +359,7 @@ function reencrypt_recover() { # $1 sector size, $2 resilience, $3 digest, [$4 h
 	echo "[OK]"
 }
 
-function reencrypt_recover_online() { # $1 sector size, $2 resilience, $3 digest, [$4 header]
+reencrypt_recover_online() { # $1 sector size, $2 resilience, $3 digest, [$4 header]
 	echo -n "resilience mode: $2 ..."
 	local _hdr=""
 	test -z "$4" || _hdr="--header $4"
@@ -387,7 +387,7 @@ function reencrypt_recover_online() { # $1 sector size, $2 resilience, $3 digest
 	echo "[OK]"
 }
 
-function reencrypt_recover_online_vk() { # $1 sector size, $2 resilience, $3 digest, [$4 header]
+reencrypt_recover_online_vk() { # $1 sector size, $2 resilience, $3 digest, [$4 header]
 	echo -n "resilience mode: $2 ..."
 	local _hdr=""
 	test -z "$4" || _hdr="--header $4"
@@ -419,7 +419,7 @@ function reencrypt_recover_online_vk() { # $1 sector size, $2 resilience, $3 dig
 	echo "[OK]"
 }
 
-function encrypt_recover() { # $1 sector size, $2 reduce size, $3 digest, $4 device size in sectors, $5 origin digest
+encrypt_recover() { # $1 sector size, $2 reduce size, $3 digest, $4 device size in sectors, $5 origin digest
 	wipe_dev $DEV
 	check_hash_dev $DEV $5
 
@@ -444,7 +444,7 @@ function encrypt_recover() { # $1 sector size, $2 reduce size, $3 digest, $4 dev
 	echo "[OK]"
 }
 
-function encrypt_recover_online() { # $1 sector size, $2 reduce size, $3 digest, $4 device size in sectors, $5 origin digest
+encrypt_recover_online() { # $1 sector size, $2 reduce size, $3 digest, $4 device size in sectors, $5 origin digest
 	wipe_dev $DEV
 	check_hash_dev $DEV $5
 
@@ -475,7 +475,7 @@ function encrypt_recover_online() { # $1 sector size, $2 reduce size, $3 digest,
 	echo "[OK]"
 }
 
-function encrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
+encrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
 	wipe_dev $DEV
 	check_hash_dev $DEV $3
 
@@ -497,7 +497,7 @@ function encrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest
 	echo "[OK]"
 }
 
-function encrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
+encrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
 	wipe_dev $DEV
 	check_hash_dev $DEV $3
 
@@ -529,7 +529,7 @@ function encrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3
 	echo "[OK]"
 }
 
-function decrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
+decrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size $1 --header $4 $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1 $4
 	check_hash $PWD1 $3 $4
@@ -555,7 +555,7 @@ function decrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest
 	echo "[OK]"
 }
 
-function decrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
+decrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size $1 --header $4 $FAST_PBKDF_ARGON $DEV || fail
 	echo $PWD1 | $CRYPTSETUP open $DEV --header $4 $DEV_NAME || fail
 	wipe_dev /dev/mapper/$DEV_NAME
@@ -587,7 +587,7 @@ function decrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3
 	echo "[OK]"
 }
 
-function decrypt_recover() { # $1 hash, $2 hdr, $3 dev size, $4 resilience, $5 hotzone size
+decrypt_recover() { # $1 hash, $2 hdr, $3 dev size, $4 resilience, $5 hotzone size
 	local _res=""
 	local _maxhz=""
 	test -z "$4" || _res="--resilience $4"
@@ -615,7 +615,7 @@ function decrypt_recover() { # $1 hash, $2 hdr, $3 dev size, $4 resilience, $5 h
 	echo -n "[OK]"
 }
 
-function decrypt_recover_online() { # $1 hash, $2 hdr, $3 dev size
+decrypt_recover_online() { # $1 hash, $2 hdr, $3 dev size
 	local _res=""
 	local _maxhz=""
 	test -z "$4" || _res="--resilience $4"
@@ -644,7 +644,7 @@ function decrypt_recover_online() { # $1 hash, $2 hdr, $3 dev size
 	echo -n "[OK]"
 }
 
-function decrypt_recover_online_moved() { # $1 hash, $2 hdr, $3 dev size
+decrypt_recover_online_moved() { # $1 hash, $2 hdr, $3 dev size
 	local _res=""
 	local _maxhz=""
 	test -z "$4" || _res="--resilience $4"
@@ -677,7 +677,7 @@ function decrypt_recover_online_moved() { # $1 hash, $2 hdr, $3 dev size
 # orig size
 # orig size digest
 # hdr (optional)
-function reencrypt_offline_fixed_size() {
+reencrypt_offline_fixed_size() {
 	local _esz=$(($1>>9))
 	local _hdr=""
 	# round-up fixed size to megabytes
@@ -720,7 +720,7 @@ function reencrypt_offline_fixed_size() {
 # orig size
 # orig size digest
 # hdr
-function encrypt_offline_fixed_size() {
+encrypt_offline_fixed_size() {
 	local _esz=$(($1>>9))
 
 	# reencrypt with fixed device size
@@ -755,7 +755,7 @@ function encrypt_offline_fixed_size() {
 # orig size
 # orig size digest
 # hdr
-function decrypt_offline_fixed_size() {
+decrypt_offline_fixed_size() {
 	local _esz=$(($1>>9))
 
 	# decrypt with fixed device size
@@ -792,7 +792,7 @@ function decrypt_offline_fixed_size() {
 # orig size
 # orig size digest
 # hdr (optional)
-function reencrypt_online_fixed_size() {
+reencrypt_online_fixed_size() {
 	local _esz=$(($1>>9))
 	local _hdr=""
 	test -z "$7" || _hdr="--header $7"
@@ -844,7 +844,7 @@ function reencrypt_online_fixed_size() {
 	[ -n "$7" -a -f "$7" ] && rm -f $7
 }
 
-function prepare_vk_keyring()
+prepare_vk_keyring()
 {
 	local s_desc=$(keyctl rdescribe @s | cut -d';' -f5)
 	local us_desc=$(keyctl rdescribe @us | cut -d';' -f5)
@@ -858,7 +858,7 @@ function prepare_vk_keyring()
 	keyctl search "@s" keyring $KEYRING >/dev/null 2>&1 || fail "Could not find test keyring in a session keyring."
 }
 
-function setup_luks2_env() {
+setup_luks2_env() {
 	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c aes-xts-plain64 $FAST_PBKDF_ARGON $DEV || fail
 	echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
 	local check_keyring=$($CRYPTSETUP status $DEV_NAME | grep "key location: keyring")
@@ -872,7 +872,7 @@ function setup_luks2_env() {
 	$CRYPTSETUP close $DEV_NAME || fail
 }
 
-function check_blkid() {
+check_blkid() {
 	bin_check blkid
 	xz -dkf $HEADER_LUKS2_PV.xz
 	if ! $($CRYPTSETUP --version | grep -q "BLKID"); then
@@ -886,7 +886,7 @@ function check_blkid() {
 	fi
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -896,22 +896,22 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
-function bin_check()
+bin_check()
 {
 	command -v $1 >/dev/null || skip "WARNING: test require $1 binary, test skipped."
 }
 
-function _dd()
+_dd()
 {
 	dd $@ status=none conv=notrunc bs=1
 }
 
-function img_json_save()
+img_json_save()
 {
 	local _hdr=$IMG
 	[ -z "$1" ] || _hdr="$1"
@@ -920,7 +920,7 @@ function img_json_save()
 }
 
 # header mangle functions
-function img_update_json()
+img_update_json()
 {
 	local _hdr="$IMG"
 	local LUKS2_BIN1_OFFSET=448

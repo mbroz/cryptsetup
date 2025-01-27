@@ -3,13 +3,13 @@
 [ -z "$LIBCRYPTSETUP_DIR" ] && LIBCRYPTSETUP_DIR=../.libs
 FILE=$LIBCRYPTSETUP_DIR/libcryptsetup.so
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	exit 2
 }
 
-function skip()
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	exit 77

@@ -15,12 +15,12 @@ TEST_UUID="12345678-1234-1234-1234-123456789abc"
 
 TFILE=test-args.out
 
-function cleanup()
+cleanup()
 {
 	rm -f $TFILE 2> /dev/null
 }
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	echo "FAILED backtrace:"
@@ -32,7 +32,7 @@ function fail()
 _sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
 trap _sigchld CHLD
 
-function skip()
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	echo "Test skipped."
@@ -40,7 +40,7 @@ function skip()
 	exit 77
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -50,12 +50,12 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
-function xxx()
+xxx()
 {
 	$CRYPTSETUP --test-args $@ > $TFILE 2>&1
 	local ret=$?
@@ -68,13 +68,13 @@ function xxx()
 	test $ret -ne 0 || fail
 }
 
-function exp_fail()
+exp_fail()
 {
 	# xxx $@
 	$CRYPTSETUP --test-args $@ 2>/dev/null && fail
 }
 
-function exp_pass()
+exp_pass()
 {
 	$CRYPTSETUP --test-args $@ >/dev/null || fail
 }

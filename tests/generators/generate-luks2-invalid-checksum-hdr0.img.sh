@@ -11,13 +11,13 @@
 # 1 full target dir
 # 2 full source luks2 image
 
-function generate()
+generate()
 {
 	CHKS0=$(echo "Arbitrary chosen string: D'oh!" | calc_sha256_checksum_stdin)
 	write_checksum $CHKS0 $TGT_IMG
 }
 
-function check()
+check()
 {
 	lib_hdr0_checksum || exit 2
 }

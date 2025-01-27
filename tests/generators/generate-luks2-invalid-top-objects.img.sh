@@ -12,7 +12,7 @@
 # $1 full target dir
 # $2 full source luks2 image
 
-function generate()
+generate()
 {
 	json_str=$(jq -c 'del(.tokens) | .tokens = 42 |
 			  del(.digests) | .digests = 42 |
@@ -27,7 +27,7 @@ function generate()
 	lib_mangle_json_hdr1
 }
 
-function check()
+check()
 {
 	lib_hdr0_checksum || exit 2
 	lib_hdr1_checksum || exit 2

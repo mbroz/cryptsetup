@@ -13,12 +13,12 @@ IMG=keyring_trusted_test.img
 MAP="trusted_test"
 KEYNAME=testxxx
 
-function bin_check()
+bin_check()
 {
     command -v $1 >/dev/null || skip "WARNING: test require $1 binary, test skipped."
 }
 
-function cleanup() {
+cleanup() {
     clear_keys
 
     [ -S $SWTPM_STATE_DIR/ctrl.sock ] && {
@@ -42,7 +42,7 @@ function cleanup() {
     cleanup_modules
 }
 
-function cleanup_modules()
+cleanup_modules()
 {
     [ -n "$SKIP_MODULE_UNLOAD" ] && return
 
@@ -55,7 +55,7 @@ function cleanup_modules()
     modprobe -r tpm 2>/dev/null
 }
 
-function fail()
+fail()
 {
     echo "[FAILED]"
     [ -n "$1" ] && echo "$1"
@@ -68,14 +68,14 @@ function fail()
 _sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
 trap _sigchld CHLD
 
-function skip()
+skip()
 {
     [ -n "$1" ] && echo "$1"
     cleanup
     exit 77
 }
 
-function prepare_tpm()
+prepare_tpm()
 {
     SWTPM_STATE_DIR=$(mktemp -d /tmp/systemd_swtpm_state.XXXXXX)
     SWTPM_SEAL_KEY="$SWTPM_STATE_DIR/sealkey.ctxt"
@@ -109,7 +109,7 @@ fi
     tpm2_evictcontrol -Q -T device:$TPM_PATH -c $SWTPM_SEAL_KEY $SWTPM_PERSISTENT_HANDLE || fail
 }
 
-function prepare_vk_keyring()
+prepare_vk_keyring()
 {
     local s_desc=$(keyctl rdescribe @s | cut -d';' -f5)
     local us_desc=$(keyctl rdescribe @us | cut -d';' -f5)

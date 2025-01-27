@@ -35,7 +35,7 @@ fi
 
 FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b /dev/mapper/$NAME ] && dmsetup remove --retry $NAME
 
@@ -47,14 +47,14 @@ function remove_mapping()
 	rm -f $CHKS_DMCRYPT $CHKS_KEYRING
 }
 
-function skip()
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
 	exit 77
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -64,12 +64,12 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	echo "FAILED backtrace:"
@@ -85,14 +85,14 @@ trap _sigchld CHLD
 # $2 type
 # $3 description
 # $4 keyring
-function load_key()
+load_key()
 {
 	local tmp="$1"
 	shift
 	echo -n "$tmp" | xxd -r -p | keyctl padd $@ >/dev/null
 }
 
-function dm_crypt_keyring_support()
+dm_crypt_keyring_support()
 {
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
 	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
@@ -107,7 +107,7 @@ function dm_crypt_keyring_support()
 	[ $VER_MIN -ge 15 ]
 }
 
-function test_and_prepare_keyring() {
+test_and_prepare_keyring() {
 	keyctl list "@s" > /dev/null || skip "Current session keyring is unreachable, test skipped"
 	TEST_KEYRING=$(keyctl newring $TEST_KEYRING_NAME "@u" 2> /dev/null)
 	test -n "$TEST_KEYRING" || skip "Failed to create keyring in user keyring"
@@ -115,7 +115,7 @@ function test_and_prepare_keyring() {
 	load_key "$HEXKEY_16" user test_key "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
 }
 
-function fips_mode()
+fips_mode()
 {
 	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
 }

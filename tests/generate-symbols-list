@@ -1,12 +1,12 @@
 #!/bin/bash
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	exit 2
 }
 
-function generate() {
+generate() {
 	local ver=
 
 	while IFS= read -r line; do

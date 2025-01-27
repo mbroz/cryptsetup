@@ -13,7 +13,7 @@
 # $1 full target dir
 # $2 full source luks2 image
 
-function generate()
+generate()
 {
 	JS=$(((LUKS2_HDR_SIZE-LUKS2_BIN_HDR_SIZE)*512-4096))
 	json_str=$(jq -c --arg js $JS '.config.json_size = ($js | tostring)' $TMPDIR/json0)
@@ -25,7 +25,7 @@ function generate()
 	lib_mangle_json_hdr0_kill_hdr1
 }
 
-function check()
+check()
 {
 	lib_hdr1_killed || exit 2
 

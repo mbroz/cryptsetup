@@ -25,12 +25,12 @@ FAILS=0
 
 [ -z "$srcdir" ] && srcdir="."
 
-function remove_mapping()
+remove_mapping()
 {
 	rm -rf $IMG $TST_IMGS >/dev/null 2>&1
 }
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	echo "FAILED backtrace:"
@@ -49,13 +49,13 @@ fail_count()
 	FAILS=$((FAILS+1))
 }
 
-function skip()
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	exit 77
 }
 
-function prepare() # $1 dev1_size
+prepare() # $1 dev1_size
 {
 	remove_mapping
 
@@ -66,7 +66,7 @@ function prepare() # $1 dev1_size
 	cp $ORIG_IMG $IMG
 }
 
-function test_load()
+test_load()
 {
 	local _debug=
 
@@ -97,7 +97,7 @@ function test_load()
 	esac
 }
 
-function RUN()
+RUN()
 {
 	echo -n "Test image: $1..."
 	cp $TST_IMGS/$1 $IMG || fail "Missing test image"
@@ -109,7 +109,7 @@ function RUN()
 	fi
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -119,7 +119,7 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }

@@ -47,7 +47,7 @@ skip()
 	exit 77
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -57,7 +57,7 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
@@ -80,7 +80,7 @@ add_image()
 	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
 }
 
-function dm_crypt_features()
+dm_crypt_features()
 {
 	modprobe dm-crypt >/dev/null 2>&1 || fail "dm-crypt failed to load"
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)

@@ -9,13 +9,13 @@ DEVSIZE=$((DEVSIZEMB*$MB_BYTES))
 
 HASH_EMPTY=2daeb1f36095b44b318410b3f4e8b5d989dcc7bb023d1426c492dab0a3053e74
 
-function cleanup() {
+cleanup() {
 	rm -f $FILE $FILE_RAND 2> /dev/null
 	sleep 1
 	rmmod scsi_debug >/dev/null 2>&1
 }
 
-function fail()
+fail()
 {
 	if [ -n "$1" ] ; then echo "FAIL $1" ; else echo "FAIL" ; fi
 	echo "FAILED backtrace:"
@@ -27,14 +27,14 @@ function fail()
 _sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
 trap _sigchld CHLD
 
-function skip()
+skip()
 {
 	echo "TEST SKIPPED: $1"
 	cleanup
 	exit 77
 }
 
-function add_device()
+add_device()
 {
 	rmmod scsi_debug >/dev/null 2>&1
 	if [ -d /sys/module/scsi_debug ] ; then
@@ -50,13 +50,13 @@ function add_device()
 	[ -b $DEV ] || fail "Cannot find $DEV."
 }
 
-function check_hash() # $1 dev, $2 hash
+check_hash() # $1 dev, $2 hash
 {
 	local HASH=$(sha256sum $1 | cut -d' ' -f 1)
 	[ $HASH == "$2" ]
 }
 
-function init_hash_dd() # $1 dev, $dev orig
+init_hash_dd() # $1 dev, $dev orig
 {
 	dd if=/dev/urandom of=$2 bs=1M count=$DEVSIZEMB conv=notrunc 2> /dev/null
 	dd if=$2 of=$1 bs=1M conv=notrunc 2> /dev/null
@@ -70,7 +70,7 @@ function init_hash_dd() # $1 dev, $dev orig
 	dd if=$2 of=$1 bs=1M conv=notrunc 2> /dev/null
 }
 
-function add_file()
+add_file()
 {
 	dd if=/dev/zero of=$FILE      bs=1M count=$DEVSIZEMB 2> /dev/null || fail
 	dd if=/dev/zero of=$FILE_RAND bs=1M count=$DEVSIZEMB 2> /dev/null || fail
@@ -79,7 +79,7 @@ function add_file()
 	dd if=$FILE of=/dev/null bs=4096 count=1 iflag=direct >/dev/null 2>&1 || FILE_NODIO=1
 }
 
-function test_wipe_full() # $1 dev, $2 block size, [$3 flags]
+test_wipe_full() # $1 dev, $2 block size, [$3 flags]
 {
 	# wipe random and back to zero
 	$WIPE_UNIT $1 random 0 $DEVSIZE $2 $3 || fail
@@ -89,7 +89,7 @@ function test_wipe_full() # $1 dev, $2 block size, [$3 flags]
 }
 
 # wipe MB blocks, with zero, random and special and back to original
-function test_wipe_blocks() # $1 dev $2 block sizem [$3 flags]
+test_wipe_blocks() # $1 dev $2 block sizem [$3 flags]
 {
 	init_hash_dd $1 $FILE_RAND
 	check_hash $1 $HASH_0 || fail

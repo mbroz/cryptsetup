@@ -52,7 +52,7 @@ TEST_UUID="12345678-1234-1234-1234-123456789abc"
 LOOPDEV=$(losetup -f 2>/dev/null)
 FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME3 ] && dmsetup remove --retry $DEV_NAME3 >/dev/null 2>&1
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2 >/dev/null 2>&1
@@ -63,13 +63,13 @@ function remove_mapping()
 	scsi_debug_teardown $DEV
 }
 
-function force_uevent()
+force_uevent()
 {
 	DNAME=$(echo $LOOPDEV | cut -f3 -d /)
 	echo "change" >/sys/block/$DNAME/uevent
 }
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
@@ -81,18 +81,18 @@ function fail()
 _sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
 trap _sigchld CHLD
 
-function fips_mode()
+fips_mode()
 {
 	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
 }
 
-function can_fail_fips()
+can_fail_fips()
 {
 	# Ignore this fail if running in FIPS mode
 	fips_mode || fail $1
 }
 
-function skip()
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
@@ -100,7 +100,7 @@ function skip()
 	exit 77
 }
 
-function prepare()
+prepare()
 {
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME >/dev/null 2>&1
 
@@ -156,14 +156,14 @@ function prepare()
 	[ -n "$1" ] && echo "CASE: $1"
 }
 
-function check()
+check()
 {
 	sync
 	[ -z "$1" ] && return
 	$DIFFER $ORIG_IMG $IMG $1 || fail
 }
 
-function check_exists()
+check_exists()
 {
 	[ -b /dev/mapper/$DEV_NAME ] || fail
 	check $1
@@ -184,7 +184,7 @@ scsi_debug_teardown() {
 	test ! -b "$1" || rmmod scsi_debug >/dev/null 2>&1
 }
 
-function add_scsi_device() {
+add_scsi_device() {
 	scsi_debug_teardown $DEV
 	if [ -d /sys/module/scsi_debug ] ; then
 		echo "Cannot use scsi_debug module (in use or compiled-in), test skipped."
@@ -201,7 +201,7 @@ function add_scsi_device() {
 	[ -b $DEV ] || fail "Cannot find $DEV."
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	[ -n "$VALG" ] || return
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
@@ -214,13 +214,13 @@ function valgrind_setup()
 	CRYPTSETUP_RAW="./valg.sh ${CRYPTSETUP_VALGRIND}"
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	export INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}"
 	$CRYPTSETUP_RAW "$@"
 }
 
-function expect_run()
+expect_run()
 {
 	export INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}"
 	expect "$@"

@@ -13,7 +13,7 @@
 # $1 full target dir
 # $2 full source luks2 image
 
-function generate()
+generate()
 {
 	json_str=$(jq -c '.config.keyslots_size = (.config.keyslots_size | tonumber - 1 | tostring)' $TMPDIR/json0)
 	test -n "$json_str" || exit 2
@@ -24,7 +24,7 @@ function generate()
 	lib_mangle_json_hdr0_kill_hdr1
 }
 
-function check()
+check()
 {
 	lib_hdr1_killed || exit 2
 

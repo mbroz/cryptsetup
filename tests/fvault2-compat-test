@@ -14,7 +14,7 @@ fi
 
 [ -z "$srcdir" ] && srcdir="."
 
-function create_mapping()
+create_mapping()
 {
 	local image=$1
 	local passphrase=$2
@@ -22,13 +22,13 @@ function create_mapping()
 		"$image" "$MAP"
 }
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b "/dev/mapper/$MAP" ] && dmsetup remove --retry "$MAP"
 	rm -rf $TST_DIR
 }
 
-function fail()
+fail()
 {
 	[ -n "$1" ] && echo "$1"
 	echo " [FAILED]"
@@ -41,7 +41,7 @@ function fail()
 _sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
 trap _sigchld CHLD
 
-function skip()
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	echo "Test skipped."
@@ -49,17 +49,17 @@ function skip()
 	exit 77
 }
 
-function produce_dump()
+produce_dump()
 {
 	"$CRYPTSETUP" fvault2Dump "$1" || fail
 }
 
-function produce_dump_key()
+produce_dump_key()
 {
 	echo "$2" | "$CRYPTSETUP" fvault2Dump "$1" --dump-volume-key || fail
 }
 
-function check_dump()
+check_dump()
 {
 	local dump=$1
 	local key=$2
@@ -70,7 +70,7 @@ function check_dump()
 		"$key check failed: expected \"$exp_value\", got \"$value\""
 }
 
-function check_uuid()
+check_uuid()
 {
 	local exp_uuid=$1
 	local uuid=$(blkid -po value -s UUID "/dev/mapper/$MAP")
@@ -78,7 +78,7 @@ function check_uuid()
 		"UUID check failed: expected \"$exp_uuid\", got \"$uuid\""
 }
 
-function check_sha256()
+check_sha256()
 {
 	local exp_sum=$1
 	local sum=$(sha256sum /dev/mapper/$MAP | head -c 64)
@@ -86,7 +86,7 @@ function check_sha256()
 		"SHA256 sum check failed: expected \"$exp_sum\", got \"$sum\""
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -96,7 +96,7 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }

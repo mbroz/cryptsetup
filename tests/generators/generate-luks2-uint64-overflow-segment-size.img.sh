@@ -13,7 +13,7 @@
 # $1 full target dir
 # $2 full source luks2 image
 
-function generate()
+generate()
 {
 	json_str=$(jq -c '.segments."0".size = "18446744073709551616"' $TMPDIR/json0)
 	test ${#json_str} -lt $((LUKS2_JSON_SIZE*512)) || exit 2
@@ -23,7 +23,7 @@ function generate()
 	lib_mangle_json_hdr0_kill_hdr1
 }
 
-function check()
+check()
 {
 	lib_hdr1_killed || exit 2
 

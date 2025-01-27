@@ -23,13 +23,13 @@ CS_PWPARAMS="--disable-keyring --key-file $KEY1"
 CS_PARAMS="-q --disable-locks $CS_PWPARAMS"
 JSON_MSIZE=16384
 
-function remove_mapping()
+remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 	rm -f $IMG $IMG_HDR $IMG_HDR_BCP $IMG_JSON $KEY1 >/dev/null 2>&1
 }
 
-function fail()
+fail()
 {
 	local frame=0
 	[ -n "$1" ] && echo "$1"
@@ -42,19 +42,19 @@ function fail()
 _sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
 trap _sigchld CHLD
 
-function skip()
+skip()
 {
 	[ -n "$1" ] && echo "$1"
 	remove_mapping
 	exit 77
 }
 
-function bin_check()
+bin_check()
 {
 	command -v $1 >/dev/null || skip "WARNING: test require $1 binary, test skipped."
 }
 
-function img_json_save()
+img_json_save()
 {
 	local _hdr=$IMG
 	[ -z "$1" ] || _hdr="$1"
@@ -62,24 +62,24 @@ function img_json_save()
 	$CRYPTSETUP luksDump --dump-json-metadata $_hdr | jq -c -M . | tr -d '\n' >$IMG_JSON
 }
 
-function img_json_dump()
+img_json_dump()
 {
 	img_json_save
 	jq . $IMG_JSON
 }
 
-function img_hash_save()
+img_hash_save()
 {
 	IMG_HASH=$(sha256sum $IMG | cut -d' ' -f 1)
 }
 
-function img_hash_unchanged()
+img_hash_unchanged()
 {
 	local IMG_HASH2=$(sha256sum $IMG | cut -d' ' -f 1)
 	[ "$IMG_HASH" != "$IMG_HASH2" ] && fail "Image changed!"
 }
 
-function img_prepare_raw() # $1 options
+img_prepare_raw() # $1 options
 {
 	remove_mapping
 
@@ -91,7 +91,7 @@ function img_prepare_raw() # $1 options
 	$CRYPTSETUP luksFormat $FAST_PBKDF2 $CS_PARAMS --luks2-metadata-size $JSON_MSIZE $IMG $1 || fail
 }
 
-function img_prepare() # $1 options
+img_prepare() # $1 options
 {
 	img_prepare_raw
 	$CRYPTSETUP reencrypt $IMG $CS_PARAMS -q --init-only --resilience none $1 >/dev/null 2>&1
@@ -100,13 +100,13 @@ function img_prepare() # $1 options
 	img_hash_save
 }
 
-function _dd()
+_dd()
 {
 	dd $@ status=none conv=notrunc bs=1
 }
 
 # header mangle functions
-function img_update_json()
+img_update_json()
 {
 	local _hdr="$IMG"
 	local LUKS2_BIN1_OFFSET=448
@@ -145,7 +145,7 @@ function img_update_json()
 	img_hash_save
 }
 
-function img_check_ok()
+img_check_ok()
 {
 	if [ $(id -u) == 0 ]; then
 		$CRYPTSETUP open $CS_PWPARAMS $IMG $DEV_NAME || fail
@@ -155,13 +155,13 @@ function img_check_ok()
 	$CRYPTSETUP repair $IMG $CS_PARAMS || fail
 }
 
-function img_check_dump_ok()
+img_check_dump_ok()
 {
 	$CRYPTSETUP luksDump $IMG >/dev/null || fail
 	img_check_fail
 }
 
-function img_check_fail()
+img_check_fail()
 {
 	if [ $(id -u) == 0 ]; then
 		$CRYPTSETUP open $CS_PWPARAMS $IMG $DEV_NAME 2>/dev/null && fail
@@ -171,23 +171,23 @@ function img_check_fail()
 	img_hash_unchanged
 }
 
-function img_run_reenc_ok()
+img_run_reenc_ok()
 {
 	$CRYPTSETUP_RAW reencrypt $IMG $CS_PWPARAMS -q --disable-locks --force-offline-reencrypt --resilience none || fail
 }
 
-function img_run_reenc_ok_data_shift()
+img_run_reenc_ok_data_shift()
 {
 	$CRYPTSETUP_RAW reencrypt $IMG $CS_PWPARAMS -q --disable-locks --force-offline-reencrypt || fail
 }
 
-function img_run_reenc_fail()
+img_run_reenc_fail()
 {
 $CRYPTSETUP_RAW reencrypt $IMG $CS_PWPARAMS --force-offline-reencrypt --disable-locks -q 2>/dev/null && fail "Reencryption passed (should have failed)."
 img_hash_unchanged
 }
 
-function img_check_fail_repair()
+img_check_fail_repair()
 {
 	if [ $(id -u) == 0 ]; then
 		$CRYPTSETUP open $CS_PWPARAMS $IMG $DEV_NAME 2>/dev/null && fail
@@ -201,19 +201,19 @@ function img_check_fail_repair()
 	img_check_ok
 }
 
-function img_check_fail_repair_ok()
+img_check_fail_repair_ok()
 {
 	img_check_fail_repair
 	img_run_reenc_ok
 }
 
-function img_check_fail_repair_ok_data_shift()
+img_check_fail_repair_ok_data_shift()
 {
 	img_check_fail_repair
 	img_run_reenc_ok_data_shift
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	bin_check valgrind
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -225,7 +225,7 @@ function valgrind_setup()
 	CRYPTSETUP_RAW="./valg.sh ${CRYPTSETUP_VALGRIND}"
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	export INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}"
 	$CRYPTSETUP_RAW "$@"

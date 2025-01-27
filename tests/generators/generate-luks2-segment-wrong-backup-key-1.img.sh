@@ -13,7 +13,7 @@
 # $1 full target dir
 # $2 full source luks2 image
 
-function generate()
+generate()
 {
 	# create illegal backup segment key (used to be bug in 32bit implementations)
 	json_str=$(jq -c '(.segments."0".offset | tonumber) as $i | .segments[range(1;65) | tostring] = { "type" : "linear", "offset" : ($i + 512 | tostring), "size" : "512" } | .segments."268435472" = { "type":"linear","offset":"512","size":"512","flags":["backup-x"]}' $TMPDIR/json0)
@@ -24,7 +24,7 @@ function generate()
 	lib_mangle_json_hdr0_kill_hdr1
 }
 
-function check()
+check()
 {
 	lib_hdr1_killed || exit 2
 

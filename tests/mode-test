@@ -55,7 +55,7 @@ skip()
 	exit 77
 }
 
-function dm_crypt_capi_support()
+dm_crypt_capi_support()
 {
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
 	[ -z "$VER_STR" ] && fail "Failed to parse dm-crypt version."
@@ -71,7 +71,7 @@ function dm_crypt_capi_support()
 	return 1
 }
 
-function valgrind_setup()
+valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
 	[ ! -f $CRYPTSETUP_VALGRIND ] && fail "Unable to get location of cryptsetup executable."
@@ -81,7 +81,7 @@ function valgrind_setup()
 	fi
 }
 
-function valgrind_run()
+valgrind_run()
 {
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
