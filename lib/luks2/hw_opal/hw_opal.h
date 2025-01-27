@@ -3,7 +3,8 @@
  * OPAL utilities
  *
  * Copyright (C) 2022-2023 Luca Boccassi <bluca@debian.org>
- *               2023 Ondrej Kozina <okozina@redhat.com>
+ * Copyright (C) 2023-2025 Ondrej Kozina <okozina@redhat.com>
+ * Copyright (C) 2024-2025 Milan Broz
  */
 
 #ifndef _UTILS_OPAL
