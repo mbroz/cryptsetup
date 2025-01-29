@@ -378,7 +378,7 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 {
 	struct luks_phdr temp_phdr;
 	const unsigned char *sector = (const unsigned char*)phdr;
-	struct volume_key *vk;
+	struct volume_key *fake_vk;
 	int i, bad, r, need_write = 0;
 
 	if (phdr->keyBytes != 16 && phdr->keyBytes != 32 && phdr->keyBytes != 64) {
@@ -424,8 +424,8 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 	if (r < 0)
 		return -EINVAL;
 
-	vk = crypt_alloc_volume_key(phdr->keyBytes, NULL);
-	if (!vk)
+	fake_vk = crypt_generate_volume_key(ctx, phdr->keyBytes, KEY_QUALITY_EMPTY);
+	if (!fake_vk)
 		return -ENOMEM;
 
 	log_verbose(ctx, _("Repairing keyslots."));
@@ -433,7 +433,7 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 	log_dbg(ctx, "Generating second header with the same parameters for check.");
 	/* cipherName, cipherMode, hashSpec, uuid are already null terminated */
 	/* payloadOffset - cannot check */
-	r = LUKS_generate_phdr(&temp_phdr, vk, phdr->cipherName, phdr->cipherMode,
+	r = LUKS_generate_phdr(&temp_phdr, fake_vk, phdr->cipherName, phdr->cipherMode,
 			       phdr->hashSpec, phdr->uuid,
 			       phdr->payloadOffset * SECTOR_SIZE, 0, 0, ctx);
 	if (r < 0)
@@ -492,7 +492,7 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 out:
 	if (r)
 		log_err(ctx, _("Repair failed."));
-	crypt_free_volume_key(vk);
+	crypt_free_volume_key(fake_vk);
 	crypt_safe_memzero(&temp_phdr, sizeof(temp_phdr));
 	return r;
 }
@@ -710,14 +710,12 @@ int LUKS_check_cipher(struct crypt_device *ctx, size_t keylength, const char *ci
 
 	log_dbg(ctx, "Checking if cipher %s-%s is usable.", cipher, cipher_mode);
 
-	empty_key = crypt_alloc_volume_key(keylength, NULL);
+	/* No need to get KEY quality random but it must avoid known weak keys. */
+	empty_key = crypt_generate_volume_key(ctx, keylength, KEY_QUALITY_NORMAL);
 	if (!empty_key)
 		return -ENOMEM;
 
-	/* No need to get KEY quality random but it must avoid known weak keys. */
-	r = crypt_random_get(ctx, empty_key->key, empty_key->keylength, CRYPT_RND_NORMAL);
-	if (!r)
-		r = LUKS_decrypt_from_storage(buf, sizeof(buf), cipher, cipher_mode, empty_key, 0, ctx);
+	r = LUKS_decrypt_from_storage(buf, sizeof(buf), cipher, cipher_mode, empty_key, 0, ctx);
 
 	crypt_free_volume_key(empty_key);
 	crypt_safe_memzero(buf, sizeof(buf));

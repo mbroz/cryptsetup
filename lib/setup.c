@@ -3016,7 +3016,10 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 	cd->u.integrity.params.journal_crypt = journal_crypt;
 
 	if (params->integrity_key_size) {
-		ik = crypt_alloc_volume_key(params->integrity_key_size, integrity_key);
+		if (!integrity_key)
+			ik = crypt_generate_volume_key(cd, params->integrity_key_size, KEY_QUALITY_EMPTY);
+		else
+			ik = crypt_alloc_volume_key(params->integrity_key_size, integrity_key);
 		if (!ik) {
 			r = -ENOMEM;
 			goto out;
