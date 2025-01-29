@@ -55,6 +55,7 @@ struct volume_key {
 	const char *key_description; /* keyring key name/description */
 	key_type_t keyring_key_type; /* kernel keyring key type */
 	bool uploaded; /* uploaded to keyring, can drop it */
+	bool has_key_data; /* contains properly initialized key data */
 	struct volume_key *next;
 	char key[];
 };
@@ -70,6 +71,9 @@ int crypt_volume_key_get_id(const struct volume_key *vk);
 void crypt_volume_key_add_next(struct volume_key **vks, struct volume_key *vk);
 struct volume_key *crypt_volume_key_next(struct volume_key *vk);
 struct volume_key *crypt_volume_key_by_id(struct volume_key *vk, int id);
+void crypt_volume_key_set_key(struct volume_key *vk, const char *key, size_t key_length);
+int crypt_volume_key_set_key_from_hexbyte(struct volume_key *vk, const char *hexkey_string);
+bool crypt_volume_key_has_data(const struct volume_key *vk);
 
 struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd);
 int init_pbkdf_type(struct crypt_device *cd,

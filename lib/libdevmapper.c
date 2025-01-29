@@ -1993,7 +1993,7 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 				  uint32_t *act_flags)
 {
 	uint64_t val64;
-	char *rcipher, *rintegrity, *key_, *rdevice, *endp, buffer[3], *arg, *key_desc, keyring[16];
+	char *rcipher, *rintegrity, *key_, *rdevice, *endp, *arg, *key_desc, keyring[16];
 	unsigned int i, val;
 	int r;
 	size_t key_size;
@@ -2133,16 +2133,10 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 				r = crypt_volume_key_set_description(vk, key_desc, key_type_by_name(keyring));
 				if (r < 0)
 					goto err;
-			} else {
-				buffer[2] = '\0';
-				for(i = 0; i < vk->keylength; i++) {
-					crypt_safe_memcpy(buffer, &key_[i * 2], 2);
-					vk->key[i] = strtoul(buffer, &endp, 16);
-					if (endp != &buffer[2]) {
-						r = -EINVAL;
-						goto err;
-					}
-				}
+			} else if (key_size) {
+				r = crypt_volume_key_set_key_from_hexbyte(vk, key_);
+				if (r < 0)
+					goto err;
 			}
 		}
 	}
