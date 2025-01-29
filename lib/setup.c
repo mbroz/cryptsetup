@@ -1796,7 +1796,7 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 		cd->volume_key = crypt_alloc_volume_key(volume_key_size,
 						      volume_key);
 	else
-		cd->volume_key = crypt_generate_volume_key(cd, volume_key_size);
+		cd->volume_key = crypt_generate_volume_key(cd, volume_key_size, KEY_QUALITY_KEY);
 
 	if (!cd->volume_key)
 		return -ENOMEM;
@@ -2075,7 +2075,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		cd->volume_key = crypt_alloc_volume_key(volume_key_size,
 						      volume_key);
 	else
-		cd->volume_key = crypt_generate_volume_key(cd, volume_key_size);
+		cd->volume_key = crypt_generate_volume_key(cd, volume_key_size, KEY_QUALITY_KEY);
 
 	if (!cd->volume_key)
 		return -ENOMEM;
@@ -2439,7 +2439,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	if (volume_keys)
 		cd->volume_key = crypt_alloc_volume_key(volume_keys_size, volume_keys);
 	else
-		cd->volume_key = crypt_generate_volume_key(cd, volume_keys_size);
+		cd->volume_key = crypt_generate_volume_key(cd, volume_keys_size, KEY_QUALITY_KEY);
 
 	if (!cd->volume_key) {
 		r = -ENOMEM;
@@ -7328,7 +7328,7 @@ int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
 
 	if (r == -ENOENT) {
 		if ((flags & CRYPT_VOLUME_KEY_NO_SEGMENT) && kc->type == CRYPT_KC_TYPE_KEY) {
-			if (!(vk = crypt_generate_volume_key(cd, kc->u.k.volume_key_size)))
+			if (!(vk = crypt_generate_volume_key(cd, kc->u.k.volume_key_size, KEY_QUALITY_KEY)))
 				return -ENOMEM;
 			r = 0;
 		} else if (cd->volume_key) {

@@ -126,7 +126,8 @@ void crypt_free_volume_key(struct volume_key *vk)
 	}
 }
 
-struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t keylength)
+struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t keylength,
+					     key_quality_info quality)
 {
 	int r;
 	struct volume_key *vk;
@@ -135,10 +136,24 @@ struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t key
 	if (!vk)
 		return NULL;
 
-	r = crypt_random_get(cd, vk->key, keylength, CRYPT_RND_KEY);
-	if(r < 0) {
-		crypt_free_volume_key(vk);
-		return NULL;
+	switch (quality) {
+	case KEY_QUALITY_KEY:
+		r = crypt_random_get(cd, vk->key, keylength, CRYPT_RND_KEY);
+		break;
+	case KEY_QUALITY_NORMAL:
+		r = crypt_random_get(cd, vk->key, keylength, CRYPT_RND_NORMAL);
+		break;
+	case KEY_QUALITY_EMPTY:
+		r = 0;
+		break;
+	default:
+		abort();
 	}
+
+	if (r) {
+		crypt_free_volume_key(vk);
+		vk = NULL;
+	}
+
 	return vk;
 }
