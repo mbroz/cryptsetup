@@ -24,12 +24,9 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 	if (!vk)
 		return NULL;
 
-	vk->key_description = NULL;
 	vk->keyring_key_type = INVALID_KEY;
 	vk->keylength = keylength;
-	vk->uploaded = false;
 	vk->id = KEY_NOT_VERIFIED;
-	vk->next = NULL;
 
 	/* keylength 0 is valid => no key */
 	if (vk->keylength) {
