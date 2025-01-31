@@ -310,12 +310,13 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 		.session = {
 			.who = segment_number + 1,
 			.opal_key = {
-				.key_len = vk->keylength,
+				.key_len = crypt_volume_key_length(vk),
 				.lr = segment_number
 			}
 		}
 	};
-	crypt_safe_memcpy(lrs->session.opal_key.key, vk->key, vk->keylength);
+	crypt_safe_memcpy(lrs->session.opal_key.key, crypt_volume_key_get_key(vk),
+			  crypt_volume_key_length(vk));
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_GET_LR_STATUS, lrs);
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -417,7 +418,7 @@ int opal_setup_ranges(struct crypt_device *cd,
 	assert(dev);
 	assert(vk);
 	assert(admin_key);
-	assert(vk->keylength <= OPAL_KEY_MAX);
+	assert(crypt_volume_key_length(vk) <= OPAL_KEY_MAX);
 	assert(opal_block_bytes >= SECTOR_SIZE);
 
 	if (admin_key_len > OPAL_KEY_MAX)
@@ -582,12 +583,13 @@ int opal_setup_ranges(struct crypt_device *cd,
 		.new_user_pw = {
 			.who = segment_number + 1,
 			.opal_key = {
-				.key_len = vk->keylength,
+				.key_len = crypt_volume_key_length(vk),
 				.lr = segment_number,
 			},
 		},
 	};
-	crypt_safe_memcpy(new_pw->new_user_pw.opal_key.key, vk->key, vk->keylength);
+	crypt_safe_memcpy(new_pw->new_user_pw.opal_key.key, crypt_volume_key_get_key(vk),
+			  crypt_volume_key_length(vk));
 	crypt_safe_memcpy(new_pw->session.opal_key.key, admin_key, admin_key_len);
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_SET_PW, new_pw);
@@ -642,12 +644,13 @@ int opal_setup_ranges(struct crypt_device *cd,
 		.session = {
 			.who = segment_number + 1,
 			.opal_key = {
-				.key_len = vk->keylength,
+				.key_len = crypt_volume_key_length(vk),
 				.lr = segment_number,
 			},
 		}
 	};
-	crypt_safe_memcpy(lock->session.opal_key.key, vk->key, vk->keylength);
+	crypt_safe_memcpy(lock->session.opal_key.key, crypt_volume_key_get_key(vk),
+			  crypt_volume_key_length(vk));
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_LOCK_UNLOCK, lock);
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -700,10 +703,11 @@ static int opal_lock_unlock(struct crypt_device *cd,
 		return -EIO;
 
 	if (!lock) {
-		assert(vk->keylength <= OPAL_KEY_MAX);
+		assert(crypt_volume_key_length(vk) <= OPAL_KEY_MAX);
 
-		unlock.session.opal_key.key_len = vk->keylength;
-		crypt_safe_memcpy(unlock.session.opal_key.key, vk->key, vk->keylength);
+		unlock.session.opal_key.key_len = crypt_volume_key_length(vk);
+		crypt_safe_memcpy(unlock.session.opal_key.key, crypt_volume_key_get_key(vk),
+				  crypt_volume_key_length(vk));
 	}
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_LOCK_UNLOCK, &unlock);

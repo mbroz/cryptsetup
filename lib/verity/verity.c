@@ -271,7 +271,8 @@ int VERITY_verify_params(struct crypt_device *cd,
 		return 0;
 
 	log_dbg(cd, "Verification of VERITY data in userspace required.");
-	r = VERITY_verify(cd, hdr, root_hash->key, root_hash->keylength);
+	r = VERITY_verify(cd, hdr, crypt_volume_key_get_key(root_hash),
+			  crypt_volume_key_length(root_hash));
 
 	if ((r == -EPERM || r == -EFAULT) && fec_device) {
 		v = r;
@@ -324,7 +325,9 @@ int VERITY_activate(struct crypt_device *cd,
 			return -EINVAL;
 
 		log_dbg(cd, "Adding signature %s (type user) into thread keyring.", description);
-		kid = keyring_add_key_in_thread_keyring(USER_KEY, description, signature->key, signature->keylength);
+		kid = keyring_add_key_in_thread_keyring(USER_KEY, description,
+							crypt_volume_key_get_key(signature),
+							crypt_volume_key_length(signature));
 		if (kid < 0) {
 			log_dbg(cd, "keyring_add_key_in_thread_keyring failed with errno %d.", errno);
 			log_err(cd, _("Failed to load key in kernel keyring."));
@@ -352,8 +355,8 @@ int VERITY_activate(struct crypt_device *cd,
 	}
 
 	r = dm_verity_target_set(&dmd.segment, 0, dmd.size, crypt_data_device(cd),
-			crypt_metadata_device(cd), fec_device, root_hash->key,
-			root_hash->keylength, description,
+			crypt_metadata_device(cd), fec_device, crypt_volume_key_get_key(root_hash),
+			crypt_volume_key_length(root_hash), description,
 			VERITY_hash_offset_block(verity_hdr),
 			VERITY_FEC_blocks(cd, fec_device, verity_hdr), verity_hdr);
 

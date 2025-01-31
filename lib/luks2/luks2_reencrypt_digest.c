@@ -274,7 +274,7 @@ static int reencrypt_assembly_verification_data(struct crypt_device *cd,
 			log_dbg(cd, "Key (digest id %d) required but not unlocked.", digest_old);
 			return -EINVAL;
 		}
-		data_len += blob_serialize(vk_old->key, vk_old->keylength, NULL);
+		data_len += blob_serialize(crypt_volume_key_get_key(vk_old), crypt_volume_key_length(vk_old), NULL);
 	}
 
 	if (digest_new >= 0 && digest_old != digest_new) {
@@ -283,7 +283,7 @@ static int reencrypt_assembly_verification_data(struct crypt_device *cd,
 			log_dbg(cd, "Key (digest id %d) required but not unlocked.", digest_new);
 			return -EINVAL;
 		}
-		data_len += blob_serialize(vk_new->key, vk_new->keylength, NULL);
+		data_len += blob_serialize(crypt_volume_key_get_key(vk_new), crypt_volume_key_length(vk_new), NULL);
 	}
 
 	if (data_len == 2)
@@ -309,10 +309,12 @@ static int reencrypt_assembly_verification_data(struct crypt_device *cd,
 	*ptr++ = 0x30 + version;
 
 	if (vk_old)
-		ptr += blob_serialize(vk_old->key, vk_old->keylength, ptr);
+		ptr += blob_serialize(crypt_volume_key_get_key(vk_old),
+				      crypt_volume_key_length(vk_old), ptr);
 
 	if (vk_new)
-		ptr += blob_serialize(vk_new->key, vk_new->keylength, ptr);
+		ptr += blob_serialize(crypt_volume_key_get_key(vk_new),
+				      crypt_volume_key_length(vk_new), ptr);
 
 	if (!reenc_keyslot_serialize(hdr, ptr))
 		goto bad;

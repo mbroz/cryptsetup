@@ -75,7 +75,7 @@ int LUKS2_digest_create(struct crypt_device *cd,
 
 	log_dbg(cd, "Creating new digest %d (%s).", digest, type);
 
-	return dh->store(cd, digest, vk->key, vk->keylength) ?: digest;
+	return dh->store(cd, digest, crypt_volume_key_get_key(vk), crypt_volume_key_length(vk)) ?: digest;
 }
 
 int LUKS2_digest_by_keyslot(struct luks2_hdr *hdr, int keyslot)
@@ -108,7 +108,7 @@ int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
 	if (!h)
 		return -EINVAL;
 
-	r = h->verify(cd, digest, vk->key, vk->keylength);
+	r = h->verify(cd, digest, crypt_volume_key_get_key(vk), crypt_volume_key_length(vk));
 	if (r < 0) {
 		log_dbg(cd, "Digest %d (%s) verify failed with %d.", digest, h->name, r);
 		return r;

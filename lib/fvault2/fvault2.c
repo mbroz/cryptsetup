@@ -704,7 +704,7 @@ static int _read_encrypted_metadata(
 		goto out;
 	}
 
-	r = crypt_cipher_init(&cipher, "aes", "xts", key->key, FVAULT2_XTS_KEY_SIZE);
+	r = crypt_cipher_init(&cipher, "aes", "xts", crypt_volume_key_get_key(key), FVAULT2_XTS_KEY_SIZE);
 	if (r < 0)
 		goto out;
 
@@ -1002,7 +1002,7 @@ int FVAULT2_activate_by_volume_key(
 	const struct fvault2_params *params,
 	uint32_t flags)
 {
-	assert(vk && vk->keylength == FVAULT2_XTS_KEY_SIZE);
+	assert(crypt_volume_key_length(vk) == FVAULT2_XTS_KEY_SIZE);
 
 	return _activate(cd, name, vk, params, flags);
 }

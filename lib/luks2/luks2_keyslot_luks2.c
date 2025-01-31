@@ -37,7 +37,8 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 		return -EINVAL;
 
 	/* Encrypt buffer */
-	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode, vk->key, vk->keylength, false);
+	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode,
+			       crypt_volume_key_get_key(vk), crypt_volume_key_length(vk), false);
 	if (r) {
 		log_err(cd, _("Cannot use %s-%s cipher for keyslot encryption."), cipher, cipher_mode);
 		return r;
@@ -92,7 +93,9 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 	if (MISALIGNED_512(dstLength))
 		return -EINVAL;
 
-	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode, vk->key, vk->keylength, false);
+	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode,
+			       crypt_volume_key_get_key(vk),
+			       crypt_volume_key_length(vk), false);
 	if (r) {
 		log_err(cd, _("Cannot use %s-%s cipher for keyslot encryption."), cipher, cipher_mode);
 		return r;

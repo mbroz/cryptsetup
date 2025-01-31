@@ -746,7 +746,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 
 	memset(header, 0, sizeof(struct luks_phdr));
 
-	keyslot_sectors = AF_split_sectors(vk->keylength, LUKS_STRIPES);
+	keyslot_sectors = AF_split_sectors(crypt_volume_key_length(vk), LUKS_STRIPES);
 	header_sectors = LUKS_ALIGN_KEYSLOTS / SECTOR_SIZE;
 
 	for (i = 0; i < LUKS_NUMKEYS; i++) {
@@ -793,7 +793,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	strncpy(header->hashSpec,hashSpec,LUKS_HASHSPEC_L-1);
 	_to_lower(header->hashSpec, LUKS_HASHSPEC_L);
 
-	header->keyBytes=vk->keylength;
+	header->keyBytes = crypt_volume_key_length(vk);
 
 	log_dbg(ctx, "Generating LUKS header version %d using hash %s, %s, %s, MK %d bytes",
 		header->version, header->hashSpec ,header->cipherName, header->cipherMode,
@@ -807,7 +807,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 
 	/* Compute volume key digest */
 	pbkdf = crypt_get_pbkdf(ctx);
-	r = crypt_benchmark_pbkdf_internal(ctx, pbkdf, vk->keylength);
+	r = crypt_benchmark_pbkdf_internal(ctx, pbkdf, crypt_volume_key_length(vk));
 	if (r < 0)
 		return r;
 	assert(pbkdf->iterations);
@@ -822,7 +822,9 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 	header->mkDigestIterations = AT_LEAST((uint32_t)PBKDF2_temp, LUKS_MKD_ITERATIONS_MIN);
 	assert(header->mkDigestIterations);
 
-	r = crypt_pbkdf(CRYPT_KDF_PBKDF2, header->hashSpec, vk->key,vk->keylength,
+	r = crypt_pbkdf(CRYPT_KDF_PBKDF2, header->hashSpec,
+			crypt_volume_key_get_key(vk),
+			crypt_volume_key_length(vk),
 			header->mkDigestSalt, LUKS_SALTSIZE,
 			header->mkDigest,LUKS_DIGESTSIZE,
 			header->mkDigestIterations, 0, 0);
@@ -884,7 +886,7 @@ int LUKS_set_key(unsigned int keyIndex,
 
 	log_dbg(ctx, "Calculating data for key slot %d", keyIndex);
 	pbkdf = crypt_get_pbkdf(ctx);
-	r = crypt_benchmark_pbkdf_internal(ctx, pbkdf, vk->keylength);
+	r = crypt_benchmark_pbkdf_internal(ctx, pbkdf, crypt_volume_key_length(vk));
 	if (r < 0)
 		return r;
 	assert(pbkdf->iterations);
@@ -920,8 +922,8 @@ int LUKS_set_key(unsigned int keyIndex,
 	/*
 	 * AF splitting, the volume key stored in vk->key is split to AfKey
 	 */
-	assert(vk->keylength == hdr->keyBytes);
-	AFEKSize = AF_split_sectors(vk->keylength, hdr->keyblock[keyIndex].stripes) * SECTOR_SIZE;
+	assert(crypt_volume_key_length(vk) == hdr->keyBytes);
+	AFEKSize = AF_split_sectors(crypt_volume_key_length(vk), hdr->keyblock[keyIndex].stripes) * SECTOR_SIZE;
 	AfKey = crypt_safe_alloc(AFEKSize);
 	if (!AfKey) {
 		r = -ENOMEM;
@@ -930,7 +932,8 @@ int LUKS_set_key(unsigned int keyIndex,
 
 	log_dbg(ctx, "Using hash %s for AF in key slot %d, %d stripes",
 		hdr->hashSpec, keyIndex, hdr->keyblock[keyIndex].stripes);
-	r = AF_split(ctx, vk->key, AfKey, vk->keylength, hdr->keyblock[keyIndex].stripes, hdr->hashSpec);
+	r = AF_split(ctx, crypt_volume_key_get_key(vk), AfKey, crypt_volume_key_length(vk),
+			hdr->keyblock[keyIndex].stripes, hdr->hashSpec);
 	if (r < 0)
 		goto out;
 
@@ -968,7 +971,8 @@ int LUKS_verify_volume_key(const struct luks_phdr *hdr,
 {
 	char checkHashBuf[LUKS_DIGESTSIZE];
 
-	if (crypt_pbkdf(CRYPT_KDF_PBKDF2, hdr->hashSpec, vk->key, vk->keylength,
+	if (crypt_pbkdf(CRYPT_KDF_PBKDF2, hdr->hashSpec, crypt_volume_key_get_key(vk),
+			crypt_volume_key_length(vk),
 			hdr->mkDigestSalt, LUKS_SALTSIZE,
 			checkHashBuf, LUKS_DIGESTSIZE,
 			hdr->mkDigestIterations, 0, 0) < 0)

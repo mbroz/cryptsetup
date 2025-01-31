@@ -96,7 +96,7 @@ static int LUKS_endec_template(char *src, size_t srcLength,
 	if (r < 0) {
 		if (r != -EACCES && r != -ENOTSUP)
 			_error_hint(ctx, device_path(crypt_metadata_device(ctx)),
-				    cipher, cipher_mode, vk->keylength * 8);
+				    cipher, cipher_mode, crypt_volume_key_length(vk) * 8);
 		r = -EIO;
 		goto out;
 	}
@@ -140,7 +140,8 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 		return -EINVAL;
 
 	/* Encrypt buffer */
-	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode, vk->key, vk->keylength, false);
+	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode, crypt_volume_key_get_key(vk),
+			crypt_volume_key_length(vk), false);
 
 	if (r)
 		log_dbg(ctx, "Userspace crypto wrapper cannot use %s-%s (%d).",
@@ -153,7 +154,7 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 
 	if (r) {
 		_error_hint(ctx, device_path(device), cipher, cipher_mode,
-			    vk->keylength * 8);
+			    crypt_volume_key_length(vk) * 8);
 		return r;
 	}
 
@@ -205,7 +206,8 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 	if (MISALIGNED_512(dstLength))
 		return -EINVAL;
 
-	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode, vk->key, vk->keylength, false);
+	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode, crypt_volume_key_get_key(vk),
+			crypt_volume_key_length(vk), false);
 
 	if (r)
 		log_dbg(ctx, "Userspace crypto wrapper cannot use %s-%s (%d).",
@@ -218,7 +220,7 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 
 	if (r) {
 		_error_hint(ctx, device_path(device), cipher, cipher_mode,
-			    vk->keylength * 8);
+			   crypt_volume_key_length(vk) * 8);
 		return r;
 	}
 

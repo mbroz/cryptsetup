@@ -999,7 +999,7 @@ static int TCRYPT_status_one(struct crypt_device *cd, const char *name,
 			*c = '\0';
 		strcat(cipher, "-");
 		strncat(cipher, tgt->u.crypt.cipher, MAX_CIPHER_LEN);
-		*key_size += tgt->u.crypt.vk->keylength;
+		*key_size += crypt_volume_key_length(tgt->u.crypt.vk);
 		tcrypt_hdr->d.mk_offset = tgt->u.crypt.offset * SECTOR_SIZE;
 		device_free(cd, *device);
 		MOVE_REF(*device, tgt->data_device);
@@ -1036,7 +1036,7 @@ int TCRYPT_init_by_name(struct crypt_device *cd, const char *name,
 	mode[MAX_CIPHER_LEN] = '\0';
 	strncpy(mode, ++tmp, MAX_CIPHER_LEN);
 
-	key_size = tgt->u.crypt.vk->keylength;
+	key_size = crypt_volume_key_length(tgt->u.crypt.vk);
 	r = TCRYPT_status_one(cd, name, uuid, 1, &key_size,
 			      cipher, tcrypt_hdr, device);
 	if (!r)

@@ -620,7 +620,7 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 		if (!h)
 			return -EINVAL;
 
-		r = h->alloc(cd, keyslot, vk->keylength, params);
+		r = h->alloc(cd, keyslot, crypt_volume_key_length(vk), params);
 		if (r)
 			return r;
 	} else {
@@ -644,7 +644,7 @@ int LUKS2_keyslot_store(struct crypt_device *cd,
 		return -EINVAL;
 
 	return h->store(cd, keyslot, password, password_len,
-			vk->key, vk->keylength);
+			crypt_volume_key_get_key(vk), crypt_volume_key_length(vk));
 }
 
 int LUKS2_keyslot_wipe(struct crypt_device *cd,
