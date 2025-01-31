@@ -240,7 +240,7 @@ static size_t reenc_keyslot_serialize(struct luks2_hdr *hdr, uint8_t *buffer)
 	return srs(j, buffer);
 }
 
-static size_t blob_serialize(void *blob, size_t length, uint8_t *buffer)
+static size_t blob_serialize(const void *blob, size_t length, uint8_t *buffer)
 {
 	if (buffer)
 		crypt_safe_memcpy(buffer, blob, length);
