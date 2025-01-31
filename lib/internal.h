@@ -69,9 +69,13 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key);
 struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t keylength,
 					     key_quality_info quality);
 void crypt_free_volume_key(struct volume_key *vk);
+const char *crypt_volume_key_get_key(const struct volume_key *vk);
+size_t crypt_volume_key_length(const struct volume_key *vk);
 int crypt_volume_key_set_description(struct volume_key *key,
 				     const char *key_description, key_type_t keyring_key_type);
 int crypt_volume_key_set_description_by_name(struct volume_key *vk, const char *key_name);
+key_type_t crypt_volume_key_kernel_key_type(const struct volume_key *vk);
+const char *crypt_volume_key_description(const struct volume_key *vk);
 void crypt_volume_key_set_id(struct volume_key *vk, int id);
 int crypt_volume_key_get_id(const struct volume_key *vk);
 void crypt_volume_key_add_next(struct volume_key **vks, struct volume_key *vk);

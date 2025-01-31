@@ -39,6 +39,20 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 	return vk;
 }
 
+const char *crypt_volume_key_get_key(const struct volume_key *vk)
+{
+	assert(vk);
+
+	return (const char *)vk->key;
+}
+
+size_t crypt_volume_key_length(const struct volume_key *vk)
+{
+	assert(vk);
+
+	return vk->keylength;
+}
+
 int crypt_volume_key_set_description(struct volume_key *vk,
 				     const char *key_description, key_type_t keyring_key_type)
 {
@@ -63,6 +77,21 @@ int crypt_volume_key_set_description_by_name(struct volume_key *vk, const char *
 		return -EINVAL;
 
 	return crypt_volume_key_set_description(vk, key_description, keyring_key_type);
+}
+
+const char *crypt_volume_key_description(const struct volume_key *vk)
+{
+	assert(vk);
+
+	return vk->key_description;
+}
+
+
+key_type_t crypt_volume_key_kernel_key_type(const struct volume_key *vk)
+{
+	assert(vk);
+
+	return vk->keyring_key_type;
 }
 
 void crypt_volume_key_set_id(struct volume_key *vk, int id)
