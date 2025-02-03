@@ -107,3 +107,15 @@ void *crypt_safe_realloc(void *data, size_t size)
 	crypt_safe_free(data);
 	return new_data;
 }
+
+size_t crypt_safe_alloc_size(const void *data)
+{
+	const void *p;
+
+	if (!data)
+		return 0;
+
+	p = (const char *)data - OVERHEAD;
+
+	return ((const struct safe_allocation *)p)->size;
+}

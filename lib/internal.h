@@ -281,4 +281,6 @@ static inline bool uint64_mult_overflow(uint64_t *u, uint64_t b, size_t size)
 #define KEY_EXTERNAL_VERIFICATION -1
 #define KEY_VERIFIED 0
 
+size_t crypt_safe_alloc_size(const void *data);
+
 #endif /* INTERNAL_H */
