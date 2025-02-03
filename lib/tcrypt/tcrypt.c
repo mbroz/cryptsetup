@@ -737,6 +737,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	enum devcheck device_check;
 	uint64_t offset, iv_offset;
 	struct volume_key *vk = NULL;
+	void *key = NULL;
 	struct device  *ptr_dev = crypt_data_device(cd), *device = NULL, *part_device = NULL;
 	struct crypt_dm_active_device dmd = {
 		.flags = flags
@@ -865,8 +866,16 @@ int TCRYPT_activate(struct crypt_device *cd,
 			dmd.flags = flags | CRYPT_ACTIVATE_PRIVATE;
 		}
 
+		key = crypt_safe_alloc(crypt_volume_key_length(vk));
+		if (!key) {
+			r = -ENOMEM;
+			break;
+		}
+
 		TCRYPT_copy_key(&algs->cipher[i-1], algs->mode,
-				vk->key, hdr->d.keys);
+				key, hdr->d.keys);
+
+		crypt_volume_key_pass_safe_alloc(vk, &key);
 
 		if (algs->chain_count != i) {
 			if (snprintf(dm_dev_name, sizeof(dm_dev_name), "%s/%s_%d", dm_get_dir(), name, i) < 0) {
@@ -910,6 +919,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	}
 
 out:
+	crypt_safe_free(key);
 	crypt_free_volume_key(vk);
 	device_free(cd, device);
 	device_free(cd, part_device);
@@ -1107,6 +1117,7 @@ int TCRYPT_get_volume_key(struct crypt_device *cd,
 {
 	const struct tcrypt_algs *algs;
 	unsigned int i, key_index;
+	void *key = NULL;
 
 	if (!hdr->d.version) {
 		log_err(cd, _("This function is not supported without TCRYPT header load."));
@@ -1117,14 +1128,20 @@ int TCRYPT_get_volume_key(struct crypt_device *cd,
 	if (!algs)
 		return -EINVAL;
 
-	*vk = crypt_alloc_volume_key(params->key_size, NULL);
-	if (!*vk)
+	key = crypt_safe_alloc(params->key_size);
+	if (!key)
 		return -ENOMEM;
 
 	for (i = 0, key_index = 0; i < algs->chain_count; i++) {
 		TCRYPT_copy_key(&algs->cipher[i], algs->mode,
-				&(*vk)->key[key_index], hdr->d.keys);
+				&((char *)key)[key_index], hdr->d.keys);
 		key_index += algs->cipher[i].key_size;
+	}
+
+	*vk = crypt_alloc_volume_key_by_safe_alloc(&key);
+	if (!*vk) {
+		crypt_safe_free(key);
+		return -ENOMEM;
 	}
 
 	return 0;

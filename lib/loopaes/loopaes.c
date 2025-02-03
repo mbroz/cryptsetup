@@ -69,6 +69,7 @@ static int hash_keys(struct crypt_device *cd,
 	char tweak, *key_ptr;
 	unsigned int i;
 	int r = 0;
+	void *key = NULL;
 
 	hash_name = hash_override ?: get_hash(key_len_output);
 	tweak = get_tweak(keys_count);
@@ -79,24 +80,30 @@ static int hash_keys(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	*vk = crypt_alloc_volume_key((size_t)key_len_output * keys_count, NULL);
-	if (!*vk)
+	key = crypt_safe_alloc((size_t)key_len_output * keys_count);
+	if (!key)
 		return -ENOMEM;
 
 	for (i = 0; i < keys_count; i++) {
-		key_ptr = &(*vk)->key[i * key_len_output];
+		key_ptr = &((char *)key)[i * key_len_output];
 		r = hash_key(input_keys[i], key_len_input, key_ptr,
 			     key_len_output, hash_name);
 		if (r < 0)
-			break;
+			goto err;
 
 		key_ptr[0] ^= tweak;
 	}
 
-	if (r < 0 && *vk) {
-		crypt_free_volume_key(*vk);
-		*vk = NULL;
+	*vk = crypt_alloc_volume_key_by_safe_alloc(&key);
+	if (!*vk) {
+		r = -ENOMEM;
+		goto err;
 	}
+
+	return 0;
+err:
+	crypt_safe_free(key);
+	*vk = NULL;
 	return r;
 }
 

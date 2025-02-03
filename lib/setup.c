@@ -289,16 +289,17 @@ static int process_key(struct crypt_device *cd, const char *hash_name,
 		       struct volume_key **vk)
 {
 	int r;
+	void *key = NULL;
 
 	if (!key_size)
 		return -EINVAL;
 
-	*vk = crypt_alloc_volume_key(key_size, NULL);
-	if (!*vk)
-		return -ENOMEM;
-
 	if (hash_name) {
-		r = crypt_plain_hash(cd, hash_name, (*vk)->key, key_size, pass, passLen);
+		key = crypt_safe_alloc(key_size);
+		if (!key)
+			return -ENOMEM;
+
+		r = crypt_plain_hash(cd, hash_name, key, key_size, pass, passLen);
 		if (r < 0) {
 			if (r == -ENOENT)
 				log_err(cd, _("Hash algorithm %s not supported."),
@@ -306,17 +307,27 @@ static int process_key(struct crypt_device *cd, const char *hash_name,
 			else
 				log_err(cd, _("Key processing error (using hash %s)."),
 					hash_name);
-			crypt_free_volume_key(*vk);
-			*vk = NULL;
+			crypt_safe_free(key);
 			return -EINVAL;
 		}
-	} else if (passLen > key_size) {
-		crypt_safe_memcpy((*vk)->key, pass, key_size);
+		*vk = crypt_alloc_volume_key_by_safe_alloc(&key);
+	} else if (passLen >= key_size) {
+		*vk = crypt_alloc_volume_key(key_size, pass);
 	} else {
-		crypt_safe_memcpy((*vk)->key, pass, passLen);
+		key = crypt_safe_alloc(key_size);
+		if (!key)
+			return -ENOMEM;
+
+		crypt_safe_memcpy(key, pass, passLen);
+
+		*vk = crypt_alloc_volume_key_by_safe_alloc(&key);
 	}
 
-	return 0;
+	r = *vk ? 0 : -ENOMEM;
+
+	crypt_safe_free(key);
+
+	return r;
 }
 
 static int isPLAIN(const char *type)

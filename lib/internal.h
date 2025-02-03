@@ -56,7 +56,7 @@ struct volume_key {
 	key_type_t keyring_key_type; /* kernel keyring key type */
 	bool uploaded; /* uploaded to keyring, can drop it */
 	struct volume_key *next;
-	char key[];
+	char *key;
 };
 
 typedef enum {
@@ -66,6 +66,7 @@ typedef enum {
 } key_quality_info;
 
 struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key);
+struct volume_key *crypt_alloc_volume_key_by_safe_alloc(void **safe_alloc);
 struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t keylength,
 					     key_quality_info quality);
 void crypt_free_volume_key(struct volume_key *vk);
@@ -81,6 +82,7 @@ int crypt_volume_key_get_id(const struct volume_key *vk);
 void crypt_volume_key_add_next(struct volume_key **vks, struct volume_key *vk);
 struct volume_key *crypt_volume_key_next(struct volume_key *vk);
 struct volume_key *crypt_volume_key_by_id(struct volume_key *vk, int id);
+void crypt_volume_key_pass_safe_alloc(struct volume_key *vk, void **safe_alloc);
 
 struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd);
 int init_pbkdf_type(struct crypt_device *cd,

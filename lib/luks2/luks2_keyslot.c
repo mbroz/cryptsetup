@@ -339,31 +339,43 @@ static int _open_and_verify(struct crypt_device *cd,
 	int keyslot,
 	const char *password,
 	size_t password_len,
-	struct volume_key **vk)
+	struct volume_key **r_vk)
 {
 	int r, key_size = LUKS2_get_keyslot_stored_key_size(hdr, keyslot);
+	struct volume_key *vk = NULL;
+	void *key = NULL;
 
 	if (key_size < 0)
 		return -EINVAL;
 
-	*vk = crypt_alloc_volume_key(key_size, NULL);
-	if (!*vk)
+	key = crypt_safe_alloc(key_size);
+	if (!key)
 		return -ENOMEM;
 
-	r = h->open(cd, keyslot, password, password_len, (*vk)->key, (*vk)->keylength);
-	if (r < 0)
-		log_dbg(cd, "Keyslot %d (%s) open failed with %d.", keyslot, h->name, r);
-	else
-		r = LUKS2_digest_verify(cd, hdr, *vk, keyslot);
-
+	r = h->open(cd, keyslot, password, password_len, key, key_size);
 	if (r < 0) {
-		crypt_free_volume_key(*vk);
-		*vk = NULL;
+		log_dbg(cd, "Keyslot %d (%s) open failed with %d.", keyslot, h->name, r);
+		goto err;
 	}
 
-	crypt_volume_key_set_id(*vk, r);
+	vk = crypt_alloc_volume_key_by_safe_alloc(&key);
+	if (!vk) {
+		r = -ENOMEM;
+		goto err;
+	}
 
-	return r < 0 ? r : keyslot;
+	r = LUKS2_digest_verify(cd, hdr, vk, keyslot);
+	if (r < 0)
+		goto err;
+
+	crypt_volume_key_set_id(vk, r);
+	*r_vk = vk;
+	return keyslot;
+err:
+	crypt_safe_free(key);
+	crypt_free_volume_key(vk);
+
+	return r;
 }
 
 static int LUKS2_open_and_verify(struct crypt_device *cd,

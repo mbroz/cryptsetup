@@ -596,7 +596,7 @@ static char *get_dm_crypt_params(const struct dm_target *tgt, uint32_t flags)
 	if (crypt_is_cipher_null(cipher_dm))
 		null_cipher = 1;
 
-	if (null_cipher)
+	if (null_cipher || crypt_volume_key_length(tgt->u.crypt.vk) == 0)
 		hexkey = crypt_bytes_to_hex(0, NULL);
 	else if (flags & CRYPT_ACTIVATE_KEYRING_KEY) {
 		if (!crypt_volume_key_description(tgt->u.crypt.vk) ||
@@ -2004,6 +2004,7 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 	struct device *data_device = NULL;
 	char *cipher = NULL, *integrity = NULL;
 	struct volume_key *vk = NULL;
+	void *key = NULL;
 
 	tgt->type = DM_CRYPT;
 	tgt->direction = TARGET_QUERY;
@@ -2138,15 +2139,21 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 				if (r < 0)
 					goto err;
 			} else if (key_size) {
+				key = crypt_safe_alloc(key_size);
+				if (!key) {
+					r = -ENOMEM;
+					goto err;
+				}
 				buffer[2] = '\0';
 				for(i = 0; i < crypt_volume_key_length(vk); i++) {
 					crypt_safe_memcpy(buffer, &key_[i * 2], 2);
-					vk->key[i] = strtoul(buffer, &endp, 16);
+					*((char *)key + i) = strtoul(buffer, &endp, 16);
 					if (endp != &buffer[2]) {
 						r = -EINVAL;
 						goto err;
 					}
 				}
+				crypt_volume_key_pass_safe_alloc(vk, &key);
 			}
 		}
 	}
@@ -2165,6 +2172,7 @@ err:
 	free(cipher);
 	free(integrity);
 	device_free(cd, data_device);
+	crypt_safe_free(key);
 	crypt_free_volume_key(vk);
 	return r;
 }
@@ -3097,9 +3105,12 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	if (crypt_volume_key_description(vk)) {
 		r = snprintf(msg, msg_size, "key set :%zu:logon:%s", crypt_volume_key_length(vk),
 			     crypt_volume_key_description(vk));
-	} else  {
-		key = crypt_bytes_to_hex(crypt_volume_key_length(vk),
-					 crypt_volume_key_get_key(vk));
+	} else {
+		if (!crypt_volume_key_length(vk))
+			key = crypt_bytes_to_hex(0, NULL);
+		else
+			key = crypt_bytes_to_hex(crypt_volume_key_length(vk),
+						 crypt_volume_key_get_key(vk));
 		if (!key) {
 			r = -ENOMEM;
 			goto out;

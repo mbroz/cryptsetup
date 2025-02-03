@@ -193,7 +193,6 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 	const char *password, size_t passwordLen,
 	const char *volume_key, size_t volume_key_len)
 {
-	struct volume_key *derived_key;
 	char *salt = NULL, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	char *AfKey = NULL;
 	const char *af_hash = NULL;
@@ -202,6 +201,8 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 	uint64_t area_offset;
 	struct crypt_pbkdf_type pbkdf;
 	int r;
+	struct volume_key *derived_vk = NULL;
+	void *derived_key = NULL;
 
 	if (!json_object_object_get_ex(jobj_keyslot, "kdf", &jobj_kdf) ||
 	    !json_object_object_get_ex(jobj_keyslot, "af", &jobj_af) ||
@@ -239,7 +240,7 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 	/*
 	 * Allocate derived key storage.
 	 */
-	derived_key = crypt_alloc_volume_key(keyslot_key_len, NULL);
+	derived_key = crypt_safe_alloc(keyslot_key_len);
 	if (!derived_key) {
 		free(salt);
 		return -ENOMEM;
@@ -250,7 +251,7 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 	log_dbg(cd, "Running keyslot key derivation.");
 	r = crypt_pbkdf(pbkdf.type, pbkdf.hash, password, passwordLen,
 			salt, LUKS_SALTSIZE,
-			derived_key->key, derived_key->keylength,
+			derived_key, keyslot_key_len,
 			pbkdf.iterations, pbkdf.max_memory_kb,
 			pbkdf.parallel_threads);
 	free(salt);
@@ -260,16 +261,15 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 			log_err(cd, _("PBKDF2 iteration value overflow."));
 		if (r == -ENOMEM)
 			log_err(cd, _("Not enough memory for keyslot key derivation."));
-		crypt_free_volume_key(derived_key);
-		return r;
+		goto out;
 	}
 
 	// FIXME: verity key_size to AFEKSize
 	AFEKSize = AF_split_sectors(volume_key_len, LUKS_STRIPES) * SECTOR_SIZE;
 	AfKey = crypt_safe_alloc(AFEKSize);
 	if (!AfKey) {
-		crypt_free_volume_key(derived_key);
-		return -ENOMEM;
+		r = -ENOMEM;
+		goto out;
 	}
 
 	r = crypt_hash_size(af_hash);
@@ -278,15 +278,23 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 	else
 		r = AF_split(cd, volume_key, AfKey, volume_key_len, LUKS_STRIPES, af_hash);
 
-	if (r == 0) {
-		log_dbg(cd, "Updating keyslot area [0x%04" PRIx64 "].", area_offset);
-		/* FIXME: sector_offset should be size_t, fix LUKS_encrypt... accordingly */
-		r = luks2_encrypt_to_storage(AfKey, AFEKSize, cipher, cipher_mode,
-				    derived_key, (unsigned)(area_offset / SECTOR_SIZE), cd);
+	if (r < 0)
+		goto out;
+
+	derived_vk = crypt_alloc_volume_key_by_safe_alloc(&derived_key);
+	if (!derived_vk) {
+		r = -ENOMEM;
+		goto out;
 	}
 
+	log_dbg(cd, "Updating keyslot area [0x%04" PRIx64 "].", area_offset);
+	/* FIXME: sector_offset should be size_t, fix LUKS_encrypt... accordingly */
+	r = luks2_encrypt_to_storage(AfKey, AFEKSize, cipher, cipher_mode,
+			    derived_vk, (unsigned)(area_offset / SECTOR_SIZE), cd);
+out:
 	crypt_safe_free(AfKey);
-	crypt_free_volume_key(derived_key);
+	crypt_safe_free(derived_key);
+	crypt_free_volume_key(derived_vk);
 	if (r < 0)
 		return r;
 
@@ -298,7 +306,6 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	const char *password, size_t passwordLen,
 	char *volume_key, size_t volume_key_len)
 {
-	struct volume_key *derived_key = NULL;
 	struct crypt_pbkdf_type pbkdf, *cd_pbkdf;
 	char *AfKey = NULL;
 	size_t AFEKSize;
@@ -309,6 +316,8 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	size_t keyslot_key_len;
 	bool try_serialize_lock = false;
 	int r;
+	struct volume_key *derived_vk = NULL;
+	void *derived_key = NULL;
 
 	if (!json_object_object_get_ex(jobj_keyslot, "af", &jobj_af) ||
 	    !json_object_object_get_ex(jobj_keyslot, "area", &jobj_area))
@@ -339,7 +348,7 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	/*
 	 * Allocate derived key storage space.
 	 */
-	derived_key = crypt_alloc_volume_key(keyslot_key_len, NULL);
+	derived_key = crypt_safe_alloc(keyslot_key_len);
 	if (!derived_key) {
 		r = -ENOMEM;
 		goto out;
@@ -376,19 +385,26 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	log_dbg(cd, "Running keyslot key derivation.");
 	r = crypt_pbkdf(pbkdf.type, pbkdf.hash, password, passwordLen,
 			salt, LUKS_SALTSIZE,
-			derived_key->key, derived_key->keylength,
+			derived_key, keyslot_key_len,
 			pbkdf.iterations, pbkdf.max_memory_kb,
 			pbkdf.parallel_threads);
 
 	if (try_serialize_lock)
 		crypt_serialize_unlock(cd);
 
-	if (r == 0) {
-		log_dbg(cd, "Reading keyslot area [0x%04" PRIx64 "].", area_offset);
-		/* FIXME: sector_offset should be size_t, fix LUKS_decrypt... accordingly */
-		r = luks2_decrypt_from_storage(AfKey, AFEKSize, cipher, cipher_mode,
-				      derived_key, (unsigned)(area_offset / SECTOR_SIZE), cd);
+	if (r < 0)
+		goto out;
+
+	derived_vk = crypt_alloc_volume_key_by_safe_alloc(&derived_key);
+	if (!derived_vk) {
+		r = -ENOMEM;
+		goto out;
 	}
+
+	log_dbg(cd, "Reading keyslot area [0x%04" PRIx64 "].", area_offset);
+	/* FIXME: sector_offset should be size_t, fix LUKS_decrypt... accordingly */
+	r = luks2_decrypt_from_storage(AfKey, AFEKSize, cipher, cipher_mode,
+			      derived_vk, (unsigned)(area_offset / SECTOR_SIZE), cd);
 
 	if (r == 0) {
 		r = crypt_hash_size(af_hash);
@@ -399,8 +415,9 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	}
 out:
 	free(salt);
-	crypt_free_volume_key(derived_key);
+	crypt_free_volume_key(derived_vk);
 	crypt_safe_free(AfKey);
+	crypt_safe_free(derived_key);
 
 	return r;
 }
