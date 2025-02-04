@@ -80,6 +80,10 @@ bool crypt_volume_key_is_set(const struct volume_key *vk);
 bool crypt_volume_key_is_uploaded(const struct volume_key *vk);
 void crypt_volume_key_set_uploaded(struct volume_key *vk);
 
+bool crypt_volume_key_upload_kernel_key(struct volume_key *vk);
+void crypt_volume_key_drop_uploaded_kernel_key(struct crypt_device *cd, struct volume_key *vk);
+void crypt_volume_key_drop_kernel_key(struct crypt_device *cd, struct volume_key *vk);
+
 struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd);
 int init_pbkdf_type(struct crypt_device *cd,
 		    const struct crypt_pbkdf_type *pbkdf,
