@@ -757,7 +757,7 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 		vk_p = vmk_p->vk;
 		while (vk_p) {
 			log_std(cd, "\tKey data size:\t%zu [bytes]\n", vk_p->keylength);
-			vk_p = vk_p->next;
+			vk_p = crypt_volume_key_next(vk_p);
 		}
 		vmk_p = vmk_p->next;
 		next_id++;
