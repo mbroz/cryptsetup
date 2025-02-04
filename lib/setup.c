@@ -4221,8 +4221,6 @@ static key_serial_t crypt_single_volume_key_load_in_user_keyring(struct crypt_de
 	kid = keyring_add_key_to_custom_keyring(cd->keyring_key_type, user_key_name, vk->key, vk->keylength, cd->keyring_to_link_vk);
 	if (kid <= 0)
 		log_dbg(cd, "The keyring_link_key_to_keyring function failed (error %d).", errno);
-	else
-		vk->uploaded = true;
 
 	return kid;
 }
