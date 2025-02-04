@@ -7468,8 +7468,6 @@ int crypt_volume_key_keyring(struct crypt_device *cd __attribute__((unused)), in
 /* internal only */
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
 {
-	key_serial_t kid;
-
 	if (!vk || !cd)
 		return -EINVAL;
 
@@ -7481,18 +7479,14 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 	log_dbg(cd, "Loading key (type logon, name %s) in thread keyring.",
 		crypt_volume_key_description(vk));
 
-	kid = keyring_add_key_in_thread_keyring(LOGON_KEY, crypt_volume_key_description(vk),
-						crypt_volume_key_get_key(vk),
-						crypt_volume_key_length(vk));
-	if (kid < 0) {
+	if (crypt_volume_key_upload_kernel_key(vk)) {
+		crypt_set_key_in_keyring(cd, 1);
+		return 0;
+	} else {
 		log_dbg(cd, "keyring_add_key_in_thread_keyring failed (error %d)", errno);
 		log_err(cd, _("Failed to load key in kernel keyring."));
-	} else {
-		crypt_set_key_in_keyring(cd, 1);
-		crypt_volume_key_set_uploaded(vk);
+		return -EINVAL;
 	}
-
-	return kid < 0 ? -EINVAL : 0;
 }
 
 /* internal only */
@@ -7683,8 +7677,7 @@ void crypt_drop_uploaded_keyring_key(struct crypt_device *cd, struct volume_key 
 	struct volume_key *vk = vks;
 
 	while (vk) {
-		if (crypt_volume_key_is_uploaded(vk))
-			crypt_unlink_key_by_description_from_thread_keyring(cd, crypt_volume_key_description(vk), LOGON_KEY);
+		crypt_volume_key_drop_uploaded_kernel_key(cd, vk);
 		vk = crypt_volume_key_next(vk);
 	}
 }
