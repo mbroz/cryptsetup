@@ -13,6 +13,16 @@
 
 #include "internal.h"
 
+struct volume_key {
+	int id;
+	size_t keylength; /* length in bytes */
+	const char *key_description; /* keyring key name/description */
+	key_type_t keyring_key_type; /* kernel keyring key type */
+	bool uploaded; /* uploaded to keyring, can drop it */
+	struct volume_key *next;
+	char *key;
+};
+
 struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 {
 	struct volume_key *vk;

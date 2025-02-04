@@ -48,16 +48,7 @@
 
 struct crypt_device;
 struct luks2_reencrypt;
-
-struct volume_key {
-	int id;
-	size_t keylength; /* length in bytes */
-	const char *key_description; /* keyring key name/description */
-	key_type_t keyring_key_type; /* kernel keyring key type */
-	bool uploaded; /* uploaded to keyring, can drop it */
-	struct volume_key *next;
-	char *key;
-};
+struct volume_key;
 
 typedef enum {
 	KEY_QUALITY_KEY = 0,
