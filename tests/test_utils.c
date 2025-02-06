@@ -555,6 +555,12 @@ static void t_dm_set_crypt_compat(const char *dm_version, unsigned crypt_maj,
 
 	if (t_dm_satisfies_version(1, 22, 0, crypt_maj, crypt_min, crypt_patch))
 		t_dm_crypt_flags |= T_DM_CRYPT_NO_WORKQUEUE_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 26, 0, crypt_maj, crypt_min, crypt_patch))
+		t_dm_crypt_flags |= T_DM_CRYPT_HIGH_PRIORITY_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 28, 0, crypt_maj, crypt_min, crypt_patch))
+		t_dm_crypt_flags |= T_DM_CRYPT_INTEGRITY_KEY_SIZE_OPT_SUPPORTED;
 }
 
 static void t_dm_set_verity_compat(const char *dm_version __attribute__((unused)),

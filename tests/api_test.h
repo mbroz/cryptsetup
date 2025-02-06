@@ -131,6 +131,8 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 #define T_DM_INTEGRITY_FIX_HMAC_SUPPORTED (1 << 26) /* hmac covers also superblock */
 #define T_DM_INTEGRITY_RESET_RECALC_SUPPORTED (1 << 27) /* dm-integrity automatic recalculation supported */
 #define T_DM_VERITY_TASKLETS_SUPPORTED (1 << 28) /* dm-verity tasklets supported */
+#define T_DM_CRYPT_HIGH_PRIORITY_SUPPORTED (1 << 29) /* dm-crypt high priority workqueue flag supported  */
+#define T_DM_CRYPT_INTEGRITY_KEY_SIZE_OPT_SUPPORTED (1 << 30) /* dm-crypt support for integrity_key_size option */
 
 /* loop helpers */
 int loop_device(const char *loop);
