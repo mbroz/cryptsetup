@@ -48,6 +48,16 @@ uint64_t crypt_jobj_get_uint64(json_object *jobj);
 uint32_t crypt_jobj_get_uint32(json_object *jobj);
 json_object *crypt_jobj_new_uint64(uint64_t value);
 
+/*
+ * Generate json format string representation libcryptsetup uses
+ * to store json metadata on disk.
+ */
+static inline const char *crypt_jobj_to_string_on_disk(json_object *jobj)
+{
+	return json_object_to_json_string_ext(jobj,
+			JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
+}
+
 int json_object_object_add_by_uint(json_object *jobj, unsigned key, json_object *jobj_val);
 int json_object_object_add_by_uint_by_ref(json_object *jobj, unsigned key, json_object **jobj_val_ref);
 void json_object_object_del_by_uint(json_object *jobj, unsigned key);
