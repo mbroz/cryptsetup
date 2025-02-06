@@ -989,7 +989,7 @@ out:
 	return r;
 }
 
-static int _dm_simple(int task, const char *name, uint32_t dmflags)
+static int _dm_simple(int task, const char *name, uint64_t dmflags)
 {
 	int r = 0;
 	struct dm_task *dmt;
@@ -1014,7 +1014,7 @@ out:
 	return r;
 }
 
-static int _dm_resume_device(const char *name, uint32_t flags);
+static int _dm_resume_device(const char *name, uint64_t dmflags);
 
 static int _error_device(const char *name, size_t size)
 {
@@ -1450,7 +1450,7 @@ out:
 	return r;
 }
 
-static int _dm_resume_device(const char *name, uint32_t dmflags)
+static int _dm_resume_device(const char *name, uint64_t dmflags)
 {
 	struct dm_task *dmt;
 	int r = -EINVAL;
@@ -1632,7 +1632,7 @@ int dm_targets_allocate(struct dm_target *first, unsigned count)
 	return 0;
 }
 
-static int check_retry(struct crypt_device *cd, uint32_t *dmd_flags, uint32_t dmt_flags)
+static int check_retry(struct crypt_device *cd, uint32_t *dmd_flags, uint64_t dmt_flags)
 {
 	int ret = 0;
 
@@ -1803,7 +1803,7 @@ out:
 }
 
 int dm_reload_device(struct crypt_device *cd, const char *name,
-		     struct crypt_dm_active_device *dmd, uint32_t dmflags, unsigned resume)
+		     struct crypt_dm_active_device *dmd, uint64_t dmflags, unsigned resume)
 {
 	int r;
 	uint64_t dmt_flags;
@@ -1992,7 +1992,7 @@ int dm_status_integrity_failures(struct crypt_device *cd, const char *name, uint
 }
 
 /* FIXME use hex wrapper, user val wrappers for line parsing */
-static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
+static int _dm_target_query_crypt(struct crypt_device *cd, uint64_t get_flags,
 				  char *params, struct dm_target *tgt,
 				  uint32_t *act_flags)
 {
@@ -2178,7 +2178,7 @@ err:
 }
 
 static int _dm_target_query_verity(struct crypt_device *cd,
-				   uint32_t get_flags,
+				   uint64_t get_flags,
 			           char *params,
 			           struct dm_target *tgt,
 				   uint32_t *act_flags)
@@ -2437,7 +2437,7 @@ err:
 }
 
 static int _dm_target_query_integrity(struct crypt_device *cd,
-			     uint32_t get_flags,
+			     uint64_t get_flags,
 			     char *params,
 			     struct dm_target *tgt,
 			     uint32_t *act_flags)
@@ -2686,7 +2686,7 @@ err:
 }
 
 static int _dm_target_query_linear(struct crypt_device *cd, struct dm_target *tgt,
-				   uint32_t get_flags, char *params)
+				   uint64_t get_flags, char *params)
 {
 	uint64_t val64;
 	char *rdevice, *arg;
@@ -2748,7 +2748,7 @@ static int _dm_target_query_zero(struct dm_target *tgt)
  */
 static int dm_target_query(struct crypt_device *cd, struct dm_target *tgt, const uint64_t *start,
 		    const uint64_t *length, const char *target_type,
-		    char *params, uint32_t get_flags, uint32_t *act_flags)
+		    char *params, uint64_t get_flags, uint32_t *act_flags)
 {
 	int r = -ENOTSUP;
 
@@ -2774,7 +2774,7 @@ static int dm_target_query(struct crypt_device *cd, struct dm_target *tgt, const
 }
 
 static int _dm_query_device(struct crypt_device *cd, const char *name,
-		    uint32_t get_flags, struct crypt_dm_active_device *dmd)
+		    uint64_t get_flags, struct crypt_dm_active_device *dmd)
 {
 	struct dm_target *t;
 	struct dm_task *dmt;
@@ -2875,7 +2875,7 @@ out:
 }
 
 int dm_query_device(struct crypt_device *cd, const char *name,
-		    uint32_t get_flags, struct crypt_dm_active_device *dmd)
+		    uint64_t get_flags, struct crypt_dm_active_device *dmd)
 {
 	int r;
 
@@ -3027,7 +3027,7 @@ out:
 	return r;
 }
 
-int dm_suspend_device(struct crypt_device *cd, const char *name, uint32_t dmflags)
+int dm_suspend_device(struct crypt_device *cd, const char *name, uint64_t dmflags)
 {
 	uint64_t dmt_flags;
 	int r = -ENOTSUP;
@@ -3061,7 +3061,7 @@ out:
 	return r;
 }
 
-int dm_resume_device(struct crypt_device *cd, const char *name, uint32_t dmflags)
+int dm_resume_device(struct crypt_device *cd, const char *name, uint64_t dmflags)
 {
 	int r;
 

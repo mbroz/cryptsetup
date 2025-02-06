@@ -22,12 +22,12 @@ struct device;
 struct crypt_params_integrity;
 
 /* Device mapper internal flags */
-#define DM_RESUME_PRIVATE      (1 << 4) /* CRYPT_ACTIVATE_PRIVATE */
-#define DM_SUSPEND_SKIP_LOCKFS (1 << 5)
-#define DM_SUSPEND_WIPE_KEY    (1 << 6)
-#define DM_SUSPEND_NOFLUSH     (1 << 7)
+#define DM_RESUME_PRIVATE (UINT64_C(1) << 4) /* CRYPT_ACTIVATE_PRIVATE */
+#define DM_SUSPEND_SKIP_LOCKFS (UINT64_C(1) << 5)
+#define DM_SUSPEND_WIPE_KEY (UINT64_C(1) << 6)
+#define DM_SUSPEND_NOFLUSH (UINT64_C(1) << 7)
 
-static inline uint32_t act2dmflags(uint32_t act_flags)
+static inline uint64_t act2dmflags(uint64_t act_flags)
 {
 	return (act_flags & DM_RESUME_PRIVATE);
 }
@@ -71,25 +71,20 @@ enum tdirection { TARGET_EMPTY = 0, TARGET_SET, TARGET_QUERY };
 
 int dm_flags(struct crypt_device *cd, dm_target_type target, uint64_t *flags);
 
-#define DM_ACTIVE_DEVICE	(1 << 0)
-#define DM_ACTIVE_UUID		(1 << 1)
-#define DM_ACTIVE_HOLDERS	(1 << 2)
-
-#define DM_ACTIVE_CRYPT_CIPHER	(1 << 3)
-#define DM_ACTIVE_CRYPT_KEYSIZE	(1 << 4)
-#define DM_ACTIVE_CRYPT_KEY	(1 << 5)
-
-#define DM_ACTIVE_VERITY_ROOT_HASH	(1 << 6)
-#define DM_ACTIVE_VERITY_HASH_DEVICE	(1 << 7)
-#define DM_ACTIVE_VERITY_PARAMS		(1 << 8)
-
-#define DM_ACTIVE_INTEGRITY_PARAMS	(1 << 9)
-
-#define DM_ACTIVE_JOURNAL_CRYPT_KEY	(1 << 10)
-#define DM_ACTIVE_JOURNAL_CRYPT_KEYSIZE	(1 << 11)
-
-#define DM_ACTIVE_JOURNAL_MAC_KEY	(1 << 12)
-#define DM_ACTIVE_JOURNAL_MAC_KEYSIZE	(1 << 13)
+#define DM_ACTIVE_DEVICE (UINT64_C(1) << 0)
+#define DM_ACTIVE_UUID (UINT64_C(1) << 1)
+#define DM_ACTIVE_HOLDERS (UINT64_C(1) << 2)
+#define DM_ACTIVE_CRYPT_CIPHER (UINT64_C(1) << 3)
+#define DM_ACTIVE_CRYPT_KEYSIZE (UINT64_C(1) << 4)
+#define DM_ACTIVE_CRYPT_KEY (UINT64_C(1) << 5)
+#define DM_ACTIVE_VERITY_ROOT_HASH (UINT64_C(1) << 6)
+#define DM_ACTIVE_VERITY_HASH_DEVICE (UINT64_C(1) << 7)
+#define DM_ACTIVE_VERITY_PARAMS (UINT64_C(1) << 8)
+#define DM_ACTIVE_INTEGRITY_PARAMS (UINT64_C(1) << 9)
+#define DM_ACTIVE_JOURNAL_CRYPT_KEY (UINT64_C(1) << 10)
+#define DM_ACTIVE_JOURNAL_CRYPT_KEYSIZE (UINT64_C(1) << 11)
+#define DM_ACTIVE_JOURNAL_MAC_KEY (UINT64_C(1) << 12)
+#define DM_ACTIVE_JOURNAL_MAC_KEYSIZE (UINT64_C(1) << 13)
 
 struct dm_target {
 	dm_target_type type;
@@ -209,15 +204,15 @@ int dm_status_suspended(struct crypt_device *cd, const char *name);
 int dm_status_verity_ok(struct crypt_device *cd, const char *name);
 int dm_status_integrity_failures(struct crypt_device *cd, const char *name, uint64_t *count);
 int dm_query_device(struct crypt_device *cd, const char *name,
-		    uint32_t get_flags, struct crypt_dm_active_device *dmd);
+		    uint64_t get_flags, struct crypt_dm_active_device *dmd);
 int dm_device_deps(struct crypt_device *cd, const char *name, const char *prefix,
 		   char **names, size_t names_length);
 int dm_create_device(struct crypt_device *cd, const char *name,
 		     const char *type, struct crypt_dm_active_device *dmd);
 int dm_reload_device(struct crypt_device *cd, const char *name,
-		     struct crypt_dm_active_device *dmd, uint32_t dmflags, unsigned resume);
-int dm_suspend_device(struct crypt_device *cd, const char *name, uint32_t dmflags);
-int dm_resume_device(struct crypt_device *cd, const char *name, uint32_t dmflags);
+		     struct crypt_dm_active_device *dmd, uint64_t dmflags, unsigned resume);
+int dm_suspend_device(struct crypt_device *cd, const char *name, uint64_t dmflags);
+int dm_resume_device(struct crypt_device *cd, const char *name, uint64_t dmflags);
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 				const struct volume_key *vk);
 int dm_error_device(struct crypt_device *cd, const char *name);
