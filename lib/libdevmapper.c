@@ -2133,7 +2133,7 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint32_t get_flags,
 				r = crypt_volume_key_set_description(vk, key_desc, key_type_by_name(keyring));
 				if (r < 0)
 					goto err;
-			} else {
+			} else if (key_size) {
 				buffer[2] = '\0';
 				for(i = 0; i < vk->keylength; i++) {
 					crypt_safe_memcpy(buffer, &key_[i * 2], 2);

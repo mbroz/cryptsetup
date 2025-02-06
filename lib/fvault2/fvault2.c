@@ -896,9 +896,8 @@ int FVAULT2_get_volume_key(
 {
 	int r = 0;
 	uint8_t family_uuid_bin[FVAULT2_UUID_BIN_SIZE];
-	struct volume_key *passphrase_key = NULL;
-	struct volume_key *kek = NULL;
 	struct crypt_hash *hash = NULL;
+	void *passphrase_key = NULL, *kek = NULL;
 
 	*vol_key = NULL;
 
@@ -909,26 +908,26 @@ int FVAULT2_get_volume_key(
 		goto out;
 	}
 
-	passphrase_key = crypt_alloc_volume_key(FVAULT2_AES_KEY_SIZE, NULL);
+	passphrase_key = crypt_safe_alloc(FVAULT2_AES_KEY_SIZE);
 	if (passphrase_key == NULL) {
 		r = -ENOMEM;
 		goto out;
 	}
 
 	r = crypt_pbkdf("pbkdf2", "sha256", passphrase, passphrase_len,
-		params->pbkdf2_salt, FVAULT2_PBKDF2_SALT_SIZE, passphrase_key->key,
+		params->pbkdf2_salt, FVAULT2_PBKDF2_SALT_SIZE, passphrase_key,
 		FVAULT2_AES_KEY_SIZE, params->pbkdf2_iters, 0, 0);
 	if (r < 0)
 		goto out;
 
-	kek = crypt_alloc_volume_key(FVAULT2_AES_KEY_SIZE, NULL);
+	kek = crypt_safe_alloc(FVAULT2_AES_KEY_SIZE);
 	if (kek == NULL) {
 		r = -ENOMEM;
 		goto out;
 	}
 
-	r = _unwrap_key(passphrase_key->key, FVAULT2_AES_KEY_SIZE, params->wrapped_kek,
-			FVAULT2_WRAPPED_KEY_SIZE, kek->key, FVAULT2_AES_KEY_SIZE);
+	r = _unwrap_key(passphrase_key, FVAULT2_AES_KEY_SIZE, params->wrapped_kek,
+			FVAULT2_WRAPPED_KEY_SIZE, kek, FVAULT2_AES_KEY_SIZE);
 	if (r < 0)
 		goto out;
 
@@ -938,7 +937,7 @@ int FVAULT2_get_volume_key(
 		goto out;
 	}
 
-	r = _unwrap_key(kek->key, FVAULT2_AES_KEY_SIZE, params->wrapped_vk,
+	r = _unwrap_key(kek, FVAULT2_AES_KEY_SIZE, params->wrapped_vk,
 		FVAULT2_WRAPPED_KEY_SIZE, (*vol_key)->key, FVAULT2_AES_KEY_SIZE);
 	if (r < 0)
 		goto out;
@@ -958,8 +957,8 @@ int FVAULT2_get_volume_key(
 	if (r < 0)
 		goto out;
 out:
-	crypt_free_volume_key(passphrase_key);
-	crypt_free_volume_key(kek);
+	crypt_safe_free(passphrase_key);
+	crypt_safe_free(kek);
 	if (r < 0) {
 		crypt_free_volume_key(*vol_key);
 		*vol_key = NULL;

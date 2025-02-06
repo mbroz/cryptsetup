@@ -1796,7 +1796,7 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 		cd->volume_key = crypt_alloc_volume_key(volume_key_size,
 						      volume_key);
 	else
-		cd->volume_key = crypt_generate_volume_key(cd, volume_key_size);
+		cd->volume_key = crypt_generate_volume_key(cd, volume_key_size, KEY_QUALITY_KEY);
 
 	if (!cd->volume_key)
 		return -ENOMEM;
@@ -2075,7 +2075,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 		cd->volume_key = crypt_alloc_volume_key(volume_key_size,
 						      volume_key);
 	else
-		cd->volume_key = crypt_generate_volume_key(cd, volume_key_size);
+		cd->volume_key = crypt_generate_volume_key(cd, volume_key_size, KEY_QUALITY_KEY);
 
 	if (!cd->volume_key)
 		return -ENOMEM;
@@ -2439,7 +2439,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	if (volume_keys)
 		cd->volume_key = crypt_alloc_volume_key(volume_keys_size, volume_keys);
 	else
-		cd->volume_key = crypt_generate_volume_key(cd, volume_keys_size);
+		cd->volume_key = crypt_generate_volume_key(cd, volume_keys_size, KEY_QUALITY_KEY);
 
 	if (!cd->volume_key) {
 		r = -ENOMEM;
@@ -3016,7 +3016,10 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 	cd->u.integrity.params.journal_crypt = journal_crypt;
 
 	if (params->integrity_key_size) {
-		ik = crypt_alloc_volume_key(params->integrity_key_size, integrity_key);
+		if (!integrity_key)
+			ik = crypt_generate_volume_key(cd, params->integrity_key_size, KEY_QUALITY_EMPTY);
+		else
+			ik = crypt_alloc_volume_key(params->integrity_key_size, integrity_key);
 		if (!ik) {
 			r = -ENOMEM;
 			goto out;
@@ -3173,7 +3176,8 @@ static int _compare_volume_keys(struct volume_key *svk, unsigned skeyring_only,
 		return crypt_backend_memeq(svk->key, tvk->key, svk->keylength);
 
 	if (svk->key_description && tvk->key_description)
-		return strcmp(svk->key_description, tvk->key_description);
+		return (svk->keyring_key_type != tvk->keyring_key_type ||
+			strcmp(svk->key_description, tvk->key_description));
 
 	return 0;
 }
@@ -4221,8 +4225,6 @@ static key_serial_t crypt_single_volume_key_load_in_user_keyring(struct crypt_de
 	kid = keyring_add_key_to_custom_keyring(cd->keyring_key_type, user_key_name, vk->key, vk->keylength, cd->keyring_to_link_vk);
 	if (kid <= 0)
 		log_dbg(cd, "The keyring_link_key_to_keyring function failed (error %d).", errno);
-	else
-		vk->uploaded = true;
 
 	return kid;
 }
@@ -7329,7 +7331,7 @@ int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
 
 	if (r == -ENOENT) {
 		if ((flags & CRYPT_VOLUME_KEY_NO_SEGMENT) && kc->type == CRYPT_KC_TYPE_KEY) {
-			if (!(vk = crypt_generate_volume_key(cd, kc->u.k.volume_key_size)))
+			if (!(vk = crypt_generate_volume_key(cd, kc->u.k.volume_key_size, KEY_QUALITY_KEY)))
 				return -ENOMEM;
 			r = 0;
 		} else if (cd->volume_key) {
