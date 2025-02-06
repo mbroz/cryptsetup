@@ -424,8 +424,7 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	/*
 	 * Generate text space-efficient JSON representation to json area.
 	 */
-	json_text = json_object_to_json_string_ext(hdr->jobj,
-			JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
+	json_text = crypt_jobj_to_string_on_disk(hdr->jobj);
 	if (!json_text || !*json_text) {
 		log_dbg(cd, "Cannot parse JSON object to text representation.");
 		free(json_area);
