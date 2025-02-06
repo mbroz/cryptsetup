@@ -198,7 +198,7 @@ int LOOPAES_activate(struct crypt_device *cd,
 		     uint32_t flags)
 {
 	int r;
-	uint32_t req_flags, dmc_flags;
+	uint64_t req_flags, dmc_flags;
 	char *cipher = NULL;
 	struct crypt_dm_active_device dmd = {
 		.flags = flags,

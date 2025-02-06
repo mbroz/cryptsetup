@@ -4170,7 +4170,7 @@ static int reencrypt_wipe_unused_device_area(struct crypt_device *cd, struct luk
 static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reencrypt *rh)
 {
 	int i, r;
-	uint32_t dmt_flags;
+	uint64_t dmt_flags;
 	bool finished = !(rh->device_size > rh->progress);
 
 	if (rh->rp.type == REENC_PROTECTION_NONE &&

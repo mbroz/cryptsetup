@@ -36,7 +36,7 @@ static bool _dm_integrity_checked = false;
 static bool _dm_zero_checked = false;
 
 static int _quiet_log = 0;
-static uint32_t _dm_flags = 0;
+static uint64_t _dm_flags = 0;
 
 static struct crypt_device *_context = NULL;
 static int _dm_use_count = 0;
@@ -364,7 +364,7 @@ out:
 	return r;
 }
 
-int dm_flags(struct crypt_device *cd, dm_target_type target, uint32_t *flags)
+int dm_flags(struct crypt_device *cd, dm_target_type target, uint64_t *flags)
 {
 	_dm_check_versions(cd, target);
 	*flags = _dm_flags;
@@ -1100,7 +1100,7 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 	int retries = (flags & CRYPT_DEACTIVATE_FORCE) ? RETRY_COUNT : 1;
 	int deferred = (flags & CRYPT_DEACTIVATE_DEFERRED) ? 1 : 0;
 	int error_target = 0;
-	uint32_t dmt_flags;
+	uint64_t dmt_flags;
 
 	if (!name)
 		return -EINVAL;
@@ -1683,7 +1683,7 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		     const char *type,
 		     struct crypt_dm_active_device *dmd)
 {
-	uint32_t dmt_flags = 0;
+	uint64_t dmt_flags = 0;
 	int r = -EINVAL;
 
 	if (!type || !dmd)
@@ -1806,7 +1806,7 @@ int dm_reload_device(struct crypt_device *cd, const char *name,
 		     struct crypt_dm_active_device *dmd, uint32_t dmflags, unsigned resume)
 {
 	int r;
-	uint32_t dmt_flags;
+	uint64_t dmt_flags;
 
 	if (!dmd)
 		return -EINVAL;
@@ -3029,7 +3029,7 @@ out:
 
 int dm_suspend_device(struct crypt_device *cd, const char *name, uint32_t dmflags)
 {
-	uint32_t dmt_flags;
+	uint64_t dmt_flags;
 	int r = -ENOTSUP;
 
 	if (dm_init_context(cd, DM_UNKNOWN))
@@ -3078,7 +3078,7 @@ int dm_resume_device(struct crypt_device *cd, const char *name, uint32_t dmflags
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 				const struct volume_key *vk)
 {
-	uint32_t dmt_flags;
+	uint64_t dmt_flags;
 	int msg_size;
 	char *msg = NULL, *key = NULL;
 	int r = -ENOTSUP;
@@ -3236,7 +3236,7 @@ int dm_integrity_target_set(struct crypt_device *cd,
 			struct volume_key *journal_crypt_key, struct volume_key *journal_mac_key,
 			const struct crypt_params_integrity *ip)
 {
-	uint32_t dmi_flags;
+	uint64_t dmi_flags;
 
 	if (!data_device)
 		return -EINVAL;

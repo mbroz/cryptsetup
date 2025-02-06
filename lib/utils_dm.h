@@ -33,43 +33,43 @@ static inline uint32_t act2dmflags(uint32_t act_flags)
 }
 
 /* Device mapper backend - kernel support flags */
-#define DM_KEY_WIPE_SUPPORTED (1 << 0)	/* key wipe message */
-#define DM_LMK_SUPPORTED      (1 << 1)	/* lmk mode */
-#define DM_SECURE_SUPPORTED   (1 << 2)	/* wipe (secure) buffer flag */
-#define DM_PLAIN64_SUPPORTED  (1 << 3)	/* plain64 IV */
-#define DM_DISCARDS_SUPPORTED (1 << 4)	/* discards/TRIM option is supported */
-#define DM_VERITY_SUPPORTED   (1 << 5)	/* dm-verity target supported */
-#define DM_TCW_SUPPORTED      (1 << 6)	/* tcw (TCRYPT CBC with whitening) */
-#define DM_SAME_CPU_CRYPT_SUPPORTED (1 << 7) /* same_cpu_crypt */
-#define DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED (1 << 8) /* submit_from_crypt_cpus */
-#define DM_VERITY_ON_CORRUPTION_SUPPORTED (1 << 9) /* ignore/restart_on_corruption, ignore_zero_block */
-#define DM_VERITY_FEC_SUPPORTED (1 << 10) /* Forward Error Correction (FEC) */
-#define DM_KERNEL_KEYRING_SUPPORTED (1 << 11) /* dm-crypt allows loading kernel keyring keys */
-#define DM_INTEGRITY_SUPPORTED (1 << 12) /* dm-integrity target supported */
-#define DM_SECTOR_SIZE_SUPPORTED (1 << 13) /* support for sector size setting in dm-crypt/dm-integrity */
-#define DM_CAPI_STRING_SUPPORTED (1 << 14) /* support for cryptoapi format cipher definition */
-#define DM_DEFERRED_SUPPORTED (1 << 15) /* deferred removal of device */
-#define DM_INTEGRITY_RECALC_SUPPORTED (1 << 16) /* dm-integrity automatic recalculation supported */
-#define DM_INTEGRITY_BITMAP_SUPPORTED (1 << 17) /* dm-integrity bitmap mode supported */
-#define DM_GET_TARGET_VERSION_SUPPORTED (1 << 18) /* dm DM_GET_TARGET version ioctl supported */
-#define DM_INTEGRITY_FIX_PADDING_SUPPORTED (1 << 19) /* supports the parameter fix_padding that fixes a bug that caused excessive padding */
-#define DM_BITLK_EBOIV_SUPPORTED (1 << 20) /* EBOIV for BITLK supported */
-#define DM_BITLK_ELEPHANT_SUPPORTED (1 << 21) /* Elephant diffuser for BITLK supported */
-#define DM_VERITY_SIGNATURE_SUPPORTED (1 << 22) /* Verity option root_hash_sig_key_desc supported */
-#define DM_INTEGRITY_DISCARDS_SUPPORTED (1 << 23) /* dm-integrity discards/TRIM option is supported */
-#define DM_INTEGRITY_RESIZE_SUPPORTED (1 << 23) /* dm-integrity resize of the integrity device supported (introduced in the same version as discards)*/
-#define DM_VERITY_PANIC_CORRUPTION_SUPPORTED (1 << 24) /* dm-verity panic on corruption  */
-#define DM_CRYPT_NO_WORKQUEUE_SUPPORTED (1 << 25) /* dm-crypt support for bypassing workqueues  */
-#define DM_INTEGRITY_FIX_HMAC_SUPPORTED (1 << 26) /* hmac covers also superblock */
-#define DM_INTEGRITY_RESET_RECALC_SUPPORTED (1 << 27) /* dm-integrity automatic recalculation supported */
-#define DM_VERITY_TASKLETS_SUPPORTED (1 << 28) /* dm-verity tasklets supported */
-#define DM_CRYPT_HIGH_PRIORITY_SUPPORTED (1 << 29) /* dm-crypt high priority workqueue flag supported  */
-#define DM_CRYPT_INTEGRITY_KEY_SIZE_OPT_SUPPORTED (1 << 30) /* dm-crypt support for integrity_key_size option */
+#define DM_KEY_WIPE_SUPPORTED (UINT64_C(1) << 0) /* key wipe message */
+#define DM_LMK_SUPPORTED (UINT64_C(1) << 1) /* lmk mode */
+#define DM_SECURE_SUPPORTED (UINT64_C(1) << 2) /* wipe (secure) buffer flag */
+#define DM_PLAIN64_SUPPORTED (UINT64_C(1) << 3) /* plain64 IV */
+#define DM_DISCARDS_SUPPORTED (UINT64_C(1) << 4) /* discards/TRIM option is supported */
+#define DM_VERITY_SUPPORTED (UINT64_C(1) << 5) /* dm-verity target supported */
+#define DM_TCW_SUPPORTED (UINT64_C(1) << 6) /* tcw (TCRYPT CBC with whitening) */
+#define DM_SAME_CPU_CRYPT_SUPPORTED (UINT64_C(1) << 7) /* same_cpu_crypt */
+#define DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED (UINT64_C(1) << 8) /* submit_from_crypt_cpus */
+#define DM_VERITY_ON_CORRUPTION_SUPPORTED (UINT64_C(1) << 9) /* ignore/restart_on_corruption, ignore_zero_block */
+#define DM_VERITY_FEC_SUPPORTED (UINT64_C(1) << 10) /* Forward Error Correction (FEC) */
+#define DM_KERNEL_KEYRING_SUPPORTED (UINT64_C(1) << 11) /* dm-crypt allows loading kernel keyring keys */
+#define DM_INTEGRITY_SUPPORTED (UINT64_C(1) << 12) /* dm-integrity target supported */
+#define DM_SECTOR_SIZE_SUPPORTED (UINT64_C(1) << 13) /* support for sector size setting in dm-crypt/dm-integrity */
+#define DM_CAPI_STRING_SUPPORTED (UINT64_C(1) << 14) /* support for cryptoapi format cipher definition */
+#define DM_DEFERRED_SUPPORTED (UINT64_C(1) << 15) /* deferred removal of device */
+#define DM_INTEGRITY_RECALC_SUPPORTED (UINT64_C(1) << 16) /* dm-integrity automatic recalculation supported */
+#define DM_INTEGRITY_BITMAP_SUPPORTED (UINT64_C(1) << 17) /* dm-integrity bitmap mode supported */
+#define DM_GET_TARGET_VERSION_SUPPORTED (UINT64_C(1) << 18) /* dm DM_GET_TARGET version ioctl supported */
+#define DM_INTEGRITY_FIX_PADDING_SUPPORTED (UINT64_C(1) << 19) /* supports the parameter fix_padding that fixes a bug that caused excessive padding */
+#define DM_BITLK_EBOIV_SUPPORTED (UINT64_C(1) << 20) /* EBOIV for BITLK supported */
+#define DM_BITLK_ELEPHANT_SUPPORTED (UINT64_C(1) << 21) /* Elephant diffuser for BITLK supported */
+#define DM_VERITY_SIGNATURE_SUPPORTED (UINT64_C(1) << 22) /* Verity option root_hash_sig_key_desc supported */
+#define DM_INTEGRITY_DISCARDS_SUPPORTED (UINT64_C(1) << 23) /* dm-integrity discards/TRIM option is supported */
+#define DM_INTEGRITY_RESIZE_SUPPORTED (UINT64_C(1) << 23) /* dm-integrity resize of the integrity device supported (introduced in the same version as discards)*/
+#define DM_VERITY_PANIC_CORRUPTION_SUPPORTED (UINT64_C(1) << 24) /* dm-verity panic on corruption  */
+#define DM_CRYPT_NO_WORKQUEUE_SUPPORTED (UINT64_C(1) << 25) /* dm-crypt support for bypassing workqueues  */
+#define DM_INTEGRITY_FIX_HMAC_SUPPORTED (UINT64_C(1) << 26) /* hmac covers also superblock */
+#define DM_INTEGRITY_RESET_RECALC_SUPPORTED (UINT64_C(1) << 27) /* dm-integrity automatic recalculation supported */
+#define DM_VERITY_TASKLETS_SUPPORTED (UINT64_C(1) << 28) /* dm-verity tasklets supported */
+#define DM_CRYPT_HIGH_PRIORITY_SUPPORTED (UINT64_C(1) << 29) /* dm-crypt high priority workqueue flag supported  */
+#define DM_CRYPT_INTEGRITY_KEY_SIZE_OPT_SUPPORTED (UINT64_C(1) << 30) /* dm-crypt support for integrity_key_size option */
 
 typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_ZERO, DM_UNKNOWN } dm_target_type;
 enum tdirection { TARGET_EMPTY = 0, TARGET_SET, TARGET_QUERY };
 
-int dm_flags(struct crypt_device *cd, dm_target_type target, uint32_t *flags);
+int dm_flags(struct crypt_device *cd, dm_target_type target, uint64_t *flags);
 
 #define DM_ACTIVE_DEVICE	(1 << 0)
 #define DM_ACTIVE_UUID		(1 << 1)

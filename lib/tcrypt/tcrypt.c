@@ -732,7 +732,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 	char *part_path;
 	unsigned int i;
 	int r;
-	uint32_t req_flags, dmc_flags;
+	uint64_t req_flags, dmc_flags;
 	const struct tcrypt_algs *algs;
 	enum devcheck device_check;
 	uint64_t offset, iv_offset;
