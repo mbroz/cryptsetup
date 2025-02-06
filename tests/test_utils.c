@@ -41,7 +41,7 @@ struct loop_config {
 
 static char last_error[256];
 static char global_log[4096];
-static uint32_t t_dm_crypt_flags = 0;
+static uint64_t t_dm_crypt_flags = 0;
 
 char *THE_LOOP_DEV = NULL;
 int _debug   = 0;
