@@ -443,12 +443,6 @@ crypt_token_info LUKS2_token_status(struct crypt_device *cd,
 	return is_builtin_candidate(tmp) ? CRYPT_TOKEN_INTERNAL_UNKNOWN : CRYPT_TOKEN_EXTERNAL_UNKNOWN;
 }
 
-static const char *token_json_to_string(json_object *jobj_token)
-{
-	return json_object_to_json_string_ext(jobj_token,
-		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
-}
-
 static int token_is_usable(struct luks2_hdr *hdr, json_object *jobj_token, int keyslot, int segment,
 			   crypt_keyslot_priority minimal_priority, bool requires_keyslot)
 {
@@ -548,7 +542,7 @@ static int token_open(struct crypt_device *cd,
 	if (!(h = LUKS2_token_handler(cd, token)))
 		return -ENOENT;
 
-	if (h->validate && h->validate(cd, token_json_to_string(jobj_token))) {
+	if (h->validate && h->validate(cd, crypt_jobj_to_string_on_disk(jobj_token))) {
 		log_dbg(cd, "Token %d (%s) validation failed.", token, h->name);
 		return -ENOENT;
 	}
@@ -851,8 +845,7 @@ void LUKS2_token_dump(struct crypt_device *cd, int token)
 	if (h && h->dump) {
 		jobj_token = LUKS2_get_token_jobj(crypt_get_hdr(cd, CRYPT_LUKS2), token);
 		if (jobj_token)
-			h->dump(cd, json_object_to_json_string_ext(jobj_token,
-				JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE));
+			h->dump(cd, crypt_jobj_to_string_on_disk(jobj_token));
 	}
 }
 
@@ -864,7 +857,7 @@ int LUKS2_token_json_get(struct luks2_hdr *hdr, int token, const char **json)
 	if (!jobj_token)
 		return -EINVAL;
 
-	*json = token_json_to_string(jobj_token);
+	*json = crypt_jobj_to_string_on_disk(jobj_token);
 	return 0;
 }
 

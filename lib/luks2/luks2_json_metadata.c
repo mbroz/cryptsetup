@@ -467,8 +467,7 @@ static int hdr_validate_json_size(struct crypt_device *cd, json_object *hdr_jobj
 	json_object_object_get_ex(hdr_jobj, "config", &jobj);
 	json_object_object_get_ex(jobj, "json_size", &jobj1);
 
-	json = json_object_to_json_string_ext(hdr_jobj,
-		JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
+	json = crypt_jobj_to_string_on_disk(hdr_jobj);
 	if (!json)
 		return 1;
 
