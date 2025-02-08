@@ -591,6 +591,10 @@ static void t_dm_set_verity_compat(const char *dm_version __attribute__((unused)
 
 	if (t_dm_satisfies_version(1, 9, 0, verity_maj, verity_min, verity_patch))
 		t_dm_crypt_flags |= T_DM_VERITY_TASKLETS_SUPPORTED;
+
+	/* There is actually no correct version set, just use the last available */
+	if (t_dm_satisfies_version(1, 10, 0, verity_maj, verity_min, verity_patch))
+		t_dm_crypt_flags |= T_DM_VERITY_ERROR_AS_CORRUPTION_SUPPORTED;
 }
 
 static void t_dm_set_integrity_compat(const char *dm_version __attribute__((unused)),
