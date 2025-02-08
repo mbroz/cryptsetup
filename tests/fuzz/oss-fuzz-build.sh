@@ -8,12 +8,12 @@ in_oss_fuzz()
 echo "Running cryptsetup OSS-Fuzz build script."
 env
 set -ex
-PWD=$(pwd)
+XPWD="$(pwd)"
 
 export LC_CTYPE=C.UTF-8
 
-export SRC=${SRC:-$PWD/build}
-export OUT="${OUT:-$PWD/out}"
+export SRC="${SRC:-$XPWD/build}"
+export OUT="${OUT:-$XPWD/out}"
 export DEPS_PATH=$SRC/static_lib_deps
 
 export PKG_CONFIG_PATH="$DEPS_PATH"/lib/pkgconfig
@@ -36,8 +36,8 @@ mkdir -p $OUT
 mkdir -p $DEPS_PATH
 cd $SRC
 
-LIBFUZZER_PATCH="$PWD/unpoison-mutated-buffers-from-libfuzzer.patch"
-in_oss_fuzz && LIBFUZZER_PATCH="$PWD/cryptsetup/tests/fuzz/unpoison-mutated-buffers-from-libfuzzer.patch"
+LIBFUZZER_PATCH="$XPWD/unpoison-mutated-buffers-from-libfuzzer.patch"
+in_oss_fuzz && LIBFUZZER_PATCH="$XPWD/cryptsetup/tests/fuzz/unpoison-mutated-buffers-from-libfuzzer.patch"
 
 in_oss_fuzz && apt-get update && apt-get install -y \
     make autoconf automake autopoint libtool pkg-config \
@@ -150,4 +150,4 @@ for fuzzer in $ENABLED_FUZZERS; do
     fi
 done
 
-cd $PWD
+cd $XPWD
