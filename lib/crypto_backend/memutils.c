@@ -16,6 +16,13 @@
 #  endif
 #endif
 
+/* Workaround for https://github.com/google/sanitizers/issues/1507 */
+#if defined __has_feature
+# if __has_feature (memory_sanitizer)
+#   undef HAVE_EXPLICIT_BZERO
+# endif
+#endif
+
 /* Memzero helper (memset on stack can be optimized out) */
 ATTR_NOINLINE ATTR_ZERO_REGS
 void crypt_backend_memzero(void *s, size_t n)
