@@ -111,6 +111,7 @@ struct luks2_hdr {
 	char		uuid[LUKS2_UUID_L];
 	void		*jobj;
 	void		*jobj_rollback;
+	size_t		on_disk_json_end_offset;
 };
 
 struct luks2_keyslot_params {

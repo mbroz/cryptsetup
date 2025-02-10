@@ -289,21 +289,24 @@ static int hdr_read_disk(struct crypt_device *cd,
  */
 static int hdr_write_disk(struct crypt_device *cd,
 			  struct device *device, struct luks2_hdr *hdr,
-			  const char *json_area, int secondary)
+			  const char *json_area, size_t write_area_len,
+			  int secondary)
 {
 	struct luks2_hdr_disk hdr_disk;
 	uint64_t offset = secondary ? hdr->hdr_size : 0;
 	size_t hdr_json_len;
 	int devfd, r;
 
+	hdr_json_len = hdr->hdr_size - LUKS2_HDR_BIN_LEN;
+
+	assert(write_area_len <= hdr_json_len);
+
 	log_dbg(cd, "Trying to write LUKS2 header (%zu bytes) at offset %" PRIu64 ".",
-		hdr->hdr_size, offset);
+		write_area_len, offset);
 
 	devfd = device_open_locked(cd, device, O_RDWR);
 	if (devfd < 0)
 		return devfd == -1 ? -EINVAL : devfd;
-
-	hdr_json_len = hdr->hdr_size - LUKS2_HDR_BIN_LEN;
 
 	hdr_to_disk(hdr, &hdr_disk, secondary, offset);
 
@@ -321,8 +324,8 @@ static int hdr_write_disk(struct crypt_device *cd,
 	 */
 	if (write_lseek_blockwise(devfd, device_block_size(cd, device),
 				  device_alignment(device),
-				  CONST_CAST(char*)json_area, hdr_json_len,
-				  LUKS2_HDR_BIN_LEN + offset) < (ssize_t)hdr_json_len) {
+				  CONST_CAST(char*)json_area, write_area_len,
+				  LUKS2_HDR_BIN_LEN + offset) < (ssize_t)write_area_len) {
 		return -EIO;
 	}
 
@@ -401,7 +404,7 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 {
 	char *json_area;
 	const char *json_text;
-	size_t json_area_len;
+	size_t json_data_len, json_area_len, json_area_write_len;
 	int r;
 
 	if (hdr->version != 2) {
@@ -414,27 +417,46 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 		return r;
 
 	/*
-	 * Allocate and zero JSON area (of proper header size).
-	 */
-	json_area_len = hdr->hdr_size - LUKS2_HDR_BIN_LEN;
-	json_area = crypt_zalloc(json_area_len);
-	if (!json_area)
-		return -ENOMEM;
-
-	/*
 	 * Generate text space-efficient JSON representation to json area.
 	 */
 	json_text = crypt_jobj_to_string_on_disk(hdr->jobj);
 	if (!json_text || !*json_text) {
 		log_dbg(cd, "Cannot parse JSON object to text representation.");
-		free(json_area);
 		return -ENOMEM;
 	}
-	if (strlen(json_text) > (json_area_len - 1)) {
-		log_dbg(cd, "JSON is too large (%zu > %zu).", strlen(json_text), json_area_len);
-		free(json_area);
+
+	json_area_len = hdr->hdr_size - LUKS2_HDR_BIN_LEN;
+	json_area_write_len = json_data_len = strlen(json_text);
+
+	if (json_data_len > (json_area_len - 1)) {
+		log_dbg(cd, "JSON is too large (%zu > %zu).", json_data_len, json_area_len);
 		return -EINVAL;
 	}
+
+	/*
+	 * Allocate and zero JSON area (of proper header size).
+	 */
+	json_area = crypt_zalloc(json_area_len);
+	if (!json_area)
+		return -ENOMEM;
+
+	/*
+	 * If the metadata in 'json_area' buffer is smaller than last on-disk
+	 * metadata we also have to erase the remaining bytes between the tail
+	 * of current metadata and the on-disk metadata end pointer. Set write
+	 * area length large enough to overwrite it.
+	 *
+	 * If seqid_check is turned off (during LUKS2 format) write entire
+	 * LUKS2 metadata size instead.
+	 *
+	 * Turn off the optimization also during metadata upconversion
+	 * (hdr->on_disk_json_end_offset == 0).
+	 */
+	if (seqid_check && (json_data_len < hdr->on_disk_json_end_offset))
+		json_area_write_len = hdr->on_disk_json_end_offset;
+	else if (!seqid_check || !hdr->on_disk_json_end_offset)
+		json_area_write_len = json_area_len;
+
 	strncpy(json_area, json_text, json_area_len);
 
 	if (seqid_check)
@@ -450,12 +472,15 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	hdr->seqid++;
 
 	/* Write primary and secondary header */
-	r = hdr_write_disk(cd, device, hdr, json_area, 0);
+	r = hdr_write_disk(cd, device, hdr, json_area, json_area_write_len, 0);
 	if (!r)
-		r = hdr_write_disk(cd, device, hdr, json_area, 1);
+		r = hdr_write_disk(cd, device, hdr, json_area, json_area_write_len, 1);
 
 	if (r)
 		log_dbg(cd, "LUKS2 header write failed (%d).", r);
+
+	/* store new json end pointer or reset it on error */
+	hdr->on_disk_json_end_offset = r ? 0 : json_data_len;
 
 	device_write_unlock(cd, device);
 
@@ -524,11 +549,14 @@ static int validate_luks2_json_object(struct crypt_device *cd, json_object *jobj
 }
 
 static json_object *parse_and_validate_json(struct crypt_device *cd,
-					    const char *json_area, uint64_t hdr_size)
+					    const char *json_area, uint64_t hdr_size,
+					    uint64_t *json_area_end)
 {
 	int json_len, r;
 	json_object *jobj;
 	uint64_t max_length;
+
+	assert(json_area_end);
 
 	if (hdr_size <= LUKS2_HDR_BIN_LEN || hdr_size > LUKS2_HDR_OFFSET_MAX) {
 		log_dbg(cd, "LUKS2 header JSON has bogus size 0x%04" PRIx64 ".", hdr_size);
@@ -552,6 +580,8 @@ static json_object *parse_and_validate_json(struct crypt_device *cd,
 		json_object_put(jobj);
 		jobj = NULL;
 	}
+
+	*json_area_end = json_len;
 
 	return jobj;
 }
@@ -616,7 +646,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 	json_object *jobj_hdr1 = NULL, *jobj_hdr2 = NULL;
 	unsigned int i;
 	int r;
-	uint64_t hdr_size;
+	uint64_t hdr_size, json_area_end1 = 0, json_area_end2 = 0;
 	uint64_t hdr2_offsets[] = LUKS2_HDR2_OFFSETS;
 
 	/* Skip auto-recovery if locks are disabled and we're not doing LUKS2 explicit repair */
@@ -631,7 +661,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 	state_hdr1 = HDR_FAIL;
 	r = hdr_read_disk(cd, device, &hdr_disk1, &json_area1, 0, 0);
 	if (r == 0) {
-		jobj_hdr1 = parse_and_validate_json(cd, json_area1, be64_to_cpu(hdr_disk1.hdr_size));
+		jobj_hdr1 = parse_and_validate_json(cd, json_area1, be64_to_cpu(hdr_disk1.hdr_size), &json_area_end1);
 		state_hdr1 = jobj_hdr1 ? HDR_OK : HDR_OBSOLETE;
 	} else if (r == -EIO)
 		state_hdr1 = HDR_FAIL_IO;
@@ -643,7 +673,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 	if (state_hdr1 != HDR_FAIL && state_hdr1 != HDR_FAIL_IO) {
 		r = hdr_read_disk(cd, device, &hdr_disk2, &json_area2, be64_to_cpu(hdr_disk1.hdr_size), 1);
 		if (r == 0) {
-			jobj_hdr2 = parse_and_validate_json(cd, json_area2, be64_to_cpu(hdr_disk2.hdr_size));
+			jobj_hdr2 = parse_and_validate_json(cd, json_area2, be64_to_cpu(hdr_disk2.hdr_size), &json_area_end2);
 			state_hdr2 = jobj_hdr2 ? HDR_OK : HDR_OBSOLETE;
 		} else if (r == -EIO)
 			state_hdr2 = HDR_FAIL_IO;
@@ -656,7 +686,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 			r = hdr_read_disk(cd, device, &hdr_disk2, &json_area2, hdr2_offsets[i], 1);
 
 		if (r == 0) {
-			jobj_hdr2 = parse_and_validate_json(cd, json_area2, be64_to_cpu(hdr_disk2.hdr_size));
+			jobj_hdr2 = parse_and_validate_json(cd, json_area2, be64_to_cpu(hdr_disk2.hdr_size), &json_area_end2);
 			state_hdr2 = jobj_hdr2 ? HDR_OK : HDR_OBSOLETE;
 		} else if (r == -EIO)
 			state_hdr2 = HDR_FAIL_IO;
@@ -705,7 +735,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 				log_dbg(cd, "Cannot generate header salt.");
 			else {
 				hdr_from_disk(&hdr_disk1, &hdr_disk2, hdr, 0);
-				r = hdr_write_disk(cd, device, hdr, json_area1, 1);
+				r = hdr_write_disk(cd, device, hdr, json_area1, hdr->hdr_size - LUKS2_HDR_BIN_LEN, 1);
 			}
 			if (r)
 				log_dbg(cd, "Secondary LUKS2 header recovery failed.");
@@ -726,7 +756,7 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 				log_dbg(cd, "Cannot generate header salt.");
 			else {
 				hdr_from_disk(&hdr_disk2, &hdr_disk1, hdr, 1);
-				r = hdr_write_disk(cd, device, hdr, json_area2, 0);
+				r = hdr_write_disk(cd, device, hdr, json_area2, hdr->hdr_size - LUKS2_HDR_BIN_LEN, 0);
 			}
 			if (r)
 				log_dbg(cd, "Primary LUKS2 header recovery failed.");
@@ -754,6 +784,11 @@ int LUKS2_disk_hdr_read(struct crypt_device *cd, struct luks2_hdr *hdr,
 		hdr->jobj = jobj_hdr2;
 		json_object_put(jobj_hdr1);
 	}
+
+	if (json_area_end1 > json_area_end2)
+		hdr->on_disk_json_end_offset = json_area_end1;
+	else
+		hdr->on_disk_json_end_offset = json_area_end2;
 
 	/*
 	 * FIXME: should this fail? At least one header was read correctly.
