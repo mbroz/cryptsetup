@@ -1157,7 +1157,12 @@ static int hdr_update_copy_for_rollback(struct crypt_device *cd, struct luks2_hd
 		return -EINVAL;
 	}
 
-	return json_object_copy(hdr->jobj, jobj_copy) ? -ENOMEM : 0;
+	if (json_object_copy(hdr->jobj, jobj_copy))
+		return -ENOMEM;
+
+	hdr->rollback_jobj_length = strlen(crypt_jobj_to_string_on_disk(hdr->jobj));
+
+	return 0;
 }
 
 /* FIXME: should we expose do_recovery parameter explicitly? */
