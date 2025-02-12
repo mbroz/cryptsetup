@@ -7484,7 +7484,7 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 		log_err(cd, _("Failed to load key in kernel keyring."));
 	} else {
 		crypt_set_key_in_keyring(cd, 1);
-		vk->uploaded = true;
+		crypt_volume_key_set_uploaded(vk);
 	}
 
 	return kid < 0 ? -EINVAL : 0;
@@ -7674,7 +7674,7 @@ void crypt_drop_uploaded_keyring_key(struct crypt_device *cd, struct volume_key 
 	struct volume_key *vk = vks;
 
 	while (vk) {
-		if (vk->uploaded)
+		if (crypt_volume_key_is_uploaded(vk))
 			crypt_drop_keyring_key_by_description(cd, crypt_volume_key_description(vk), LOGON_KEY);
 		vk = crypt_volume_key_next(vk);
 	}

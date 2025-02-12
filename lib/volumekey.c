@@ -231,3 +231,15 @@ bool crypt_volume_key_is_set(const struct volume_key *vk)
 {
 	return vk && vk->key;
 }
+
+bool crypt_volume_key_is_uploaded(const struct volume_key *vk)
+{
+	return vk && vk->uploaded;
+}
+
+void crypt_volume_key_set_uploaded(struct volume_key *vk)
+{
+	assert(vk);
+
+	vk->uploaded = true;
+}
