@@ -19,7 +19,6 @@ struct volume_key {
 	const char *key_description; /* keyring key name/description */
 	key_type_t keyring_key_type; /* kernel keyring key type */
 	key_serial_t key_id; /* kernel key id of volume key representation linked in thread keyring */
-	bool uploaded; /* uploaded to keyring, can drop it */
 	struct volume_key *next;
 	char *key;
 };
@@ -244,18 +243,6 @@ bool crypt_volume_key_is_set(const struct volume_key *vk)
 	return vk && vk->key;
 }
 
-bool crypt_volume_key_is_uploaded(const struct volume_key *vk)
-{
-	return vk && vk->uploaded;
-}
-
-void crypt_volume_key_set_uploaded(struct volume_key *vk)
-{
-	assert(vk);
-
-	vk->uploaded = true;
-}
-
 bool crypt_volume_key_upload_kernel_key(struct volume_key *vk)
 {
 	key_serial_t kid;
@@ -266,7 +253,6 @@ bool crypt_volume_key_upload_kernel_key(struct volume_key *vk)
 					 vk->key, vk->keylength);
 	if (kid >= 0) {
 		vk->key_id = kid;
-		vk->uploaded = true;
 		return true;
 	}
 
@@ -293,5 +279,4 @@ void crypt_volume_key_drop_uploaded_kernel_key(struct crypt_device *cd, struct v
 
 	crypt_unlink_key_from_thread_keyring(cd, vk->key_id);
 	vk->key_id = -1;
-	vk->uploaded = false;
 }

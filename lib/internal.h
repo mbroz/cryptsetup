@@ -75,11 +75,6 @@ struct volume_key *crypt_volume_key_next(struct volume_key *vk);
 struct volume_key *crypt_volume_key_by_id(struct volume_key *vk, int id);
 void crypt_volume_key_pass_safe_alloc(struct volume_key *vk, void **safe_alloc);
 bool crypt_volume_key_is_set(const struct volume_key *vk);
-
-/* FIXME: temporary helpers to be removed later */
-bool crypt_volume_key_is_uploaded(const struct volume_key *vk);
-void crypt_volume_key_set_uploaded(struct volume_key *vk);
-
 bool crypt_volume_key_upload_kernel_key(struct volume_key *vk);
 void crypt_volume_key_drop_uploaded_kernel_key(struct crypt_device *cd, struct volume_key *vk);
 void crypt_volume_key_drop_kernel_key(struct crypt_device *cd, struct volume_key *vk);
