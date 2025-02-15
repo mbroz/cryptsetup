@@ -5,9 +5,14 @@ in_oss_fuzz()
     test -n "$FUZZING_ENGINE"
 }
 
-echo "Running cryptsetup OSS-Fuzz build script."
-env
-set -ex
+last_commit()
+{
+    echo "$(git -C "$1" log --format="%h %s" -n 1) ($1)"
+}
+
+echo "Running cryptsetup OSS-Fuzz build script for ${SANITIZER:-address} sanitizer."
+#env ; set -x
+set -e
 XPWD="$(pwd)"
 
 export LC_CTYPE=C.UTF-8
@@ -36,6 +41,7 @@ mkdir -p $OUT
 mkdir -p $DEPS_PATH
 cd $SRC
 
+echo "Installing dependencies"
 LIBFUZZER_PATCH="$XPWD/unpoison-mutated-buffers-from-libfuzzer.patch"
 in_oss_fuzz && LIBFUZZER_PATCH="$XPWD/cryptsetup/tests/fuzz/unpoison-mutated-buffers-from-libfuzzer.patch"
 
@@ -44,20 +50,40 @@ in_oss_fuzz && apt-get update && apt-get install -y \
     sharutils gettext expect keyutils ninja-build \
     bison flex
 
-[ ! -d zlib ]   && git clone --depth 1 https://github.com/madler/zlib.git
+echo "Cloning git repositories"
+# FIXME: temporary use branch master instead of develop
+[ ! -d zlib ] && git clone -q --depth 1 --branch master https://github.com/madler/zlib.git
+last_commit zlib
+
 # Upstream repo has disabled cloning https://git.tukaani.org/xz.git
-[ ! -d xz ]     && git clone --depth 1 https://github.com/tukaani-project/xz
-[ ! -d json-c ] && git clone --depth 1 https://github.com/json-c/json-c.git
-[ ! -d lvm2 ]   && git clone --depth 1 https://gitlab.com/lvmteam/lvm2
-[ ! -d popt ]   && git clone --depth 1 https://github.com/rpm-software-management/popt.git
+[ ! -d xz ] && git clone -q --depth 1 https://github.com/tukaani-project/xz
+last_commit xz
+
+[ ! -d json-c ] && git clone -q --depth 1 https://github.com/json-c/json-c.git
+last_commit json-c
+
+[ ! -d lvm2 ] && git clone -q --depth 1 https://gitlab.com/lvmteam/lvm2
+last_commit lvm2
+
+[ ! -d popt ] && git clone -q --depth 1 https://github.com/rpm-software-management/popt.git
+last_commit popt
+
 # FIXME: temporary fix until libprotobuf stops shuffling C++ requirements
 # [ ! -d libprotobuf-mutator ] && git clone --depth 1 https://github.com/google/libprotobuf-mutator.git \
-[ ! -d libprotobuf-mutator ] && git clone --depth 1 --branch v1.1 https://github.com/google/libprotobuf-mutator.git \
-                             && [ "$SANITIZER" == "memory" ] && ( cd libprotobuf-mutator; patch -p1 < $LIBFUZZER_PATCH )
-[ ! -d openssl ]    && git clone --depth 1 https://github.com/openssl/openssl
-[ ! -d util-linux ] && git clone --depth 1 https://github.com/util-linux/util-linux
-[ ! -d cryptsetup_fuzzing ] && git clone --depth 1 https://gitlab.com/cryptsetup/cryptsetup_fuzzing.git
+[ ! -d libprotobuf-mutator ] && git clone -q --depth 1 --branch v1.1 -c advice.detachedHead=false \
+    https://github.com/google/libprotobuf-mutator.git &&
+    [ "$SANITIZER" == "memory" ] && ( cd libprotobuf-mutator; patch -p1 < $LIBFUZZER_PATCH )
+last_commit libprotobuf-mutator
 
+[ ! -d openssl ] && git clone -q --depth 1 https://github.com/openssl/openssl
+last_commit openssl
+
+[ ! -d util-linux ] && git clone -q --depth 1 https://github.com/util-linux/util-linux
+last_commit util-linux
+
+[ ! -d cryptsetup_fuzzing ] && git clone -q --depth 1 https://gitlab.com/cryptsetup/cryptsetup_fuzzing.git
+
+echo "Building libraries from git"
 cd openssl
 ./Configure --prefix="$DEPS_PATH" --libdir=lib no-shared no-module no-asm
 make build_generated
@@ -128,6 +154,7 @@ cd external.protobuf;
 cp -Rf bin lib include "$DEPS_PATH";
 cd ../../..
 
+echo "Building cryptsetup fuzzers"
 if in_oss_fuzz; then
     mkdir -p cryptsetup/tests/fuzz/build
     ln -s ../../../../static_lib_deps cryptsetup/tests/fuzz/build/static_lib_deps
@@ -140,6 +167,7 @@ fi
 make clean
 make -j fuzz-targets
 
+echo "Installing fuzzers"
 for fuzzer in $ENABLED_FUZZERS; do
     cp tests/fuzz/$fuzzer $OUT
     cp $SRC/cryptsetup_fuzzing/${fuzzer}_seed_corpus.zip $OUT
