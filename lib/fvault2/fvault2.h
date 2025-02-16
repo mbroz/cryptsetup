@@ -41,7 +41,7 @@ int FVAULT2_get_volume_key(
 	const char *passphrase,
 	size_t passphrase_len,
 	const struct fvault2_params *params,
-	struct volume_key **vol_key);
+	struct volume_key **r_vol_key);
 
 int FVAULT2_dump(
 	struct crypt_device *cd,

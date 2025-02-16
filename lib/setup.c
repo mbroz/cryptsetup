@@ -289,16 +289,17 @@ static int process_key(struct crypt_device *cd, const char *hash_name,
 		       struct volume_key **vk)
 {
 	int r;
+	void *key = NULL;
 
 	if (!key_size)
 		return -EINVAL;
 
-	*vk = crypt_alloc_volume_key(key_size, NULL);
-	if (!*vk)
-		return -ENOMEM;
-
 	if (hash_name) {
-		r = crypt_plain_hash(cd, hash_name, (*vk)->key, key_size, pass, passLen);
+		key = crypt_safe_alloc(key_size);
+		if (!key)
+			return -ENOMEM;
+
+		r = crypt_plain_hash(cd, hash_name, key, key_size, pass, passLen);
 		if (r < 0) {
 			if (r == -ENOENT)
 				log_err(cd, _("Hash algorithm %s not supported."),
@@ -306,17 +307,27 @@ static int process_key(struct crypt_device *cd, const char *hash_name,
 			else
 				log_err(cd, _("Key processing error (using hash %s)."),
 					hash_name);
-			crypt_free_volume_key(*vk);
-			*vk = NULL;
+			crypt_safe_free(key);
 			return -EINVAL;
 		}
-	} else if (passLen > key_size) {
-		crypt_safe_memcpy((*vk)->key, pass, key_size);
+		*vk = crypt_alloc_volume_key_by_safe_alloc(&key);
+	} else if (passLen >= key_size) {
+		*vk = crypt_alloc_volume_key(key_size, pass);
 	} else {
-		crypt_safe_memcpy((*vk)->key, pass, passLen);
+		key = crypt_safe_alloc(key_size);
+		if (!key)
+			return -ENOMEM;
+
+		crypt_safe_memcpy(key, pass, passLen);
+
+		*vk = crypt_alloc_volume_key_by_safe_alloc(&key);
 	}
 
-	return 0;
+	r = *vk ? 0 : -ENOMEM;
+
+	crypt_safe_free(key);
+
+	return r;
 }
 
 static int isPLAIN(const char *type)
@@ -1262,7 +1273,7 @@ static int _init_by_name_crypt_none(struct crypt_device *cd)
 			r = -EINVAL;
 		else {
 			cd->u.none.cipher_mode = cd->u.none.cipher_spec + strlen(cd->u.none.cipher) + 1;
-			cd->u.none.key_size = tgt->u.crypt.vk->keylength;
+			cd->u.none.key_size = crypt_volume_key_length(tgt->u.crypt.vk);
 			r = 0;
 		}
 	}
@@ -1407,7 +1418,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		cd->u.plain.hdr.offset = tgt->u.crypt.offset;
 		cd->u.plain.hdr.skip = tgt->u.crypt.iv_offset;
 		cd->u.plain.hdr.sector_size = tgt->u.crypt.sector_size;
-		cd->u.plain.key_size = tgt->u.crypt.vk->keylength;
+		cd->u.plain.key_size = crypt_volume_key_length(tgt->u.crypt.vk);
 		cd->u.plain.cipher = strdup(cipher);
 		MOVE_REF(cd->u.plain.cipher_spec, cipher_spec);
 		cd->u.plain.cipher_mode = cd->u.plain.cipher_spec + strlen(cipher) + 1;
@@ -1419,9 +1430,9 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		MOVE_REF(cd->u.loopaes.cipher_spec, cipher_spec);
 		cd->u.loopaes.cipher_mode = cd->u.loopaes.cipher_spec + strlen(cipher) + 1;
 		/* version 3 uses last key for IV */
-		if (tgt->u.crypt.vk->keylength % key_nums)
+		if (crypt_volume_key_length(tgt->u.crypt.vk) % key_nums)
 			key_nums++;
-		cd->u.loopaes.key_size = tgt->u.crypt.vk->keylength / key_nums;
+		cd->u.loopaes.key_size = crypt_volume_key_length(tgt->u.crypt.vk) / key_nums;
 	} else if (isLUKS1(cd->type) || isLUKS2(cd->type)) {
 		if (crypt_metadata_device(cd)) {
 			r = _crypt_load_luks(cd, cd->type, true, false);
@@ -1558,11 +1569,11 @@ static int _init_by_name_integrity(struct crypt_device *cd, const char *name)
 		MOVE_REF(cd->u.integrity.params.journal_crypt, tgt->u.integrity.journal_crypt);
 
 		if (tgt->u.integrity.vk)
-			cd->u.integrity.params.integrity_key_size = tgt->u.integrity.vk->keylength;
+			cd->u.integrity.params.integrity_key_size = crypt_volume_key_length(tgt->u.integrity.vk);
 		if (tgt->u.integrity.journal_integrity_key)
-			cd->u.integrity.params.journal_integrity_key_size = tgt->u.integrity.journal_integrity_key->keylength;
+			cd->u.integrity.params.journal_integrity_key_size = crypt_volume_key_length(tgt->u.integrity.journal_integrity_key);
 		if (tgt->u.integrity.journal_crypt_key)
-			cd->u.integrity.params.journal_crypt_key_size = tgt->u.integrity.journal_crypt_key->keylength;
+			cd->u.integrity.params.journal_crypt_key_size = crypt_volume_key_length(tgt->u.integrity.journal_crypt_key);
 		MOVE_REF(cd->metadata_device, tgt->u.integrity.meta_device);
 	}
 out:
@@ -2183,7 +2194,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 
 		if (integrity_key_size) {
 			integrity_key = crypt_alloc_volume_key(integrity_key_size,
-					cd->volume_key->key + volume_key_size - integrity_key_size);
+					crypt_volume_key_get_key(cd->volume_key) + volume_key_size - integrity_key_size);
 			if (!integrity_key) {
 				r = -ENOMEM;
 				goto out;
@@ -2447,7 +2458,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	}
 
 	if (cipher) {
-		user_key = crypt_alloc_volume_key(opal_params->user_key_size, cd->volume_key->key);
+		user_key = crypt_alloc_volume_key(opal_params->user_key_size, crypt_volume_key_get_key(cd->volume_key));
 		if (!user_key) {
 			r = -ENOMEM;
 			goto out;
@@ -2634,7 +2645,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 
 		if (integrity_key_size) {
 			integrity_key = crypt_alloc_volume_key(integrity_key_size,
-				cd->volume_key->key + volume_keys_size - integrity_key_size);
+				crypt_volume_key_get_key(cd->volume_key) + volume_keys_size - integrity_key_size);
 
 			if (!integrity_key) {
 				r = -ENOMEM;
@@ -3161,23 +3172,62 @@ int crypt_repair(struct crypt_device *cd,
 }
 
 /* compare volume keys */
-static int _compare_volume_keys(struct volume_key *svk, unsigned skeyring_only,
-				struct volume_key *tvk, unsigned tkeyring_only)
+static int _compare_volume_keys(struct volume_key *svk, struct volume_key *tvk)
 {
-	if (!svk && !tvk)
+	if (svk == tvk)
 		return 0;
-	else if (!svk || !tvk)
+
+	if (!svk || !tvk)
 		return 1;
 
-	if (svk->keylength != tvk->keylength)
+	if (crypt_volume_key_length(svk) != crypt_volume_key_length(tvk))
 		return 1;
 
-	if (!skeyring_only && !tkeyring_only)
-		return crypt_backend_memeq(svk->key, tvk->key, svk->keylength);
+	/* No switch between keyring and direct key specification */
+	if ((!crypt_volume_key_description(svk) && crypt_volume_key_description(tvk)) ||
+	    (crypt_volume_key_description(svk) && !crypt_volume_key_description(tvk)) ||
+	    (!crypt_volume_key_is_set(svk) && crypt_volume_key_is_set(tvk)) ||
+	    (crypt_volume_key_is_set(svk) && !crypt_volume_key_is_set(tvk)))
+		return 1;
 
-	if (svk->key_description && tvk->key_description)
-		return (svk->keyring_key_type != tvk->keyring_key_type ||
-			strcmp(svk->key_description, tvk->key_description));
+	if (crypt_volume_key_description(svk) &&
+	    (crypt_volume_key_kernel_key_type(svk) != crypt_volume_key_kernel_key_type(tvk) ||
+	    strcmp(crypt_volume_key_description(svk), crypt_volume_key_description(tvk))))
+		return 1;
+
+	if (crypt_volume_key_is_set(svk) &&
+	    crypt_backend_memeq(crypt_volume_key_get_key(svk),
+				crypt_volume_key_get_key(tvk),
+				crypt_volume_key_length(svk)))
+		return 1;
+
+	return 0;
+}
+
+static int _compare_volume_keys_luks2(struct volume_key *svk, struct volume_key *tvk)
+{
+	if (svk == tvk)
+		return 0;
+
+	if (!svk || !tvk)
+		return 1;
+
+	if (crypt_volume_key_length(svk) != crypt_volume_key_length(tvk))
+		return 1;
+
+	if ((!crypt_volume_key_is_set(svk) && !crypt_volume_key_description(svk)) ||
+	    (!crypt_volume_key_is_set(tvk) && !crypt_volume_key_description(tvk)))
+		return 1;
+
+	if (crypt_volume_key_is_set(svk) && crypt_volume_key_is_set(tvk) &&
+	    crypt_backend_memeq(crypt_volume_key_get_key(svk),
+				crypt_volume_key_get_key(tvk),
+				crypt_volume_key_length(svk)))
+		return 1;
+
+	if (crypt_volume_key_description(svk) && crypt_volume_key_description(tvk))
+		return (crypt_volume_key_kernel_key_type(svk) != crypt_volume_key_kernel_key_type(tvk) ||
+			strcmp(crypt_volume_key_description(svk), crypt_volume_key_description(tvk)));
 
 	return 0;
 }
@@ -3243,9 +3293,14 @@ static int _compare_crypt_devices(struct crypt_device *cd,
 		goto out;
 	}
 
-	if (tgt->u.crypt.vk->keylength == 0 && crypt_is_cipher_null(tgt->u.crypt.cipher))
+	if (crypt_volume_key_length(tgt->u.crypt.vk) == 0 && crypt_is_cipher_null(tgt->u.crypt.cipher))
 		log_dbg(cd, "Existing device uses cipher null. Skipping key comparison.");
-	else if (_compare_volume_keys(src->u.crypt.vk, 0, tgt->u.crypt.vk, tgt->u.crypt.vk->key_description != NULL)) {
+	else if (cd && isLUKS2(cd->type)) {
+		if (_compare_volume_keys_luks2(src->u.crypt.vk, tgt->u.crypt.vk)) {
+			log_dbg(cd, "Keys in LUKS2 context and target device do not match.");
+			goto out;
+		}
+	} else if (_compare_volume_keys(src->u.crypt.vk, tgt->u.crypt.vk)) {
 		log_dbg(cd, "Keys in context and target device do not match.");
 		goto out;
 	}
@@ -3305,9 +3360,9 @@ static int _compare_integrity_devices(struct crypt_device *cd,
 	}
 
 	/* unfortunately dm-integrity doesn't support keyring */
-	if (_compare_volume_keys(src->u.integrity.vk, 0, tgt->u.integrity.vk, 0) ||
-	    _compare_volume_keys(src->u.integrity.journal_integrity_key, 0, tgt->u.integrity.journal_integrity_key, 0) ||
-	    _compare_volume_keys(src->u.integrity.journal_crypt_key, 0, tgt->u.integrity.journal_crypt_key, 0)) {
+	if (_compare_volume_keys(src->u.integrity.vk, tgt->u.integrity.vk) ||
+	    _compare_volume_keys(src->u.integrity.journal_integrity_key, tgt->u.integrity.journal_integrity_key) ||
+	    _compare_volume_keys(src->u.integrity.journal_crypt_key, tgt->u.integrity.journal_crypt_key)) {
 		log_dbg(cd, "Journal keys do not match.");
 		return -EINVAL;
 	}
@@ -3379,8 +3434,13 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 	struct crypt_dm_active_device tdmd;
 	struct dm_target *src, *tgt = &tdmd.segment;
 
-	if (!cd || !cd->type || !name || !(sdmd->flags & CRYPT_ACTIVATE_REFRESH))
+	assert(cd);
+	assert(sdmd);
+
+	if (!cd->type || !name || !(sdmd->flags & CRYPT_ACTIVATE_REFRESH))
 		return -EINVAL;
+
+	src = &sdmd->segment;
 
 	r = dm_query_device(cd, name, DM_ACTIVE_DEVICE | DM_ACTIVE_CRYPT_CIPHER |
 				  DM_ACTIVE_UUID | DM_ACTIVE_CRYPT_KEYSIZE |
@@ -3405,27 +3465,24 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 		goto out;
 	}
 
-	src = &sdmd->segment;
-
 	/* Changing read only flag for active device makes no sense */
 	if (tdmd.flags & CRYPT_ACTIVATE_READONLY)
 		sdmd->flags |= CRYPT_ACTIVATE_READONLY;
 	else
 		sdmd->flags &= ~CRYPT_ACTIVATE_READONLY;
 
-	if (tgt->type == DM_CRYPT && sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
-		r = crypt_volume_key_set_description(tgt->u.crypt.vk,
-						     src->u.crypt.vk->key_description,
-						     src->u.crypt.vk->keyring_key_type);
-		if (r)
-			goto out;
-	} else if (tgt->type == DM_CRYPT) {
+	/*
+	 * Only LUKS2 allows altering between volume key
+	 * passed by hexbyte representation and reference
+	 * to kernel keyring service.
+	 *
+	 * To make it easier pass src key directly after
+	 * it was properly verified in crypt_compare_dm_devices
+	 * call above.
+	 */
+	if (isLUKS2(cd->type) && tgt->type == DM_CRYPT && src->u.crypt.vk) {
 		crypt_free_volume_key(tgt->u.crypt.vk);
-		tgt->u.crypt.vk = crypt_alloc_volume_key(src->u.crypt.vk->keylength, src->u.crypt.vk->key);
-		if (!tgt->u.crypt.vk) {
-			r = -ENOMEM;
-			goto out;
-		}
+		tgt->u.crypt.vk = src->u.crypt.vk;
 	}
 
 	if (tgt->type == DM_CRYPT)
@@ -3445,6 +3502,10 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 
 	r = dm_reload_device(cd, name, &tdmd, dmflags, 1);
 out:
+	/* otherwise dm_targets_free would free src key */
+	if (src->u.crypt.vk == tgt->u.crypt.vk)
+		tgt->u.crypt.vk = NULL;
+
 	dm_targets_free(cd, &tdmd);
 	free(CONST_CAST(void*)tdmd.uuid);
 
@@ -3464,8 +3525,15 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	struct device *data_device = NULL;
 	bool clear = false;
 
-	if (!cd || !cd->type || !name || !iname || !(sdmd->flags & CRYPT_ACTIVATE_REFRESH))
+	assert(cd);
+	assert(sdmd);
+	assert(sdmdi);
+
+	if (!cd->type || !name || !iname || !(sdmd->flags & CRYPT_ACTIVATE_REFRESH))
 		return -EINVAL;
+
+	src = &sdmd->segment;
+	srci = &sdmdi->segment;
 
 	r = dm_query_device(cd, name, DM_ACTIVE_DEVICE | DM_ACTIVE_CRYPT_CIPHER |
 				  DM_ACTIVE_UUID | DM_ACTIVE_CRYPT_KEYSIZE |
@@ -3506,9 +3574,6 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 		goto out;
 	}
 
-	src = &sdmd->segment;
-	srci = &sdmdi->segment;
-
 	r = device_alloc(cd, &data_device, ipath);
 	if (r < 0)
 		goto out;
@@ -3537,20 +3602,13 @@ static int _reload_device_with_integrity(struct crypt_device *cd,
 	else
 		sdmdi->flags &= ~CRYPT_ACTIVATE_READONLY;
 
-	if (sdmd->flags & CRYPT_ACTIVATE_KEYRING_KEY) {
-		r = crypt_volume_key_set_description(tgt->u.crypt.vk,
-						     src->u.crypt.vk->key_description,
-						     src->u.crypt.vk->keyring_key_type);
-		if (r)
-			goto out;
-	} else {
-		crypt_free_volume_key(tgt->u.crypt.vk);
-		tgt->u.crypt.vk = crypt_alloc_volume_key(src->u.crypt.vk->keylength, src->u.crypt.vk->key);
-		if (!tgt->u.crypt.vk) {
-			r = -ENOMEM;
-			goto out;
-		}
-	}
+	/*
+	 * To make it easier pass src key directly after
+	 * it was properly verified in crypt_compare_dm_devices
+	 * call above.
+	 */
+	crypt_free_volume_key(tgt->u.crypt.vk);
+	tgt->u.crypt.vk = src->u.crypt.vk;
 
 	r = device_block_adjust(cd, src->data_device, DEV_OK,
 				src->u.crypt.offset, &sdmd->size, NULL);
@@ -3616,6 +3674,9 @@ out:
 			dm_resume_device(cd, iname, 0);
 	}
 
+	/* otherwise dm_targets_free would free src key */
+	if (tgt->u.crypt.vk == src->u.crypt.vk)
+		tgt->u.crypt.vk = NULL;
 	dm_targets_free(cd, &tdmd);
 	dm_targets_free(cd, &tdmdi);
 	free(CONST_CAST(void*)tdmdi.uuid);
@@ -4004,8 +4065,8 @@ static char *crypt_get_device_key_description(struct crypt_device *cd, const cha
 		return NULL;
 
 	if (single_segment(&dmd) && tgt->type == DM_CRYPT &&
-	    (dmd.flags & CRYPT_ACTIVATE_KEYRING_KEY) && tgt->u.crypt.vk->key_description)
-		desc = strdup(tgt->u.crypt.vk->key_description);
+	    (dmd.flags & CRYPT_ACTIVATE_KEYRING_KEY) && crypt_volume_key_description(tgt->u.crypt.vk))
+		desc = strdup(crypt_volume_key_description(tgt->u.crypt.vk));
 
 	dm_targets_free(cd, &dmd);
 
@@ -4222,7 +4283,10 @@ static key_serial_t crypt_single_volume_key_load_in_user_keyring(struct crypt_de
 	log_dbg(cd, "Linking volume key (type %s, name %s) to the specified keyring",
 		    type_name, user_key_name);
 
-	kid = keyring_add_key_to_custom_keyring(cd->keyring_key_type, user_key_name, vk->key, vk->keylength, cd->keyring_to_link_vk);
+	kid = keyring_add_key_to_custom_keyring(cd->keyring_key_type, user_key_name,
+						crypt_volume_key_get_key(vk),
+						crypt_volume_key_length(vk),
+						cd->keyring_to_link_vk);
 	if (kid <= 0)
 		log_dbg(cd, "The keyring_link_key_to_keyring function failed (error %d).", errno);
 
@@ -4620,7 +4684,7 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	} else if (isLUKS2(cd->type)) {
 		/* If there is a free keyslot (both id and binary area) avoid in-place keyslot area overwrite  */
 		if (keyslot_new == CRYPT_ANY_SLOT || keyslot_new == keyslot_old) {
-			keyslot_new = LUKS2_keyslot_find_empty(cd, &cd->u.luks2.hdr, vk->keylength);
+			keyslot_new = LUKS2_keyslot_find_empty(cd, &cd->u.luks2.hdr, crypt_volume_key_length(vk));
 			if (keyslot_new < 0)
 				keyslot_new = keyslot_old;
 			else
@@ -5215,7 +5279,7 @@ static int _verify_key(struct crypt_device *cd,
 	assert(cd);
 
 	if (isPLAIN(cd->type)) {
-		if (vk && vk->keylength == cd->u.plain.key_size) {
+		if (vk && crypt_volume_key_length(vk) == cd->u.plain.key_size) {
 			r = KEY_VERIFIED;
 		} else
 			log_err(cd, _("Incorrect volume key specified for plain device."));
@@ -5246,7 +5310,7 @@ static int _verify_key(struct crypt_device *cd,
 	else if (isBITLK(cd->type))
 		r = KEY_VERIFIED;
 	else if (isFVAULT2(cd->type)) {
-		if (vk && vk->keylength == FVAULT2_volume_key_size())
+		if (vk && crypt_volume_key_length(vk) == FVAULT2_volume_key_size())
 			r = KEY_VERIFIED;
 	} else
 		log_err(cd, _("Device type is not properly initialized."));
@@ -5439,7 +5503,8 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	unlocked_keyslot = r;
 
 	if (r == -ENOENT && isLUKS(cd->type) && cd->volume_key) {
-		vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
+		vk = crypt_alloc_volume_key(crypt_volume_key_length(cd->volume_key),
+					    crypt_volume_key_get_key(cd->volume_key));
 		r = vk ? 0 : -ENOMEM;
 	}
 	if (r == -ENOENT && isINTEGRITY(cd->type))
@@ -5911,13 +5976,14 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 		log_err(cd, _("This operation is not supported for %s crypt device."), cd->type ?: "(none)");
 
 	if (r == -ENOENT && isLUKS(cd->type) && cd->volume_key) {
-		vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key);
+		vk = crypt_alloc_volume_key(crypt_volume_key_length(cd->volume_key),
+					    crypt_volume_key_get_key(cd->volume_key));
 		r = vk ? 0 : -ENOMEM;
 	}
 
 	if (r >= 0 && vk) {
-		crypt_safe_memcpy(volume_key, vk->key, vk->keylength);
-		*volume_key_size = vk->keylength;
+		crypt_safe_memcpy(volume_key, crypt_volume_key_get_key(vk), crypt_volume_key_length(vk));
+		*volume_key_size = crypt_volume_key_length(vk);
 	}
 
 	crypt_free_volume_key(vk);
@@ -6337,7 +6403,7 @@ int crypt_get_volume_key_size(struct crypt_device *cd)
 	if (isLUKS2(cd->type)) {
 		r = LUKS2_get_volume_key_size(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
 		if (r < 0 && cd->volume_key)
-			r = cd->volume_key->keylength;
+			r = crypt_volume_key_length(cd->volume_key);
 		return r < 0 ? 0 : r;
 	}
 
@@ -7335,7 +7401,8 @@ int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
 				return -ENOMEM;
 			r = 0;
 		} else if (cd->volume_key) {
-			if (!(vk = crypt_alloc_volume_key(cd->volume_key->keylength, cd->volume_key->key)))
+			if (!(vk = crypt_alloc_volume_key(crypt_volume_key_length(cd->volume_key),
+							  crypt_volume_key_get_key(cd->volume_key))))
 				return -ENOMEM;
 			r = 0;
 		} else if (active_slots == 0) {
@@ -7401,20 +7468,23 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 	if (!vk || !cd)
 		return -EINVAL;
 
-	if (!vk->key_description) {
+	if (!crypt_volume_key_description(vk)) {
 		log_dbg(cd, "Invalid key description");
 		return -EINVAL;
 	}
 
-	log_dbg(cd, "Loading key (type logon, name %s) in thread keyring.", vk->key_description);
+	log_dbg(cd, "Loading key (type logon, name %s) in thread keyring.",
+		crypt_volume_key_description(vk));
 
-	kid = keyring_add_key_in_thread_keyring(LOGON_KEY, vk->key_description, vk->key, vk->keylength);
+	kid = keyring_add_key_in_thread_keyring(LOGON_KEY, crypt_volume_key_description(vk),
+						crypt_volume_key_get_key(vk),
+						crypt_volume_key_length(vk));
 	if (kid < 0) {
 		log_dbg(cd, "keyring_add_key_in_thread_keyring failed (error %d)", errno);
 		log_err(cd, _("Failed to load key in kernel keyring."));
 	} else {
 		crypt_set_key_in_keyring(cd, 1);
-		vk->uploaded = true;
+		crypt_volume_key_set_uploaded(vk);
 	}
 
 	return kid < 0 ? -EINVAL : 0;
@@ -7604,8 +7674,8 @@ void crypt_drop_uploaded_keyring_key(struct crypt_device *cd, struct volume_key 
 	struct volume_key *vk = vks;
 
 	while (vk) {
-		if (vk->uploaded)
-			crypt_drop_keyring_key_by_description(cd, vk->key_description, LOGON_KEY);
+		if (crypt_volume_key_is_uploaded(vk))
+			crypt_drop_keyring_key_by_description(cd, crypt_volume_key_description(vk), LOGON_KEY);
 		vk = crypt_volume_key_next(vk);
 	}
 }

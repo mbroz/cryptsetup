@@ -948,7 +948,7 @@ static int _crypt_keyslot_context_init_by_volume_key(const char *volume_key,
 			free(tmp);
 			return -ENOMEM;
 		}
-		volume_key = i_vk->key;
+		volume_key = crypt_volume_key_get_key(i_vk);
 	}
 
 	crypt_keyslot_context_init_by_key_internal(tmp, volume_key, volume_key_size);
@@ -1003,13 +1003,13 @@ static int _crypt_keyslot_context_init_by_signed_key(const char *volume_key,
 	if (self_contained && volume_key) {
 		if (!(i_vk = crypt_alloc_volume_key(volume_key_size, volume_key)))
 			goto err;
-		volume_key = i_vk->key;
+		volume_key = crypt_volume_key_get_key(i_vk);
 	}
 
 	if (self_contained && signature) {
 		if (!(i_vk_sig = crypt_alloc_volume_key(signature_size, signature)))
 			goto err;
-		signature = i_vk_sig->key;
+		signature = crypt_volume_key_get_key(i_vk_sig);
 	}
 
 	crypt_keyslot_context_init_by_signed_key_internal(tmp, volume_key, volume_key_size,

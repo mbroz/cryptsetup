@@ -756,7 +756,7 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 
 		vk_p = vmk_p->vk;
 		while (vk_p) {
-			log_std(cd, "\tKey data size:\t%zu [bytes]\n", vk_p->keylength);
+			log_std(cd, "\tKey data size:\t%zu [bytes]\n", crypt_volume_key_length(vk_p));
 			vk_p = crypt_volume_key_next(vk_p);
 		}
 		vmk_p = vmk_p->next;
@@ -764,7 +764,7 @@ int BITLK_dump(struct crypt_device *cd, struct device *device, struct bitlk_meta
 	}
 
 	log_std(cd, " %d: FVEK\n", next_id);
-	log_std(cd, "\tKey data size:\t%zu [bytes]\n", params->fvek->vk->keylength);
+	log_std(cd, "\tKey data size:\t%zu [bytes]\n", crypt_volume_key_length(params->fvek->vk));
 
 	log_std(cd, "\n");
 
@@ -1053,11 +1053,14 @@ static int decrypt_key(struct crypt_device *cd,
 	int r;
 	uint16_t key_size = 0;
 
-	outbuf = crypt_safe_alloc(enc_key->keylength);
+	outbuf = crypt_safe_alloc(crypt_volume_key_length(enc_key));
 	if (!outbuf)
 		return -ENOMEM;
 
-	r = crypt_bitlk_decrypt_key(key->key, key->keylength, enc_key->key, outbuf, enc_key->keylength,
+	r = crypt_bitlk_decrypt_key(crypt_volume_key_get_key(key),
+				crypt_volume_key_length(key),
+				crypt_volume_key_get_key(enc_key), outbuf,
+				crypt_volume_key_length(enc_key),
 				(const char*)iv, iv_size, (const char*)tag, tag_size);
 	if (r < 0) {
 		if (r == -ENOTSUP)
@@ -1068,9 +1071,10 @@ static int decrypt_key(struct crypt_device *cd,
 	/* key_data has it's size as part of the metadata */
 	memcpy(&key_size, outbuf, 2);
 	key_size = le16_to_cpu(key_size);
-	if (enc_key->keylength != key_size) {
+	if (crypt_volume_key_length(enc_key) != key_size) {
 		log_err(cd, _("Unexpected key data size."));
-		log_dbg(cd, "Expected key data size: %zu, got %" PRIu16 "", enc_key->keylength, key_size);
+		log_dbg(cd, "Expected key data size: %zu, got %" PRIu16 "",
+			    crypt_volume_key_length(enc_key), key_size);
 
 		r = -EINVAL;
 		goto out;
@@ -1129,7 +1133,8 @@ int BITLK_get_volume_key(struct crypt_device *cd,
 				continue;
 			}
 			log_dbg(cd, "Trying to use given password as a recovery key.");
-			r = bitlk_kdf(recovery_key->key, recovery_key->keylength,
+			r = bitlk_kdf(crypt_volume_key_get_key(recovery_key),
+				      crypt_volume_key_length(recovery_key),
 				      true, next_vmk->salt, &vmk_dec_key);
 			crypt_free_volume_key(recovery_key);
 			if (r)

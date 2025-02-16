@@ -13,6 +13,16 @@
 
 #include "internal.h"
 
+struct volume_key {
+	int id;
+	size_t keylength; /* length in bytes */
+	const char *key_description; /* keyring key name/description */
+	key_type_t keyring_key_type; /* kernel keyring key type */
+	bool uploaded; /* uploaded to keyring, can drop it */
+	struct volume_key *next;
+	char *key;
+};
+
 struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 {
 	struct volume_key *vk;
@@ -20,7 +30,7 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 	if (keylength > (SIZE_MAX - sizeof(*vk)))
 		return NULL;
 
-	vk = crypt_safe_alloc(sizeof(*vk) + keylength);
+	vk = crypt_zalloc(sizeof(*vk));
 	if (!vk)
 		return NULL;
 
@@ -29,14 +39,64 @@ struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key)
 	vk->id = KEY_NOT_VERIFIED;
 
 	/* keylength 0 is valid => no key */
-	if (vk->keylength) {
-		if (key)
-			crypt_safe_memcpy(&vk->key, key, keylength);
-		else
-			crypt_safe_memzero(&vk->key, keylength);
+	if (vk->keylength && key) {
+		vk->key = crypt_safe_alloc(keylength);
+		if (!vk->key) {
+			free(vk);
+			return NULL;
+		}
+		crypt_safe_memcpy(vk->key, key, keylength);
 	}
 
 	return vk;
+}
+
+struct volume_key *crypt_alloc_volume_key_by_safe_alloc(void **safe_alloc)
+{
+	size_t keylength;
+	struct volume_key *vk;
+
+	if (!safe_alloc)
+		return NULL;
+
+	keylength = crypt_safe_alloc_size(*safe_alloc);
+	if (!keylength)
+		return NULL;
+
+	vk = crypt_alloc_volume_key(keylength, NULL);
+	if (!vk)
+		return NULL;
+
+	vk->key = *safe_alloc;
+	*safe_alloc = NULL;
+
+	return vk;
+}
+
+void crypt_volume_key_pass_safe_alloc(struct volume_key *vk, void **safe_alloc)
+{
+	assert(vk);
+	assert(vk->keylength);
+	assert(safe_alloc);
+	assert(crypt_safe_alloc_size(*safe_alloc) == vk->keylength);
+
+	crypt_safe_free(vk->key);
+	vk->key = *safe_alloc;
+	*safe_alloc = NULL;
+}
+
+const char *crypt_volume_key_get_key(const struct volume_key *vk)
+{
+	assert(vk && vk->key);
+
+	return vk->key;
+}
+
+size_t crypt_volume_key_length(const struct volume_key *vk)
+{
+	assert(vk);
+
+	return vk->keylength;
 }
 
 int crypt_volume_key_set_description(struct volume_key *vk,
@@ -63,6 +123,21 @@ int crypt_volume_key_set_description_by_name(struct volume_key *vk, const char *
 		return -EINVAL;
 
 	return crypt_volume_key_set_description(vk, key_description, keyring_key_type);
+}
+
+const char *crypt_volume_key_description(const struct volume_key *vk)
+{
+	assert(vk);
+
+	return vk->key_description;
+}
+
+
+key_type_t crypt_volume_key_kernel_key_type(const struct volume_key *vk)
+{
+	assert(vk);
+
+	return vk->keyring_key_type;
 }
 
 void crypt_volume_key_set_id(struct volume_key *vk, int id)
@@ -120,8 +195,9 @@ void crypt_free_volume_key(struct volume_key *vk)
 
 	while (vk) {
 		free(CONST_CAST(void*)vk->key_description);
+		crypt_safe_free(vk->key);
 		vk_next = vk->next;
-		crypt_safe_free(vk);
+		free(vk);
 		vk = vk_next;
 	}
 }
@@ -130,18 +206,19 @@ struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t key
 					     key_quality_info quality)
 {
 	int r;
-	struct volume_key *vk;
+	void *key;
+	struct volume_key *vk = NULL;
 
-	vk = crypt_alloc_volume_key(keylength, NULL);
-	if (!vk)
+	key = crypt_safe_alloc(keylength);
+	if (!key)
 		return NULL;
 
 	switch (quality) {
 	case KEY_QUALITY_KEY:
-		r = crypt_random_get(cd, vk->key, keylength, CRYPT_RND_KEY);
+		r = crypt_random_get(cd, key, keylength, CRYPT_RND_KEY);
 		break;
 	case KEY_QUALITY_NORMAL:
-		r = crypt_random_get(cd, vk->key, keylength, CRYPT_RND_NORMAL);
+		r = crypt_random_get(cd, key, keylength, CRYPT_RND_NORMAL);
 		break;
 	case KEY_QUALITY_EMPTY:
 		r = 0;
@@ -150,10 +227,29 @@ struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t key
 		abort();
 	}
 
-	if (r) {
-		crypt_free_volume_key(vk);
-		vk = NULL;
-	}
+	if (!r)
+		vk = crypt_alloc_volume_key(keylength, NULL);
+	if (vk)
+		vk->key = key;
+	else
+		crypt_safe_free(key);
 
 	return vk;
+}
+
+bool crypt_volume_key_is_set(const struct volume_key *vk)
+{
+	return vk && vk->key;
+}
+
+bool crypt_volume_key_is_uploaded(const struct volume_key *vk)
+{
+	return vk && vk->uploaded;
+}
+
+void crypt_volume_key_set_uploaded(struct volume_key *vk)
+{
+	assert(vk);
+
+	vk->uploaded = true;
 }

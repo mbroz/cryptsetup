@@ -252,12 +252,13 @@ static int reencrypt_assembly_verification_data(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	struct volume_key *vks,
 	uint8_t version,
-	struct volume_key **verification_data)
+	struct volume_key **r_verification_data)
 {
 	uint8_t *ptr;
-	int digest_new, digest_old;
-	struct volume_key *data = NULL, *vk_old = NULL, *vk_new = NULL;
+	int digest_new, digest_old, r = -EINVAL;
+	struct volume_key *verification_data = NULL, *vk_old = NULL, *vk_new = NULL;
 	size_t keyslot_data_len, segments_data_len, data_len = 2;
+	void *data = NULL;
 
 	/*
 	 * This works up to (including) version v207.
@@ -274,7 +275,7 @@ static int reencrypt_assembly_verification_data(struct crypt_device *cd,
 			log_dbg(cd, "Key (digest id %d) required but not unlocked.", digest_old);
 			return -EINVAL;
 		}
-		data_len += blob_serialize(vk_old->key, vk_old->keylength, NULL);
+		data_len += blob_serialize(crypt_volume_key_get_key(vk_old), crypt_volume_key_length(vk_old), NULL);
 	}
 
 	if (digest_new >= 0 && digest_old != digest_new) {
@@ -283,7 +284,7 @@ static int reencrypt_assembly_verification_data(struct crypt_device *cd,
 			log_dbg(cd, "Key (digest id %d) required but not unlocked.", digest_new);
 			return -EINVAL;
 		}
-		data_len += blob_serialize(vk_new->key, vk_new->keylength, NULL);
+		data_len += blob_serialize(crypt_volume_key_get_key(vk_new), crypt_volume_key_length(vk_new), NULL);
 	}
 
 	if (data_len == 2)
@@ -299,20 +300,22 @@ static int reencrypt_assembly_verification_data(struct crypt_device *cd,
 	data_len += segments_data_len;
 
 	/* Alloc and fill serialization data */
-	data = crypt_alloc_volume_key(data_len, NULL);
+	data = crypt_safe_alloc(data_len);
 	if (!data)
 		return -ENOMEM;
 
-	ptr = (uint8_t*)data->key;
+	ptr = (uint8_t*)data;
 
 	*ptr++ = 0x76;
 	*ptr++ = 0x30 + version;
 
 	if (vk_old)
-		ptr += blob_serialize(vk_old->key, vk_old->keylength, ptr);
+		ptr += blob_serialize(crypt_volume_key_get_key(vk_old),
+				      crypt_volume_key_length(vk_old), ptr);
 
 	if (vk_new)
-		ptr += blob_serialize(vk_new->key, vk_new->keylength, ptr);
+		ptr += blob_serialize(crypt_volume_key_get_key(vk_new),
+				      crypt_volume_key_length(vk_new), ptr);
 
 	if (!reenc_keyslot_serialize(hdr, ptr))
 		goto bad;
@@ -322,14 +325,20 @@ static int reencrypt_assembly_verification_data(struct crypt_device *cd,
 		goto bad;
 	ptr += segments_data_len;
 
-	assert((size_t)(ptr - (uint8_t*)data->key) == data_len);
+	assert((size_t)(ptr - (uint8_t*)data) == data_len);
 
-	*verification_data = data;
+	verification_data = crypt_alloc_volume_key_by_safe_alloc(&data);
+	if (!verification_data) {
+		r = -ENOMEM;
+		goto bad;
+	}
+	*r_verification_data = verification_data;
 
 	return 0;
 bad:
-	crypt_free_volume_key(data);
-	return -EINVAL;
+	crypt_safe_free(data);
+	crypt_free_volume_key(verification_data);
+	return r;
 }
 
 int LUKS2_keyslot_reencrypt_digest_create(struct crypt_device *cd,

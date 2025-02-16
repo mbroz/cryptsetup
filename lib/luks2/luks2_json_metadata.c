@@ -2894,7 +2894,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 		tgt = &dmdc.segment;
 		while (tgt) {
 			if (tgt->type == DM_CRYPT)
-				crypt_drop_keyring_key_by_description(cd, tgt->u.crypt.vk->key_description,
+				crypt_drop_keyring_key_by_description(cd, crypt_volume_key_description(tgt->u.crypt.vk),
 					LOGON_KEY);
 			tgt = tgt->next;
 		}
@@ -2930,7 +2930,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 				tgt = &dmdc.segment;
 				while (tgt) {
 					if (tgt->type == DM_CRYPT)
-						crypt_drop_keyring_key_by_description(cd, tgt->u.crypt.vk->key_description,
+						crypt_drop_keyring_key_by_description(cd, crypt_volume_key_description(tgt->u.crypt.vk),
 							LOGON_KEY);
 					tgt = tgt->next;
 				}
@@ -3115,22 +3115,22 @@ int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd __attribute__((unuse
 	if (r < 0)
 		return -EINVAL;
 
-	if (vk->keylength < opal_user_key_size)
+	if (crypt_volume_key_length(vk) < opal_user_key_size)
 		return -EINVAL;
 
 	/* OPAL SEGMENT only */
-	if (vk->keylength == opal_user_key_size) {
+	if (crypt_volume_key_length(vk) == opal_user_key_size) {
 		*ret_crypt_key = NULL;
 		*ret_opal_key = NULL;
 		return 0;
 	}
 
-	opal_key = crypt_alloc_volume_key(opal_user_key_size, vk->key);
+	opal_key = crypt_alloc_volume_key(opal_user_key_size, crypt_volume_key_get_key(vk));
 	if (!opal_key)
 		return -ENOMEM;
 
-	crypt_key = crypt_alloc_volume_key(vk->keylength - opal_user_key_size,
-					   vk->key + opal_user_key_size);
+	crypt_key = crypt_alloc_volume_key(crypt_volume_key_length(vk) - opal_user_key_size,
+					   crypt_volume_key_get_key(vk) + opal_user_key_size);
 	if (!crypt_key) {
 		crypt_free_volume_key(opal_key);
 		return -ENOMEM;

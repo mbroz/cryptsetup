@@ -48,16 +48,7 @@
 
 struct crypt_device;
 struct luks2_reencrypt;
-
-struct volume_key {
-	int id;
-	size_t keylength; /* length in bytes */
-	const char *key_description; /* keyring key name/description */
-	key_type_t keyring_key_type; /* kernel keyring key type */
-	bool uploaded; /* uploaded to keyring, can drop it */
-	struct volume_key *next;
-	char key[];
-};
+struct volume_key;
 
 typedef enum {
 	KEY_QUALITY_KEY = 0,
@@ -66,17 +57,28 @@ typedef enum {
 } key_quality_info;
 
 struct volume_key *crypt_alloc_volume_key(size_t keylength, const char *key);
+struct volume_key *crypt_alloc_volume_key_by_safe_alloc(void **safe_alloc);
 struct volume_key *crypt_generate_volume_key(struct crypt_device *cd, size_t keylength,
 					     key_quality_info quality);
 void crypt_free_volume_key(struct volume_key *vk);
+const char *crypt_volume_key_get_key(const struct volume_key *vk);
+size_t crypt_volume_key_length(const struct volume_key *vk);
 int crypt_volume_key_set_description(struct volume_key *key,
 				     const char *key_description, key_type_t keyring_key_type);
 int crypt_volume_key_set_description_by_name(struct volume_key *vk, const char *key_name);
+key_type_t crypt_volume_key_kernel_key_type(const struct volume_key *vk);
+const char *crypt_volume_key_description(const struct volume_key *vk);
 void crypt_volume_key_set_id(struct volume_key *vk, int id);
 int crypt_volume_key_get_id(const struct volume_key *vk);
 void crypt_volume_key_add_next(struct volume_key **vks, struct volume_key *vk);
 struct volume_key *crypt_volume_key_next(struct volume_key *vk);
 struct volume_key *crypt_volume_key_by_id(struct volume_key *vk, int id);
+void crypt_volume_key_pass_safe_alloc(struct volume_key *vk, void **safe_alloc);
+bool crypt_volume_key_is_set(const struct volume_key *vk);
+
+/* FIXME: temporary helpers to be removed later */
+bool crypt_volume_key_is_uploaded(const struct volume_key *vk);
+void crypt_volume_key_set_uploaded(struct volume_key *vk);
 
 struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd);
 int init_pbkdf_type(struct crypt_device *cd,
@@ -276,5 +278,7 @@ static inline bool uint64_mult_overflow(uint64_t *u, uint64_t b, size_t size)
 #define KEY_NOT_VERIFIED -2
 #define KEY_EXTERNAL_VERIFICATION -1
 #define KEY_VERIFIED 0
+
+size_t crypt_safe_alloc_size(const void *data);
 
 #endif /* INTERNAL_H */

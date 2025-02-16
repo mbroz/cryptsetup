@@ -3544,7 +3544,7 @@ static int reencrypt_load_by_keyslot_context(struct crypt_device *cd,
 		 * above. The code checks if new VK is eligible for keyring.
 		 */
 		vk = crypt_volume_key_by_id(*vks, LUKS2_reencrypt_digest_new(hdr));
-		if (vk && vk->key_description && crypt_is_cipher_null(reencrypt_segment_cipher_old(hdr))) {
+		if (vk && crypt_volume_key_description(vk) && crypt_is_cipher_null(reencrypt_segment_cipher_old(hdr))) {
 			flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 			dmd_source.flags |= CRYPT_ACTIVATE_KEYRING_KEY;
 		}
