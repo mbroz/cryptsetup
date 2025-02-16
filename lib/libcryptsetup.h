@@ -1512,6 +1512,8 @@ int crypt_keyslot_destroy(struct crypt_device *cd, int keyslot);
 #define CRYPT_ACTIVATE_HIGH_PRIORITY (UINT32_C(1) << 28)
 /** dm-verity: also restart/panic on error, use with RESTART_ON_CORRUPTION or PANIC_ON_CORRUPTION */
 #define CRYPT_ACTIVATE_ERROR_AS_CORRUPTION (UINT32_C(1) << 29)
+/** dm-integrity: inline mode for compatible hardware profile */
+#define CRYPT_ACTIVATE_INLINE_MODE (UINT32_C(1) << 30)
 
 /**
  * Active device runtime attributes
