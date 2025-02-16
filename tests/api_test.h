@@ -134,6 +134,7 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 #define T_DM_CRYPT_HIGH_PRIORITY_SUPPORTED (UINT64_C(1) << 29) /* dm-crypt high priority workqueue flag supported  */
 #define T_DM_CRYPT_INTEGRITY_KEY_SIZE_OPT_SUPPORTED (UINT64_C(1) << 30) /* dm-crypt support for integrity_key_size option */
 #define T_DM_VERITY_ERROR_AS_CORRUPTION_SUPPORTED (UINT64_C(1) << 31) /* dm-verity restart/panic on corruption supported */
+#define T_DM_INTEGRITY_INLINE_MODE_SUPPORTED (UINT64_C(1) << 32) /* dm-integrity inline mode supported */
 
 /* loop helpers */
 int loop_device(const char *loop);

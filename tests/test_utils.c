@@ -622,6 +622,9 @@ static void t_dm_set_integrity_compat(const char *dm_version __attribute__((unus
 
 	if (t_dm_satisfies_version(1, 8, 0, integrity_maj, integrity_min, integrity_patch))
 		t_dm_crypt_flags |= T_DM_INTEGRITY_RESET_RECALC_SUPPORTED;
+
+	if (t_dm_satisfies_version(1, 12, 0, integrity_maj, integrity_min, integrity_patch))
+		t_dm_crypt_flags |= T_DM_INTEGRITY_INLINE_MODE_SUPPORTED;
 }
 
 int t_dm_check_versions(void)
