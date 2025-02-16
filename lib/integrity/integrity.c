@@ -44,7 +44,7 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 	if (memcmp(sb->magic, SB_MAGIC, sizeof(sb->magic))) {
 		log_dbg(cd, "No kernel dm-integrity metadata detected on %s.", device_path(device));
 		r = -EINVAL;
-	} else if (sb->version < SB_VERSION_1 || sb->version > SB_VERSION_5) {
+	} else if (sb->version < SB_VERSION_1 || sb->version > SB_VERSION_6) {
 		log_err(cd, _("Incompatible kernel dm-integrity metadata (version %u) detected on %s."),
 			sb->version, device_path(device));
 		r = -EINVAL;
@@ -102,12 +102,13 @@ int INTEGRITY_dump(struct crypt_device *cd, struct device *device, uint64_t offs
 	log_std(cd, "journal sections: %u\n", sb.journal_sections);
 	log_std(cd, "log2 interleave sectors: %d\n", sb.log2_interleave_sectors);
 	log_std(cd, "log2 blocks per bitmap: %u\n", sb.log2_blocks_per_bitmap_bit);
-	log_std(cd, "flags: %s%s%s%s%s\n",
+	log_std(cd, "flags: %s%s%s%s%s%s\n",
 		sb.flags & SB_FLAG_HAVE_JOURNAL_MAC ? "have_journal_mac " : "",
 		sb.flags & SB_FLAG_RECALCULATING ? "recalculating " : "",
 		sb.flags & SB_FLAG_DIRTY_BITMAP ? "dirty_bitmap " : "",
 		sb.flags & SB_FLAG_FIXED_PADDING ? "fix_padding " : "",
-		sb.flags & SB_FLAG_FIXED_HMAC ? "fix_hmac " : "");
+		sb.flags & SB_FLAG_FIXED_HMAC ? "fix_hmac " : "",
+		sb.flags & SB_FLAG_INLINE ? "inline " : "");
 
 	return 0;
 }
