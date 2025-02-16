@@ -1544,7 +1544,7 @@ out:
  * Persistent config flags
  */
 static const struct  {
-	uint32_t flag;
+	uint64_t flag;
 	const char *description;
 } persistent_flags[] = {
 	{ CRYPT_ACTIVATE_ALLOW_DISCARDS,         "allow-discards" },
@@ -1802,7 +1802,7 @@ int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 	json_object *jobj_config, *jobj_requirements, *jobj_mandatory, *jobj;
 	int i, r = -EINVAL;
 	const struct requirement_flag *req;
-	uint32_t req_id;
+	uint64_t req_id;
 
 	if (!hdr)
 		return -EINVAL;
@@ -2980,7 +2980,7 @@ out:
 	return r;
 }
 
-int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs_mask, int quiet)
+int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t reqs_mask, int quiet)
 {
 	uint32_t reqs;
 	int r = LUKS2_config_get_requirements(cd, hdr, &reqs);

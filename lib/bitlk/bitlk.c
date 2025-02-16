@@ -1241,7 +1241,7 @@ static int _activate(struct crypt_device *cd,
 	uint64_t next_start = 0;
 	uint64_t next_end = 0;
 	uint64_t last_segment = 0;
-	uint32_t dmt_flags = 0;
+	uint64_t dmt_flags = 0;
 
 	r = _activate_check(cd, params);
 	if (r)

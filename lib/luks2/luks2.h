@@ -445,7 +445,7 @@ int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint8_t *version);
 
 bool LUKS2_reencrypt_requirement_candidate(struct luks2_hdr *hdr);
 
-int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs_mask, int quiet);
+int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t reqs_mask, int quiet);
 
 int LUKS2_key_description_by_segment(struct crypt_device *cd,
 		struct luks2_hdr *hdr, struct volume_key *vk, int segment);

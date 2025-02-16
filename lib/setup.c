@@ -1966,7 +1966,7 @@ static int LUKS2_check_encryption_sector(struct crypt_device *cd, uint64_t devic
 		uint64_t data_offset_bytes, uint32_t sector_size, bool modify_sector_size,
 		bool verify_data_area_alignment, uint32_t *ret_sector_size)
 {
-	uint32_t dmc_flags;
+	uint64_t dmc_flags;
 
 	assert(ret_sector_size);
 
@@ -3428,7 +3428,7 @@ int crypt_compare_dm_devices(struct crypt_device *cd,
 }
 
 static int _reload_device(struct crypt_device *cd, const char *name,
-			  struct crypt_dm_active_device *sdmd, uint32_t dmflags)
+			  struct crypt_dm_active_device *sdmd, uint64_t dmflags)
 {
 	int r;
 	struct crypt_dm_active_device tdmd;
@@ -3691,7 +3691,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 	struct crypt_dm_active_device dmdq, dmd = {};
 	struct dm_target *tgt = &dmdq.segment;
 	struct crypt_params_integrity params = {};
-	uint32_t supported_flags = 0, dmflags = 0;
+	uint64_t supported_flags = 0, dmflags = 0;
 	uint64_t old_size;
 	int r;
 
@@ -4080,7 +4080,8 @@ int crypt_suspend(struct crypt_device *cd,
 	crypt_status_info ci;
 	int r;
 	struct crypt_dm_active_device dmd, dmdi = {};
-	uint32_t opal_segment_number = 1, dmflags = DM_SUSPEND_WIPE_KEY;
+	uint32_t opal_segment_number = 1;
+	uint64_t dmflags = DM_SUSPEND_WIPE_KEY;
 	struct dm_target *tgt = &dmd.segment;
 	char *key_desc = NULL, *iname = NULL;
 	struct crypt_lock_handle *opal_lh = NULL;
@@ -4965,8 +4966,7 @@ int create_or_reload_device(struct crypt_device *cd, const char *name,
 	int r;
 	enum devcheck device_check;
 	struct dm_target *tgt;
-	uint64_t offset;
-	uint32_t dmflags = 0;
+	uint64_t offset, dmflags = 0;
 
 	if (!type || !name || !single_segment(dmd))
 		return -EINVAL;
@@ -5702,7 +5702,7 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 	struct luks2_hdr *hdr2 = NULL;
 	struct crypt_dm_active_device dmd = {};
 	int r;
-	uint32_t get_flags = DM_ACTIVE_DEVICE | DM_ACTIVE_UUID | DM_ACTIVE_HOLDERS;
+	uint64_t get_flags = DM_ACTIVE_DEVICE | DM_ACTIVE_UUID | DM_ACTIVE_HOLDERS;
 
 	if (!name)
 		return -EINVAL;
@@ -7436,7 +7436,7 @@ int crypt_keyslot_add_by_keyslot_context(struct crypt_device *cd,
  */
 int crypt_use_keyring_for_vk(struct crypt_device *cd)
 {
-	uint32_t dmc_flags;
+	uint64_t dmc_flags;
 
 	/* dm backend must be initialized */
 	if (!cd)

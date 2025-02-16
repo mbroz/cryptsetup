@@ -266,7 +266,7 @@ int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
 		       uint32_t sb_flags)
 {
 	int r;
-	uint32_t dmi_flags;
+	uint64_t dmi_flags;
 	struct dm_target *tgt = &dmd->segment;
 
 	if (!single_segment(dmd) || tgt->type != DM_INTEGRITY)
@@ -394,7 +394,7 @@ int INTEGRITY_format(struct crypt_device *cd,
 		     struct volume_key *journal_mac_key,
 		     uint64_t backing_device_sectors)
 {
-	uint32_t dmi_flags;
+	uint64_t dmi_flags;
 	char reduced_device_name[70], tmp_name[64], tmp_uuid[40];
 	struct crypt_dm_active_device dmdi = {
 		.size = 8,

@@ -2189,7 +2189,7 @@ static int reencrypt_replace_device(struct crypt_device *cd, const char *target,
 {
 	int r, exists = 1;
 	struct crypt_dm_active_device dmd_source, dmd_target = {};
-	uint32_t dmflags = DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH;
+	uint64_t dmflags = DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH;
 
 	log_dbg(cd, "Replacing table in device %s with table from device %s.", target, source);
 
@@ -4170,7 +4170,7 @@ static int reencrypt_wipe_unused_device_area(struct crypt_device *cd, struct luk
 static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reencrypt *rh)
 {
 	int i, r;
-	uint32_t dmt_flags;
+	uint64_t dmt_flags;
 	bool finished = !(rh->device_size > rh->progress);
 
 	if (rh->rp.type == REENC_PROTECTION_NONE &&
