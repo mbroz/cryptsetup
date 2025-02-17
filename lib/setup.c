@@ -4055,24 +4055,6 @@ void crypt_free(struct crypt_device *cd)
 	free(cd);
 }
 
-static char *crypt_get_device_key_description(struct crypt_device *cd, const char *name)
-{
-	char *desc = NULL;
-	struct crypt_dm_active_device dmd;
-	struct dm_target *tgt = &dmd.segment;
-
-	if (dm_query_device(cd, name, DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_CRYPT_KEYSIZE, &dmd) < 0)
-		return NULL;
-
-	if (single_segment(&dmd) && tgt->type == DM_CRYPT &&
-	    (dmd.flags & CRYPT_ACTIVATE_KEYRING_KEY) && crypt_volume_key_description(tgt->u.crypt.vk))
-		desc = strdup(crypt_volume_key_description(tgt->u.crypt.vk));
-
-	dm_targets_free(cd, &dmd);
-
-	return desc;
-}
-
 int crypt_suspend(struct crypt_device *cd,
 		  const char *name)
 {
@@ -4083,7 +4065,7 @@ int crypt_suspend(struct crypt_device *cd,
 	uint32_t opal_segment_number = 1;
 	uint64_t dmflags = DM_SUSPEND_WIPE_KEY;
 	struct dm_target *tgt = &dmd.segment;
-	char *key_desc = NULL, *iname = NULL;
+	char *iname = NULL;
 	struct crypt_lock_handle *opal_lh = NULL;
 
 	if (!cd || !name)
@@ -4100,7 +4082,9 @@ int crypt_suspend(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	r = dm_query_device(cd, name, DM_ACTIVE_UUID, &dmd);
+	r = dm_query_device(cd, name,
+			    DM_ACTIVE_UUID | DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_CRYPT_KEYSIZE,
+			    &dmd);
 	if (r < 0)
 		return r;
 
@@ -4167,8 +4151,6 @@ int crypt_suspend(struct crypt_device *cd,
 		goto out;
 	}
 
-	key_desc = crypt_get_device_key_description(cd, name);
-
 	if (dm_opal_uuid && crypt_data_device(cd)) {
 		if (isLUKS2(cd->type)) {
 			r = LUKS2_get_opal_segment_number(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, &opal_segment_number);
@@ -4203,7 +4185,8 @@ int crypt_suspend(struct crypt_device *cd,
 			log_err(cd, _("Error during suspending device %s."), iname);
 	}
 
-	crypt_unlink_key_by_description_from_thread_keyring(cd, key_desc, cd->keyring_key_type);
+	if (single_segment(&dmd) && tgt->type == DM_CRYPT)
+		crypt_volume_key_drop_kernel_key(cd, tgt->u.crypt.vk);
 
 	if (dm_opal_uuid && crypt_data_device(cd)) {
 		r = opal_exclusive_lock(cd, crypt_data_device(cd), &opal_lh);
@@ -4217,7 +4200,6 @@ int crypt_suspend(struct crypt_device *cd,
 		log_err(cd, _("Device %s was suspended but hardware OPAL device cannot be locked."), name);
 out:
 	opal_exclusive_unlock(cd, opal_lh);
-	free(key_desc);
 	free(iname);
 	dm_targets_free(cd, &dmd);
 	dm_targets_free(cd, &dmdi);
