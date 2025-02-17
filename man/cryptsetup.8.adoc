@@ -449,6 +449,9 @@ Securely erase a partition or device. Requires admin password.
 Additionally specify *--hw-opal-factory-reset* for a FULL factory reset of the
 drive, using the drive's *PSID* (typically printed on the label) instead of the
 admin password.
+
+*NOTE*: PSID must be entered without any dashes, spaces or underscores.
+
 *WARNING*: a factory reset will cause ALL data on the device to be lost,
 regardless of the partition it is ran on, if any, and regardless of any LUKS2
 header backup.
