@@ -2894,7 +2894,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 		tgt = &dmdc.segment;
 		while (tgt) {
 			if (tgt->type == DM_CRYPT)
-				crypt_drop_keyring_key_by_description(cd, crypt_volume_key_description(tgt->u.crypt.vk),
+				crypt_unlink_key_by_description_from_thread_keyring(cd, crypt_volume_key_description(tgt->u.crypt.vk),
 					LOGON_KEY);
 			tgt = tgt->next;
 		}
@@ -2930,7 +2930,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 				tgt = &dmdc.segment;
 				while (tgt) {
 					if (tgt->type == DM_CRYPT)
-						crypt_drop_keyring_key_by_description(cd, crypt_volume_key_description(tgt->u.crypt.vk),
+						crypt_unlink_key_by_description_from_thread_keyring(cd, crypt_volume_key_description(tgt->u.crypt.vk),
 							LOGON_KEY);
 					tgt = tgt->next;
 				}

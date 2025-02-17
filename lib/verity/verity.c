@@ -384,7 +384,7 @@ int VERITY_activate(struct crypt_device *cd,
 
 	r = 0;
 out:
-	crypt_drop_keyring_key_by_description(cd, description, USER_KEY);
+	crypt_unlink_key_by_description_from_thread_keyring(cd, description, USER_KEY);
 	free(description);
 	dm_targets_free(cd, &dmd);
 	return r;
