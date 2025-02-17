@@ -704,6 +704,35 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	struct crypt_params_hw_opal *opal_params);
 
 /**
+ * Create (format) new integrity-protected device using integrity inline mode (HW sector tags).
+ * This can be used for @e INTEGRITY and @e LUKS2 with integrity protection
+ *
+ * @pre @e cd contains initialized and not formatted device context (device type must @b not be set)
+ *
+ * @param cd crypt device handle
+ * @param type type of device (optional params struct must be of this type)
+ * @param cipher (e.g. "aes") or @e NULL for @e INTEGRITY
+ * @param cipher_mode including IV specification (e.g. "xts-plain") or @e NULL for @e INTEGRITY
+ * @param uuid requested UUID or @e NULL if it should be generated
+ * @param volume_key pre-generated integrity/volume key (if needed) or @e NULL
+ * @param volume_key_size size of volume/integrity key in bytes.
+ * @param params crypt type specific parameters (see @link crypt-type @endlink)
+ *
+ * @returns @e 0 on success or negative errno value otherwise.
+ *
+ * @note Journal parameters must be set to zero in integrity part of @e params.
+ * 	Only tag_size, sector_size, buffer_sectors, integrity options should be set.
+ */
+int crypt_format_inline(struct crypt_device *cd,
+	const char *type,
+	const char *cipher,
+	const char *cipher_mode,
+	const char *uuid,
+	const char *volume_key,
+	size_t volume_key_size,
+	void *params);
+
+/**
  * Set format compatibility flags.
  *
  * @param cd crypt device handle

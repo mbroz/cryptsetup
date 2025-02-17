@@ -9,6 +9,7 @@
 #define _CRYPTSETUP_INTEGRITY_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 struct crypt_device;
 struct device;
@@ -68,7 +69,9 @@ int INTEGRITY_format(struct crypt_device *cd,
 		     struct volume_key *integrity_key,
 		     struct volume_key *journal_crypt_key,
 		     struct volume_key *journal_mac_key,
-		     uint64_t backing_device_sectors);
+		     uint64_t backing_device_sectors,
+		     uint32_t *sb_flags,
+		     bool integrity_inline);
 
 int INTEGRITY_activate(struct crypt_device *cd,
 		       const char *name,

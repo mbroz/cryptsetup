@@ -2200,7 +2200,8 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 				goto out;
 			}
 		}
-		r = INTEGRITY_format(cd, params ? params->integrity_params : NULL, integrity_key, NULL, NULL, 0);
+		r = INTEGRITY_format(cd, params ? params->integrity_params : NULL,
+				     integrity_key, NULL, NULL, 0, NULL, false);
 		if (r)
 			log_err(cd, _("Cannot format integrity for device %s."),
 				data_device_path(cd));
@@ -2658,7 +2659,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 				      * Create reduced dm-integrity device only if locking range size does
 				      * not match device size.
 				      */
-				     device_size_bytes != range_size_bytes ? range_size_bytes / SECTOR_SIZE : 0);
+				     device_size_bytes != range_size_bytes ? range_size_bytes / SECTOR_SIZE : 0, NULL, false);
 		if (r)
 			log_err(cd, _("Cannot format integrity for device %s."),
 				data_device_path(cd));
@@ -2940,7 +2941,8 @@ out:
 static int _crypt_format_integrity(struct crypt_device *cd,
 				   const char *uuid,
 				   struct crypt_params_integrity *params,
-				   const char *integrity_key, size_t integrity_key_size)
+				   const char *integrity_key, size_t integrity_key_size,
+				   bool integrity_inline)
 {
 	int r;
 	uint32_t integrity_tag_size;
@@ -3037,7 +3039,9 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 		}
 	}
 
-	r = INTEGRITY_format(cd, params, ik, cd->u.integrity.journal_crypt_key, cd->u.integrity.journal_mac_key, 0);
+	r = INTEGRITY_format(cd, params, ik, cd->u.integrity.journal_crypt_key,
+			     cd->u.integrity.journal_mac_key, 0, &cd->u.integrity.sb_flags,
+			     integrity_inline);
 	if (r)
 		log_err(cd, _("Cannot format integrity for device %s."), mdata_device_path(cd));
 
@@ -3049,6 +3053,75 @@ out:
 		free(integrity);
 		free(journal_integrity);
 		free(journal_crypt);
+	}
+
+	return r;
+}
+
+int crypt_format_inline(struct crypt_device *cd,
+	const char *type,
+	const char *cipher,
+	const char *cipher_mode,
+	const char *uuid,
+	const char *volume_key,
+	size_t volume_key_size,
+	void *params)
+{
+	const struct crypt_params_integrity *iparams;
+	struct device *idevice;
+	size_t sector_size, required_sector_size;
+	int r;
+
+	if (!cd || !params)
+		return -EINVAL;
+
+	if (cd->type) {
+		log_dbg(cd, "Context already formatted as %s.", cd->type);
+		return -EINVAL;
+	}
+
+	log_dbg(cd, "Formatting device %s as type %s with inline tags.", mdata_device_path(cd) ?: "(none)", type);
+
+	if (isINTEGRITY(type)) {
+		iparams = params;
+		idevice = crypt_metadata_device(cd);
+		required_sector_size = iparams->sector_size;
+
+		/* Unused in standalone integrity */
+		if (cipher || cipher_mode)
+			return -EINVAL;
+	} else {
+		log_err(cd, _("Unknown or unsupported device type %s requested."), type);
+		return -EINVAL;
+	}
+
+	/* In inline mode journal will be never used, check that params are not set */
+	if (iparams && (iparams->journal_size || iparams->journal_watermark || iparams->journal_commit_time ||
+	    iparams->interleave_sectors || iparams->journal_integrity || iparams->journal_integrity_key ||
+	    iparams->journal_integrity_key_size || iparams->journal_crypt || iparams->journal_crypt_key ||
+	    iparams->journal_integrity_key_size))
+		return -EINVAL;
+
+	/* Inline must use sectors size as hardware device */
+	sector_size = device_block_size(cd, idevice);
+	if (!sector_size)
+		return -EINVAL;
+
+	/* No autodetection, use device sector size */
+	if (sector_size != required_sector_size) {
+		log_err(cd, _("Sector must be the same as device hardware sector (%zu bytes)."), sector_size);
+		return -EINVAL;
+	}
+
+	if (isINTEGRITY(type))
+		r = _crypt_format_integrity(cd, uuid, params, volume_key, volume_key_size, true);
+	else
+		r = -EINVAL;
+
+	if (r < 0) {
+		crypt_set_null_type(cd);
+		crypt_free_volume_key(cd->volume_key);
+		cd->volume_key = NULL;
 	}
 
 	return r;
@@ -3096,9 +3169,9 @@ static int _crypt_format(struct crypt_device *cd,
 	else if (isVERITY(type))
 		r = _crypt_format_verity(cd, uuid, params);
 	else if (isINTEGRITY(type))
-		r = _crypt_format_integrity(cd, uuid, params, volume_key, volume_key_size);
+		r = _crypt_format_integrity(cd, uuid, params, volume_key, volume_key_size, false);
 	else {
-		log_err(cd, _("Unknown crypt device type %s requested."), type);
+		log_err(cd, _("Unknown or unsupported device type %s requested."), type);
 		r = -EINVAL;
 	}
 
