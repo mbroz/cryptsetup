@@ -31,6 +31,8 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 {
 	int devfd, r;
 
+	log_dbg(cd, "Reading kernel dm-integrity metadata on %s.", device_path(device));
+
 	devfd = device_open(cd, device, O_RDONLY);
 	if(devfd < 0)
 		return -EINVAL;
@@ -71,8 +73,10 @@ int INTEGRITY_read_sb(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	params->sector_size = SECTOR_SIZE << sb.log2_sectors_per_block;
-	params->tag_size = sb.integrity_tag_size;
+	if (params) {
+		params->sector_size = SECTOR_SIZE << sb.log2_sectors_per_block;
+		params->tag_size = sb.integrity_tag_size;
+	}
 
 	if (flags)
 		*flags = sb.flags;
@@ -248,6 +252,9 @@ int INTEGRITY_create_dmd_device(struct crypt_device *cd,
 	if (sb_flags & SB_FLAG_RECALCULATING)
 		dmd->flags |= CRYPT_ACTIVATE_RECALCULATE;
 
+	if (sb_flags & SB_FLAG_INLINE)
+		dmd->flags |= (CRYPT_ACTIVATE_NO_JOURNAL | CRYPT_ACTIVATE_INLINE_MODE);
+
 	r = INTEGRITY_data_sectors(cd, INTEGRITY_metadata_device(cd),
 				   crypt_get_data_offset(cd) * SECTOR_SIZE, &dmd->size);
 	if (r < 0)
@@ -273,8 +280,9 @@ int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
 	if (!single_segment(dmd) || tgt->type != DM_INTEGRITY)
 		return -EINVAL;
 
-	log_dbg(cd, "Trying to activate INTEGRITY device on top of %s, using name %s, tag size %d, provided sectors %" PRIu64".",
-		device_path(tgt->data_device), name, tgt->u.integrity.tag_size, dmd->size);
+	log_dbg(cd, "Trying to activate INTEGRITY device on top of %s, using name %s, tag size %d%s, provided sectors %" PRIu64".",
+		device_path(tgt->data_device), name, tgt->u.integrity.tag_size,
+		(sb_flags & SB_FLAG_INLINE) ? " (inline)" :"", dmd->size);
 
 	r = create_or_reload_device(cd, name, type, dmd);
 
@@ -295,6 +303,12 @@ int INTEGRITY_activate_dmd_device(struct crypt_device *cd,
 	    (tgt->u.integrity.vk && !tgt->u.integrity.journal_integrity_key) :
 	    (tgt->u.integrity.vk || tgt->u.integrity.journal_integrity_key))) {
 		log_err(cd, _("Kernel refuses to activate insecure recalculate option (see legacy activation options to override)."));
+		return -ENOTSUP;
+	}
+
+	if (r < 0 && (sb_flags & SB_FLAG_INLINE) && !dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
+	    !(dmi_flags & DM_INTEGRITY_INLINE_MODE_SUPPORTED)) {
+		log_err(cd, _("Kernel does not support dm-integrity inline mode."));
 		return -ENOTSUP;
 	}
 
@@ -393,7 +407,9 @@ int INTEGRITY_format(struct crypt_device *cd,
 		     struct volume_key *integrity_key,
 		     struct volume_key *journal_crypt_key,
 		     struct volume_key *journal_mac_key,
-		     uint64_t backing_device_sectors)
+		     uint64_t backing_device_sectors,
+		     uint32_t *sb_flags,
+		     bool integrity_inline)
 {
 	uint64_t dmi_flags;
 	char reduced_device_name[70], tmp_name[64], tmp_uuid[40];
@@ -440,6 +456,9 @@ int INTEGRITY_format(struct crypt_device *cd,
 		p_data_device = crypt_data_device(cd);
 	}
 
+	if (integrity_inline)
+		dmdi.flags |= (CRYPT_ACTIVATE_NO_JOURNAL | CRYPT_ACTIVATE_INLINE_MODE);
+
 	r = dm_integrity_target_set(cd, tgt, 0, dmdi.size, p_metadata_device,
 			p_data_device, crypt_get_integrity_tag_size(cd),
 			data_offset_sectors, crypt_get_sector_size(cd), integrity_key,
@@ -447,8 +466,8 @@ int INTEGRITY_format(struct crypt_device *cd,
 	if (r < 0)
 		goto err;
 
-	log_dbg(cd, "Trying to format INTEGRITY device on top of %s, tmp name %s, tag size %d.",
-		device_path(tgt->data_device), tmp_name, tgt->u.integrity.tag_size);
+	log_dbg(cd, "Trying to format INTEGRITY device on top of %s, tmp name %s, tag size %d%s.",
+		device_path(tgt->data_device), tmp_name, tgt->u.integrity.tag_size, integrity_inline ? " (inline)" : "");
 
 	r = device_block_adjust(cd, tgt->data_device, DEV_EXCL, tgt->u.integrity.offset, NULL, NULL);
 	if (r < 0 && (dm_flags(cd, DM_INTEGRITY, &dmi_flags) || !(dmi_flags & DM_INTEGRITY_SUPPORTED))) {
@@ -469,6 +488,12 @@ int INTEGRITY_format(struct crypt_device *cd,
 		goto err;
 
 	r = dm_remove_device(cd, tmp_name, CRYPT_DEACTIVATE_FORCE);
+	if (r)
+		goto err;
+
+	/* reload sb_flags from superblock (important for SB_FLAG_INLINE) */
+	if (sb_flags)
+		r = INTEGRITY_read_sb(cd, NULL, sb_flags);
 err:
 	dm_targets_free(cd, &dmdi);
 	if (reduced_device) {

@@ -155,6 +155,19 @@ because we don't have to write the data twice, but it is also less
 reliable, because if data corruption happens when the machine crashes,
 it may not be detected.
 
+*--integrity-inline*::
+Store integrity tags to hardware sector integrity fields.
+The device must support sectors with additional protection information
+(PI, also known as DIF - data integrity field) of the requested size.
+Another storage subsystem must not use the additional field
+(the device must present a "nop" profile in the kernel).
+Note that some devices must be reformatted at a low level to support
+this option; for NVMe devices, see nvme(1) id-ns LBA profiles.
++
+No journal or bitmap is used in this mode. The device should operate
+with native speed (without any overhead).
+This option is available since the Linux kernel version 6.11.
+
 *--integrity-key-file FILE*::
 The file with the integrity key.
 
