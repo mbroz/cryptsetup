@@ -414,7 +414,7 @@ static int onlyLUKSnoRequirements(struct crypt_device *cd)
 
 static int onlyLUKS(struct crypt_device *cd)
 {
-	return _onlyLUKS(cd, 0, CRYPT_REQUIREMENT_OPAL);
+	return _onlyLUKS(cd, 0, CRYPT_REQUIREMENT_OPAL | CRYPT_REQUIREMENT_INLINE_HW_TAGS);
 }
 
 static int _onlyLUKS2(struct crypt_device *cd, uint32_t cdflags, uint32_t mask)
@@ -447,7 +447,7 @@ static int onlyLUKS2unrestricted(struct crypt_device *cd)
 /* Internal only */
 int onlyLUKS2(struct crypt_device *cd)
 {
-	return _onlyLUKS2(cd, 0, CRYPT_REQUIREMENT_OPAL);
+	return _onlyLUKS2(cd, 0, CRYPT_REQUIREMENT_OPAL | CRYPT_REQUIREMENT_INLINE_HW_TAGS);
 }
 
 /* Internal only */
@@ -550,7 +550,7 @@ int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
  * compares two UUIDs returned by device-mapper (striped by cryptsetup)
  * used for stacked LUKS2 & INTEGRITY devices
  */
-static int crypt_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid)
+int crypt_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid)
 {
 	int i;
 	char *str, *stri;
@@ -2017,7 +2017,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       const char *volume_key,
 			       size_t volume_key_size,
 			       struct crypt_params_luks2 *params,
-			       bool sector_size_autodetect)
+			       bool sector_size_autodetect, bool integrity_inline)
 {
 	int r;
 	unsigned long required_alignment = DEFAULT_DISK_ALIGNMENT;
@@ -2154,6 +2154,14 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
+	if (integrity_inline) {
+		log_dbg(cd, "Adding LUKS2 inline HW tags requirement flag.");
+		r = LUKS2_config_set_requirement_version(cd, &cd->u.luks2.hdr,
+			CRYPT_REQUIREMENT_INLINE_HW_TAGS, 1, false);
+		if (r < 0)
+			goto out;
+	}
+
 	if (params && (params->label || params->subsystem)) {
 		r = LUKS2_hdr_labels(cd, &cd->u.luks2.hdr,
 				     params->label, params->subsystem, 0);
@@ -2191,7 +2199,10 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 
 			goto out;
 		}
+	}
 
+	/* Format underlying virtual dm-integrity device */
+	if (!integrity_inline && crypt_get_integrity_tag_size(cd)) {
 		if (integrity_key_size) {
 			integrity_key = crypt_alloc_volume_key(integrity_key_size,
 					crypt_volume_key_get_key(cd->volume_key) + volume_key_size - integrity_key_size);
@@ -3067,8 +3078,9 @@ int crypt_format_inline(struct crypt_device *cd,
 	size_t volume_key_size,
 	void *params)
 {
+	struct crypt_params_luks2 *lparams;
 	const struct crypt_params_integrity *iparams;
-	uint32_t device_tag_size;
+	uint32_t device_tag_size, required_tag_size;
 	struct device *idevice;
 	size_t sector_size, required_sector_size;
 	int r;
@@ -3084,13 +3096,25 @@ int crypt_format_inline(struct crypt_device *cd,
 	log_dbg(cd, "Formatting device %s as type %s with inline tags.", mdata_device_path(cd) ?: "(none)", type);
 
 	if (isINTEGRITY(type)) {
+		lparams = NULL;
 		iparams = params;
 		idevice = crypt_metadata_device(cd);
 		required_sector_size = iparams->sector_size;
+		required_tag_size = iparams->tag_size;
 
 		/* Unused in standalone integrity */
 		if (cipher || cipher_mode)
 			return -EINVAL;
+	} else if (isLUKS2(type)) {
+		lparams = params;
+		iparams = lparams->integrity_params;
+		idevice = crypt_data_device(cd);
+		required_sector_size = lparams->sector_size;
+
+		if (!lparams->integrity || !idevice)
+			return -EINVAL;
+
+		required_tag_size = INTEGRITY_tag_size(lparams->integrity, cipher, cipher_mode);
 	} else {
 		log_err(cd, _("Unknown or unsupported device type %s requested."), type);
 		return -EINVAL;
@@ -3103,30 +3127,37 @@ int crypt_format_inline(struct crypt_device *cd,
 	    iparams->journal_integrity_key_size))
 		return -EINVAL;
 
+	if (!device_is_nop_dif(idevice, &device_tag_size)) {
+		log_err(cd, _("Device %s does not provide inline integrity data fields."), mdata_device_path(cd));
+		return -EINVAL;
+	}
+
+	/* We can get device_tag_size = 0 as kernel provides this info only for some block devices */
+	if (device_tag_size > 0 && device_tag_size < required_tag_size) {
+		log_err(cd, _("Inline tag size %" PRIu32 " [bytes] is larger than %" PRIu32 " provided by device %s."),
+			required_tag_size, device_tag_size, mdata_device_path(cd));
+		return -EINVAL;
+	}
+	log_dbg(cd, "Inline integrity is supported (%" PRIu32 ").", device_tag_size);
+
 	/* Inline must use sectors size as hardware device */
 	sector_size = device_block_size(cd, idevice);
 	if (!sector_size)
 		return -EINVAL;
 
 	/* No autodetection, use device sector size */
-	if (sector_size != required_sector_size) {
+	if (isLUKS2(type) && lparams && !required_sector_size)
+		lparams->sector_size = sector_size;
+	else if (sector_size != required_sector_size) {
 		log_err(cd, _("Sector must be the same as device hardware sector (%zu bytes)."), sector_size);
-		return -EINVAL;
-	}
-
-	if (!device_is_nop_dif(crypt_metadata_device(cd), &device_tag_size)) {
-		log_err(cd, _("Device %s does not provide inline integrity data fields."), mdata_device_path(cd));
-		return -EINVAL;
-	}
-
-	if (device_tag_size < iparams->tag_size) {
-		log_err(cd, _("Inline tag size %" PRIu32 " [bytes] is larger than %" PRIu32 " provided by device %s."),
-			iparams->tag_size, device_tag_size, mdata_device_path(cd));
 		return -EINVAL;
 	}
 
 	if (isINTEGRITY(type))
 		r = _crypt_format_integrity(cd, uuid, params, volume_key, volume_key_size, true);
+	else if (isLUKS2(type))
+		r = _crypt_format_luks2(cd, cipher, cipher_mode,
+					uuid, volume_key, volume_key_size, params, false, true);
 	else
 		r = -EINVAL;
 
@@ -3175,7 +3206,7 @@ static int _crypt_format(struct crypt_device *cd,
 					uuid, volume_key, volume_key_size, params);
 	else if (isLUKS2(type))
 		r = _crypt_format_luks2(cd, cipher, cipher_mode,
-					uuid, volume_key, volume_key_size, params, sector_size_autodetect);
+					uuid, volume_key, volume_key_size, params, sector_size_autodetect, false);
 	else if (isLOOPAES(type))
 		r = _crypt_format_loopaes(cd, cipher, uuid, volume_key_size, params);
 	else if (isVERITY(type))

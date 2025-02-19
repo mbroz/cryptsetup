@@ -1596,6 +1596,8 @@ uint64_t crypt_get_active_integrity_failures(struct crypt_device *cd,
 #define CRYPT_REQUIREMENT_ONLINE_REENCRYPT	(UINT32_C(1) << 1)
 /** Device configured with OPAL support */
 #define CRYPT_REQUIREMENT_OPAL			(UINT32_C(1) << 2)
+/** Device configured with inline HW tags */
+#define CRYPT_REQUIREMENT_INLINE_HW_TAGS	(UINT32_C(1) << 3)
 /** unknown requirement in header (output only) */
 #define CRYPT_REQUIREMENT_UNKNOWN		(UINT32_C(1) << 31)
 

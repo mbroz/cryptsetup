@@ -178,6 +178,7 @@ int lookup_by_disk_id(const char *dm_uuid);
 int lookup_by_sysfs_uuid_field(const char *dm_uuid);
 int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid);
 int crypt_uuid_type_cmp(const char *dm_uuid, const char *type);
+int crypt_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid);
 
 size_t crypt_getpagesize(void);
 unsigned crypt_cpusonline(void);
