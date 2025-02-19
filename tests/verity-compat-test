@@ -83,7 +83,9 @@ check_version() # MAJ MIN
 	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
 
 	test $VER_MAJ -gt $1 && return 0
+	test $VER_MAJ -lt $1 && return 1
 	test $VER_MIN -ge $2 && return 0
+
 	return 1
 }
 
@@ -95,6 +97,7 @@ check_version_kernel()
 	KER_MIN=$(echo $KER_STR | cut -f 2 -d.)
 
 	test $KER_MAJ -gt $1 && return 0
+	test $KER_MAJ -lt $1 && return 1
 	test $KER_MIN -ge $2 && return 0
 
 	return 1
