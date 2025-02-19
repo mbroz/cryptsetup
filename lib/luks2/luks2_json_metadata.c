@@ -635,6 +635,11 @@ static int reqs_opal(uint32_t reqs)
 	return reqs & CRYPT_REQUIREMENT_OPAL;
 }
 
+static int reqs_inline_hw_tags(uint32_t reqs)
+{
+	return reqs & CRYPT_REQUIREMENT_INLINE_HW_TAGS;
+}
+
 /*
  * Config section requirements object must be valid.
  * Also general segments section must be validated first.
@@ -1425,7 +1430,8 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	}
 
 	/* do not allow header restore from backup with unmet requirements */
-	if (LUKS2_unmet_requirements(cd, &hdr_file, CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 1)) {
+	if (LUKS2_unmet_requirements(cd, &hdr_file,
+	    CRYPT_REQUIREMENT_ONLINE_REENCRYPT | CRYPT_REQUIREMENT_INLINE_HW_TAGS, 1)) {
 		log_err(cd, _("Forbidden LUKS2 requirements detected in backup %s."),
 			backup_file);
 		r = -ETXTBSY;
@@ -1642,6 +1648,7 @@ static const struct requirement_flag requirements_flags[] = {
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 2, "online-reencrypt-v2" },
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 3, "online-reencrypt-v3" },
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 1, "online-reencrypt" },
+	{ CRYPT_REQUIREMENT_INLINE_HW_TAGS,   1, "inline-hw-tags" },
 	{ CRYPT_REQUIREMENT_OPAL,	      1, "opal" },
 	{ 0, 0, NULL }
 };
@@ -2654,7 +2661,7 @@ int LUKS2_activate(struct crypt_device *cd,
 {
 	int r;
 	bool dynamic, read_lock, write_lock, opal_lock_on_error = false;
-	uint32_t opal_segment_number;
+	uint32_t opal_segment_number, requirements_flags;
 	uint64_t range_offset_sectors, range_length_sectors, device_length_bytes;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 	struct crypt_dm_active_device dmdi = {}, dmd = {
@@ -2663,7 +2670,8 @@ int LUKS2_activate(struct crypt_device *cd,
 	struct crypt_lock_handle *opal_lh = NULL;
 
 	/* do not allow activation when particular requirements detected */
-	if ((r = LUKS2_unmet_requirements(cd, hdr, CRYPT_REQUIREMENT_OPAL, 0)))
+	if ((r = LUKS2_unmet_requirements(cd, hdr,
+	     CRYPT_REQUIREMENT_OPAL | CRYPT_REQUIREMENT_INLINE_HW_TAGS, 0)))
 		return r;
 
 	/* Check that cipher is in compatible format */
@@ -2752,7 +2760,13 @@ int LUKS2_activate(struct crypt_device *cd,
 
 	dmd.flags |= flags;
 
-	if (crypt_get_integrity_tag_size(cd)) {
+	if (crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &requirements_flags)) {
+		r = -EINVAL;
+		goto out;
+	}
+
+	if (crypt_get_integrity_tag_size(cd) &&
+	    !(requirements_flags & CRYPT_REQUIREMENT_INLINE_HW_TAGS)) {
 		if (!LUKS2_integrity_compatible(hdr)) {
 			log_err(cd, _("Unsupported device integrity configuration."));
 			r = -EINVAL;
@@ -2829,7 +2843,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 	int r, ret;
 	struct dm_target *tgt;
 	crypt_status_info ci;
-	struct crypt_dm_active_device dmdc;
+	struct crypt_dm_active_device dmdc, dmdi;
 	uint32_t opal_segment_number;
 	char **dep, deps_uuid_prefix[40], *deps[MAX_DM_DEPS+1] = { 0 };
 	const char *namei = NULL;
@@ -2854,8 +2868,13 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 	tgt = &dmd->segment;
 
 	/* TODO: We have LUKS2 dependencies now */
-	if (single_segment(dmd) && tgt->type == DM_CRYPT && tgt->u.crypt.tag_size)
-		namei = device_dm_name(tgt->data_device);
+	if (single_segment(dmd) && tgt->type == DM_CRYPT && tgt->u.crypt.tag_size &&
+	    (namei = device_dm_name(tgt->data_device))) {
+		if (dm_query_device(cd, namei, DM_ACTIVE_DEVICE | DM_ACTIVE_UUID, &dmdi) < 0)
+			namei = NULL;
+		else if (crypt_uuid_integrity_cmp(dmd->uuid, dmdi.uuid) < 0)
+			namei = NULL;
+	}
 
 	r = dm_device_deps(cd, name, deps_uuid_prefix, deps, ARRAY_SIZE(deps));
 	if (r < 0)
@@ -3004,6 +3023,8 @@ int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uin
 		log_err(cd, _("Operation incompatible with device marked for LUKS2 reencryption. Aborting."));
 	if (reqs_opal(reqs) && !quiet)
 		log_err(cd, _("Operation incompatible with device using OPAL. Aborting."));
+	if (reqs_inline_hw_tags(reqs) && !quiet)
+		log_err(cd, _("Operation incompatible with device using inline HW tags. Aborting."));
 
 	/* any remaining unmasked requirement fails the check */
 	return reqs ? -EINVAL : 0;
