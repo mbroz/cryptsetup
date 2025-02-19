@@ -167,6 +167,8 @@ static int _activate(const char *dm_device,
 		activate_flags |= CRYPT_ACTIVATE_RESTART_ON_CORRUPTION;
 	if (ARG_SET(OPT_PANIC_ON_CORRUPTION_ID))
 		activate_flags |= CRYPT_ACTIVATE_PANIC_ON_CORRUPTION;
+	if (ARG_SET(OPT_ERROR_AS_CORRUPTION_ID))
+		activate_flags |= CRYPT_ACTIVATE_ERROR_AS_CORRUPTION;
 	if (ARG_SET(OPT_IGNORE_ZERO_BLOCKS_ID))
 		activate_flags |= CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS;
 	if (ARG_SET(OPT_CHECK_AT_MOST_ONCE_ID))
@@ -432,10 +434,12 @@ static int action_status(void)
 				 CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS|
 				 CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE|
 				 CRYPT_ACTIVATE_TASKLETS))
-			log_std("  flags:       %s%s%s%s%s%s\n",
+			log_std("  flags:       %s%s%s%s%s%s%s\n",
 				(cad.flags & CRYPT_ACTIVATE_IGNORE_CORRUPTION) ? "ignore_corruption " : "",
 				(cad.flags & CRYPT_ACTIVATE_RESTART_ON_CORRUPTION) ? "restart_on_corruption " : "",
 				(cad.flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION) ? "panic_on_corruption " : "",
+				(cad.flags & CRYPT_ACTIVATE_ERROR_AS_CORRUPTION) ?
+				((cad.flags & CRYPT_ACTIVATE_PANIC_ON_CORRUPTION) ? "panic_on_error " : "restart_on_error") : "",
 				(cad.flags & CRYPT_ACTIVATE_IGNORE_ZERO_BLOCKS) ? "ignore_zero_blocks " : "",
 				(cad.flags & CRYPT_ACTIVATE_CHECK_AT_MOST_ONCE) ? "check_at_most_once" : "",
 				(cad.flags & CRYPT_ACTIVATE_TASKLETS) ? "try_verify_in_tasklet" : "");
@@ -656,6 +660,12 @@ int main(int argc, const char **argv)
 	if (ARG_SET(OPT_PANIC_ON_CORRUPTION_ID) && ARG_SET(OPT_RESTART_ON_CORRUPTION_ID))
 		usage(popt_context, EXIT_FAILURE,
 		_("Option --panic-on-corruption and --restart-on-corruption cannot be used together."),
+		poptGetInvocationName(popt_context));
+
+	if (ARG_SET(OPT_ERROR_AS_CORRUPTION_ID) &&
+	    !(ARG_SET(OPT_RESTART_ON_CORRUPTION_ID) || ARG_SET(OPT_PANIC_ON_CORRUPTION_ID)))
+		usage(popt_context, EXIT_FAILURE,
+		_("Option --error-as-corruption must be used with --panic-on-corruption or --restart-on-corruption."),
 		poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_CANCEL_DEFERRED_ID) && ARG_SET(OPT_DEFERRED_ID))

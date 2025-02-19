@@ -141,6 +141,10 @@ always prefixed by *#*.
 Defers device removal in *close* command until the last user closes
 it.
 
+*--error-as-corruption*::
+Handle device I/O errors the same as data corruption. This option must
+be combined with --restart-on-corruption or --panic-on-corruption.
+
 *--fec-device=fec_device*::
 Use forward error correction (FEC) to recover from corruption if hash
 verification fails. Use encoding data from the specified device.
