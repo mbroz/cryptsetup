@@ -72,6 +72,8 @@ ARG(OPT_INIT_ONLY, '\0', POPT_ARG_NONE, N_("Initialize LUKS2 reencryption in met
 
 ARG(OPT_INTEGRITY, 'I', POPT_ARG_STRING, N_("Data integrity algorithm (LUKS2 only)"), NULL, CRYPT_ARG_STRING, {}, OPT_INTEGRITY_ACTIONS)
 
+ARG(OPT_INTEGRITY_INLINE, '\0', POPT_ARG_NONE, N_("Use inline mode (use HW integrity field)"), NULL, CRYPT_ARG_BOOL, {}, OPT_INTEGRITY_INLINE_ACTIONS)
+
 ARG(OPT_INTEGRITY_KEY_SIZE, '\0', POPT_ARG_STRING, N_("The size of the data integrity key"), N_("BITS"), CRYPT_ARG_UINT32, {}, {})
 
 ARG(OPT_INTEGRITY_LEGACY_PADDING,'\0', POPT_ARG_NONE, N_("Use inefficient legacy padding (old kernels)"), NULL, CRYPT_ARG_BOOL, {}, {})

@@ -997,7 +997,8 @@ static int action_status(void)
 		if (ip.integrity_key_size)
 			log_std("  integrity keysize: %d [bits]\n", ip.integrity_key_size * 8);
 		if (ip.tag_size)
-			log_std("  integrity tag size: %u [bytes]\n", ip.tag_size);
+			log_std("  integrity tag size: %u [bytes] %s\n", ip.tag_size,
+				(cad.flags & CRYPT_ACTIVATE_INLINE_MODE) ? " (inline HW tags)" : "");
 		device = crypt_get_device_name(cd);
 		log_std("  device:  %s\n", device);
 		if ((backing_file = crypt_loop_backing_file(device))) {
@@ -1488,6 +1489,11 @@ int luksFormat(struct crypt_device **r_cd, struct crypt_keyslot_context **r_kc)
 			log_err(_("OPAL is supported only for LUKS2 format."));
 			return -EINVAL;
 		}
+
+		if (ARG_SET(OPT_INTEGRITY_INLINE_ID)) {
+			log_err(_("Inline hw tags are supported only for LUKS2 format."));
+			return -EINVAL;
+		}
 	} else
 		return -EINVAL;
 
@@ -1645,6 +1651,9 @@ int luksFormat(struct crypt_device **r_cd, struct crypt_keyslot_context **r_kc)
 			 ARG_SET(OPT_HW_OPAL_ONLY_ID) ? NULL : cipher,
 			 ARG_SET(OPT_HW_OPAL_ONLY_ID) ? NULL : cipher_mode,
 			 ARG_STR(OPT_UUID_ID), key, keysize, params, &opal_params);
+	else if (ARG_SET(OPT_INTEGRITY_INLINE_ID))
+		r = crypt_format_inline(cd, type, cipher, cipher_mode,
+			 ARG_STR(OPT_UUID_ID), key, keysize, params);
 	else
 		r = crypt_format(cd, type, cipher, cipher_mode,
 			 ARG_STR(OPT_UUID_ID), key, keysize, params);
@@ -3929,6 +3938,11 @@ int main(int argc, const char **argv)
 	if (ARG_SET(OPT_DISABLE_KEYRING_ID) && (ARG_SET(OPT_KEY_DESCRIPTION_ID) || ARG_SET(OPT_NEW_KEY_DESCRIPTION_ID)))
 		usage(popt_context, EXIT_FAILURE,
 		_("Cannot use keyring key description when keyring is disabled."),
+		poptGetInvocationName(popt_context));
+
+	if (ARG_SET(OPT_INTEGRITY_INLINE_ID) && !ARG_SET(OPT_INTEGRITY_ID))
+		usage(popt_context, EXIT_FAILURE,
+		_("Inline integrity must be used together with --integrity option."),
 		poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_DEBUG_ID) || ARG_SET(OPT_DEBUG_JSON_ID)) {
