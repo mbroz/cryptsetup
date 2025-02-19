@@ -64,6 +64,7 @@ dm_crypt_capi_support()
 	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
 	VER_PTC=$(echo $VER_STR | cut -f 3 -d.)
 
+	[ $VER_MAJ -gt 1 ] && return 0
 	if [ $VER_MIN -ge 16 ]; then
 		return 0
 	fi

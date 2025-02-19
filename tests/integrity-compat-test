@@ -61,6 +61,15 @@ dm_integrity_features()
 	VER_PTC=$(echo $VER_STR | cut -f 3 -d.)
 
 	[ $VER_MAJ -lt 1 ] && return
+	[ $VER_MAJ -gt 1 ] && {
+		DM_INTEGRITY_META=1
+		DM_INTEGRITY_RECALC=1
+		DM_INTEGRITY_BITMAP=1
+		DM_INTEGRITY_RESIZE_SUPPORTED=1
+		DM_INTEGRITY_HMAC_FIX=1
+		DM_INTEGRITY_RESET=1
+		return
+	}
 	[ $VER_MIN -gt 1 ] && {
 		DM_INTEGRITY_META=1
 		DM_INTEGRITY_RECALC=1
