@@ -262,6 +262,29 @@ int crypt_dev_is_zoned(int major, int minor)
 	return strncmp(buf, "none", 4) ? 1 : 0;
 }
 
+int crypt_dev_is_nop_dif(int major, int minor, uint32_t *tag_size)
+{
+	char buf[64] = {};
+	uint64_t val = 0;
+
+	if (!_sysfs_get_string(major, minor, buf, sizeof(buf), "integrity/format"))
+		return 0;
+
+	if (strncmp(buf, "nop", 3))
+		return 0;
+
+	/* this field is currently supported only for NVMe */
+	_sysfs_get_uint64(major, minor, &val, "metadata_bytes");
+
+	/* tag_size should be 0, but it is set by dm-integrity, try it as a fallback */
+	if (val == 0)
+		_sysfs_get_uint64(major, minor, &val, "integrity/tag_size");
+
+	/* we can still return 0 and support metadata, caller must handle it */
+	*tag_size = (uint32_t)val;
+	return 1;
+}
+
 int crypt_dev_is_partition(const char *dev_path)
 {
 	uint64_t val;

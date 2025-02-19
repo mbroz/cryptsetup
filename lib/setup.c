@@ -3068,6 +3068,7 @@ int crypt_format_inline(struct crypt_device *cd,
 	void *params)
 {
 	const struct crypt_params_integrity *iparams;
+	uint32_t device_tag_size;
 	struct device *idevice;
 	size_t sector_size, required_sector_size;
 	int r;
@@ -3110,6 +3111,17 @@ int crypt_format_inline(struct crypt_device *cd,
 	/* No autodetection, use device sector size */
 	if (sector_size != required_sector_size) {
 		log_err(cd, _("Sector must be the same as device hardware sector (%zu bytes)."), sector_size);
+		return -EINVAL;
+	}
+
+	if (!device_is_nop_dif(crypt_metadata_device(cd), &device_tag_size)) {
+		log_err(cd, _("Device %s does not provide inline integrity data fields."), mdata_device_path(cd));
+		return -EINVAL;
+	}
+
+	if (device_tag_size < iparams->tag_size) {
+		log_err(cd, _("Inline tag size %" PRIu32 " [bytes] is larger than %" PRIu32 " provided by device %s."),
+			iparams->tag_size, device_tag_size, mdata_device_path(cd));
 		return -EINVAL;
 	}
 
