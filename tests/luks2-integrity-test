@@ -5,6 +5,7 @@
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 DEV_NAME=dmi_test
+DEV_NAME2=dmi_test_xdif
 DEV=mode-test.img
 HEADER_IMG=mode-test-detached.img
 PWD1=nHjJHjI23JK
@@ -20,12 +21,15 @@ fi
 
 dmremove() { # device
 	udevadm settle >/dev/null 2>&1
-	dmsetup remove $1 >/dev/null 2>&1
+	dmsetup remove --retry $1 >/dev/null 2>&1
 }
 
 cleanup() {
 	[ -b /dev/mapper/$DEV_NAME ] && dmremove $DEV_NAME
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmremove $DEV_NAME2
 	[ -b /dev/mapper/"$DEV_NAME"_dif ] && dmremove "$DEV_NAME"_dif
+	[ -n "$DEV_LOOP" ] && losetup -d "$DEV_LOOP"
+	DEV_LOOP=""
 	rm -f $DEV $KEY_FILE $HEADER_IMG >/dev/null 2>&1
 }
 
@@ -63,11 +67,37 @@ valgrind_run()
 	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${CRYPTSETUP_VALGRIND} "$@"
 }
 
+dm_integrity_inline_support()
+{
+	VER_STR=$(dmsetup targets | grep integrity | cut -f2 -dv)
+	[ -z "$VER_STR" ] && fail "Failed to parse dm-integrity version."
+
+	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
+	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+
+	[ $VER_MAJ -gt 1 ] && return 0
+	if [ $VER_MIN -ge 12 ]; then
+		return 0
+	fi
+	return 1
+}
+
 add_device() {
 	cleanup
 	dd if=/dev/urandom of=$KEY_FILE bs=1 count=512 >/dev/null 2>&1
 	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
-	sync
+	IDEV=$DEV
+	INLINE_PARAMS=""
+}
+
+add_device_inline() {
+	add_device
+	DEV_LOOP=$(losetup -f $DEV --show)
+	[ -z "$DEV_LOOP" ] && fail
+	dmsetup create $DEV_NAME2 --table "0 32768 integrity $DEV_LOOP 0 64 J 2 block_size:4096 fix_padding"
+	[ ! -b /dev/mapper/$DEV_NAME2 ] && fail
+	IDEV=/dev/mapper/$DEV_NAME2
+	INLINE_PARAMS="--integrity-inline "
 }
 
 set_LO_DEV() { # file
@@ -82,6 +112,9 @@ status_check() # name value [detached]
 	else
 		PARAMS="$DEV_NAME"
 	fi
+
+#	$CRYPTSETUP status $PARAMS
+
 	X=$($CRYPTSETUP status $PARAMS | grep -m1 "$1" | sed -e 's/.*:[ \t]\+//' | cut -d' ' -f1)
 	if [ "$X" != "$2" ] ; then
 		echo "[status FAIL]"
@@ -92,7 +125,7 @@ status_check() # name value [detached]
 
 dump_check() # name value
 {
-	X=$($CRYPTSETUP luksDump $DEV | grep -m1 "$1" | sed -e 's/.*:[ \t]\+//' | cut -d' ' -f1)
+	X=$($CRYPTSETUP luksDump $IDEV | grep -m1 "$1" | sed -e 's/.*:[ \t]\+//' | cut -d' ' -f1)
 	if [ "$X" != "$2" ] ; then
 		echo "[dump FAIL]"
 		echo " Expecting $1:$2 got \"$X\"."
@@ -115,8 +148,8 @@ int_check_sum() # alg checksum
 int_error_detection() # alg int sector_size
 {
 	echo -n "[DETECT_CORRUPTION]"
-	echo -n "XXXXX" | dd of=$DEV bs=1M seek=28 count=1 conv=notrunc >/dev/null 2>&1 || fail "Cannot write to device."
-	$CRYPTSETUP open -d $KEY_FILE $DEV $DEV_NAME || fail "Cannot activate device."
+	echo -n "XXXXX" | dd of=$IDEV bs=1M seek=8 count=1 conv=notrunc >/dev/null 2>&1 || fail "Cannot write to device."
+	$CRYPTSETUP open -d $KEY_FILE $IDEV $DEV_NAME || fail "Cannot activate device."
 	dd if=/dev/mapper/$DEV_NAME  of=/dev/null >/dev/null 2>&1 && fail "Error detection failed."
 	$CRYPTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 }
@@ -133,8 +166,8 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 		INT_PARAMS="--integrity $2 --integrity-key-size $5 --integrity-legacy-padding"
 	fi
 
-	$CRYPTSETUP luksFormat --type luks2 -q -c $1 $INT_PARAMS --sector-size $6 -s $4 \
-		$FAST_PBKDF_OPT -d $KEY_FILE $DEV --offset 8192 >/dev/null 2>&1
+	$CRYPTSETUP luksFormat --type luks2 -q -c $1 $INT_PARAMS $INLINE_PARAMS --sector-size $6 -s $4 \
+		$FAST_PBKDF_OPT -d $KEY_FILE $IDEV --offset 8192 >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
 		echo "[N/A]"
 		return
@@ -144,8 +177,8 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 	dump_check "integrity" $3
 	dump_check "Key:" $(($4 + $5))
 	echo -n "[ACTIVATE]"
-	$CRYPTSETUP open -d $KEY_FILE $DEV $DEV_NAME || fail "Cannot activate device."
-	set_LO_DEV $DEV
+	$CRYPTSETUP open -d $KEY_FILE $IDEV $DEV_NAME || fail "Cannot activate device."
+	set_LO_DEV $IDEV
 	status_check "cipher" $1
 	status_check "sector size" $6
 	status_check "integrity:" $3
@@ -153,16 +186,31 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 	[ -n "$LO_DEV" ] && status_check "device:" $LO_DEV
 	[ $5 -gt 0 ] && status_check "integrity keysize:" $5
 	int_check_sum $1 $7
+	echo -n "[SUSPEND]"
+	$CRYPTSETUP luksSuspend $DEV_NAME || fail "Cannot suspend device."
+	dmsetup info $DEV_NAME | grep -q SUSPENDED || fail "Not suspended."
+	if [ -z "$INLINE_PARAMS" ]; then
+		dmsetup info "$DEV_NAME"_dif | grep -q SUSPENDED || fail "Not suspended."
+	else
+		# this hw-inline device must not be suspended
+		dmsetup info "$DEV_NAME2" | grep -q ACTIVE || fail
+	fi
+	echo -n "[RESUME]"
+	$CRYPTSETUP luksResume -d $KEY_FILE $DEV_NAME || fail "Cannot resume device."
+	dmsetup info $DEV_NAME | grep -q ACTIVE || fail "Not resumed."
+	if [ -z "$INLINE_PARAMS" ]; then
+		dmsetup info "$DEV_NAME"_dif | grep -q ACTIVE || fail "Not resumed."
+	fi
 	echo -n "[REMOVE]"
 	$CRYPTSETUP close $DEV_NAME || fail "Cannot deactivate device."
-
+	[ -b /dev/mapper/"$DEV_NAME"_dif ] && fail
 	# check detached header activation
 	if [ -n "$8" ] ; then
 		echo -n "[DETACHED_HDR]"
-		$CRYPTSETUP luksHeaderBackup -q --header-backup-file $HEADER_IMG $DEV || fail
-		wipefs -a $DEV >/dev/null 2>&1  || fail
-		$CRYPTSETUP open --header $HEADER_IMG -d $KEY_FILE $DEV $DEV_NAME || fail "Cannot activate device."
-		set_LO_DEV $DEV
+		$CRYPTSETUP luksHeaderBackup -q --header-backup-file $HEADER_IMG $IDEV || fail
+		wipefs -a $IDEV >/dev/null 2>&1  || fail
+		$CRYPTSETUP open --header $HEADER_IMG -d $KEY_FILE $IDEV $DEV_NAME || fail "Cannot activate device."
+		set_LO_DEV $IDEV
 		status_check "cipher" $1 1
 		status_check "sector size" $6 1
 		status_check "integrity:" $3 1
@@ -178,7 +226,8 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 		[ -n "$LO_DEV" ] && status_check "device:" $LO_DEV
 		[ $5 -gt 0 ] && status_check "integrity keysize:" $5
 		$CRYPTSETUP close $DEV_NAME || fail "Cannot deactivate device."
-		$CRYPTSETUP luksHeaderRestore -q --header-backup-file $HEADER_IMG $DEV || fail
+		[ -b /dev/mapper/"$DEV_NAME"_dif ] && fail
+		$CRYPTSETUP luksHeaderRestore -q --header-backup-file $HEADER_IMG $IDEV || fail
 		rm -f $HEADER_IMG
 	fi
 
@@ -193,6 +242,7 @@ modprobe dm-integrity >/dev/null 2>&1
 dmsetup targets | grep integrity >/dev/null 2>&1 || skip "Cannot find dm-integrity target, test skipped."
 command -v wipefs >/dev/null ||  skip "Cannot find wipefs, test skipped."
 
+echo "LUKS2 authenticated mode test"
 add_device
 
 intformat aes-cbc-essiv:sha256 hmac-sha256 hmac\(sha256\) 128 256  512 ee501705a084cd0ab6f4a28014bcf62b8bfa3434de00b82743c50b3abf06232c 1
@@ -237,5 +287,24 @@ intformat chacha20-random  poly1305 poly1305 256 0 4096 358d6beceddf593aff6b22c3
 
 intformat aegis128-random  aead aead 128 0  512 ee501705a084cd0ab6f4a28014bcf62b8bfa3434de00b82743c50b3abf06232c 1
 intformat aegis128-random  aead aead 128 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b 1
+
+if dm_integrity_inline_support; then
+	echo "LUKS2 authenticated mode test (inline tags)"
+	add_device_inline
+
+	intformat aes-cbc-essiv:sha256 hmac-sha256 hmac\(sha256\) 128 256 4096 cfadd44a103cbd6d5726fa07b27d7aad2f67ed3930ff96901c486a5beaf7e723
+	intformat aes-xts-plain64      hmac-sha256 hmac\(sha256\) 256 256 4096 cfadd44a103cbd6d5726fa07b27d7aad2f67ed3930ff96901c486a5beaf7e723
+	intformat aes-xts-plain64      hmac-sha256 hmac\(sha256\) 256 256 4096 cfadd44a103cbd6d5726fa07b27d7aad2f67ed3930ff96901c486a5beaf7e723 1
+	intformat aes-xts-random       hmac-sha256 hmac\(sha256\) 256 256 4096 cfadd44a103cbd6d5726fa07b27d7aad2f67ed3930ff96901c486a5beaf7e723
+	intformat aes-cbc-essiv:sha256 hmac-sha256 hmac\(sha256\) 256 256 4096 cfadd44a103cbd6d5726fa07b27d7aad2f67ed3930ff96901c486a5beaf7e723
+	intformat aes-xts-plain64      hmac-sha256 hmac\(sha256\) 512 256 4096 cfadd44a103cbd6d5726fa07b27d7aad2f67ed3930ff96901c486a5beaf7e723
+
+	intformat aes-gcm-random aead aead 128 0 4096 cfadd44a103cbd6d5726fa07b27d7aad2f67ed3930ff96901c486a5beaf7e723
+
+	intformat chacha20-plain64 poly1305 poly1305 256 0 4096 cfadd44a103cbd6d5726fa07b27d7aad2f67ed3930ff96901c486a5beaf7e723
+	intformat chacha20-random  poly1305 poly1305 256 0 4096 cfadd44a103cbd6d5726fa07b27d7aad2f67ed3930ff96901c486a5beaf7e723
+
+	intformat aegis128-random  aead aead 128 0 4096 cfadd44a103cbd6d5726fa07b27d7aad2f67ed3930ff96901c486a5beaf7e723 1
+fi
 
 cleanup
