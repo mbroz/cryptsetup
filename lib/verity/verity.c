@@ -384,7 +384,12 @@ int VERITY_activate(struct crypt_device *cd,
 
 	r = 0;
 out:
-	crypt_unlink_key_by_description_from_thread_keyring(cd, description, USER_KEY);
+	if (signature) {
+		log_dbg(cd, "Unlinking signature (id: %" PRIi32 ") from thread keyring.", kid);
+
+		if (keyring_unlink_key_from_thread_keyring(kid))
+			log_dbg(cd, "keyring_unlink_key_from_thread_keyring failed with errno %d.", errno);
+	}
 	free(description);
 	dm_targets_free(cd, &dmd);
 	return r;
