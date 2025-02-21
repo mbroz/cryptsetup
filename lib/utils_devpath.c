@@ -420,7 +420,7 @@ int lookup_by_disk_id(const char *dm_uuid)
 {
 	struct dirent *entry;
 	struct stat st;
-	int r = 0; /* not found */
+	int dfd, r = 0; /* not found */
 	DIR *dir = opendir("/dev/disk/by-id");
 
 	if (!dir)
@@ -432,7 +432,8 @@ int lookup_by_disk_id(const char *dm_uuid)
 		    !strncmp(entry->d_name, "..", 2))
 			continue;
 
-		if (fstatat(dirfd(dir), entry->d_name, &st, AT_SYMLINK_NOFOLLOW)) {
+		dfd = dirfd(dir);
+		if (dfd < 0 || fstatat(dfd, entry->d_name, &st, AT_SYMLINK_NOFOLLOW)) {
 			r = -EINVAL;
 			break;
 		}
@@ -457,7 +458,7 @@ int lookup_by_sysfs_uuid_field(const char *dm_uuid)
 	char subpath[PATH_MAX], uuid[DM_UUID_LEN];
 	ssize_t s;
 	struct stat st;
-	int fd, len, r = 0; /* not found */
+	int fd, dfd, len, r = 0; /* not found */
 	DIR *dir = opendir("/sys/block/");
 
 	if (!dir)
@@ -476,7 +477,10 @@ int lookup_by_sysfs_uuid_field(const char *dm_uuid)
 		}
 
 		/* looking for dm-X/dm/uuid file, symlinks are fine */
-		fd = openat(dirfd(dir), subpath, O_RDONLY | O_CLOEXEC);
+		dfd = dirfd(dir);
+		if (dfd < 0)
+			continue;
+		fd = openat(dfd, subpath, O_RDONLY | O_CLOEXEC);
 		if (fd < 0)
 			continue;
 
