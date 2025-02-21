@@ -40,6 +40,8 @@ static int _crypt_cipher_init(struct crypt_cipher_kernel *ctx,
 			      const void *key, size_t key_length,
 			      size_t tag_length, struct sockaddr_alg *sa)
 {
+	void *optval = NULL;
+
 	if (!ctx)
 		return -EINVAL;
 
@@ -60,7 +62,7 @@ static int _crypt_cipher_init(struct crypt_cipher_kernel *ctx,
 		return -EINVAL;
 	}
 
-	if (tag_length && setsockopt(ctx->tfmfd, SOL_ALG, ALG_SET_AEAD_AUTHSIZE, NULL, tag_length) < 0) {
+	if (tag_length && setsockopt(ctx->tfmfd, SOL_ALG, ALG_SET_AEAD_AUTHSIZE, &optval, tag_length) < 0) {
 		crypt_cipher_destroy_kernel(ctx);
 		return -EINVAL;
 	}
