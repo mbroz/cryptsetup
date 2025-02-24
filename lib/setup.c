@@ -4284,12 +4284,12 @@ static key_serial_t crypt_single_volume_key_load_in_user_keyring(struct crypt_de
 	log_dbg(cd, "Linking volume key (type %s, name %s) to the specified keyring",
 		    type_name, user_key_name);
 
-	kid = keyring_add_key_to_custom_keyring(cd->keyring_key_type, user_key_name,
-						crypt_volume_key_get_key(vk),
-						crypt_volume_key_length(vk),
-						cd->keyring_to_link_vk);
+	kid = keyring_add_key_to_keyring(cd->keyring_key_type, user_key_name,
+					 crypt_volume_key_get_key(vk),
+					 crypt_volume_key_length(vk),
+					 cd->keyring_to_link_vk);
 	if (kid <= 0)
-		log_dbg(cd, "The keyring_link_key_to_keyring function failed (error %d).", errno);
+		log_dbg(cd, "The keyring_add_key_to_keyring function failed (error %d).", errno);
 
 	return kid;
 }
