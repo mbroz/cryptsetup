@@ -5435,7 +5435,7 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 		return _activate_loopaes(cd, name, passphrase, passphrase_size, flags);
 	}
 
-	/* aquire the volume key(s) */
+	/* acquire the volume key(s) */
 	r = -EINVAL;
 	if (isLUKS1(cd->type)) {
 		if (kc->get_luks1_volume_key)
