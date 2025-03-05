@@ -429,7 +429,7 @@ int LUKS2_disk_hdr_write(struct crypt_device *cd, struct luks2_hdr *hdr, struct 
 	json_area_write_len = json_data_len = strlen(json_text);
 
 	if (json_data_len > (json_area_len - 1)) {
-		log_dbg(cd, "JSON is too large (%zu > %zu).", json_data_len, json_area_len);
+		log_dbg(cd, "JSON is too large (%zu > %zu).", json_data_len, json_area_len - 1);
 		return -EINVAL;
 	}
 
