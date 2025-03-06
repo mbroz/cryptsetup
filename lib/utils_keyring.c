@@ -191,7 +191,7 @@ int keyring_check(void)
 	return syscall(__NR_request_key, "logon", "dummy", NULL, 0) == -1l && errno != ENOSYS;
 }
 
-static key_serial_t keyring_add_key_in_keyring(key_type_t ktype,
+key_serial_t keyring_add_key_to_keyring(key_type_t ktype,
 		const char *key_desc,
 		const void *key,
 		size_t key_size,
@@ -207,7 +207,7 @@ static key_serial_t keyring_add_key_in_keyring(key_type_t ktype,
 
 key_serial_t keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key_desc, const void *key, size_t key_size)
 {
-	return keyring_add_key_in_keyring(ktype, key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
+	return keyring_add_key_to_keyring(ktype, key_desc, key, key_size, KEY_SPEC_THREAD_KEYRING);
 }
 
 key_serial_t keyring_request_key_id(key_type_t key_type,
@@ -404,20 +404,6 @@ key_type_t key_type_by_name(const char *name)
 	return INVALID_KEY;
 }
 
-key_serial_t keyring_add_key_to_custom_keyring(key_type_t ktype,
-				      const char *key_desc,
-				      const void *key,
-				      size_t key_size,
-				      key_serial_t keyring_to_link)
-{
-	const char *type_name = key_type_name(ktype);
-
-	if (!type_name || !key_desc)
-		return -EINVAL;
-
-	return add_key(type_name, key_desc, key, key_size, keyring_to_link);
-}
-
 #else /* KERNEL_KEYRING */
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
@@ -474,11 +460,11 @@ key_type_t key_type_by_name(const char *name)
 	return INVALID_KEY;
 }
 
-key_serial_t keyring_add_key_to_custom_keyring(key_type_t ktype,
-				      const char *key_desc,
-				      const void *key,
-				      size_t key_size,
-				      key_serial_t keyring_to_link)
+key_serial_t keyring_add_key_to_keyring(key_type_t ktype,
+					const char *key_desc,
+					const void *key,
+					size_t key_size,
+					key_serial_t keyring_to_link)
 {
 	return -ENOTSUP;
 }

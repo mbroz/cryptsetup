@@ -75,10 +75,9 @@ struct volume_key *crypt_volume_key_next(struct volume_key *vk);
 struct volume_key *crypt_volume_key_by_id(struct volume_key *vk, int id);
 void crypt_volume_key_pass_safe_alloc(struct volume_key *vk, void **safe_alloc);
 bool crypt_volume_key_is_set(const struct volume_key *vk);
-
-/* FIXME: temporary helpers to be removed later */
-bool crypt_volume_key_is_uploaded(const struct volume_key *vk);
-void crypt_volume_key_set_uploaded(struct volume_key *vk);
+bool crypt_volume_key_upload_kernel_key(struct volume_key *vk);
+void crypt_volume_key_drop_uploaded_kernel_key(struct crypt_device *cd, struct volume_key *vk);
+void crypt_volume_key_drop_kernel_key(struct crypt_device *cd, struct volume_key *vk);
 
 struct crypt_pbkdf_type *crypt_get_pbkdf(struct crypt_device *cd);
 int init_pbkdf_type(struct crypt_device *cd,
@@ -245,7 +244,11 @@ int crypt_keyring_get_key_by_name(struct crypt_device *cd,
 		char **key,
 		size_t *key_size);
 int crypt_use_keyring_for_vk(struct crypt_device *cd);
-void crypt_drop_keyring_key_by_description(struct crypt_device *cd, const char *key_description, key_type_t ktype);
+void crypt_unlink_key_from_thread_keyring(struct crypt_device *cd,
+		key_serial_t key_id);
+void crypt_unlink_key_by_description_from_thread_keyring(struct crypt_device *cd,
+		const char *key_description,
+		key_type_t ktype);
 void crypt_drop_uploaded_keyring_key(struct crypt_device *cd, struct volume_key *vks);
 
 static inline uint64_t compact_version(uint16_t major, uint16_t minor, uint16_t patch, uint16_t release)
