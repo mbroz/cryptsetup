@@ -1120,7 +1120,7 @@ echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --
 DEFAULT_OFFSET=$($CRYPTSETUP luksDump $OPAL2_DEV | grep "offset: " | cut -f 2 -d ' ')
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=128k --luks2-keyslots-size=127k 2> /dev/null && fail
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=127k --luks2-keyslots-size=128k 2> /dev/null && fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=128k --luks2-keyslots-size=128M >/dev/null 2>&1 && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=128k --luks2-keyslots-size=129M >/dev/null 2>&1 && fail
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=128k --luks2-keyslots-size=128k >/dev/null || fail
 $CRYPTSETUP luksDump $OPAL2_DEV | grep "Metadata area:" | grep -q "131072 \[bytes\]" || fail
 $CRYPTSETUP luksDump $OPAL2_DEV | grep "Keyslots area:" | grep -q "131072 \[bytes\]" || fail
