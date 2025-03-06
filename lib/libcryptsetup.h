@@ -1587,9 +1587,11 @@ typedef enum {
  *
  * @note Valid only for LUKS2.
  *
- * @note Not all activation flags can be stored. Only ALLOW_DISCARD,
- * 	 SAME_CPU_CRYPT, SUBMIT_FROM_CRYPT_CPU and NO_JOURNAL can be
- * 	 stored persistently.
+ * @note Not all activation flags can be stored. Only CRYPT_ACTIVATE_ALLOW_DISCARDS,
+ *       CRYPT_ACTIVATE_SAME_CPU_CRYPT, CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS,
+ *       CRYPT_ACTIVATE_NO_JOURNAL, CRYPT_ACTIVATE_NO_READ_WORKQUEUE,
+ *       CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE and CRYPT_ACTIVATE_HIGH_PRIORITY
+ *       can be stored persistently.
  *
  * @note Only requirements flags recognised by current library may be set.
  *	 CRYPT_REQUIREMENT_UNKNOWN is illegal (output only) in set operation.
