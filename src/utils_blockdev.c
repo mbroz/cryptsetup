@@ -51,7 +51,7 @@ static int lookup_holder_dm_name(const char *dm_uuid, dev_t devno, char **r_dm_n
 	char dm_subpath[PATH_MAX], data_dev_dir[PATH_MAX], uuid[DM_UUID_LEN], dm_name[PATH_MAX] = {};
 	ssize_t s;
 	struct stat st;
-	int dmfd, fd, len, r = 0; /* not found */
+	int dmfd, fd, dfd, len, r = 0; /* not found */
 	DIR *dir;
 
 	if (!r_dm_name)
@@ -84,7 +84,10 @@ static int lookup_holder_dm_name(const char *dm_uuid, dev_t devno, char **r_dm_n
 		}
 
 		/* looking for dm-X/dm directory, symlinks are fine */
-		dmfd = openat(dirfd(dir), dm_subpath, O_DIRECTORY | O_RDONLY);
+		dfd = dirfd(dir);
+		if (dfd < 0)
+			continue;
+		dmfd = openat(dfd, dm_subpath, O_DIRECTORY | O_RDONLY);
 		if (dmfd < 0)
 			continue;
 
