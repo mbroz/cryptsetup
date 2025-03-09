@@ -238,6 +238,9 @@ static void _dm_set_integrity_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 8, 0, integrity_maj, integrity_min, integrity_patch))
 		_dm_flags |= DM_INTEGRITY_RESET_RECALC_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 12, 0, integrity_maj, integrity_min, integrity_patch))
+		_dm_flags |= DM_INTEGRITY_INLINE_MODE_SUPPORTED;
+
 	_dm_integrity_checked = true;
 }
 
@@ -903,7 +906,9 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 	if (r < 0 || r >= max_size)
 		goto out;
 
-	if (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP)
+	if (flags & CRYPT_ACTIVATE_INLINE_MODE)
+		mode = 'I';
+	else if (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP)
 		mode = 'B';
 	else if (flags & CRYPT_ACTIVATE_RECOVERY)
 		mode = 'R';
@@ -1803,6 +1808,12 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		log_err(cd, _("Requested dm-integrity bitmap mode is not supported."));
 		r = -EINVAL;
 	}
+
+	if (dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_INLINE_MODE) &&
+	    !(dmt_flags & DM_INTEGRITY_INLINE_MODE_SUPPORTED)) {
+		log_err(cd, _("Requested dm-integrity inline mode is not supported."));
+		r = -EINVAL;
+	}
 out:
 	/*
 	 * Print warning if activating dm-crypt cipher_null device unless it's reencryption helper or
@@ -2502,7 +2513,7 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 
 	/* journal */
 	c = toupper(*(++params));
-	if (!*params || *(++params) != ' ' || (c != 'D' && c != 'J' && c != 'R' && c != 'B'))
+	if (!*params || *(++params) != ' ' || (c != 'D' && c != 'J' && c != 'R' && c != 'B' && c != 'I'))
 		goto err;
 	if (c == 'D')
 		*act_flags |= CRYPT_ACTIVATE_NO_JOURNAL;
@@ -2511,6 +2522,10 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 	if (c == 'B') {
 		*act_flags |= CRYPT_ACTIVATE_NO_JOURNAL;
 		*act_flags |= CRYPT_ACTIVATE_NO_JOURNAL_BITMAP;
+	}
+	if (c == 'I') {
+		*act_flags |= CRYPT_ACTIVATE_NO_JOURNAL;
+		*act_flags |= CRYPT_ACTIVATE_INLINE_MODE;
 	}
 
 	tgt->u.integrity.sector_size = SECTOR_SIZE;
