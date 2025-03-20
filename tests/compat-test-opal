@@ -68,11 +68,6 @@ fail()
 	exit 2
 }
 
-warn()
-{
-	[ -n "$1" ] && echo "WARN: $1"
-}
-
 _sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
 trap _sigchld CHLD
 
@@ -396,13 +391,13 @@ test_device() #opal_mode, #format_params, #--integrity-no-wipe
 	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
 	test -z "$3" ||	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M count=1 oflag=direct >/dev/null 2>&1 || fail
 	$CRYPTSETUP luksSuspend $DEV_NAME || fail
-	dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && warn "Read from locked OPAL2 device passed."
+	dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
 	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME || fail
 	dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 || fail
 	$CRYPTSETUP close --cancel-deferred $DEV_NAME 2>/dev/null && fail
 	$CRYPTSETUP close --deferred $DEV_NAME 2>/dev/null && fail
 	$CRYPTSETUP close $DEV_NAME || fail
-	dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && warn "Read from locked OPAL2 device passed."
+	dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
 	echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
 }
 
@@ -412,19 +407,19 @@ test_device_detached_header() #hdr, #opal_mode, #format_params, #--integrity-no-
 	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --header $1 || fail
 	test -z "$4" ||	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M count=1 oflag=direct >/dev/null 2>&1 || fail
 	$CRYPTSETUP luksSuspend $DEV_NAME || fail
-	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && warn "Read from locked OPAL2 device passed."
+	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && fail
 	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
 	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $1 || fail
 	dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 || fail
 	$CRYPTSETUP close --cancel-deferred $DEV_NAME 2>/dev/null && fail
 	$CRYPTSETUP close --deferred $DEV_NAME 2>/dev/null && fail
 	$CRYPTSETUP close $DEV_NAME || fail
-	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && warn "Read from locked OPAL2 device passed."
+	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && fail
 	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --header $1 || fail
 	$CRYPTSETUP close $DEV_NAME --header $1 --cancel-deferred 2>/dev/null && fail
 	$CRYPTSETUP close $DEV_NAME --header $1 --deferred 2>/dev/null && fail
 	$CRYPTSETUP close $DEV_NAME --header $1 || fail
-	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && warn "Read from locked OPAL2 device passed."
+	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && fail
 	echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q --header $1 || fail
 	$CRYPTSETUP isLuks --type luks2 $1 && fail
 	rm -f $1
@@ -839,7 +834,7 @@ echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --
 echo $PWD1 | $CRYPTSETUP -q luksOpen $OPAL2_DEV $DEV_NAME || fail
 $CRYPTSETUP luksSuspend $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep -q "(suspended)" || fail
-dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && warn "Read from locked OPAL2 device passed."
+dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
 $CRYPTSETUP -q resize  $DEV_NAME 2>/dev/null && fail
 echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
 [ $? -ne 2 ] && fail "luksResume should return EPERM exit code"
@@ -850,7 +845,7 @@ echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat -c null $FAST_PBKD
 echo $PWD1 | $CRYPTSETUP -q luksOpen $OPAL2_DEV $DEV_NAME || fail
 $CRYPTSETUP luksSuspend $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep -q "(suspended)" || fail
-dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && warn "Read from locked OPAL2 device passed."
+dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME  || fail
 dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 || fail
 $CRYPTSETUP -q luksClose $DEV_NAME || fail
@@ -860,7 +855,7 @@ echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --
 echo $PWD1 | $CRYPTSETUP -q luksOpen $OPAL2_DEV $DEV_NAME || fail
 $CRYPTSETUP luksSuspend $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep -q "(suspended)" || fail
-dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && warn "Read from locked OPAL2 device passed."
+dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
 $CRYPTSETUP -q resize  $DEV_NAME 2>/dev/null && fail
 echo $PWDW | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
 [ $? -ne 2 ] && fail "luksResume should return EPERM exit code"
@@ -878,7 +873,7 @@ check_exists
 $CRYPTSETUP luksSuspend $DEV_NAME || fail
 echo $PWD3 | $CRYPTSETUP luksResume -S 4 $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP -q status $DEV_NAME | grep -q "(suspended)" || fail
-dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && warn "Read from locked OPAL2 device passed."
+dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
 echo $PWD3 | $CRYPTSETUP luksResume -S 5 $DEV_NAME || fail
 dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 || fail
 $CRYPTSETUP luksClose $DEV_NAME || fail
@@ -894,7 +889,7 @@ $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S 1 -d $KEY5 $OPAL2_DEV $KEY1 || fail
 $CRYPTSETUP luksOpen -S 5 -d $KEY5 $OPAL2_DEV $DEV_NAME || fail
 check_exists
 $CRYPTSETUP luksSuspend $DEV_NAME || fail
-dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && warn "Read from locked OPAL2 device passed."
+dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
 $CRYPTSETUP luksResume -S 1 -d $KEY5 $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP -q status $DEV_NAME | grep -q "(suspended)" || fail
 $CRYPTSETUP luksResume -S 5 -d $KEY5 $DEV_NAME || fail
@@ -916,11 +911,11 @@ echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV-missing --header $HEADER_IMG $DEV_N
 echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV --header $HEADER_IMG $DEV_NAME || fail
 $CRYPTSETUP -q status  $DEV_NAME | grep "type:" | grep -q "n/a" || fail
 $CRYPTSETUP luksSuspend $DEV_NAME --header $HEADER_IMG || fail
-dd if=$OPAL2_DEV of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 && warn "Read from locked OPAL2 device passed."
+dd if=$OPAL2_DEV of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 && fail
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
 dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 || fail
 $CRYPTSETUP luksSuspend $DEV_NAME || fail
-dd if=$OPAL2_DEV of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 && warn "Read from locked OPAL2 device passed."
+dd if=$OPAL2_DEV of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 && fail
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
 dd if=/dev/mapper/$DEV_NAME of=/dev/zero bs=4K count=1 iflag=direct >/dev/null 2>&1 || fail
