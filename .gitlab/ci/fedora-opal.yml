@@ -49,35 +49,36 @@ test-mergerq-rawhide-samsung980:
     PCI_PASSTHROUGH_DEVICE_ID: "a809"
 
 # WD PC SN740 SDDQNQD-512G-1014 (on tiber machine)
-test-commit-rawhide-sn740:
-  rules:
-    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
-      when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
-  extends:
-    - .opal-template-fedora
-  tags:
-    - tiber
-  resource_group: sn740-on-tiber
-  interruptible: false
-  variables:
-    PCI_PASSTHROUGH_VENDOR_ID: "15b7"
-    PCI_PASSTHROUGH_DEVICE_ID: "5017"
-
-test-mergerq-rawhide-sn740:
-  rules:
-    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
-      when: never
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  extends:
-    - .opal-template-fedora
-  tags:
-    - tiber
-  resource_group: sn740-on-tiber
-  interruptible: false
-  variables:
-    PCI_PASSTHROUGH_VENDOR_ID: "15b7"
-    PCI_PASSTHROUGH_DEVICE_ID: "5017"
+# Disabled on 2025-03-20, seems broken
+#test-commit-rawhide-sn740:
+#  rules:
+#    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+#      when: never
+#    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+#  extends:
+#    - .opal-template-fedora
+#  tags:
+#    - tiber
+#  resource_group: sn740-on-tiber
+#  interruptible: false
+#  variables:
+#    PCI_PASSTHROUGH_VENDOR_ID: "15b7"
+#    PCI_PASSTHROUGH_DEVICE_ID: "5017"
+#
+#test-mergerq-rawhide-sn740:
+#  rules:
+#    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+#      when: never
+#    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+#  extends:
+#    - .opal-template-fedora
+#  tags:
+#    - tiber
+#  resource_group: sn740-on-tiber
+#  interruptible: false
+#  variables:
+#    PCI_PASSTHROUGH_VENDOR_ID: "15b7"
+#    PCI_PASSTHROUGH_DEVICE_ID: "5017"
 
 # Samsung SSD 980 PRO 1TB (on trantor machine)
 test-commit-rawhide-samsung980pro:
