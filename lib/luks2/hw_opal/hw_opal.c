@@ -497,17 +497,12 @@ int opal_setup_ranges(struct crypt_device *cd,
 		};
 		crypt_safe_memcpy(user_session->opal_key.key, admin_key, admin_key_len);
 
-		r = opal_ioctl(cd, fd, IOC_OPAL_ERASE_LR, user_session);
+		r = opal_ioctl(cd, fd, IOC_OPAL_SECURE_ERASE_LR, user_session);
 		if (r != OPAL_STATUS_SUCCESS) {
-			log_dbg(cd, "Failed to reset (erase) OPAL locking range %u on device '%s': %s",
+			log_dbg(cd, "Failed to reset (secure erase) OPAL locking range %u on device '%s': %s",
 				segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
-			r = opal_ioctl(cd, fd, IOC_OPAL_SECURE_ERASE_LR, user_session);
-			if (r != OPAL_STATUS_SUCCESS) {
-				log_dbg(cd, "Failed to reset (secure erase) OPAL locking range %u on device '%s': %s",
-					segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
-				r = -EINVAL;
-				goto out;
-			}
+			r = -EINVAL;
+			goto out;
 		}
 	}
 
@@ -864,42 +859,35 @@ int opal_reset_segment(struct crypt_device *cd,
 		goto out;
 	}
 
-	r = opal_ioctl(cd, fd, IOC_OPAL_ERASE_LR, user_session);
+	r = opal_ioctl(cd, fd, IOC_OPAL_SECURE_ERASE_LR, user_session);
 	if (r != OPAL_STATUS_SUCCESS) {
-		log_dbg(cd, "Failed to reset (erase) OPAL locking range %u on device '%s': %s",
+		log_dbg(cd, "Failed to reset (secure erase) OPAL locking range %u on device '%s': %s",
 			segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
-		r = opal_ioctl(cd, fd, IOC_OPAL_SECURE_ERASE_LR, user_session);
-		if (r != OPAL_STATUS_SUCCESS) {
-			log_dbg(cd, "Failed to reset (secure erase) OPAL locking range %u on device '%s': %s",
-				segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
-			r = -EINVAL;
-			goto out;
-		}
+		r = -EINVAL;
+		goto out;
+	}
 
-		/* Unlike IOC_OPAL_ERASE_LR, IOC_OPAL_SECURE_ERASE_LR does not disable the locking range,
-		 * we have to do that by hand.
-		 */
-		setup = crypt_safe_alloc(sizeof(struct opal_user_lr_setup));
-		if (!setup) {
-			r = -ENOMEM;
-			goto out;
-		}
-		*setup = (struct opal_user_lr_setup) {
-			.range_start = 0,
-			.range_length = 0,
-			.session = {
-				.who = OPAL_ADMIN1,
-				.opal_key = user_session->opal_key,
-			},
-		};
+	/* Disable the locking range */
+	setup = crypt_safe_alloc(sizeof(struct opal_user_lr_setup));
+	if (!setup) {
+		r = -ENOMEM;
+		goto out;
+	}
+	*setup = (struct opal_user_lr_setup) {
+		.range_start = 0,
+		.range_length = 0,
+		.session = {
+			.who = OPAL_ADMIN1,
+			.opal_key = user_session->opal_key,
+		},
+	};
 
-		r = opal_ioctl(cd, fd, IOC_OPAL_LR_SETUP, setup);
-		if (r != OPAL_STATUS_SUCCESS) {
-			log_dbg(cd, "Failed to disable locking range on OPAL device '%s': %s",
-				crypt_get_device_name(cd), opal_status_to_string(r));
-			r = -EINVAL;
-			goto out;
-		}
+	r = opal_ioctl(cd, fd, IOC_OPAL_LR_SETUP, setup);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to disable locking range on OPAL device '%s': %s",
+			crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+		goto out;
 	}
 out:
 	crypt_safe_free(user_session);
