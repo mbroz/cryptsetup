@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -e
+
+SAVED_PWD=$(pwd)
+GIT_DIR="$SAVED_PWD/upstream_git"
+SPEC="$GIT_DIR/misc/fedora/cryptsetup.spec"
+
+rm -fr $GIT_DIR
+
+git clone -q --depth 1 https://gitlab.com/cryptsetup/cryptsetup.git $GIT_DIR
+cd $GIT_DIR
+
+GIT_COMMIT=$(git rev-parse --short=8 HEAD)
+[ -z "$GIT_COMMIT" ] && exit 1
+
+sed -i "s/^AC_INIT.*/AC_INIT([cryptsetup],[$GIT_COMMIT])/" $GIT_DIR/configure.ac
+sed -i "s/^Version:.*/Version: $GIT_COMMIT/" $SPEC
+sed -i "s/%{version_no_tilde}/$GIT_COMMIT/" $SPEC
+sed -i "2i %global source_date_epoch_from_changelog 0" $SPEC
+sed -i "3i %define _unpackaged_files_terminate_build 0" $SPEC
+
+./autogen.sh
+./configure
+make -j dist
+
+rpmbuild --define "_sourcedir $GIT_DIR" --define "_srcrpmdir $SAVED_PWD" -bs $SPEC
+
+cd $SAVED_PWD
+rm -fr $GIT_DIR
+
+exit 0
