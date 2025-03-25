@@ -1,0 +1,22 @@
+#!/bin/bash
+
+CSMOCK="sudo /usr/bin/csmock"
+CSMOCK_TOOLS="gcc,clang,cppcheck,shellcheck"
+CSMOCK_TXZ="cryptsetup-csmock-results.tar.xz"
+CSMOCK_ERR="cryptsetup-csmock-results/scan-results.err"
+
+$CSMOCK cryptsetup-*.src.rpm \
+       --keep-going --force \
+       --cswrap-timeout 300 \
+       --skip-patches \
+       --tools $CSMOCK_TOOLS \
+       --output $CSMOCK_TXZ \
+       --gcc-analyze \
+       --cppcheck-add-flag=--check-level=exhaustive \
+       || { echo "csmock command failed"; exit 2; }
+
+tar xJf $CSMOCK_TXZ $CSMOCK_ERR --strip-components 1 \
+       && test -s $CSMOCK_ERR \
+       && { echo "csmock discovered important errors"; echo 3; }
+
+exit 0

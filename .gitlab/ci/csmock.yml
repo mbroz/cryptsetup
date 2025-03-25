@@ -1,25 +1,36 @@
-test-commit-job-csmock:
+.dnf-csmock:
+  variables:
+    DISTRO: cryptsetup-fedora-rawhide
+    DISK_SIZE: 20
   extends:
     - .fail_if_coredump_generated
+  before_script:
+    - >
+      sudo dnf -y -q install
+      autoconf automake device-mapper-devel gcc gettext-devel json-c-devel
+      libblkid-devel libpwquality-devel libselinux-devel
+      libssh-devel libtool libuuid-devel make popt-devel
+      libsepol-devel.x86_64 pkgconfig tar uuid-devel git
+      openssl-devel asciidoctor meson ninja-build
+      rpm-build csmock
+
+test-commit-job-csmock:
+  extends:
+    - .dnf-csmock
   tags:
     - libvirt
-    - cryptsetup-rhel-9
+    - cryptsetup-fedora-rawhide
   stage: test
   interruptible: true
   allow_failure: true
-  variables:
-    DISTRO: cryptsetup-rhel-9
-    RUN_SSH_PLUGIN_TEST: "1"
-    DISK_SIZE: 20
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/ || $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
-    - sudo /opt/run-csmock.sh
+    - .gitlab/ci/build_srpm
+    - .gitlab/ci/run_csmock
   artifacts:
-    # Upload artifacts when a crash makes the job fail.
     when: always
     paths:
       - cryptsetup-csmock-results.tar.xz
-      - cryptsetup-csmock-results
