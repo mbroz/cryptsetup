@@ -1,0 +1,31 @@
+#!/bin/bash
+
+set -e
+DIR="_spellcheck"
+
+[ ! -d $DIR ] && mkdir $DIR
+
+echo "[SPELLINTIAN]"
+git ls-tree -rz --name-only HEAD | grep -Evz -e '\.(pdf|xz)$' -e ^po/ | \
+    xargs -r0 spellintian | \
+    grep -v "(duplicate word)" | \
+    grep -v "docs/" | tee $DIR/spell1.txt
+
+echo "[CODESPELL]"
+git ls-tree -rz --name-only HEAD | grep -Evz -e '\.(pdf|xz)$' -e ^po/ | \
+    xargs -r0 codespell | \
+    grep -v "EXPCT" | \
+    grep -v "params, prams" | \
+    grep -v "pad, padded" | \
+    grep -v "CIPHER, CHIP" | \
+    grep -v "gost" | \
+    grep -v "userA" | \
+    grep -v "re-use" | \
+    grep -v "fo ==" | \
+    grep -v "docs/" | tee $DIR/spell2.txt
+
+
+[ -s $DIR/spell1.txt ] && exit 1
+[ -s $DIR/spell2.txt ] && exit 2
+
+exit 0
