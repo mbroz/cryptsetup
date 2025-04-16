@@ -485,9 +485,12 @@ static int keyslot_context_open_all_segments(struct crypt_device *cd,
 		log_dbg(cd, "Checking current volume key (digest %d, segment: %d) using keyslot %d.",
 			    digest_old, segment_old, keyslot_old);
 
-		r = LUKS2_keyslot_for_segment(hdr, keyslot_old, segment_old);
-		if (r < 0)
-			goto out;
+		/* key and key in keyring types do not have association with any keyslot */
+		if (kc_old->type != CRYPT_KC_TYPE_KEY && kc_old->type != CRYPT_KC_TYPE_VK_KEYRING) {
+			r = LUKS2_keyslot_for_segment(hdr, keyslot_old, segment_old);
+			if (r < 0)
+				goto out;
+		}
 
 		r = kc_old->get_luks2_key(cd, kc_old, keyslot_old, segment_old, &vk);
 		if (r < 0)
@@ -505,9 +508,12 @@ static int keyslot_context_open_all_segments(struct crypt_device *cd,
 		log_dbg(cd, "Checking new volume key (digest %d, segment: %d) using keyslot %d.",
 			    digest_new, segment_new, keyslot_new);
 
-		r = LUKS2_keyslot_for_segment(hdr, keyslot_new, segment_new);
-		if (r < 0)
-			goto out;
+		/* key and key in keyring types do not have association with any keyslot */
+		if (kc_new->type != CRYPT_KC_TYPE_KEY && kc_new->type != CRYPT_KC_TYPE_VK_KEYRING) {
+			r = LUKS2_keyslot_for_segment(hdr, keyslot_new, segment_new);
+			if (r < 0)
+				goto out;
+		}
 
 		r = kc_new->get_luks2_key(cd, kc_new, keyslot_new, segment_new, &vk);
 		if (r < 0)

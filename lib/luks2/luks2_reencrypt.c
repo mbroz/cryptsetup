@@ -2468,23 +2468,20 @@ out:
 
 static int reencrypt_make_backup_segments(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
-		int keyslot_new,
+		int digest_new,
 		const char *cipher,
 		uint64_t data_offset,
 		const struct crypt_params_reencrypt *params)
 {
 	const char *type;
-	int r, segment, moved_segment = -1, digest_old = -1, digest_new = -1;
+	int r, segment, moved_segment = -1, digest_old = -1;
 	json_object *jobj_tmp, *jobj_segment_new = NULL, *jobj_segment_old = NULL, *jobj_segment_bcp = NULL;
 	uint32_t sector_size = params->luks2 ? params->luks2->sector_size : SECTOR_SIZE;
 	uint64_t segment_offset, tmp, data_shift = params->data_shift << SECTOR_SHIFT,
 		 device_size = params->device_size << SECTOR_SHIFT;
 
-	if (params->mode != CRYPT_REENCRYPT_DECRYPT) {
-		digest_new = LUKS2_digest_by_keyslot(hdr, keyslot_new);
-		if (digest_new < 0)
-			return -EINVAL;
-	}
+	if (params->mode != CRYPT_REENCRYPT_DECRYPT && digest_new < 0)
+		return -EINVAL;
 
 	if (params->mode != CRYPT_REENCRYPT_ENCRYPT) {
 		digest_old = LUKS2_digest_by_segment(hdr, CRYPT_DEFAULT_SEGMENT);
@@ -2851,7 +2848,7 @@ static int reencrypt_decrypt_with_datashift_init(struct crypt_device *cd,
 	if (r)
 		goto out;
 
-	r = reencrypt_make_backup_segments(cd, hdr, CRYPT_ANY_SLOT, NULL, data_offset, params);
+	r = reencrypt_make_backup_segments(cd, hdr, CRYPT_ANY_DIGEST, NULL, data_offset, params);
 	if (r) {
 		log_dbg(cd, "Failed to create reencryption backup device segments.");
 		goto out;
@@ -2997,8 +2994,9 @@ static int reencrypt_init(struct crypt_device *cd,
 	bool move_first_segment;
 	char _cipher[128];
 	uint32_t check_sector_size, new_sector_size, old_sector_size;
-	int r, reencrypt_keyslot, devfd = -1;
+	int digest_new, r, reencrypt_keyslot, devfd = -1;
 	uint64_t data_offset, data_size = 0;
+	struct volume_key *vk;
 	struct crypt_dm_active_device dmd_target, dmd_source = {
 		.uuid = crypt_get_uuid(cd),
 		.flags = CRYPT_ACTIVATE_SHARED /* turn off exclusive open checks */
@@ -3011,7 +3009,8 @@ static int reencrypt_init(struct crypt_device *cd,
 		return -EINVAL;
 
 	if (params->mode != CRYPT_REENCRYPT_DECRYPT &&
-	    (!params->luks2 || !(cipher && cipher_mode) || keyslot_new < 0))
+	    (!params->luks2 || !(cipher && cipher_mode) ||
+	     (keyslot_new < 0 && !(params->flags & CRYPT_REENCRYPT_CREATE_NEW_DIGEST))))
 		return -EINVAL;
 
 	log_dbg(cd, "Initializing reencryption (mode: %s) in LUKS2 metadata.",
@@ -3118,7 +3117,25 @@ static int reencrypt_init(struct crypt_device *cd,
 			goto out;
 	}
 
-	r = reencrypt_make_backup_segments(cd, hdr, keyslot_new, _cipher, data_offset, params);
+	if (params->flags & CRYPT_REENCRYPT_CREATE_NEW_DIGEST) {
+		assert(kc_new->get_luks2_key);
+		r = kc_new->get_luks2_key(cd, kc_new, CRYPT_ANY_SLOT, CRYPT_ANY_SEGMENT, &vk);
+		if (r < 0)
+			goto out;
+
+		/* do not create new digest in case it matches the current one */
+		r = LUKS2_digest_verify_by_segment(cd, hdr, CRYPT_DEFAULT_SEGMENT, vk);
+		if (r == -EPERM)
+			r = LUKS2_digest_create(cd, "pbkdf2", hdr, vk);
+
+		crypt_free_volume_key(vk);
+		if (r < 0)
+			goto out;
+		digest_new = r;
+	} else
+		digest_new = LUKS2_digest_by_keyslot(hdr, keyslot_new);
+
+	r = reencrypt_make_backup_segments(cd, hdr, digest_new, _cipher, data_offset, params);
 	if (r) {
 		log_dbg(cd, "Failed to create reencryption backup device segments.");
 		goto out;
@@ -3812,9 +3829,15 @@ static int reencrypt_init_by_keyslot_context(struct crypt_device *cd,
 {
 	int r;
 	crypt_reencrypt_info ri;
+	size_t key_length;
 	struct volume_key *vks = NULL;
 	uint32_t flags = params ? params->flags : 0;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
+
+	if (params && (params->flags & CRYPT_REENCRYPT_CREATE_NEW_DIGEST) &&
+	    (!kc_new || !kc_new->get_luks2_key || !kc_new->get_key_size ||
+	     (params->flags & CRYPT_REENCRYPT_RESUME_ONLY)))
+		return -EINVAL;
 
 	/* short-circuit in reencryption metadata update and finish immediately. */
 	if (flags & CRYPT_REENCRYPT_REPAIR_NEEDED)
@@ -3832,10 +3855,15 @@ static int reencrypt_init_by_keyslot_context(struct crypt_device *cd,
 	}
 
 	if (cipher && !crypt_cipher_wrapped_key(cipher, cipher_mode)) {
-		r = crypt_keyslot_get_key_size(cd, keyslot_new);
+		if (keyslot_new == CRYPT_ANY_SLOT && kc_new && kc_new->get_key_size)
+			r = kc_new->get_key_size(cd, kc_new, &key_length);
+		else {
+			r = crypt_keyslot_get_key_size(cd, keyslot_new);
+			key_length = r;
+		}
 		if (r < 0)
 			return r;
-		r = LUKS2_check_cipher(cd, r, cipher, cipher_mode);
+		r = LUKS2_check_cipher(cd, key_length, cipher, cipher_mode);
 		if (r < 0) {
 			log_err(cd, _("Unable to use cipher specification %s-%s for LUKS2."), cipher, cipher_mode);
 			return r;

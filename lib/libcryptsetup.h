@@ -2922,6 +2922,12 @@ int crypt_activate_by_token_pin(struct crypt_device *cd,
 #define CRYPT_REENCRYPT_RECOVERY           (UINT32_C(1) << 3)
 /** Reencryption requires metadata protection. (in/out) */
 #define CRYPT_REENCRYPT_REPAIR_NEEDED      (UINT32_C(1) << 4)
+/**
+ *  Calculate new (future) volume key digest directly during
+ *  reencryption initialization. The keyslot context for new
+ *  volume key must be CRYPT_KC_TYPE_KEY or
+ *  CRYPT_KC_TYPE_VK_KEYRING. (in) */
+#define CRYPT_REENCRYPT_CREATE_NEW_DIGEST  (UINT32_C(1) << 5)
 
 /**
  * Reencryption direction
