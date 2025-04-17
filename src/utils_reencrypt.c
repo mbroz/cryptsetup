@@ -1092,7 +1092,7 @@ static int assign_tokens(struct crypt_device *cd, int keyslot_old, int keyslot_n
 
 static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device)
 {
-	bool vk_size_change, sector_size_change, sector_size_increase, vk_change;
+	bool sector_size_change, sector_size_increase, vk_change;
 	size_t i, vk_size, kp_size;
 	int r, keyslot_old = CRYPT_ANY_SLOT, keyslot_new = CRYPT_ANY_SLOT, key_size;
 	char cipher[MAX_CIPHER_LEN], mode[MAX_CIPHER_LEN], *vk = NULL, *active_name = NULL;
@@ -1155,8 +1155,6 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 		return -EINVAL;
 	vk_size = key_size;
 
-	vk_size_change = key_size != crypt_get_volume_key_size(cd);
-
 	/* volume key */
 	vk_change = !ARG_SET(OPT_KEEP_KEY_ID);
 
@@ -1173,7 +1171,7 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 		}
 	}
 
-	if (!vk_change && !vk_size_change && !new_cipher && !sector_size_change) {
+	if (!vk_change && !new_cipher && !sector_size_change) {
 		log_err(_("No data segment parameters changed. Reencryption aborted."));
 		r = -EINVAL;
 		goto out;
