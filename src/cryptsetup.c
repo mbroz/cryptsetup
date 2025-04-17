@@ -1683,7 +1683,8 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 			goto out;
 	}
 
-	keysize = get_adjusted_key_size(cipher_mode, DEFAULT_LUKS1_KEYBITS, integrity_keysize);
+	keysize = get_adjusted_key_size(cipher_mode, ARG_UINT32(OPT_KEY_SIZE_ID),
+					DEFAULT_LUKS1_KEYBITS, integrity_keysize);
 
 	if (ARG_SET(OPT_HW_OPAL_ONLY_ID))
 		keysize = opal_params.user_key_size;

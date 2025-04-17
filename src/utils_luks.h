@@ -27,7 +27,8 @@ int set_pbkdf_params(struct crypt_device *cd, const char *dev_type);
 
 int set_tries_tty(bool keyring);
 
-int get_adjusted_key_size(const char *cipher_mode, uint32_t default_size_bits, int integrity_keysize);
+int get_adjusted_key_size(const char *cipher_mode, uint32_t keysize_bits,
+			  uint32_t default_size_bits, int integrity_keysize);
 
 int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_passwordLen);
 

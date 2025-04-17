@@ -1146,7 +1146,8 @@ static int reencrypt_luks2_init(struct crypt_device *cd, const char *data_device
 
 	/* key size */
 	if (ARG_SET(OPT_KEY_SIZE_ID) || new_cipher)
-		key_size = get_adjusted_key_size(mode, DEFAULT_LUKS1_KEYBITS, 0);
+		key_size = get_adjusted_key_size(mode, ARG_UINT32(OPT_KEY_SIZE_ID),
+						 DEFAULT_LUKS1_KEYBITS, 0);
 	else
 		key_size = crypt_get_volume_key_size(cd);
 
