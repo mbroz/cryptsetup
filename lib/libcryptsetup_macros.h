@@ -55,4 +55,6 @@
 #define DM_UUID_PREFIX		"CRYPT-"
 #define DM_UUID_PREFIX_LEN	6
 
+#define OPAL_PSID_LEN		32
+
 #endif /* _LIBCRYPTSETUP_MACROS_H */

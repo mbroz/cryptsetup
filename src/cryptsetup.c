@@ -2963,12 +2963,20 @@ out:
 
 static int opal_erase(struct crypt_device *cd, bool factory_reset) {
 	char *password = NULL;
-	size_t password_size = 0;
+	size_t password_size = 0, keyfile_size_max;
 	int r;
+
+	/* limit PSID keyfile read if not set otherwise */
+	if (!factory_reset || ARG_SET(OPT_KEYFILE_SIZE_ID))
+		keyfile_size_max = ARG_UINT32(OPT_KEYFILE_SIZE_ID);
+	else {
+		log_dbg("Limiting PSID keyfile size to %d characters.", OPAL_PSID_LEN);
+		keyfile_size_max = OPAL_PSID_LEN;
+	}
 
 	r = tools_get_key(factory_reset ? _("Enter OPAL PSID: ") : _("Enter OPAL Admin password: "),
 				&password, &password_size, ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
-				ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
+				keyfile_size_max, ARG_STR(OPT_KEY_FILE_ID),
 				ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 	if (r < 0)
 		return r;
