@@ -30,7 +30,7 @@ int set_tries_tty(bool keyring);
 int get_adjusted_key_size(const char *cipher_mode, uint32_t keysize_bits,
 			  uint32_t default_size_bits, int integrity_keysize);
 
-int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_passwordLen);
+int luksFormat(struct crypt_device **r_cd, struct crypt_keyslot_context **r_kc);
 
 int reencrypt(int action_argc, const char **action_argv);
 
@@ -40,8 +40,7 @@ int reencrypt_luks1_in_progress(const char *device);
 
 int luks_init_keyslot_context(struct crypt_device *cd,
 			      const char *msg,
-			      char **password, size_t *passwordLen, bool verify,
-			      bool pwquality, bool reencrypt, /* tmp hack to use old get_key */
-			      struct crypt_keyslot_context **kc);
+			      bool verify, bool pwquality,
+			      struct crypt_keyslot_context **r_kc);
 
 #endif /* UTILS_LUKS_H */

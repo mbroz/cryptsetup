@@ -493,8 +493,7 @@ static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device,
 {
 	int keyslot, r, fd;
 	uuid_t uuid;
-	size_t passwordLen;
-	char *tmp, uuid_str[37], header_file[PATH_MAX] = { 0 }, *password = NULL;
+	char *tmp, uuid_str[37], header_file[PATH_MAX] = { 0 };
 	uint32_t activate_flags = 0;
 	const struct crypt_params_luks2 luks2_params = {
 		.sector_size = ARG_UINT32(OPT_SECTOR_SIZE_ID) ?: SECTOR_SIZE
@@ -509,6 +508,7 @@ static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device,
 		.luks2 = &luks2_params,
 		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY
 	};
+	struct crypt_keyslot_context *kc = NULL;
 
 	_set_reencryption_flags(&params.flags);
 
@@ -603,7 +603,7 @@ static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device,
 		}
 	}
 
-	r = luksFormat(cd, &password, &passwordLen);
+	r = luksFormat(cd, &kc);
 	if (r < 0)
 		goto out;
 
@@ -617,9 +617,11 @@ static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device,
 		params.resilience = "datashift";
 	}
 	keyslot = !ARG_SET(OPT_KEY_SLOT_ID) ? 0 : ARG_INT32(OPT_KEY_SLOT_ID);
-	r = crypt_reencrypt_init_by_passphrase(*cd, NULL, password, passwordLen,
-			CRYPT_ANY_SLOT, keyslot, crypt_get_cipher(*cd),
-			crypt_get_cipher_mode(*cd), &params);
+	r = crypt_reencrypt_init_by_keyslot_context(*cd, NULL, NULL, kc,
+						    CRYPT_ANY_SLOT, keyslot,
+						    crypt_get_cipher(*cd),
+						    crypt_get_cipher_mode(*cd),
+						    &params);
 	if (r < 0) {
 		crypt_keyslot_destroy(*cd, keyslot);
 		goto out;
@@ -643,7 +645,10 @@ static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device,
 	/* activate device */
 	if (device_name) {
 		set_activation_flags(&activate_flags);
-		r = crypt_activate_by_passphrase(*cd, device_name, ARG_INT32(OPT_KEY_SLOT_ID), password, passwordLen, activate_flags);
+		r = crypt_activate_by_keyslot_context(*cd, device_name,
+						      ARG_INT32(OPT_KEY_SLOT_ID), kc,
+						      CRYPT_ANY_SLOT, NULL,
+						      activate_flags);
 		if (r >= 0)
 			log_std(_("%s/%s is now active and ready for online encryption.\n"), crypt_get_dir(), device_name);
 	}
@@ -654,11 +659,12 @@ static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device,
 	/* just load reencryption context to continue reencryption */
 	if (!ARG_SET(OPT_INIT_ONLY_ID)) {
 		params.flags &= ~CRYPT_REENCRYPT_INITIALIZE_ONLY;
-		r = crypt_reencrypt_init_by_passphrase(*cd, device_name, password, passwordLen,
-				CRYPT_ANY_SLOT, keyslot, NULL, NULL, &params);
+		r = crypt_reencrypt_init_by_keyslot_context(*cd, device_name, NULL, kc,
+							    CRYPT_ANY_SLOT, keyslot,
+							    NULL, NULL, &params);
 	}
 out:
-	crypt_safe_free(password);
+	crypt_keyslot_context_free(kc);
 	if (*header_file)
 		unlink(header_file);
 	return r;
