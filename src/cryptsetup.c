@@ -112,76 +112,6 @@ static int init_new_keyslot_context(struct crypt_device *cd,
 	return r;
 }
 
-static int _try_token_unlock(struct crypt_device *cd,
-			     int keyslot,
-			     int token_id,
-			     const char *activated_name,
-			     const char *token_type,
-			     uint32_t activate_flags,
-			     int tries,
-			     bool activation,
-			     bool token_only)
-{
-	int r;
-	struct crypt_keyslot_context *kc;
-	size_t pin_len;
-	char msg[64], *pin = NULL;
-
-	assert(tries >= 1);
-	assert(token_id >= 0 || token_id == CRYPT_ANY_TOKEN);
-	assert(keyslot >= 0 || keyslot == CRYPT_ANY_SLOT);
-
-	r = crypt_keyslot_context_init_by_token(cd, token_id, token_type, NULL, 0, NULL, &kc);
-	if (r < 0)
-		return r;
-
-	if (activation)
-		r = crypt_activate_by_keyslot_context(cd, activated_name, keyslot, kc, CRYPT_ANY_SLOT, NULL, activate_flags);
-	else
-		r = crypt_resume_by_keyslot_context(cd, activated_name, keyslot, kc);
-
-	tools_keyslot_msg(r, UNLOCKED);
-	tools_token_error_msg(r, token_type, token_id, false);
-
-	/* Token requires PIN (-ENOANO). Ask for it if there is evident preference for tokens */
-	if (r != -ENOANO || (!token_only && !token_type && token_id == CRYPT_ANY_TOKEN))
-		goto out;
-
-	if (token_id == CRYPT_ANY_TOKEN)
-		r = snprintf(msg, sizeof(msg), _("Enter token PIN: "));
-	else
-		r = snprintf(msg, sizeof(msg), _("Enter token %d PIN: "), token_id);
-	if (r < 0 || (size_t)r >= sizeof(msg)) {
-		r = -EINVAL;
-		goto out;
-	}
-
-	do {
-		r = tools_get_key(msg, &pin, &pin_len, 0, 0, NULL,
-				ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
-		if (r < 0)
-			break;
-
-		r = crypt_keyslot_context_set_pin(cd, pin, pin_len, kc);
-		crypt_safe_free(pin);
-		if (r < 0)
-			break;
-
-		if (activation)
-			r = crypt_activate_by_keyslot_context(cd, activated_name, keyslot,
-							      kc, CRYPT_ANY_SLOT, NULL, activate_flags);
-		else
-			r = crypt_resume_by_keyslot_context(cd, activated_name, keyslot, kc);
-
-		tools_keyslot_msg(r, UNLOCKED);
-		tools_token_error_msg(r, token_type, token_id, true);
-		check_signal(&r);
-	} while (r == -ENOANO && (--tries > 0));
-out:
-	crypt_keyslot_context_free(kc);
-	return r;
-}
-
 static int action_open_plain(void)
 {
 	struct crypt_device *cd = NULL, *cd1 = NULL;
@@ -944,9 +874,11 @@ static int action_resize(void)
 
 		if (isLUKS2(crypt_get_type(cd))) {
 			/* try load VK in kernel keyring using token */
-			r = _try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_TOKEN_ID_ID),
-					NULL, ARG_STR(OPT_TOKEN_TYPE_ID), CRYPT_ACTIVATE_KEYRING_KEY,
-					1, true, ARG_SET(OPT_TOKEN_ONLY_ID));
+			r = luks_try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID),
+						  ARG_INT32(OPT_TOKEN_ID_ID), NULL,
+						  ARG_STR(OPT_TOKEN_TYPE_ID),
+						  CRYPT_ACTIVATE_KEYRING_KEY,1, true,
+						  ARG_SET(OPT_TOKEN_ONLY_ID));
 
 			if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
 				goto out;
@@ -1894,10 +1826,10 @@ static int action_open_luks(void)
 		if (r)
 			goto out;
 	} else {
-		r = _try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID),
-				      ARG_INT32(OPT_TOKEN_ID_ID), activated_name,
-				      ARG_STR(OPT_TOKEN_TYPE_ID), activate_flags,
-				      set_tries_tty(false), true, ARG_SET(OPT_TOKEN_ONLY_ID));
+		r = luks_try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID),
+					  ARG_INT32(OPT_TOKEN_ID_ID), activated_name,
+					  ARG_STR(OPT_TOKEN_TYPE_ID), activate_flags,
+					  set_tries_tty(false), true, ARG_SET(OPT_TOKEN_ONLY_ID));
 
 		if (r >= 0 || r == -EEXIST || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
 			goto out;
@@ -2773,9 +2705,9 @@ static int action_luksResume(void)
 	}
 
 	/* try to resume LUKS2 device by token first */
-	r = _try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_TOKEN_ID_ID),
-			      action_argv[0], ARG_STR(OPT_TOKEN_TYPE_ID), 0,
-			      set_tries_tty(false), false, ARG_SET(OPT_TOKEN_ONLY_ID));
+	r = luks_try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_TOKEN_ID_ID),
+				  action_argv[0], ARG_STR(OPT_TOKEN_TYPE_ID), 0,
+				  set_tries_tty(false), false, ARG_SET(OPT_TOKEN_ONLY_ID));
 
 	if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
 		goto out;

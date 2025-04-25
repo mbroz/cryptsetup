@@ -43,4 +43,14 @@ int luks_init_keyslot_context(struct crypt_device *cd,
 			      bool verify, bool pwquality,
 			      struct crypt_keyslot_context **r_kc);
 
+int luks_try_token_unlock(struct crypt_device *cd,
+			  int keyslot,
+			  int token_id,
+			  const char *activated_name,
+			  const char *token_type,
+			  uint32_t activate_flags,
+			  int tries,
+			  bool activation,
+			  bool token_only);
+
 #endif /* UTILS_LUKS_H */
