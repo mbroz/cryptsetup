@@ -376,3 +376,83 @@ out:
 
 	return r;
 }
+
+/* Initiates keyslot context(s) based on non-interactive input only */
+int init_keyslot_contexts_by_volume_keys(struct crypt_device *cd,
+					 const char *vk_file1,
+					 const char *vk_file2,
+					 int keysize1_bytes,
+					 int keysize2_bytes,
+					 const char *vk_in_keyring1,
+					 const char *vk_in_keyring2,
+					 struct crypt_keyslot_context **r_kc1,
+					 struct crypt_keyslot_context **r_kc2)
+{
+	int r;
+	char *vk_description, *key = NULL;
+	struct crypt_keyslot_context *kc1 = NULL, *kc2 = NULL;
+
+	assert(cd);
+	assert(r_kc1);
+	assert(r_kc2);
+
+	if (vk_file1) {
+		if (vk_file2 && keysize2_bytes <= 0) {
+			log_err(_("Match --volume-key-file option count with same count of --key-size options."));
+			return -EINVAL;
+		}
+
+		if (keysize1_bytes <= 0)
+			keysize1_bytes = crypt_get_volume_key_size(cd);
+		if (keysize1_bytes <= 0) {
+			log_err(_("Cannot determine volume key size for LUKS without keyslots, please use --key-size option."));
+			return -EINVAL;
+		}
+
+		r = tools_read_vk(vk_file1, &key, keysize1_bytes);
+		if (r < 0)
+			return r;
+
+		r = crypt_keyslot_context_init_by_volume_key(cd, key, keysize1_bytes, &kc1);
+		if (!r && vk_file2) {
+			crypt_safe_free(key);
+			key = NULL;
+
+			r = tools_read_vk(vk_file2, &key, keysize2_bytes);
+			if (r < 0)
+				goto out;
+
+			r = crypt_keyslot_context_init_by_volume_key(cd, key, keysize2_bytes, &kc2);
+		}
+	} else if (vk_in_keyring1) {
+		r = tools_parse_vk_description(vk_in_keyring1, &vk_description);
+		if (r < 0)
+			return r;
+		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description, &kc1);
+		free(vk_description);
+		if (r < 0)
+			return r;
+
+		if (vk_in_keyring2) {
+			r = tools_parse_vk_description(vk_in_keyring2, &vk_description);
+			if (r < 0)
+				goto out;
+			r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description, &kc2);
+			free(vk_description);
+		}
+	} else
+		return -EINVAL;
+
+out:
+	crypt_safe_free(key);
+
+	if (r) {
+		crypt_keyslot_context_free(kc1);
+		crypt_keyslot_context_free(kc2);
+	} else {
+		*r_kc1 = kc1;
+		*r_kc2 = kc2;
+	}
+
+	return r;
+}
