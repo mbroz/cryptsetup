@@ -54,4 +54,14 @@ int luks_try_token_unlock(struct crypt_device *cd,
 			  bool retry_with_pin,
 			  struct crypt_keyslot_context **r_kc);
 
+int luks_init_keyslot_contexts_by_volume_keys(struct crypt_device *cd,
+					      const char *vk_file1,
+					      const char *vk_file2,
+					      int keysize1_bytes,
+					      int keysize2_bytes,
+					      const char *vk_in_keyring1,
+					      const char *vk_in_keyring2,
+					      struct crypt_keyslot_context **r_kc1,
+					      struct crypt_keyslot_context **r_kc2);
+
 #endif /* UTILS_LUKS_H */
