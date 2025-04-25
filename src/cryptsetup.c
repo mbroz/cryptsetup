@@ -906,10 +906,8 @@ static int action_close(void)
 static int action_resize(void)
 {
 	int r;
-	size_t passwordLen;
 	struct crypt_active_device cad;
 	uint64_t dev_size = 0;
-	char *password = NULL;
 	struct crypt_device *cd = NULL;
 	struct crypt_keyslot_context *kc = NULL;
 
@@ -953,9 +951,7 @@ static int action_resize(void)
 			if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
 				goto out;
 
-			r = luks_init_keyslot_context(cd, NULL, &password, &passwordLen,
-						      verify_passphrase(0), false, false, &kc);
-			crypt_safe_free(password);
+			r = luks_init_keyslot_context(cd, NULL, verify_passphrase(0), false, &kc);
 			if (r < 0)
 				goto out;
 
@@ -1491,15 +1487,15 @@ static int strcmp_or_null(const char *str, const char *expected)
 	return !str ? 0 : strcmp(str, expected);
 }
 
-int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_passwordLen)
+int luksFormat(struct crypt_device **r_cd, struct crypt_keyslot_context **r_kc)
 {
 	bool wipe_signatures = false;
-	int encrypt_type, r = -EINVAL, keysize, integrity_keysize = 0, required_integrity_key_size = 0, fd, created = 0;
+	int encrypt_type, r = -EINVAL, integrity_keysize = 0, required_integrity_key_size = 0, fd, created = 0;
 	struct stat st;
 	const char *header_device, *type;
-	char *msg = NULL, *key = NULL, *password = NULL;
+	char *msg = NULL, *key = NULL;
 	char cipher [MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN], integrity[MAX_CIPHER_LEN];
-	size_t passwordLen = 0, signatures = 0;
+	size_t keysize, signatures = 0;
 	struct crypt_device *cd = NULL;
 	struct crypt_params_luks1 params1 = {
 		.hash = ARG_STR(OPT_HASH_ID) ?: DEFAULT_LUKS1_HASH,
@@ -1666,9 +1662,8 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	else if (ARG_SET(OPT_USE_URANDOM_ID))
 		crypt_set_rng_type(cd, CRYPT_RNG_URANDOM);
 
-	r = luks_init_keyslot_context(cd, NULL, &password, &passwordLen,
-				      verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID),
-				      r_password != NULL, &new_kc);
+	r = luks_init_keyslot_context(cd, NULL, verify_passphrase(1),
+				      !ARG_SET(OPT_FORCE_PASSWORD_ID), &new_kc);
 	if (r < 0)
 		goto out;
 
@@ -1721,9 +1716,24 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	if (r < 0)
 		goto out;
 
+	if (!key && r_kc) {
+		key = crypt_safe_alloc(keysize);
+		if (!key) {
+			r = -ENOMEM;
+			goto out;
+		}
+		/* Extract VK for LUKS2 encryption later */
+		r = crypt_volume_key_get_by_keyslot_context(cd, CRYPT_ANY_SLOT, key, &keysize, NULL);
+		if (r < 0)
+			goto out;
+	}
+
 	r = crypt_keyslot_context_init_by_volume_key(cd, key, keysize, &kc);
 	if (r < 0)
 		goto out;
+
+	crypt_safe_free(key);
+	key = NULL;
 
 	r = crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, kc,
 						 ARG_INT32(OPT_KEY_SLOT_ID), new_kc, 0);
@@ -1742,7 +1752,6 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	}
 out:
 	crypt_safe_free(key);
-	crypt_keyslot_context_free(kc);
 	crypt_keyslot_context_free(new_kc);
 
 	if (r < 0) {
@@ -1759,22 +1768,21 @@ out:
 
 	crypt_safe_free(CONST_CAST(void *)opal_params.admin_key);
 
-	if (r >= 0 && r_cd && r_password && r_passwordLen) {
+	if (r >= 0 && r_cd && r_kc) {
 		*r_cd = cd;
-		*r_password = password;
-		*r_passwordLen = passwordLen;
+		*r_kc = kc;
 		return r;
 	}
 
+	crypt_keyslot_context_free(kc);
 	crypt_free(cd);
-	crypt_safe_free(password);
 
 	return r;
 }
 
 static int action_luksFormat(void)
 {
-	return luksFormat(NULL, NULL, NULL);
+	return luksFormat(NULL, NULL);
 }
 
 static int action_open_luks(void)
@@ -1785,8 +1793,6 @@ static int action_open_luks(void)
 	char *key = NULL, *vk_description_activation1 = NULL, *vk_description_activation2 = NULL;
 	uint32_t activate_flags = 0;
 	int r, keysize, tries;
-	char *password = NULL;
-	size_t passwordLen;
 	struct stat st;
 	struct crypt_keyslot_context *kc = NULL, *kc1 = NULL, *kc2 = NULL;
 
@@ -1898,12 +1904,9 @@ static int action_open_luks(void)
 
 		tries = set_tries_tty(true);
 		do {
-			r = luks_init_keyslot_context(cd, NULL, &password, &passwordLen,
-						      verify_passphrase(0), false, false, &kc);
+			r = luks_init_keyslot_context(cd, NULL, verify_passphrase(0), false, &kc);
 			if (r < 0)
 				goto out;
-			crypt_safe_free(password);
-			password = NULL;
 
 			r = crypt_activate_by_keyslot_context(cd, activated_name, ARG_INT32(OPT_KEY_SLOT_ID),
 							      kc, CRYPT_ANY_SLOT, kc, activate_flags);
@@ -2221,8 +2224,7 @@ static int action_luksAddKey(void)
 {
 	bool pin_provided = false;
 	int keyslot_old, keyslot_new, keysize = 0, r = -EINVAL;
-	char *key, *vk_description, *password = NULL;
-	size_t password_size = 0;
+	char *key, *vk_description;
 	struct crypt_device *cd = NULL;
 	struct crypt_keyslot_context *p_kc_new = NULL, *kc = NULL, *kc_new = NULL;
 
@@ -2321,11 +2323,9 @@ static int action_luksAddKey(void)
 				NULL, 0, NULL, &kc);
 	} else {
 		r = luks_init_keyslot_context(cd, _("Enter any existing passphrase: "),
-					      &password, &password_size,
-					      verify_passphrase(0), false, false, &kc);
+					      verify_passphrase(0), false, &kc);
 		if (r < 0)
 			goto out;
-		crypt_safe_free(password);
 
 		/* Check password before asking for new one */
 		r = crypt_activate_by_keyslot_context(cd, NULL, keyslot_old, kc, CRYPT_ANY_SLOT, NULL, 0);
@@ -2551,8 +2551,7 @@ out:
 
 static int luksDump_with_volume_key(struct crypt_device *cd)
 {
-	char *vk = NULL, *password = NULL;
-	size_t passwordLen = 0;
+	char *vk = NULL;
 	struct crypt_keyslot_context *kc = NULL;
 	size_t vk_size;
 	int r;
@@ -2569,11 +2568,9 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	if (!vk)
 		return -ENOMEM;
 
-	r = luks_init_keyslot_context(cd, NULL, &password, &passwordLen,
-				      false, false, false, &kc);
+	r = luks_init_keyslot_context(cd, NULL, false, false, &kc);
 	if (r < 0)
 		goto out;
-	crypt_safe_free(password);
 
 	r = crypt_volume_key_get_by_keyslot_context(cd, CRYPT_ANY_SLOT, vk, &vk_size, kc);
 	tools_passphrase_msg(r);
@@ -2726,8 +2723,7 @@ static int action_luksSuspend(void)
 static int action_luksResume(void)
 {
 	struct crypt_device *cd = NULL;
-	char *password = NULL, *vk_description_activation = NULL;
-	size_t passwordLen;
+	char *vk_description_activation = NULL;
 	int r, tries;
 	struct crypt_active_device cad;
 	const char *req_type = luksType(device_type);
@@ -2798,12 +2794,9 @@ static int action_luksResume(void)
 
 	tries = set_tries_tty(true);
 	do {
-		r = luks_init_keyslot_context(cd, NULL, &password, &passwordLen,
-					      verify_passphrase(0), false, false, &kc);
+		r = luks_init_keyslot_context(cd, NULL, verify_passphrase(0), false, &kc);
 		if (r < 0)
 			goto out;
-		crypt_safe_free(password);
-		password = NULL;
 
 		r = crypt_resume_by_keyslot_context(cd, action_argv[0], ARG_INT32(OPT_KEY_SLOT_ID), kc);
 		crypt_keyslot_context_free(kc);
