@@ -3397,10 +3397,8 @@ static int reencrypt_lock_and_verify(struct crypt_device *cd, struct luks2_hdr *
 	struct crypt_lock_handle *h;
 
 	ri = LUKS2_reencrypt_status(hdr);
-	if (ri == CRYPT_REENCRYPT_INVALID) {
-		log_err(cd, _("Failed to get reencryption state."));
+	if (ri == CRYPT_REENCRYPT_INVALID)
 		return -EINVAL;
-	}
 	if (ri < CRYPT_REENCRYPT_CLEAN) {
 		log_err(cd, _("Device is not in reencryption."));
 		return -EINVAL;
