@@ -876,7 +876,9 @@ static int action_resize(void)
 			/* try load VK in kernel keyring using token */
 			r = try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_TOKEN_ID_ID),
 					     NULL, ARG_STR(OPT_TOKEN_TYPE_ID), CRYPT_ACTIVATE_KEYRING_KEY,
-					     1, true, ARG_SET(OPT_TOKEN_ONLY_ID));
+					     1, true,
+					     ARG_SET(OPT_TOKEN_ONLY_ID) || ARG_SET(OPT_TOKEN_ID_ID) || ARG_SET(OPT_TOKEN_TYPE_ID),
+					     NULL);
 
 			if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
 				goto out;
@@ -1825,7 +1827,9 @@ static int action_open_luks(void)
 		r = try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID),
 				     ARG_INT32(OPT_TOKEN_ID_ID), activated_name,
 				     ARG_STR(OPT_TOKEN_TYPE_ID), activate_flags,
-				     set_tries_tty(false), true, ARG_SET(OPT_TOKEN_ONLY_ID));
+				     set_tries_tty(false), true,
+				     ARG_SET(OPT_TOKEN_ONLY_ID) || ARG_SET(OPT_TOKEN_ID_ID) || ARG_SET(OPT_TOKEN_TYPE_ID),
+				     NULL);
 
 		if (r >= 0 || r == -EEXIST || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
 			goto out;
@@ -2696,7 +2700,9 @@ static int action_luksResume(void)
 	/* try to resume LUKS2 device by token first */
 	r = try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID), ARG_INT32(OPT_TOKEN_ID_ID),
 			     action_argv[0], ARG_STR(OPT_TOKEN_TYPE_ID), 0,
-			     set_tries_tty(false), false, ARG_SET(OPT_TOKEN_ONLY_ID));
+			     set_tries_tty(false), false,
+			     ARG_SET(OPT_TOKEN_ONLY_ID) || ARG_SET(OPT_TOKEN_ID_ID) || ARG_SET(OPT_TOKEN_TYPE_ID),
+			     NULL);
 
 	if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
 		goto out;
