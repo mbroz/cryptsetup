@@ -51,6 +51,7 @@ int luks_try_token_unlock(struct crypt_device *cd,
 			  uint32_t activate_flags,
 			  int tries,
 			  bool activation,
-			  bool token_only);
+			  bool retry_with_pin,
+			  struct crypt_keyslot_context **r_kc);
 
 #endif /* UTILS_LUKS_H */

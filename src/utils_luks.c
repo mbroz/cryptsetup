@@ -310,7 +310,8 @@ int luks_try_token_unlock(struct crypt_device *cd,
 			  uint32_t activate_flags,
 			  int tries,
 			  bool activation,
-			  bool token_only)
+			  bool retry_with_pin,
+			  struct crypt_keyslot_context **r_kc)
 {
 	int r;
 	struct crypt_keyslot_context *kc;
@@ -326,15 +327,15 @@ int luks_try_token_unlock(struct crypt_device *cd,
 		return r;
 
 	if (activation)
-		r = crypt_activate_by_keyslot_context(cd, activated_name, keyslot, kc, CRYPT_ANY_SLOT, NULL, activate_flags);
+		r = crypt_activate_by_keyslot_context(cd, activated_name, keyslot, kc, CRYPT_ANY_SLOT, kc, activate_flags);
 	else
 		r = crypt_resume_by_keyslot_context(cd, activated_name, keyslot, kc);
 
 	tools_keyslot_msg(r, UNLOCKED);
 	tools_token_error_msg(r, token_type, token_id, false);
 
-	/* Token requires PIN (-ENOANO). Ask for it if there is evident preference for tokens */
-	if (r != -ENOANO || (!token_only && !token_type && token_id == CRYPT_ANY_TOKEN))
+	/* Token requires PIN (-ENOANO). */
+	if (r != -ENOANO || !retry_with_pin)
 		goto out;
 
 	if (token_id == CRYPT_ANY_TOKEN)
@@ -368,6 +369,10 @@ int luks_try_token_unlock(struct crypt_device *cd,
 		check_signal(&r);
 	} while (r == -ENOANO && (--tries > 0));
 out:
-	crypt_keyslot_context_free(kc);
+	if (r >= 0 && r_kc)
+		*r_kc = kc;
+	else
+		crypt_keyslot_context_free(kc);
+
 	return r;
 }
