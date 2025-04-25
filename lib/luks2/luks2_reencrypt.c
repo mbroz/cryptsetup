@@ -1482,8 +1482,7 @@ static int reencrypt_update_flag(struct crypt_device *cd, uint8_t version,
 		return LUKS2_config_set_requirement_version(cd, hdr, CRYPT_REQUIREMENT_ONLINE_REENCRYPT, version, commit);
 	}
 
-	if (LUKS2_config_get_requirements(cd, hdr, &reqs))
-		return -EINVAL;
+	LUKS2_config_get_requirements(cd, hdr, &reqs);
 
 	reqs &= ~CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
 

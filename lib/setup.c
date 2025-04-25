@@ -7089,8 +7089,10 @@ int crypt_persistent_flags_get(struct crypt_device *cd, crypt_flags_type type, u
 	if (type == CRYPT_FLAGS_ACTIVATION)
 		return LUKS2_config_get_flags(cd, &cd->u.luks2.hdr, flags);
 
-	if (type == CRYPT_FLAGS_REQUIREMENTS)
-		return LUKS2_config_get_requirements(cd, &cd->u.luks2.hdr, flags);
+	if (type == CRYPT_FLAGS_REQUIREMENTS) {
+		LUKS2_config_get_requirements(cd, &cd->u.luks2.hdr, flags);
+		return 0;
+	}
 
 	return -EINVAL;
 }

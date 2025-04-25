@@ -643,14 +643,12 @@ static int validate_reencrypt_segments(struct crypt_device *cd, json_object *hdr
 {
 	json_object *jobj, *jobj_backup_previous = NULL, *jobj_backup_final = NULL;
 	uint32_t reqs;
-	int i, r;
+	int i;
 	struct luks2_hdr dummy = {
 		.jobj = hdr_jobj
 	};
 
-	r = LUKS2_config_get_requirements(cd, &dummy, &reqs);
-	if (r)
-		return 1;
+	LUKS2_config_get_requirements(cd, &dummy, &reqs);
 
 	if (reqs_reencrypt_online(reqs)) {
 		for (i = first_backup; i < segments_count; i++) {
@@ -1457,9 +1455,7 @@ int LUKS2_hdr_restore(struct crypt_device *cd, struct luks2_hdr *hdr,
 	r = LUKS2_hdr_read(cd, &tmp_hdr, 0);
 	if (r == 0) {
 		log_dbg(cd, "Device %s already contains LUKS2 header, checking UUID and requirements.", device_path(device));
-		r = LUKS2_config_get_requirements(cd, &tmp_hdr, &reqs);
-		if (r)
-			goto out;
+		LUKS2_config_get_requirements(cd, &tmp_hdr, &reqs);
 
 		if (memcmp(tmp_hdr.uuid, hdr_file.uuid, LUKS2_UUID_L))
 			diff_uuid = 1;
@@ -1764,7 +1760,7 @@ static const struct requirement_flag *stored_requirement_name_by_id(struct luks2
 /*
  * returns count of requirements (past cryptsetup 2.0 release)
  */
-int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t *reqs)
+void LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t *reqs)
 {
 	json_object *jobj_mandatory, *jobj;
 	int i, len;
@@ -1777,11 +1773,11 @@ int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 
 	jobj_mandatory = mandatory_requirements_jobj(hdr);
 	if (!jobj_mandatory)
-		return 0;
+		return;
 
 	len = (int) json_object_array_length(jobj_mandatory);
 	if (len <= 0)
-		return 0;
+		return;
 
 	log_dbg(cd, "LUKS2 requirements detected:");
 
@@ -1792,8 +1788,6 @@ int LUKS2_config_get_requirements(struct crypt_device *cd, struct luks2_hdr *hdr
 				        reqs_unknown(req->flag) ? "un" : "");
 		*reqs |= req->flag;
 	}
-
-	return 0;
 }
 
 int LUKS2_config_set_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint32_t reqs, bool commit)
@@ -2308,12 +2302,7 @@ crypt_reencrypt_info LUKS2_reencrypt_status(struct luks2_hdr *hdr)
 {
 	uint32_t reqs;
 
-	/*
-	 * Any unknown requirement or offline reencryption should abort
-	 * anything related to online-reencryption handling
-	 */
-	if (LUKS2_config_get_requirements(NULL, hdr, &reqs))
-		return CRYPT_REENCRYPT_INVALID;
+	LUKS2_config_get_requirements(NULL, hdr, &reqs);
 
 	if (!reqs_reencrypt_online(reqs))
 		return CRYPT_REENCRYPT_NONE;
@@ -2980,13 +2969,8 @@ out:
 int LUKS2_unmet_requirements(struct crypt_device *cd, struct luks2_hdr *hdr, uint64_t reqs_mask, int quiet)
 {
 	uint32_t reqs;
-	int r = LUKS2_config_get_requirements(cd, hdr, &reqs);
 
-	if (r) {
-		if (!quiet)
-			log_err(cd, _("Failed to read LUKS2 requirements."));
-		return r;
-	}
+	LUKS2_config_get_requirements(cd, hdr, &reqs);
 
 	/* do not mask unknown requirements check */
 	if (reqs_unknown(reqs)) {
