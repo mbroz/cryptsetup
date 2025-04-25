@@ -1724,11 +1724,10 @@ static int action_open_luks(void)
 	struct crypt_active_device cad;
 	struct crypt_device *cd = NULL;
 	const char *data_device, *header_device, *activated_name;
-	char *key = NULL, *vk_description_activation1 = NULL, *vk_description_activation2 = NULL;
 	uint32_t activate_flags = 0;
-	int r, keysize, tries;
+	int r, tries, keysize = 0;
 	struct stat st;
-	struct crypt_keyslot_context *kc = NULL, *kc1 = NULL, *kc2 = NULL;
+	struct crypt_keyslot_context *kc1 = NULL, *kc2 = NULL;
 
 	if (ARG_SET(OPT_REFRESH_ID)) {
 		activated_name = action_argc > 1 ? action_argv[1] : action_argv[0];
@@ -1785,48 +1784,31 @@ static int action_open_luks(void)
 			goto out;
 	}
 
-	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
-		keysize = crypt_get_volume_key_size(cd);
-		if (!keysize && !ARG_SET(OPT_KEY_SIZE_ID)) {
-			log_err(_("Cannot determine volume key size for LUKS without keyslots, please use --key-size option."));
-			r = -EINVAL;
-			goto out;
-		} else if (!keysize)
-			keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID) || ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
+		if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+			keysize = crypt_get_volume_key_size(cd);
+			if (!keysize && !ARG_SET(OPT_KEY_SIZE_ID)) {
+				log_err(_("Cannot determine volume key size for LUKS without keyslots, please use --key-size option."));
+				r = -EINVAL;
+				goto out;
+			} else if (!keysize)
+				keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
+		}
 
-		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, keysize);
+		r = luks_init_keyslot_contexts_by_volume_keys(cd, ARG_STR(OPT_VOLUME_KEY_FILE_ID),
+							      NULL /* unused */,
+							      keysize,
+							      0 /* unused */,
+							      vks_in_keyring[0],
+							      vks_in_keyring[1],
+							      &kc1, &kc2);
 		if (r < 0)
 			goto out;
-		r = crypt_activate_by_volume_key(cd, activated_name,
-						 key, keysize, activate_flags);
-	} else if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
-		if (vks_in_keyring_count == 1) {
-			r = tools_parse_vk_description(vks_in_keyring[0], &vk_description_activation1);
-			if (r < 0)
-				goto out;
-			r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description_activation1, &kc1);
-			if (r)
-				goto out;
-			r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT, kc1, CRYPT_ANY_SLOT, NULL, activate_flags);
-		} else if (vks_in_keyring_count == 2) {
-			r = tools_parse_vk_description(vks_in_keyring[0], &vk_description_activation1);
-			if (r < 0)
-				goto out;
-			r = tools_parse_vk_description(vks_in_keyring[1], &vk_description_activation2);
-			if (r < 0)
-				goto out;
-			r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description_activation1, &kc1);
-			if (r)
-				goto out;
-			r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description_activation2, &kc2);
-			if (r)
-				goto out;
-			r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT, kc1, CRYPT_ANY_SLOT, kc2, activate_flags);
-		}
+
+		r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT,
+						      kc1, CRYPT_ANY_SLOT, kc2, activate_flags);
 		if (r == -EPERM)
 			log_err(_("Volume key does not match the volume."));
-		if (r)
-			goto out;
 	} else {
 		r = luks_try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID),
 					  ARG_INT32(OPT_TOKEN_ID_ID), activated_name,
@@ -1840,14 +1822,14 @@ static int action_open_luks(void)
 
 		tries = set_tries_tty(true);
 		do {
-			r = luks_init_keyslot_context(cd, NULL, verify_passphrase(0), false, &kc);
+			crypt_keyslot_context_free(kc1);
+			kc1 = NULL;
+			r = luks_init_keyslot_context(cd, NULL, verify_passphrase(0), false, &kc1);
 			if (r < 0)
 				goto out;
 
 			r = crypt_activate_by_keyslot_context(cd, activated_name, ARG_INT32(OPT_KEY_SLOT_ID),
-							      kc, CRYPT_ANY_SLOT, kc, activate_flags);
-			crypt_keyslot_context_free(kc);
-			kc = NULL;
+							      kc1, CRYPT_ANY_SLOT, kc1, activate_flags);
 
 			tools_keyslot_msg(r, UNLOCKED);
 			tools_passphrase_msg(r);
@@ -1868,10 +1850,7 @@ out:
 
 	crypt_keyslot_context_free(kc1);
 	crypt_keyslot_context_free(kc2);
-	crypt_safe_free(key);
 	crypt_free(cd);
-	free(vk_description_activation1);
-	free(vk_description_activation2);
 
 	return r;
 }
