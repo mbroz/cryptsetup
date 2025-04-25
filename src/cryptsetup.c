@@ -84,36 +84,6 @@ static int _set_keyslot_encryption_params(struct crypt_device *cd)
 	return crypt_keyslot_set_encryption(cd, ARG_STR(OPT_KEYSLOT_CIPHER_ID), ARG_UINT32(OPT_KEYSLOT_KEY_SIZE_ID) / 8);
 }
 
-/*
- * FIXME: Refactor password and passwordLen params away after keyslot context support
- *	  is added in --encrypt reencryption mode.
- */
-static int init_keyslot_context(struct crypt_device *cd,
-				const char *msg,
-				char **password, size_t *passwordLen, bool verify, bool pwquality,
-				bool reencrypt, /* tmp hack to use old get_key */
-				struct crypt_keyslot_context **kc)
-{
-	int r = -EINVAL;
-
-	if (ARG_SET(OPT_KEY_DESCRIPTION_ID))
-		r = crypt_keyslot_context_init_by_keyring(cd, ARG_STR(OPT_KEY_DESCRIPTION_ID), kc);
-	else if (ARG_SET(OPT_KEY_FILE_ID) && !tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) && !reencrypt)
-		r = crypt_keyslot_context_init_by_keyfile(cd, ARG_STR(OPT_KEY_FILE_ID),
-							  ARG_UINT32(OPT_KEYFILE_SIZE_ID),
-							  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), kc);
-	else if (password) {
-		r = tools_get_key(msg, password, passwordLen, ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
-				  ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-				  ARG_UINT32(OPT_TIMEOUT_ID), verify, pwquality, cd);
-		if (r < 0)
-			return r;
-		r = crypt_keyslot_context_init_by_passphrase(cd, *password, *passwordLen, kc);
-	}
-
-	return r;
-}
-
 static int init_new_keyslot_context(struct crypt_device *cd,
 				const char *msg,
 				bool verify, bool pwquality,
@@ -983,8 +953,8 @@ static int action_resize(void)
 			if (r >= 0 || quit || ARG_SET(OPT_TOKEN_ONLY_ID))
 				goto out;
 
-			r = init_keyslot_context(cd, NULL, &password, &passwordLen, verify_passphrase(0),
-						false, false, &kc);
+			r = luks_init_keyslot_context(cd, NULL, &password, &passwordLen,
+						      verify_passphrase(0), false, false, &kc);
 			crypt_safe_free(password);
 			if (r < 0)
 				goto out;
@@ -1696,8 +1666,9 @@ int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_password
 	else if (ARG_SET(OPT_USE_URANDOM_ID))
 		crypt_set_rng_type(cd, CRYPT_RNG_URANDOM);
 
-	r = init_keyslot_context(cd, NULL, &password, &passwordLen, verify_passphrase(1),
-				 !ARG_SET(OPT_FORCE_PASSWORD_ID), r_password != NULL, &new_kc);
+	r = luks_init_keyslot_context(cd, NULL, &password, &passwordLen,
+				      verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID),
+				      r_password != NULL, &new_kc);
 	if (r < 0)
 		goto out;
 
@@ -1927,8 +1898,8 @@ static int action_open_luks(void)
 
 		tries = set_tries_tty(true);
 		do {
-			r = init_keyslot_context(cd, NULL, &password, &passwordLen, verify_passphrase(0),
-						 false, false, &kc);
+			r = luks_init_keyslot_context(cd, NULL, &password, &passwordLen,
+						      verify_passphrase(0), false, false, &kc);
 			if (r < 0)
 				goto out;
 			crypt_safe_free(password);
@@ -2349,8 +2320,9 @@ static int action_luksAddKey(void)
 				ARG_STR(OPT_TOKEN_TYPE_ID),
 				NULL, 0, NULL, &kc);
 	} else {
-		r = init_keyslot_context(cd, _("Enter any existing passphrase: "), &password, &password_size,
-					 verify_passphrase(0), false, false, &kc);
+		r = luks_init_keyslot_context(cd, _("Enter any existing passphrase: "),
+					      &password, &password_size,
+					      verify_passphrase(0), false, false, &kc);
 		if (r < 0)
 			goto out;
 		crypt_safe_free(password);
@@ -2597,7 +2569,8 @@ static int luksDump_with_volume_key(struct crypt_device *cd)
 	if (!vk)
 		return -ENOMEM;
 
-	r = init_keyslot_context(cd, NULL, &password, &passwordLen, false, false, false, &kc);
+	r = luks_init_keyslot_context(cd, NULL, &password, &passwordLen,
+				      false, false, false, &kc);
 	if (r < 0)
 		goto out;
 	crypt_safe_free(password);
@@ -2825,8 +2798,8 @@ static int action_luksResume(void)
 
 	tries = set_tries_tty(true);
 	do {
-		r = init_keyslot_context(cd, NULL, &password, &passwordLen, verify_passphrase(0),
-					 false, false, &kc);
+		r = luks_init_keyslot_context(cd, NULL, &password, &passwordLen,
+					      verify_passphrase(0), false, false, &kc);
 		if (r < 0)
 			goto out;
 		crypt_safe_free(password);

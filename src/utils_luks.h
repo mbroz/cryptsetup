@@ -38,4 +38,10 @@ int reencrypt_luks1(const char *device);
 
 int reencrypt_luks1_in_progress(const char *device);
 
+int luks_init_keyslot_context(struct crypt_device *cd,
+			      const char *msg,
+			      char **password, size_t *passwordLen, bool verify,
+			      bool pwquality, bool reencrypt, /* tmp hack to use old get_key */
+			      struct crypt_keyslot_context **kc);
+
 #endif /* UTILS_LUKS_H */
