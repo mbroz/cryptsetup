@@ -84,36 +84,6 @@ static int _set_keyslot_encryption_params(struct crypt_device *cd)
 	return crypt_keyslot_set_encryption(cd, ARG_STR(OPT_KEYSLOT_CIPHER_ID), ARG_UINT32(OPT_KEYSLOT_KEY_SIZE_ID) / 8);
 }
 
-/*
- * FIXME: Refactor password and passwordLen params away after keyslot context support
- *	  is added in --encrypt reencryption mode.
- */
-static int init_keyslot_context(struct crypt_device *cd,
-				const char *msg,
-				char **password, size_t *passwordLen, bool verify, bool pwquality,
-				bool reencrypt, /* tmp hack to use old get_key */
-				struct crypt_keyslot_context **kc)
-{
-	int r = -EINVAL;
-
-	if (ARG_SET(OPT_KEY_DESCRIPTION_ID))
-		r = crypt_keyslot_context_init_by_keyring(cd, ARG_STR(OPT_KEY_DESCRIPTION_ID), kc);
-	else if (ARG_SET(OPT_KEY_FILE_ID) && !tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) && !reencrypt)
-		r = crypt_keyslot_context_init_by_keyfile(cd, ARG_STR(OPT_KEY_FILE_ID),
-							  ARG_UINT32(OPT_KEYFILE_SIZE_ID),
-							  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), kc);
-	else if (password) {
-		r = tools_get_key(msg, password, passwordLen, ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
-				  ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-				  ARG_UINT32(OPT_TIMEOUT_ID), verify, pwquality, cd);
-		if (r < 0)
-			return r;
-		r = crypt_keyslot_context_init_by_passphrase(cd, *password, *passwordLen, kc);
-	}
-
-	return r;
-}
-
 static int init_new_keyslot_context(struct crypt_device *cd,
 				const char *msg,
 				bool verify, bool pwquality,
