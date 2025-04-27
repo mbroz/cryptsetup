@@ -1482,8 +1482,7 @@ static int reencrypt_update_flag(struct crypt_device *cd, uint8_t version,
 		return LUKS2_config_set_requirement_version(cd, hdr, CRYPT_REQUIREMENT_ONLINE_REENCRYPT, version, commit);
 	}
 
-	if (LUKS2_config_get_requirements(cd, hdr, &reqs))
-		return -EINVAL;
+	LUKS2_config_get_requirements(cd, hdr, &reqs);
 
 	reqs &= ~CRYPT_REQUIREMENT_ONLINE_REENCRYPT;
 
@@ -3398,10 +3397,8 @@ static int reencrypt_lock_and_verify(struct crypt_device *cd, struct luks2_hdr *
 	struct crypt_lock_handle *h;
 
 	ri = LUKS2_reencrypt_status(hdr);
-	if (ri == CRYPT_REENCRYPT_INVALID) {
-		log_err(cd, _("Failed to get reencryption state."));
+	if (ri == CRYPT_REENCRYPT_INVALID)
 		return -EINVAL;
-	}
 	if (ri < CRYPT_REENCRYPT_CLEAN) {
 		log_err(cd, _("Device is not in reencryption."));
 		return -EINVAL;

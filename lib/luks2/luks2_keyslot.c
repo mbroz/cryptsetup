@@ -847,8 +847,7 @@ int LUKS2_keyslots_validate(struct crypt_device *cd, json_object *hdr_jobj)
 	if (!json_object_object_get_ex(hdr_jobj, "keyslots", &jobj_keyslots))
 		return -EINVAL;
 
-	if (LUKS2_config_get_requirements(cd, &dummy, &reqs))
-		return -EINVAL;
+	LUKS2_config_get_requirements(cd, &dummy, &reqs);
 
 	json_object_object_foreach(jobj_keyslots, slot, val) {
 		keyslot = atoi(slot);
