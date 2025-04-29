@@ -161,7 +161,7 @@ static int check_keyslots(FILE *out, struct crypt_device *cd, int f_luks)
 	crypt_keyslot_info ki;
 	unsigned char buffer[sector_size];
 
-	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS1) ; i++) {
+	for (i = 0; i < crypt_keyslot_max(crypt_get_type(cd)) ; i++) {
 		fprintf(out, "- processing keyslot %d:", i);
 		ki = crypt_keyslot_status(cd, i);
 		if (ki == CRYPT_SLOT_INACTIVE) {
@@ -338,7 +338,7 @@ int main(int argc, char **argv)
 	 * This should also make sure a valid LUKS1 header is on disk
 	 * and hence we should be able to skip magic and version checks.
 	 */
-	res = crypt_load(cd, CRYPT_LUKS1, NULL);
+	res = crypt_load(cd, CRYPT_LUKS, NULL);
 	if (res < 0) {
 		fprintf(stderr, "crypt_load() failed. LUKS header too broken/absent?\n");
 		crypt_free(cd);
