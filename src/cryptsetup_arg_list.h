@@ -210,7 +210,7 @@ ARG(OPT_VERACRYPT, '\0', POPT_ARG_NONE, N_("Scan also for VeraCrypt compatible d
 
 ARG(OPT_VERACRYPT_PIM, '\0', POPT_ARG_STRING, N_("Personal Iteration Multiplier for VeraCrypt compatible device"), "INT", CRYPT_ARG_UINT32, {}, OPT_VERACRYPT_PIM_ACTIONS)
 
-ARG(OPT_VERACRYPT_QUERY_PIM, '\0', POPT_ARG_NONE, N_("Query Personal Iteration Multiplier for VeraCrypt compatible device"), NULL, CRYPT_ARG_BOOL, {}, {})
+ARG(OPT_VERACRYPT_QUERY_PIM, '\0', POPT_ARG_NONE, N_("Query Personal Iteration Multiplier for VeraCrypt compatible device"), NULL, CRYPT_ARG_BOOL, {}, OPT_VERACRYPT_QUERY_PIM_ACTIONS)
 
 ARG(OPT_VERBOSE, 'v', POPT_ARG_NONE, N_("Shows more detailed error messages"), NULL, CRYPT_ARG_BOOL, {}, {})
 
