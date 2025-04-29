@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+struct crypt_device;
+
 const char *luksType(const char *type);
 
 bool isLUKS1(const char *type);
