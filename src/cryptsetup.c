@@ -1336,10 +1336,12 @@ out:
 static int action_luksRepair(void)
 {
 	struct crypt_device *cd = NULL;
+	const char *header_device, *data_device = NULL;
 	int r;
 
-	if ((r = crypt_init_data_device(&cd, ARG_STR(OPT_HEADER_ID) ?: action_argv[0],
-					action_argv[0])))
+	header_device = uuid_or_device_header(&data_device);
+
+	if ((r = crypt_init_data_device(&cd, header_device, data_device)))
 		goto out;
 
 	crypt_set_log_callback(cd, quiet_log, &log_parms);
@@ -1355,10 +1357,10 @@ static int action_luksRepair(void)
 	}
 
 	if (!ARG_SET(OPT_DISABLE_BLKID_ID)) {
-		r = tools_detect_signatures(action_argv[0], PRB_FILTER_LUKS, NULL, ARG_SET(OPT_BATCH_MODE_ID));
+		r = tools_detect_signatures(header_device, PRB_FILTER_LUKS, NULL, ARG_SET(OPT_BATCH_MODE_ID));
 		if (r < 0) {
 			if (r == -EIO)
-				log_err(_("Blkid scan failed for %s."), action_argv[0]);
+				log_err(_("Blkid scan failed for %s."), header_device);
 			goto out;
 		}
 	}
