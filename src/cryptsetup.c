@@ -1376,6 +1376,10 @@ out:
 	if (!r && isLUKS2(crypt_get_type(cd)))
 		r = luks2_reencrypt_repair(cd);
 
+	/* Randomness analysis of LUKS keyslot binary data, this is only a hint */
+	if (r == 0)
+		luks_check_keyslots(cd, header_device);
+
 	crypt_free(cd);
 	return r;
 }

@@ -66,4 +66,6 @@ int luks_init_keyslot_contexts_by_volume_keys(struct crypt_device *cd,
 					      struct crypt_keyslot_context **r_kc1,
 					      struct crypt_keyslot_context **r_kc2);
 
+void luks_check_keyslots(struct crypt_device *cd, const char *device);
+
 #endif /* UTILS_LUKS_H */
