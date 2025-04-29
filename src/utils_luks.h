@@ -39,4 +39,6 @@ int reencrypt_luks1(const char *device);
 
 int reencrypt_luks1_in_progress(const char *device);
 
+void luks_check_keyslots(struct crypt_device *cd, const char *device);
+
 #endif /* UTILS_LUKS_H */
