@@ -13,8 +13,6 @@
 #include <ctype.h>
 #include <uuid/uuid.h>
 
-#define LUKS_STRIPES 4000
-
 struct interval {
 	uint64_t offset;
 	uint64_t length;
