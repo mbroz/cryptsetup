@@ -103,7 +103,7 @@ test-main-commit-rhel8-fips:
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
   script:
-    - sudo fips-mode-setup --check || exit 1
+    - grep -q fips=1 /proc/cmdline || exit 1
     - make -j
     - make -j -C tests check-programs
     - sudo -E make check
@@ -127,31 +127,31 @@ test-main-commit-rhel9-fips:
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
   script:
-    - sudo fips-mode-setup --check || exit 1
+    - grep -q fips=1 /proc/cmdline || exit 1
     - make -j
     - make -j -C tests check-programs
     - sudo -E make check
 
-#test-main-commit-rhel10-fips:
-#  extends:
-#    - .rhel-openssl-backend
-#  tags:
-#    - libvirt
-#    - cryptsetup-rhel-10-fips
-#  stage: test
-#  interruptible: true
-#  allow_failure: true
-#  variables:
-#    DISTRO: cryptsetup-rhel-10-fips
-#    RUN_SSH_PLUGIN_TEST: "1"
-#  rules:
-#    - if: $RUN_SYSTEMD_PLUGIN_TEST != null
-#      when: never
-#    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
-#      when: never
-#    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
-#  script:
-#    - sudo fips-mode-setup --check || exit 1
-#    - make -j
-#    - make -j -C tests check-programs
-#    - sudo -E make check
+test-main-commit-rhel10-fips:
+  extends:
+    - .rhel-openssl-backend
+  tags:
+    - libvirt
+    - cryptsetup-rhel-10-fips
+  stage: test
+  interruptible: true
+  allow_failure: true
+  variables:
+    DISTRO: cryptsetup-rhel-10-fips
+    RUN_SSH_PLUGIN_TEST: "1"
+  rules:
+    - if: $RUN_SYSTEMD_PLUGIN_TEST != null
+      when: never
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  script:
+    - grep -q fips=1 /proc/cmdline || exit 1
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
