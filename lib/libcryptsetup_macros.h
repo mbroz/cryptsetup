@@ -57,4 +57,9 @@
 
 #define OPAL_PSID_LEN		32
 
+/* LUKS AF stripes, never set to any other value than 4000 */
+#ifndef LUKS_STRIPES
+# define LUKS_STRIPES 4000
+#endif
+
 #endif /* _LIBCRYPTSETUP_MACROS_H */
