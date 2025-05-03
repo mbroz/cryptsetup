@@ -112,11 +112,6 @@ static int action_format(void)
 {
 	struct crypt_device *cd = NULL;
 	struct crypt_params_integrity params = {
-		.journal_size = ARG_UINT64(OPT_JOURNAL_SIZE_ID),
-		.interleave_sectors = ARG_UINT32(OPT_INTERLEAVE_SECTORS_ID),
-		/* in bitmap mode we have to overload these values... */
-		.journal_watermark = ARG_SET(OPT_INTEGRITY_BITMAP_MODE_ID) ? ARG_UINT32(OPT_BITMAP_SECTORS_PER_BIT_ID) : ARG_UINT32(OPT_JOURNAL_WATERMARK_ID),
-		.journal_commit_time = ARG_SET(OPT_INTEGRITY_BITMAP_MODE_ID) ? ARG_UINT32(OPT_BITMAP_FLUSH_TIME_ID) : ARG_UINT32(OPT_JOURNAL_COMMIT_TIME_ID),
 		.buffer_sectors = ARG_UINT32(OPT_BUFFER_SECTORS_ID),
 		.tag_size = ARG_UINT32(OPT_TAG_SIZE_ID),
 		.sector_size = ARG_UINT32(OPT_SECTOR_SIZE_ID),
@@ -133,22 +128,31 @@ static int action_format(void)
 	}
 	params.integrity = integrity;
 
-	if (ARG_SET(OPT_JOURNAL_INTEGRITY_ID)) {
-		r = crypt_parse_hash_integrity_mode(ARG_STR(OPT_JOURNAL_INTEGRITY_ID), journal_integrity);
-		if (r < 0) {
-			log_err(_("No known integrity specification pattern detected."));
-			return r;
-		}
-		params.journal_integrity = journal_integrity;
-	}
+	if (!ARG_SET(OPT_INTEGRITY_INLINE_ID)) {
+		params.journal_size = ARG_UINT64(OPT_JOURNAL_SIZE_ID);
+		params.interleave_sectors = ARG_UINT32(OPT_INTERLEAVE_SECTORS_ID);
+		/* in bitmap mode we have to overload these values... */
+		params.journal_watermark = ARG_SET(OPT_INTEGRITY_BITMAP_MODE_ID) ? ARG_UINT32(OPT_BITMAP_SECTORS_PER_BIT_ID) : ARG_UINT32(OPT_JOURNAL_WATERMARK_ID);
+		params.journal_commit_time = ARG_SET(OPT_INTEGRITY_BITMAP_MODE_ID) ? ARG_UINT32(OPT_BITMAP_FLUSH_TIME_ID) : ARG_UINT32(OPT_JOURNAL_COMMIT_TIME_ID);
 
-	if (ARG_SET(OPT_JOURNAL_CRYPT_ID)) {
-		r = crypt_parse_hash_integrity_mode(ARG_STR(OPT_JOURNAL_CRYPT_ID), journal_crypt);
-		if (r < 0) {
-			log_err(_("No known integrity specification pattern detected."));
-			return r;
+		if (ARG_SET(OPT_JOURNAL_INTEGRITY_ID)) {
+			r = crypt_parse_hash_integrity_mode(ARG_STR(OPT_JOURNAL_INTEGRITY_ID), journal_integrity);
+			if (r < 0) {
+				log_err(_("No known integrity specification pattern detected."));
+				return r;
+			}
+			params.journal_integrity = journal_integrity;
 		}
-		params.journal_crypt = journal_crypt;
+
+		if (ARG_SET(OPT_JOURNAL_CRYPT_ID)) {
+			r = crypt_parse_hash_integrity_mode(ARG_STR(OPT_JOURNAL_CRYPT_ID), journal_crypt);
+			if (r < 0) {
+				log_err(_("No known integrity specification pattern detected."));
+				return r;
+			}
+			params.journal_crypt = journal_crypt;
+		}
+
 	}
 
 	r = _read_keys(&integrity_key, &params);
@@ -196,13 +200,18 @@ static int action_format(void)
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_HMAC_ID))
 		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC);
 
-	r = crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL, integrity_key, params.integrity_key_size, &params);
+	if (ARG_SET(OPT_INTEGRITY_INLINE_ID))
+		r = crypt_format_inline(cd, CRYPT_INTEGRITY, NULL, NULL, NULL,
+					integrity_key, params.integrity_key_size, &params);
+	else
+		r = crypt_format(cd, CRYPT_INTEGRITY, NULL, NULL, NULL,
+				 integrity_key, params.integrity_key_size, &params);
 	if (r < 0) /* FIXME: call wipe signatures again */
 		goto out;
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID) && !crypt_get_integrity_info(cd, &params2))
-		log_std(_("Formatted with tag size %u, internal integrity %s.\n"),
-			params2.tag_size, params2.integrity);
+		log_std(_("Formatted with tag size %u%s, internal integrity %s.\n"),
+			params2.tag_size, ARG_SET(OPT_INTEGRITY_INLINE_ID) ? " (inline hw tags)" : "", params2.integrity);
 
 	if (!ARG_SET(OPT_NO_WIPE_ID)) {
 		r = _wipe_data_device(cd, integrity_key);
@@ -227,6 +236,7 @@ static int action_resize(void)
 	uint64_t old_dev_size;
 	char path[PATH_MAX];
 	char *backing_file = NULL;
+	uint32_t reactivate_flags;
 	struct tools_progress_params prog_parms = {
 		.frequency = ARG_UINT32(OPT_PROGRESS_FREQUENCY_ID),
 		.batch_mode = ARG_SET(OPT_BATCH_MODE_ID),
@@ -256,12 +266,14 @@ static int action_resize(void)
 	if (r)
 		goto out;
 
-	if (!new_dev_size) {
-		r = crypt_get_active_device(cd, action_argv[0], &cad);
-		if (r)
-			goto out;
+	r = crypt_get_active_device(cd, action_argv[0], &cad);
+	if (r)
+		goto out;
+
+	reactivate_flags = CRYPT_ACTIVATE_REFRESH | (cad.flags & CRYPT_ACTIVATE_INLINE_MODE);
+
+	if (!new_dev_size)
 		new_dev_size = cad.size;
-	}
 
 	if (new_dev_size > old_dev_size) {
 		if (ARG_SET(OPT_WIPE_ID)) {
@@ -279,8 +291,8 @@ static int action_resize(void)
 			set_int_block(0);
 		} else {
 			log_dbg("Setting recalculate flag");
-			r = crypt_activate_by_volume_key(cd, action_argv[0], NULL, 0, CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_RECALCULATE);
-
+			reactivate_flags |= CRYPT_ACTIVATE_RECALCULATE;
+			r = crypt_activate_by_volume_key(cd, action_argv[0], NULL, 0, reactivate_flags);
 			if (r == -ENOTSUP)
 				log_err(_("Setting recalculate flag is not supported, you may consider using --wipe instead."));
 		}
@@ -482,7 +494,11 @@ static int action_status(void)
 		if (cad.flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP) {
 			log_std("  bitmap 512-byte sectors per bit: %u\n", ip.journal_watermark);
 			log_std("  bitmap flush interval: %u [ms]\n", ip.journal_commit_time);
-		} if (cad.flags & CRYPT_ACTIVATE_NO_JOURNAL) {
+		}
+		if (cad.flags & CRYPT_ACTIVATE_INLINE_MODE) {
+			log_std("  inline mode\n");
+		}
+		if (cad.flags & CRYPT_ACTIVATE_NO_JOURNAL) {
 			log_std("  journal: not active\n");
 		} else {
 			log_std("  journal size: %" PRIu64 " [bytes]\n", ip.journal_size);
@@ -751,6 +767,16 @@ int main(int argc, const char **argv)
 	if (!ARG_SET(OPT_INTEGRITY_BITMAP_MODE_ID) &&
 	    (ARG_SET(OPT_BITMAP_FLUSH_TIME_ID) || ARG_SET(OPT_BITMAP_SECTORS_PER_BIT_ID)))
 		usage(popt_context, EXIT_FAILURE, _("Bitmap options can be used only in bitmap mode."),
+		      poptGetInvocationName(popt_context));
+
+	if (ARG_SET(OPT_INTEGRITY_INLINE_ID) && (ARG_SET(OPT_INTEGRITY_BITMAP_MODE_ID) ||
+	    ARG_SET(OPT_JOURNAL_INTEGRITY_ID) || ARG_SET(OPT_JOURNAL_CRYPT_ID) ||
+	    ARG_SET(OPT_JOURNAL_WATERMARK_ID) || ARG_SET(OPT_JOURNAL_COMMIT_TIME_ID)))
+		usage(popt_context, EXIT_FAILURE, _("Inline mode cannot be combined with journal or bitmap options."),
+		      poptGetInvocationName(popt_context));
+
+	if (ARG_SET(OPT_INTEGRITY_INLINE_ID) && ARG_SET(OPT_DATA_DEVICE_ID))
+		usage(popt_context, EXIT_FAILURE, _("Inline mode cannot be combined with separate data device."),
 		      poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_CANCEL_DEFERRED_ID) && ARG_SET(OPT_DEFERRED_ID))

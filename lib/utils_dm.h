@@ -66,6 +66,7 @@ static inline uint64_t act2dmflags(uint64_t act_flags)
 #define DM_CRYPT_HIGH_PRIORITY_SUPPORTED (UINT64_C(1) << 29) /* dm-crypt high priority workqueue flag supported  */
 #define DM_CRYPT_INTEGRITY_KEY_SIZE_OPT_SUPPORTED (UINT64_C(1) << 30) /* dm-crypt support for integrity_key_size option */
 #define DM_VERITY_ERROR_AS_CORRUPTION_SUPPORTED (UINT64_C(1) << 31) /* dm-verity restart/panic on corruption supported */
+#define DM_INTEGRITY_INLINE_MODE_SUPPORTED (UINT64_C(1) << 32) /* dm-integrity inline mode supported */
 
 typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_ZERO, DM_UNKNOWN } dm_target_type;
 enum tdirection { TARGET_EMPTY = 0, TARGET_SET, TARGET_QUERY };
@@ -222,6 +223,11 @@ int dm_cancel_deferred_removal(const char *name);
 
 const char *dm_get_dir(void);
 int dm_get_iname(const char *name, char **iname, bool with_path);
+char *dm_get_active_iname(struct crypt_device *cd, const char *name);
+
+int dm_uuid_cmp(const char *dm_uuid, const char *hdr_uuid);
+int dm_uuid_type_cmp(const char *dm_uuid, const char *type);
+int dm_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid);
 
 int lookup_dm_dev_by_uuid(struct crypt_device *cd, const char *uuid, const char *type);
 
