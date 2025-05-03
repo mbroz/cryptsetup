@@ -98,7 +98,6 @@ int device_alloc_no_check(struct device **device, const char *path);
 void device_close(struct crypt_device *cd, struct device *device);
 void device_free(struct crypt_device *cd, struct device *device);
 const char *device_path(const struct device *device);
-const char *device_dm_name(const struct device *device);
 const char *device_block_path(const struct device *device);
 void device_topology_alignment(struct crypt_device *cd,
 			       struct device *device,
@@ -178,6 +177,7 @@ int lookup_by_disk_id(const char *dm_uuid);
 int lookup_by_sysfs_uuid_field(const char *dm_uuid);
 int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid);
 int crypt_uuid_type_cmp(const char *dm_uuid, const char *type);
+int crypt_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid);
 
 size_t crypt_getpagesize(void);
 unsigned crypt_cpusonline(void);

@@ -2834,7 +2834,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 	struct crypt_dm_active_device dmdc;
 	uint32_t opal_segment_number;
 	char **dep, deps_uuid_prefix[40], *deps[MAX_DM_DEPS+1] = { 0 };
-	const char *namei = NULL;
+	char *iname = NULL;
 	struct crypt_lock_handle *reencrypt_lock = NULL, *opal_lh = NULL;
 
 	if (!dmd || !dmd->uuid || strncmp(CRYPT_LUKS2, dmd->uuid, sizeof(CRYPT_LUKS2)-1))
@@ -2856,8 +2856,8 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 	tgt = &dmd->segment;
 
 	/* TODO: We have LUKS2 dependencies now */
-	if (single_segment(dmd) && tgt->type == DM_CRYPT && tgt->u.crypt.tag_size)
-		namei = device_dm_name(tgt->data_device);
+	if (tgt->type == DM_CRYPT && tgt->u.crypt.tag_size)
+	    iname = dm_get_active_iname(cd, name);
 
 	r = dm_device_deps(cd, name, deps_uuid_prefix, deps, ARRAY_SIZE(deps));
 	if (r < 0)
@@ -2902,9 +2902,9 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 	dm_targets_free(cd, &dmdc);
 
 	/* TODO: We have LUKS2 dependencies now */
-	if (r >= 0 && namei) {
-		log_dbg(cd, "Deactivating integrity device %s.", namei);
-		r = dm_remove_device(cd, namei, 0);
+	if (r >= 0 && iname) {
+		log_dbg(cd, "Deactivating integrity device %s.", iname);
+		r = dm_remove_device(cd, iname, 0);
 	}
 
 	if (!r) {
@@ -2972,6 +2972,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 out:
 	opal_exclusive_unlock(cd, opal_lh);
 	LUKS2_reencrypt_unlock(cd, reencrypt_lock);
+	free(iname);
 	dep = deps;
 	while (*dep)
 		free(*dep++);

@@ -223,6 +223,7 @@ int dm_cancel_deferred_removal(const char *name);
 
 const char *dm_get_dir(void);
 int dm_get_iname(const char *name, char **iname, bool with_path);
+char *dm_get_active_iname(struct crypt_device *cd, const char *name);
 
 int lookup_dm_dev_by_uuid(struct crypt_device *cd, const char *uuid, const char *type);
 

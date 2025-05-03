@@ -550,7 +550,7 @@ int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
  * compares two UUIDs returned by device-mapper (striped by cryptsetup)
  * used for stacked LUKS2 & INTEGRITY devices
  */
-static int crypt_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid)
+int crypt_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid)
 {
 	int i;
 	char *str, *stri;
@@ -1310,7 +1310,8 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 	bool found = false;
 	char **dep, *cipher_spec = NULL, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	char deps_uuid_prefix[40], *deps[MAX_DM_DEPS+1] = {};
-	const char *dev, *namei;
+	const char *dev;
+	char *iname = NULL;
 	int key_nums, r;
 	struct crypt_dm_active_device dmd, dmdi = {}, dmdep = {};
 	struct dm_target *tgt = &dmd.segment, *tgti = &dmdi.segment;
@@ -1358,16 +1359,13 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 
 	dep = deps;
 
-	if (tgt->type == DM_CRYPT && tgt->u.crypt.integrity && (namei = device_dm_name(tgt->data_device))) {
-		r = dm_query_device(cd, namei, DM_ACTIVE_DEVICE, &dmdi);
+	if (tgt->type == DM_CRYPT && tgt->u.crypt.tag_size &&
+	     (iname = dm_get_active_iname(cd, name))) {
+
+		r = dm_query_device(cd, iname, DM_ACTIVE_DEVICE, &dmdi);
+		free(iname);
 		if (r < 0)
 			goto out;
-		if (!single_segment(&dmdi) || tgti->type != DM_INTEGRITY) {
-			log_dbg(cd, "Unsupported device table detected in %s.", namei);
-			r = -EINVAL;
-			goto out;
-		}
-
 		/*
 		 * Data device for crypt with integrity is not dm-integrity device,
 		 * but always the device underlying dm-integrity.
@@ -4215,21 +4213,8 @@ int crypt_suspend(struct crypt_device *cd,
 	}
 
 	/* check UUID of integrity device underneath crypt device */
-	if (crypt_get_integrity_tag_size(cd)) {
-		r = dm_get_iname(name, &iname, false);
-		if (r)
-			goto out;
-
-		r = dm_query_device(cd, iname, DM_ACTIVE_UUID, &dmdi);
-		if (r < 0)
-			goto out;
-
-		r = crypt_uuid_integrity_cmp(dmd.uuid, dmdi.uuid);
-		if (r < 0) {
-			log_dbg(cd, "Integrity device uuid: %s mismatches crypt device uuid %s", dmdi.uuid, dmd.uuid);
-			goto out;
-		}
-	}
+	if (crypt_get_integrity_tag_size(cd))
+	    iname = dm_get_active_iname(cd, name);
 
 	r = dm_status_suspended(cd, name);
 	if (r < 0)
@@ -4269,7 +4254,7 @@ int crypt_suspend(struct crypt_device *cd,
 	}
 
 	/* Suspend integrity device underneath; keep crypt suspended if it fails */
-	if (crypt_get_integrity_tag_size(cd)) {
+	if (iname) {
 		r = dm_suspend_device(cd, iname, 0);
 		if (r)
 			log_err(cd, _("Error during suspending device %s."), iname);
@@ -4481,14 +4466,12 @@ static int resume_luks2_by_volume_key(struct crypt_device *cd,
 		}
 	}
 
-	if (crypt_get_integrity_tag_size(cd)) {
-		r = dm_get_iname(name, &iname, false);
-		if (r)
-			goto out;
-
+	if (crypt_get_integrity_tag_size(cd) &&
+	    (iname = dm_get_active_iname(cd, name))) {
 		r = dm_resume_device(cd, iname, 0);
 		if (r)
 			log_err(cd, _("Error during resuming device %s."), iname);
+		free(iname);
 	}
 
 	if (enc_type == CRYPT_OPAL_HW_ONLY)
@@ -4517,7 +4500,6 @@ out:
 	crypt_free_volume_key(zerokey);
 	crypt_free_volume_key(opal_key);
 	crypt_free_volume_key(crypt_key);
-	free(iname);
 
 	return r;
 }
@@ -5868,7 +5850,7 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 {
 	int r;
 	struct crypt_dm_active_device dmd, dmdi = {};
-	const char *namei = NULL;
+	char *iname = NULL;
 	struct dm_target *tgt = &dmd.segment;
 	uint64_t min_offset = UINT64_MAX;
 
@@ -5880,10 +5862,11 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 		return r;
 
 	/* For LUKS2 with integrity we need flags from underlying dm-integrity */
-	if (isLUKS2(cd->type) && crypt_get_integrity_tag_size(cd) && single_segment(&dmd)) {
-		namei = device_dm_name(tgt->data_device);
-		if (namei && dm_query_device(cd, namei, 0, &dmdi) >= 0)
+	if (isLUKS2(cd->type) && crypt_get_integrity_tag_size(cd) &&
+		(iname = dm_get_active_iname(cd, name))) {
+		if (dm_query_device(cd, iname, 0, &dmdi) >= 0)
 			dmd.flags |= dmdi.flags;
+		free(iname);
 	}
 
 	if (cd && isTCRYPT(cd->type)) {
