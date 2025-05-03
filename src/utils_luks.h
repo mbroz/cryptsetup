@@ -27,14 +27,41 @@ int set_pbkdf_params(struct crypt_device *cd, const char *dev_type);
 
 int set_tries_tty(bool keyring);
 
-int get_adjusted_key_size(const char *cipher_mode, uint32_t default_size_bits, int integrity_keysize);
+int get_adjusted_key_size(const char *cipher_mode, uint32_t keysize_bits,
+			  uint32_t default_size_bits, int integrity_keysize);
 
-int luksFormat(struct crypt_device **r_cd, char **r_password, size_t *r_passwordLen);
+int luksFormat(struct crypt_device **r_cd, struct crypt_keyslot_context **r_kc);
 
 int reencrypt(int action_argc, const char **action_argv);
 
 int reencrypt_luks1(const char *device);
 
 int reencrypt_luks1_in_progress(const char *device);
+
+int init_keyslot_context(struct crypt_device *cd,
+			 const char *msg,
+			 bool verify, bool pwquality,
+			 struct crypt_keyslot_context **r_kc);
+
+int try_token_unlock(struct crypt_device *cd,
+		     int keyslot,
+		     int token_id,
+		     const char *activated_name,
+		     const char *token_type,
+		     uint32_t activate_flags,
+		     int tries,
+		     bool activation,
+		     bool retry_with_pin,
+		     struct crypt_keyslot_context **r_kc);
+
+int init_keyslot_contexts_by_volume_keys(struct crypt_device *cd,
+					 const char *vk_file1,
+					 const char *vk_file2,
+					 int keysize1_bytes,
+					 int keysize2_bytes,
+					 const char *vk_in_keyring1,
+					 const char *vk_in_keyring2,
+					 struct crypt_keyslot_context **r_kc1,
+					 struct crypt_keyslot_context **r_kc2);
 
 #endif /* UTILS_LUKS_H */
