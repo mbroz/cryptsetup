@@ -512,92 +512,6 @@ static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
 	return 0;
 }
 
-/*
- * compares UUIDs returned by device-mapper (striped by cryptsetup) and uuid in header
- */
-int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
-{
-	int i, j;
-	char *str;
-
-	if (!dm_uuid || !hdr_uuid)
-		return -EINVAL;
-
-	/* skip beyond LUKS2_HW_OPAL prefix */
-	if (!strncmp(dm_uuid, CRYPT_LUKS2_HW_OPAL, strlen(CRYPT_LUKS2_HW_OPAL)))
-		dm_uuid = dm_uuid + strlen(CRYPT_LUKS2_HW_OPAL);
-
-	str = strchr(dm_uuid, '-');
-	if (!str)
-		return -EINVAL;
-
-	for (i = 0, j = 1; hdr_uuid[i]; i++) {
-		if (hdr_uuid[i] == '-')
-			continue;
-
-		if (!str[j] || str[j] == '-')
-			return -EINVAL;
-
-		if (str[j] != hdr_uuid[i])
-			return -EINVAL;
-		j++;
-	}
-
-	return 0;
-}
-
-/*
- * compares two UUIDs returned by device-mapper (striped by cryptsetup)
- * used for stacked LUKS2 & INTEGRITY devices
- */
-int crypt_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid)
-{
-	int i;
-	char *str, *stri;
-
-	if (!dm_uuid || !dmi_uuid)
-		return -EINVAL;
-
-	/* skip beyond LUKS2_HW_OPAL prefix */
-	if (!strncmp(dm_uuid, CRYPT_LUKS2_HW_OPAL, strlen(CRYPT_LUKS2_HW_OPAL)))
-		dm_uuid = dm_uuid + strlen(CRYPT_LUKS2_HW_OPAL);
-
-	str = strchr(dm_uuid, '-');
-	if (!str)
-		return -EINVAL;
-
-	stri = strchr(dmi_uuid, '-');
-	if (!stri)
-		return -EINVAL;
-
-	for (i = 1; str[i] && str[i] != '-'; i++) {
-		if (!stri[i])
-			return -EINVAL;
-
-		if (str[i] != stri[i])
-			return -EINVAL;
-	}
-
-	return 0;
-}
-
-/*
- * compares type of active device to provided string
- */
-int crypt_uuid_type_cmp(const char *dm_uuid, const char *type)
-{
-	size_t len;
-
-	assert(type);
-
-	len = strlen(type);
-	if (dm_uuid && strlen(dm_uuid) > len &&
-	    !strncmp(dm_uuid, type, len) && dm_uuid[len] == '-')
-		return 0;
-
-	return -ENODEV;
-}
-
 int PLAIN_activate(struct crypt_device *cd,
 		     const char *name,
 		     struct volume_key *vk,
@@ -1443,7 +1357,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 				goto out;
 			}
 			/* check whether UUIDs match each other */
-			r = crypt_uuid_cmp(dmd.uuid, LUKS_UUID(cd));
+			r = dm_uuid_cmp(dmd.uuid, LUKS_UUID(cd));
 			if (r < 0) {
 				log_dbg(cd, "LUKS device header uuid: %s mismatches DM returned uuid %s",
 					LUKS_UUID(cd), dmd.uuid);
@@ -3325,13 +3239,13 @@ static int _compare_device_types(struct crypt_device *cd,
 	}
 
 	if (isLUKS2(cd->type) && !strncmp("INTEGRITY-", tgt->uuid, strlen("INTEGRITY-"))) {
-		if (crypt_uuid_cmp(tgt->uuid, src->uuid)) {
+		if (dm_uuid_cmp(tgt->uuid, src->uuid)) {
 			log_dbg(cd, "LUKS UUID mismatch.");
 			return -EINVAL;
 		}
 	} else if (isLUKS(cd->type)) {
 		if (!src->uuid || strncmp(cd->type, tgt->uuid, strlen(cd->type)) ||
-		    crypt_uuid_cmp(tgt->uuid, src->uuid)) {
+		    dm_uuid_cmp(tgt->uuid, src->uuid)) {
 			log_dbg(cd, "LUKS UUID mismatch.");
 			return -EINVAL;
 		}
@@ -4178,9 +4092,9 @@ int crypt_suspend(struct crypt_device *cd,
 
 	log_dbg(cd, "Checking if active device %s has UUID type LUKS.", name);
 
-	r = crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2);
+	r = dm_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2);
 	if (r < 0)
-		r = crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS1);
+		r = dm_uuid_type_cmp(dmd.uuid, CRYPT_LUKS1);
 
 	if (r < 0) {
 		log_err(cd, _("This operation is supported only for LUKS device."));
@@ -4189,24 +4103,24 @@ int crypt_suspend(struct crypt_device *cd,
 
 	r = -EINVAL;
 
-	if (isLUKS2(cd->type) && crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2)) {
+	if (isLUKS2(cd->type) && dm_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2)) {
 		log_dbg(cd, "LUKS device header type: %s mismatches DM device type.", cd->type);
 		goto out;
 	}
 
-	if (isLUKS1(cd->type) && crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS1)) {
+	if (isLUKS1(cd->type) && dm_uuid_type_cmp(dmd.uuid, CRYPT_LUKS1)) {
 		log_dbg(cd, "LUKS device header type: %s mismatches DM device type.", cd->type);
 		goto out;
 	}
 
 	/* check if active device has LUKS2-OPAL dm uuid prefix */
-	dm_opal_uuid = !crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2_HW_OPAL);
+	dm_opal_uuid = !dm_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2_HW_OPAL);
 
 	if (!dm_opal_uuid && isLUKS2(cd->type) &&
 	    LUKS2_segment_is_hw_opal(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT))
 		goto out;
 
-	if (cd->type && (r = crypt_uuid_cmp(dmd.uuid, LUKS_UUID(cd))) < 0) {
+	if (cd->type && (r = dm_uuid_cmp(dmd.uuid, LUKS_UUID(cd))) < 0) {
 		log_dbg(cd, "LUKS device header uuid: %s mismatches DM returned uuid %s",
 			LUKS_UUID(cd), dmd.uuid);
 		goto out;

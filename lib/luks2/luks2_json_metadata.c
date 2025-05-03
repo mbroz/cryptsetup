@@ -2841,7 +2841,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 		return -EINVAL;
 
 	/* uuid mismatch with metadata (if available) */
-	if (hdr && crypt_uuid_cmp(dmd->uuid, hdr->uuid))
+	if (hdr && dm_uuid_cmp(dmd->uuid, hdr->uuid))
 		return -EINVAL;
 
 	r = snprintf(deps_uuid_prefix, sizeof(deps_uuid_prefix), CRYPT_SUBDEV "-%.32s", dmd->uuid + 6);
@@ -2849,7 +2849,7 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 		return -EINVAL;
 
 	/* check if active device has LUKS2-OPAL dm uuid prefix */
-	dm_opal_uuid = !crypt_uuid_type_cmp(dmd->uuid, CRYPT_LUKS2_HW_OPAL);
+	dm_opal_uuid = !dm_uuid_type_cmp(dmd->uuid, CRYPT_LUKS2_HW_OPAL);
 	if (dm_opal_uuid && hdr && !LUKS2_segment_is_hw_opal(hdr, CRYPT_DEFAULT_SEGMENT))
 		return -EINVAL;
 
