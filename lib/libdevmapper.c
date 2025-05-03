@@ -3189,6 +3189,54 @@ int dm_get_iname(const char *name, char **iname, bool with_path)
 	return r < 0 ? -ENOMEM : 0;
 }
 
+char *dm_get_active_iname(struct crypt_device *cd, const char *name)
+{
+	struct crypt_dm_active_device dmd = {}, dmdi = {};
+	struct dm_target *tgt = &dmd.segment, *tgti = &dmdi.segment;
+	char *ipath = NULL, *iname = NULL, *ret_iname = NULL;
+	struct stat st;
+
+	if (!name)
+		return NULL;
+
+	if (dm_query_device(cd, name, DM_ACTIVE_UUID, &dmd) < 0)
+		return NULL;
+
+	if (!single_segment(&dmd))
+		goto out;
+
+	if (tgt->type != DM_CRYPT || tgt->u.crypt.tag_size == 0)
+		goto out;
+
+	if (dm_get_iname(name, &iname, false) < 0)
+		goto out;
+
+	if (dm_get_iname(name, &ipath, true) < 0)
+		goto out;
+
+	if (stat(ipath, &st) < 0 || !S_ISBLK(st.st_mode))
+		goto out;
+
+	if (dm_query_device(cd, iname, DM_ACTIVE_UUID, &dmdi) < 0)
+		goto out;
+
+	if (single_segment(&dmdi) &&
+	    tgti->type == DM_INTEGRITY &&
+	    crypt_uuid_integrity_cmp(dmd.uuid, dmdi.uuid) == 0) {
+		ret_iname = iname;
+		iname = NULL;
+	}
+out:
+	dm_targets_free(cd, &dmdi);
+	dm_targets_free(cd, &dmd);
+	free(CONST_CAST(void*)dmd.uuid);
+	free(CONST_CAST(void*)dmdi.uuid);
+	free(ipath);
+	free(iname);
+
+	return ret_iname;
+}
+
 int dm_is_dm_device(int major)
 {
 	return dm_is_dm_major((uint32_t)major);

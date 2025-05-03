@@ -476,21 +476,6 @@ const char *device_block_path(const struct device *device)
 	return device->path;
 }
 
-/* Get device-mapper name of device (if possible) */
-const char *device_dm_name(const struct device *device)
-{
-	const char *dmdir = dm_get_dir();
-	size_t dmdir_len = strlen(dmdir);
-
-	if (!device)
-		return NULL;
-
-	if (strncmp(device->path, dmdir, dmdir_len))
-		return NULL;
-
-	return &device->path[dmdir_len+1];
-}
-
 /* Get path to device / file */
 const char *device_path(const struct device *device)
 {
