@@ -3222,7 +3222,7 @@ char *dm_get_active_iname(struct crypt_device *cd, const char *name)
 
 	if (single_segment(&dmdi) &&
 	    tgti->type == DM_INTEGRITY &&
-	    crypt_uuid_integrity_cmp(dmd.uuid, dmdi.uuid) == 0) {
+	    dm_uuid_integrity_cmp(dmd.uuid, dmdi.uuid) == 0) {
 		ret_iname = iname;
 		iname = NULL;
 	}
@@ -3245,6 +3245,92 @@ int dm_is_dm_device(int major)
 int dm_is_dm_kernel_name(const char *name)
 {
 	return strncmp(name, "dm-", 3) ? 0 : 1;
+}
+
+/*
+ * compares UUIDs returned by device-mapper (striped by cryptsetup) and uuid in header
+ */
+int dm_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
+{
+	int i, j;
+	char *str;
+
+	if (!dm_uuid || !hdr_uuid)
+		return -EINVAL;
+
+	/* skip beyond LUKS2_HW_OPAL prefix */
+	if (!strncmp(dm_uuid, CRYPT_LUKS2_HW_OPAL, strlen(CRYPT_LUKS2_HW_OPAL)))
+		dm_uuid = dm_uuid + strlen(CRYPT_LUKS2_HW_OPAL);
+
+	str = strchr(dm_uuid, '-');
+	if (!str)
+		return -EINVAL;
+
+	for (i = 0, j = 1; hdr_uuid[i]; i++) {
+		if (hdr_uuid[i] == '-')
+			continue;
+
+		if (!str[j] || str[j] == '-')
+			return -EINVAL;
+
+		if (str[j] != hdr_uuid[i])
+			return -EINVAL;
+		j++;
+	}
+
+	return 0;
+}
+
+/*
+ * compares two UUIDs returned by device-mapper (striped by cryptsetup)
+ * used for stacked LUKS2 & INTEGRITY devices
+ */
+int dm_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid)
+{
+	int i;
+	char *str, *stri;
+
+	if (!dm_uuid || !dmi_uuid)
+		return -EINVAL;
+
+	/* skip beyond LUKS2_HW_OPAL prefix */
+	if (!strncmp(dm_uuid, CRYPT_LUKS2_HW_OPAL, strlen(CRYPT_LUKS2_HW_OPAL)))
+		dm_uuid = dm_uuid + strlen(CRYPT_LUKS2_HW_OPAL);
+
+	str = strchr(dm_uuid, '-');
+	if (!str)
+		return -EINVAL;
+
+	stri = strchr(dmi_uuid, '-');
+	if (!stri)
+		return -EINVAL;
+
+	for (i = 1; str[i] && str[i] != '-'; i++) {
+		if (!stri[i])
+			return -EINVAL;
+
+		if (str[i] != stri[i])
+			return -EINVAL;
+	}
+
+	return 0;
+}
+
+/*
+ * compares type of active device to provided string
+ */
+int dm_uuid_type_cmp(const char *dm_uuid, const char *type)
+{
+	size_t len;
+
+	assert(type);
+
+	len = strlen(type);
+	if (dm_uuid && strlen(dm_uuid) > len &&
+	    !strncmp(dm_uuid, type, len) && dm_uuid[len] == '-')
+		return 0;
+
+	return -ENODEV;
 }
 
 int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
