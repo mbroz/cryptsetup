@@ -520,9 +520,9 @@ static int get_key_by_vk_in_keyring(struct crypt_device *cd,
 		return r;
 	}
 
-	*r_vk = crypt_alloc_volume_key(key_size, key);
-	crypt_safe_free(key);
+	*r_vk = crypt_alloc_volume_key_by_safe_alloc((void **)&key);
 	if (!*r_vk) {
+		crypt_safe_free(key);
 		kc->error = -ENOMEM;
 		return kc->error;
 	}
