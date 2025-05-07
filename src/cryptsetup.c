@@ -2331,10 +2331,15 @@ static int action_luksAddKey(void)
 		crypt_safe_free(key);
 	} else if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
 		r = tools_parse_vk_description(ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &vk_description);
-		if (!r) {
-			r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description, &kc);
-			free(vk_description);
-		}
+		if (r < 0)
+			goto out;
+		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description, &kc);
+		free(vk_description);
+		if (r < 0)
+			goto out;
+		r = crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0);
+		if (r == -EPERM)
+			log_err(_("Volume key does not match the volume."));
 	} else if (ARG_SET(OPT_TOKEN_ID_ID) || ARG_SET(OPT_TOKEN_TYPE_ID) || ARG_SET(OPT_TOKEN_ONLY_ID)) {
 		r = crypt_keyslot_context_init_by_token(cd,
 				ARG_INT32(OPT_TOKEN_ID_ID),
