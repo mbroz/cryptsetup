@@ -555,6 +555,23 @@ static void keyring_context_free(struct crypt_keyslot_context *kc)
 	free(kc->u.kr.i_key_description);
 }
 
+static int keyring_get_key_size(struct crypt_device *cd, struct crypt_keyslot_context *kc, size_t *r_key_size)
+{
+	int r;
+
+	assert(kc && kc->type == CRYPT_KC_TYPE_VK_KEYRING);
+	assert(r_key_size);
+
+	if (!kc->u.vk_kr.i_key_size) {
+		r = crypt_keyring_get_keysize_by_name(cd, kc->u.vk_kr.key_description, &kc->u.vk_kr.i_key_size);
+		if (r < 0)
+			return r;
+	}
+
+	*r_key_size = kc->u.vk_kr.i_key_size;
+	return 0;
+}
+
 void crypt_keyslot_context_init_by_keyring_internal(struct crypt_keyslot_context *kc,
 	const char *key_description)
 {
@@ -578,6 +595,17 @@ static void key_context_free(struct crypt_keyslot_context *kc)
 	crypt_free_volume_key(kc->u.k.i_vk);
 }
 
+static int key_get_key_size(struct crypt_device *cd __attribute__((unused)),
+			       struct crypt_keyslot_context *kc,
+			       size_t *r_key_size)
+{
+	assert(kc && kc->type == CRYPT_KC_TYPE_KEY);
+	assert(r_key_size);
+
+	*r_key_size = kc->u.k.volume_key_size;
+	return 0;
+}
+
 void crypt_keyslot_context_init_by_key_internal(struct crypt_keyslot_context *kc,
 	const char *volume_key,
 	size_t volume_key_size)
@@ -596,6 +624,7 @@ void crypt_keyslot_context_init_by_key_internal(struct crypt_keyslot_context *kc
 	kc->get_fvault2_volume_key = get_fvault2_volume_key_by_key;
 	kc->get_verity_volume_key = get_generic_signed_key_by_key;
 	kc->get_integrity_volume_key = get_generic_volume_key_by_key;
+	kc->get_key_size = key_get_key_size;
 	kc->context_free = key_context_free;
 	crypt_keyslot_context_init_common(kc);
 }
@@ -1135,6 +1164,7 @@ static int _crypt_keyslot_context_init_by_vk_in_keyring(const char *key_descript
 
 	tmp->get_luks2_key = get_key_by_vk_in_keyring;
 	tmp->get_luks2_volume_key = get_volume_key_by_vk_in_keyring;
+	tmp->get_key_size = keyring_get_key_size;
 	tmp->context_free = vk_in_keyring_context_free;
 	crypt_keyslot_context_init_common(tmp);
 
