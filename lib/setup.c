@@ -5112,8 +5112,6 @@ static int _activate_reencrypt_device_by_vk(struct crypt_device *cd,
 		}
 
 		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
-		if (r == -EPERM || r == -ENOENT)
-			log_err(cd, _("Volume key does not match the volume."));
 		if (r >= 0)
 			r = LUKS2_activate(cd, name, vk, NULL, flags);
 		goto out;
@@ -5275,19 +5273,14 @@ static int _verify_key(struct crypt_device *cd,
 			return -EINVAL;
 
 		r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
-		if (r == -EPERM)
-			log_err(cd, _("Volume key does not match the volume."));
 	} else if (isLUKS2(cd->type)) {
 		if (!vk)
 			return -EINVAL;
 
 		if (unbound_key)
 			r = LUKS2_digest_verify_by_any_matching(cd, vk);
-		else {
+		else
 			r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
-			if (r == -EPERM || r == -ENOENT)
-				log_err(cd, _("Volume key does not match the volume."));
-		}
 	} else if (isVERITY(cd->type))
 		r = KEY_VERIFIED;
 	else if (isTCRYPT(cd->type))
