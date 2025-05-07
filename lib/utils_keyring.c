@@ -222,29 +222,45 @@ key_serial_t keyring_request_key_id(key_type_t key_type,
 	return kid;
 }
 
+int keyring_read_keysize(key_serial_t kid,
+		size_t *r_key_size)
+{
+	long r;
+
+	assert(r_key_size);
+
+	/* just get payload size */
+	r = keyctl_read(kid, NULL, 0);
+	if (r > 0) {
+		*r_key_size = r;
+		return 0;
+	}
+
+	return -EINVAL;
+}
+
 int keyring_read_key(key_serial_t kid,
 		char **key,
 		size_t *key_size)
 {
-	long r;
+	int r;
+	size_t len;
 	char *buf = NULL;
-	size_t len = 0;
 
 	assert(key);
 	assert(key_size);
 
 	/* just get payload size */
-	r = keyctl_read(kid, NULL, 0);
-	if (r > 0) {
-		len = r;
-		buf = crypt_safe_alloc(len);
-		if (!buf)
-			return -ENOMEM;
+	r = keyring_read_keysize(kid, &len);
+	if (r < 0)
+		return r;
 
-		/* retrieve actual payload data */
-		r = keyctl_read(kid, buf, len);
-	}
+	buf = crypt_safe_alloc(len);
+	if (!buf)
+		return -ENOMEM;
 
+	/* retrieve actual payload data */
+	r = keyctl_read(kid, buf, len);
 	if (r < 0) {
 		crypt_safe_free(buf);
 		return -EINVAL;
@@ -419,6 +435,12 @@ key_serial_t keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key
 
 key_serial_t keyring_request_key_id(key_type_t key_type,
 		const char *key_description)
+{
+	return -ENOTSUP;
+}
+
+int keyring_read_keysize(key_serial_t kid,
+		size_t *r_key_size)
 {
 	return -ENOTSUP;
 }

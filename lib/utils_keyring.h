@@ -30,6 +30,9 @@ int keyring_check(void);
 key_serial_t keyring_request_key_id(key_type_t key_type,
 		const char *key_description);
 
+int keyring_read_keysize(key_serial_t kid,
+		size_t *r_key_size);
+
 int keyring_read_key(key_serial_t kid,
 		char **key,
 		size_t *key_size);
