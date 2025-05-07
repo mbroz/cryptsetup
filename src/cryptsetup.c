@@ -2249,7 +2249,7 @@ static int action_luksAddKey(void)
 {
 	bool pin_provided = false;
 	int keyslot_old, keyslot_new, keysize = 0, r = -EINVAL;
-	char *key = NULL, *password = NULL, *vk_description = NULL;
+	char *key, *vk_description, *password = NULL;
 	size_t password_size = 0;
 	struct crypt_device *cd = NULL;
 	struct crypt_keyslot_context *p_kc_new = NULL, *kc = NULL, *kc_new = NULL;
@@ -2325,8 +2325,10 @@ static int action_luksAddKey(void)
 		if (r == -EPERM)
 			log_err(_("Volume key does not match the volume."));
 		check_signal(&r);
-		if (r < 0)
+		if (r < 0) {
+			crypt_safe_free(key);
 			goto out;
+		}
 		r = crypt_keyslot_context_init_by_volume_key(cd, key, keysize, &kc);
 		crypt_safe_free(key);
 	} else if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
