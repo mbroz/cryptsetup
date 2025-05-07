@@ -7552,6 +7552,40 @@ int crypt_keyring_get_key_by_name(struct crypt_device *cd,
 	return r;
 }
 
+int crypt_keyring_get_keysize_by_name(struct crypt_device *cd,
+		const char *key_description,
+		size_t *r_key_size)
+{
+	int r;
+	key_serial_t kid;
+
+	if (!key_description || !r_key_size)
+		return -EINVAL;
+
+	log_dbg(cd, "Searching for kernel key by name %s.", key_description);
+
+	kid = keyring_find_key_id_by_name(key_description);
+	if (kid == -ENOTSUP) {
+		log_dbg(cd, "Kernel keyring features disabled.");
+		return -ENOTSUP;
+	} else if (kid < 0) {
+		log_dbg(cd, "keyring_find_key_id_by_name failed with errno %d.", errno);
+		return -EINVAL;
+	}
+	else if (kid == 0) {
+		log_dbg(cd, "keyring_find_key_id_by_name failed with errno %d.", ENOENT);
+		return -ENOENT;
+	}
+
+	log_dbg(cd, "Reading content of kernel key (id %" PRIi32 ").", kid);
+
+	r = keyring_read_keysize(kid, r_key_size);
+	if (r < 0)
+		log_dbg(cd, "keyring_read_keysize failed with errno %d.", errno);
+
+	return r;
+}
+
 /* internal only */
 int crypt_key_in_keyring(struct crypt_device *cd)
 {

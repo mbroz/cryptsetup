@@ -243,6 +243,11 @@ int crypt_keyring_get_key_by_name(struct crypt_device *cd,
 		const char *key_description,
 		char **key,
 		size_t *key_size);
+
+int crypt_keyring_get_keysize_by_name(struct crypt_device *cd,
+		const char *key_description,
+		size_t *r_key_size);
+
 int crypt_use_keyring_for_vk(struct crypt_device *cd);
 void crypt_unlink_key_from_thread_keyring(struct crypt_device *cd,
 		key_serial_t key_id);
