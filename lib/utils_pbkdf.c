@@ -63,9 +63,11 @@ uint32_t pbkdf_adjusted_phys_memory_kb(void)
 	memory_kb /= 2;
 
 	/*
-	 * Never use more that half of available free memory on system without swap.
+	 * On systems with < 4GB RAM without swap
+	 * never use more that half of available free memory.
+	 * This is a temporary hack to avoid OOM on small systems.
 	 */
-	if (!crypt_swapavailable()) {
+	if (memory_kb < (2 * 1024 * 1024) && !crypt_swapavailable()) {
 		free_kb = crypt_getphysmemoryfree_kb();
 
 		/*
