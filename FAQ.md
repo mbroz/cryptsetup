@@ -705,9 +705,12 @@
   this.  The only legitimate reason I can think of is if you want to have
   two LUKS devices with the same volume key.  Even then, I think it would
   be preferable to just use key-slots with the same passphrase, or to use
-  plain dm-crypt instead.  If you really have a good reason, please tell
-  me.  If I am convinced, I will add how to do this here.
+  plain dm-crypt instead.
 
+  Use the --volume-key-file option, like this:
+```
+    cryptsetup luksFormat --volume-key-file keyfile /dev/loop0
+```
 
   * **2.12 What are the security requirements for a key read from file?**
 
@@ -1923,10 +1926,6 @@
   Hence, LUKS has no kill option because it would do much more harm than
   good.
 
-  Still, if you have a good use-case (i.e.  non-abstract real-world
-  situation) where a Nuke-Option would actually be beneficial, please let
-  me know.
-
 
  * **5.22 Does cryptsetup open network connections to websites, etc. ?**
 
@@ -2680,8 +2679,7 @@ can be converted to the raw volume key for example via:
 
   Note that at the time this FAQ item was written, 1.5.4 was the latest
   1.5.x version and it has the flaw, i.e.  works with the old Whirlpool
-  version.  Possibly later 1.5.x versions will work as well.  If not,
-  please let me know.
+  version.  Possibly later 1.5.x versions will work as well.
 
   The only two ways to access older LUKS containers created with Whirlpool
   are to either decrypt with an old gcrypt version that has the flaw or to
@@ -2797,8 +2795,7 @@ can be converted to the raw volume key for example via:
   03) Creating your own initrd
 
   The two examples below should give you most of what is needed.  This is
-  tested with LUKS1 and should work with LUKS2 as well.  If not, please
-  let me know.
+  tested with LUKS1 and should work with LUKS2 as well.
 
   Here is a really minimal example.  It does nothing but set up some
   things and then drop to an interactive shell.  It is perfect to try out
