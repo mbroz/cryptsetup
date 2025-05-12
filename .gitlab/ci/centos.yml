@@ -4,6 +4,7 @@
   extends:
     - .fail_if_coredump_generated
   before_script:
+    - sudo dnf clean all
     - >
       sudo dnf -y -q  install
       autoconf automake device-mapper-devel gcc gettext-devel json-c-devel
