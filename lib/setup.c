@@ -414,7 +414,7 @@ static int onlyLUKSnoRequirements(struct crypt_device *cd)
 
 static int onlyLUKS(struct crypt_device *cd)
 {
-	return _onlyLUKS(cd, 0, CRYPT_REQUIREMENT_OPAL);
+	return _onlyLUKS(cd, 0, CRYPT_REQUIREMENT_OPAL | CRYPT_REQUIREMENT_INLINE_HW_TAGS);
 }
 
 static int _onlyLUKS2(struct crypt_device *cd, uint32_t cdflags, uint32_t mask)
@@ -447,7 +447,7 @@ static int onlyLUKS2unrestricted(struct crypt_device *cd)
 /* Internal only */
 int onlyLUKS2(struct crypt_device *cd)
 {
-	return _onlyLUKS2(cd, 0, CRYPT_REQUIREMENT_OPAL);
+	return _onlyLUKS2(cd, 0, CRYPT_REQUIREMENT_OPAL | CRYPT_REQUIREMENT_INLINE_HW_TAGS);
 }
 
 /* Internal only */
@@ -510,92 +510,6 @@ static int keyslot_verify_or_find_empty(struct crypt_device *cd, int *keyslot)
 
 	log_dbg(cd, "Selected keyslot %d.", *keyslot);
 	return 0;
-}
-
-/*
- * compares UUIDs returned by device-mapper (striped by cryptsetup) and uuid in header
- */
-int crypt_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
-{
-	int i, j;
-	char *str;
-
-	if (!dm_uuid || !hdr_uuid)
-		return -EINVAL;
-
-	/* skip beyond LUKS2_HW_OPAL prefix */
-	if (!strncmp(dm_uuid, CRYPT_LUKS2_HW_OPAL, strlen(CRYPT_LUKS2_HW_OPAL)))
-		dm_uuid = dm_uuid + strlen(CRYPT_LUKS2_HW_OPAL);
-
-	str = strchr(dm_uuid, '-');
-	if (!str)
-		return -EINVAL;
-
-	for (i = 0, j = 1; hdr_uuid[i]; i++) {
-		if (hdr_uuid[i] == '-')
-			continue;
-
-		if (!str[j] || str[j] == '-')
-			return -EINVAL;
-
-		if (str[j] != hdr_uuid[i])
-			return -EINVAL;
-		j++;
-	}
-
-	return 0;
-}
-
-/*
- * compares two UUIDs returned by device-mapper (striped by cryptsetup)
- * used for stacked LUKS2 & INTEGRITY devices
- */
-static int crypt_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid)
-{
-	int i;
-	char *str, *stri;
-
-	if (!dm_uuid || !dmi_uuid)
-		return -EINVAL;
-
-	/* skip beyond LUKS2_HW_OPAL prefix */
-	if (!strncmp(dm_uuid, CRYPT_LUKS2_HW_OPAL, strlen(CRYPT_LUKS2_HW_OPAL)))
-		dm_uuid = dm_uuid + strlen(CRYPT_LUKS2_HW_OPAL);
-
-	str = strchr(dm_uuid, '-');
-	if (!str)
-		return -EINVAL;
-
-	stri = strchr(dmi_uuid, '-');
-	if (!stri)
-		return -EINVAL;
-
-	for (i = 1; str[i] && str[i] != '-'; i++) {
-		if (!stri[i])
-			return -EINVAL;
-
-		if (str[i] != stri[i])
-			return -EINVAL;
-	}
-
-	return 0;
-}
-
-/*
- * compares type of active device to provided string
- */
-int crypt_uuid_type_cmp(const char *dm_uuid, const char *type)
-{
-	size_t len;
-
-	assert(type);
-
-	len = strlen(type);
-	if (dm_uuid && strlen(dm_uuid) > len &&
-	    !strncmp(dm_uuid, type, len) && dm_uuid[len] == '-')
-		return 0;
-
-	return -ENODEV;
 }
 
 int PLAIN_activate(struct crypt_device *cd,
@@ -1310,7 +1224,8 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 	bool found = false;
 	char **dep, *cipher_spec = NULL, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	char deps_uuid_prefix[40], *deps[MAX_DM_DEPS+1] = {};
-	const char *dev, *namei;
+	const char *dev;
+	char *iname = NULL;
 	int key_nums, r;
 	struct crypt_dm_active_device dmd, dmdi = {}, dmdep = {};
 	struct dm_target *tgt = &dmd.segment, *tgti = &dmdi.segment;
@@ -1358,16 +1273,13 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 
 	dep = deps;
 
-	if (tgt->type == DM_CRYPT && tgt->u.crypt.integrity && (namei = device_dm_name(tgt->data_device))) {
-		r = dm_query_device(cd, namei, DM_ACTIVE_DEVICE, &dmdi);
+	if (tgt->type == DM_CRYPT && tgt->u.crypt.tag_size &&
+	     (iname = dm_get_active_iname(cd, name))) {
+
+		r = dm_query_device(cd, iname, DM_ACTIVE_DEVICE, &dmdi);
+		free(iname);
 		if (r < 0)
 			goto out;
-		if (!single_segment(&dmdi) || tgti->type != DM_INTEGRITY) {
-			log_dbg(cd, "Unsupported device table detected in %s.", namei);
-			r = -EINVAL;
-			goto out;
-		}
-
 		/*
 		 * Data device for crypt with integrity is not dm-integrity device,
 		 * but always the device underlying dm-integrity.
@@ -1445,7 +1357,7 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 				goto out;
 			}
 			/* check whether UUIDs match each other */
-			r = crypt_uuid_cmp(dmd.uuid, LUKS_UUID(cd));
+			r = dm_uuid_cmp(dmd.uuid, LUKS_UUID(cd));
 			if (r < 0) {
 				log_dbg(cd, "LUKS device header uuid: %s mismatches DM returned uuid %s",
 					LUKS_UUID(cd), dmd.uuid);
@@ -2017,7 +1929,7 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 			       const char *volume_key,
 			       size_t volume_key_size,
 			       struct crypt_params_luks2 *params,
-			       bool sector_size_autodetect)
+			       bool sector_size_autodetect, bool integrity_inline)
 {
 	int r;
 	unsigned long required_alignment = DEFAULT_DISK_ALIGNMENT;
@@ -2154,6 +2066,14 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
+	if (integrity_inline) {
+		log_dbg(cd, "Adding LUKS2 inline HW tags requirement flag.");
+		r = LUKS2_config_set_requirement_version(cd, &cd->u.luks2.hdr,
+			CRYPT_REQUIREMENT_INLINE_HW_TAGS, 1, false);
+		if (r < 0)
+			goto out;
+	}
+
 	if (params && (params->label || params->subsystem)) {
 		r = LUKS2_hdr_labels(cd, &cd->u.luks2.hdr,
 				     params->label, params->subsystem, 0);
@@ -2191,7 +2111,10 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 
 			goto out;
 		}
+	}
 
+	/* Format underlying virtual dm-integrity device */
+	if (!integrity_inline && crypt_get_integrity_tag_size(cd)) {
 		if (integrity_key_size) {
 			integrity_key = crypt_alloc_volume_key(integrity_key_size,
 					crypt_volume_key_get_key(cd->volume_key) + volume_key_size - integrity_key_size);
@@ -2200,7 +2123,8 @@ static int _crypt_format_luks2(struct crypt_device *cd,
 				goto out;
 			}
 		}
-		r = INTEGRITY_format(cd, params ? params->integrity_params : NULL, integrity_key, NULL, NULL, 0);
+		r = INTEGRITY_format(cd, params ? params->integrity_params : NULL,
+				     integrity_key, NULL, NULL, 0, NULL, false);
 		if (r)
 			log_err(cd, _("Cannot format integrity for device %s."),
 				data_device_path(cd));
@@ -2658,7 +2582,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 				      * Create reduced dm-integrity device only if locking range size does
 				      * not match device size.
 				      */
-				     device_size_bytes != range_size_bytes ? range_size_bytes / SECTOR_SIZE : 0);
+				     device_size_bytes != range_size_bytes ? range_size_bytes / SECTOR_SIZE : 0, NULL, false);
 		if (r)
 			log_err(cd, _("Cannot format integrity for device %s."),
 				data_device_path(cd));
@@ -2940,7 +2864,8 @@ out:
 static int _crypt_format_integrity(struct crypt_device *cd,
 				   const char *uuid,
 				   struct crypt_params_integrity *params,
-				   const char *integrity_key, size_t integrity_key_size)
+				   const char *integrity_key, size_t integrity_key_size,
+				   bool integrity_inline)
 {
 	int r;
 	uint32_t integrity_tag_size;
@@ -3037,7 +2962,9 @@ static int _crypt_format_integrity(struct crypt_device *cd,
 		}
 	}
 
-	r = INTEGRITY_format(cd, params, ik, cd->u.integrity.journal_crypt_key, cd->u.integrity.journal_mac_key, 0);
+	r = INTEGRITY_format(cd, params, ik, cd->u.integrity.journal_crypt_key,
+			     cd->u.integrity.journal_mac_key, 0, &cd->u.integrity.sb_flags,
+			     integrity_inline);
 	if (r)
 		log_err(cd, _("Cannot format integrity for device %s."), mdata_device_path(cd));
 
@@ -3049,6 +2976,107 @@ out:
 		free(integrity);
 		free(journal_integrity);
 		free(journal_crypt);
+	}
+
+	return r;
+}
+
+int crypt_format_inline(struct crypt_device *cd,
+	const char *type,
+	const char *cipher,
+	const char *cipher_mode,
+	const char *uuid,
+	const char *volume_key,
+	size_t volume_key_size,
+	void *params)
+{
+	struct crypt_params_luks2 *lparams;
+	const struct crypt_params_integrity *iparams;
+	uint32_t device_tag_size, required_tag_size;
+	struct device *idevice;
+	size_t sector_size, required_sector_size;
+	int r;
+
+	if (!cd || !params)
+		return -EINVAL;
+
+	if (cd->type) {
+		log_dbg(cd, "Context already formatted as %s.", cd->type);
+		return -EINVAL;
+	}
+
+	log_dbg(cd, "Formatting device %s as type %s with inline tags.", mdata_device_path(cd) ?: "(none)", type);
+
+	if (isINTEGRITY(type)) {
+		lparams = NULL;
+		iparams = params;
+		idevice = crypt_metadata_device(cd);
+		required_sector_size = iparams->sector_size;
+		required_tag_size = iparams->tag_size;
+
+		/* Unused in standalone integrity */
+		if (cipher || cipher_mode)
+			return -EINVAL;
+	} else if (isLUKS2(type)) {
+		lparams = params;
+		iparams = lparams->integrity_params;
+		idevice = crypt_data_device(cd);
+		required_sector_size = lparams->sector_size;
+
+		if (!lparams->integrity || !idevice)
+			return -EINVAL;
+
+		required_tag_size = INTEGRITY_tag_size(lparams->integrity, cipher, cipher_mode);
+	} else {
+		log_err(cd, _("Unknown or unsupported device type %s requested."), type);
+		return -EINVAL;
+	}
+
+	/* In inline mode journal will be never used, check that params are not set */
+	if (iparams && (iparams->journal_size || iparams->journal_watermark || iparams->journal_commit_time ||
+	    iparams->interleave_sectors || iparams->journal_integrity || iparams->journal_integrity_key ||
+	    iparams->journal_integrity_key_size || iparams->journal_crypt || iparams->journal_crypt_key ||
+	    iparams->journal_integrity_key_size))
+		return -EINVAL;
+
+	if (!device_is_nop_dif(idevice, &device_tag_size)) {
+		log_err(cd, _("Device %s does not provide inline integrity data fields."), mdata_device_path(cd));
+		return -EINVAL;
+	}
+
+	/* We can get device_tag_size = 0 as kernel provides this info only for some block devices */
+	if (device_tag_size > 0 && device_tag_size < required_tag_size) {
+		log_err(cd, _("Inline tag size %" PRIu32 " [bytes] is larger than %" PRIu32 " provided by device %s."),
+			required_tag_size, device_tag_size, mdata_device_path(cd));
+		return -EINVAL;
+	}
+	log_dbg(cd, "Inline integrity is supported (%" PRIu32 ").", device_tag_size);
+
+	/* Inline must use sectors size as hardware device */
+	sector_size = device_block_size(cd, idevice);
+	if (!sector_size)
+		return -EINVAL;
+
+	/* No autodetection, use device sector size */
+	if (isLUKS2(type) && lparams && !required_sector_size)
+		lparams->sector_size = sector_size;
+	else if (sector_size != required_sector_size) {
+		log_err(cd, _("Sector must be the same as device hardware sector (%zu bytes)."), sector_size);
+		return -EINVAL;
+	}
+
+	if (isINTEGRITY(type))
+		r = _crypt_format_integrity(cd, uuid, params, volume_key, volume_key_size, true);
+	else if (isLUKS2(type))
+		r = _crypt_format_luks2(cd, cipher, cipher_mode,
+					uuid, volume_key, volume_key_size, params, false, true);
+	else
+		r = -EINVAL;
+
+	if (r < 0) {
+		crypt_set_null_type(cd);
+		crypt_free_volume_key(cd->volume_key);
+		cd->volume_key = NULL;
 	}
 
 	return r;
@@ -3090,15 +3118,15 @@ static int _crypt_format(struct crypt_device *cd,
 					uuid, volume_key, volume_key_size, params);
 	else if (isLUKS2(type))
 		r = _crypt_format_luks2(cd, cipher, cipher_mode,
-					uuid, volume_key, volume_key_size, params, sector_size_autodetect);
+					uuid, volume_key, volume_key_size, params, sector_size_autodetect, false);
 	else if (isLOOPAES(type))
 		r = _crypt_format_loopaes(cd, cipher, uuid, volume_key_size, params);
 	else if (isVERITY(type))
 		r = _crypt_format_verity(cd, uuid, params);
 	else if (isINTEGRITY(type))
-		r = _crypt_format_integrity(cd, uuid, params, volume_key, volume_key_size);
+		r = _crypt_format_integrity(cd, uuid, params, volume_key, volume_key_size, false);
 	else {
-		log_err(cd, _("Unknown crypt device type %s requested."), type);
+		log_err(cd, _("Unknown or unsupported device type %s requested."), type);
 		r = -EINVAL;
 	}
 
@@ -3242,13 +3270,13 @@ static int _compare_device_types(struct crypt_device *cd,
 	}
 
 	if (isLUKS2(cd->type) && !strncmp("INTEGRITY-", tgt->uuid, strlen("INTEGRITY-"))) {
-		if (crypt_uuid_cmp(tgt->uuid, src->uuid)) {
+		if (dm_uuid_cmp(tgt->uuid, src->uuid)) {
 			log_dbg(cd, "LUKS UUID mismatch.");
 			return -EINVAL;
 		}
 	} else if (isLUKS(cd->type)) {
 		if (!src->uuid || strncmp(cd->type, tgt->uuid, strlen(cd->type)) ||
-		    crypt_uuid_cmp(tgt->uuid, src->uuid)) {
+		    dm_uuid_cmp(tgt->uuid, src->uuid)) {
 			log_dbg(cd, "LUKS UUID mismatch.");
 			return -EINVAL;
 		}
@@ -4090,9 +4118,9 @@ int crypt_suspend(struct crypt_device *cd,
 
 	log_dbg(cd, "Checking if active device %s has UUID type LUKS.", name);
 
-	r = crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2);
+	r = dm_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2);
 	if (r < 0)
-		r = crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS1);
+		r = dm_uuid_type_cmp(dmd.uuid, CRYPT_LUKS1);
 
 	if (r < 0) {
 		log_err(cd, _("This operation is supported only for LUKS device."));
@@ -4101,45 +4129,32 @@ int crypt_suspend(struct crypt_device *cd,
 
 	r = -EINVAL;
 
-	if (isLUKS2(cd->type) && crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2)) {
+	if (isLUKS2(cd->type) && dm_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2)) {
 		log_dbg(cd, "LUKS device header type: %s mismatches DM device type.", cd->type);
 		goto out;
 	}
 
-	if (isLUKS1(cd->type) && crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS1)) {
+	if (isLUKS1(cd->type) && dm_uuid_type_cmp(dmd.uuid, CRYPT_LUKS1)) {
 		log_dbg(cd, "LUKS device header type: %s mismatches DM device type.", cd->type);
 		goto out;
 	}
 
 	/* check if active device has LUKS2-OPAL dm uuid prefix */
-	dm_opal_uuid = !crypt_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2_HW_OPAL);
+	dm_opal_uuid = !dm_uuid_type_cmp(dmd.uuid, CRYPT_LUKS2_HW_OPAL);
 
 	if (!dm_opal_uuid && isLUKS2(cd->type) &&
 	    LUKS2_segment_is_hw_opal(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT))
 		goto out;
 
-	if (cd->type && (r = crypt_uuid_cmp(dmd.uuid, LUKS_UUID(cd))) < 0) {
+	if (cd->type && (r = dm_uuid_cmp(dmd.uuid, LUKS_UUID(cd))) < 0) {
 		log_dbg(cd, "LUKS device header uuid: %s mismatches DM returned uuid %s",
 			LUKS_UUID(cd), dmd.uuid);
 		goto out;
 	}
 
 	/* check UUID of integrity device underneath crypt device */
-	if (crypt_get_integrity_tag_size(cd)) {
-		r = dm_get_iname(name, &iname, false);
-		if (r)
-			goto out;
-
-		r = dm_query_device(cd, iname, DM_ACTIVE_UUID, &dmdi);
-		if (r < 0)
-			goto out;
-
-		r = crypt_uuid_integrity_cmp(dmd.uuid, dmdi.uuid);
-		if (r < 0) {
-			log_dbg(cd, "Integrity device uuid: %s mismatches crypt device uuid %s", dmdi.uuid, dmd.uuid);
-			goto out;
-		}
-	}
+	if (crypt_get_integrity_tag_size(cd))
+	    iname = dm_get_active_iname(cd, name);
 
 	r = dm_status_suspended(cd, name);
 	if (r < 0)
@@ -4179,7 +4194,7 @@ int crypt_suspend(struct crypt_device *cd,
 	}
 
 	/* Suspend integrity device underneath; keep crypt suspended if it fails */
-	if (crypt_get_integrity_tag_size(cd)) {
+	if (iname) {
 		r = dm_suspend_device(cd, iname, 0);
 		if (r)
 			log_err(cd, _("Error during suspending device %s."), iname);
@@ -4391,14 +4406,12 @@ static int resume_luks2_by_volume_key(struct crypt_device *cd,
 		}
 	}
 
-	if (crypt_get_integrity_tag_size(cd)) {
-		r = dm_get_iname(name, &iname, false);
-		if (r)
-			goto out;
-
+	if (crypt_get_integrity_tag_size(cd) &&
+	    (iname = dm_get_active_iname(cd, name))) {
 		r = dm_resume_device(cd, iname, 0);
 		if (r)
 			log_err(cd, _("Error during resuming device %s."), iname);
+		free(iname);
 	}
 
 	if (enc_type == CRYPT_OPAL_HW_ONLY)
@@ -4427,7 +4440,6 @@ out:
 	crypt_free_volume_key(zerokey);
 	crypt_free_volume_key(opal_key);
 	crypt_free_volume_key(crypt_key);
-	free(iname);
 
 	return r;
 }
@@ -5778,7 +5790,7 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 {
 	int r;
 	struct crypt_dm_active_device dmd, dmdi = {};
-	const char *namei = NULL;
+	char *iname = NULL;
 	struct dm_target *tgt = &dmd.segment;
 	uint64_t min_offset = UINT64_MAX;
 
@@ -5790,10 +5802,11 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 		return r;
 
 	/* For LUKS2 with integrity we need flags from underlying dm-integrity */
-	if (isLUKS2(cd->type) && crypt_get_integrity_tag_size(cd) && single_segment(&dmd)) {
-		namei = device_dm_name(tgt->data_device);
-		if (namei && dm_query_device(cd, namei, 0, &dmdi) >= 0)
+	if (isLUKS2(cd->type) && crypt_get_integrity_tag_size(cd) &&
+		(iname = dm_get_active_iname(cd, name))) {
+		if (dm_query_device(cd, iname, 0, &dmdi) >= 0)
 			dmd.flags |= dmdi.flags;
+		free(iname);
 	}
 
 	if (cd && isTCRYPT(cd->type)) {

@@ -34,6 +34,8 @@ ARG(OPT_INTEGRITY, 'I', POPT_ARG_STRING, N_("Data integrity algorithm"), NULL, C
 
 ARG(OPT_INTEGRITY_BITMAP_MODE, 'B', POPT_ARG_NONE, N_("Use bitmap to track changes and disable journal for integrity device"), NULL, CRYPT_ARG_BOOL, {}, {})
 
+ARG(OPT_INTEGRITY_INLINE, '\0', POPT_ARG_NONE, N_("Use inline integrity mode (HW sector tags)"), NULL, CRYPT_ARG_BOOL, {}, OPT_INTEGRITY_INLINE_ACTIONS)
+
 ARG(OPT_INTEGRITY_KEY_FILE, '\0', POPT_ARG_STRING, N_("Read the integrity key from a file"), NULL, CRYPT_ARG_STRING, {}, {})
 
 ARG(OPT_INTEGRITY_KEY_SIZE, '\0', POPT_ARG_STRING, N_("The size of the data integrity key"), N_("BITS"), CRYPT_ARG_UINT32, {}, {})
