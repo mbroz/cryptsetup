@@ -1,11 +1,7 @@
 .dnf-openssl-backend:
   variables:
     DISTRO: cryptsetup-fedora-rawhide
-  extends:
-    - .fail_if_coredump_generated
-  before_script:
-    - >
-      sudo dnf -y -q install
+    PKGS: >-
       autoconf automake device-mapper-devel gcc gettext-devel json-c-devel
       libargon2-devel libblkid-devel libpwquality-devel libselinux-devel
       libssh-devel libtool libuuid-devel make popt-devel
@@ -13,6 +9,11 @@
       sshpass tar uuid-devel vim-common device-mapper expect gettext git jq
       keyutils openssl-devel openssl asciidoctor swtpm meson ninja-build
       python3-jinja2 gperf libcap-devel tpm2-tss-devel libmount-devel swtpm-tools
+  extends:
+    - .fail_if_coredump_generated
+  before_script:
+    - sudo dnf clean all
+    - (r=3;while ! sudo dnf -y -q install $PKGS ; do ((--r))||exit;sleep 5;echo "Retrying";done)
     - sudo -E git clean -xdf
     - ./autogen.sh
     - ./configure --enable-fips --enable-pwquality --enable-libargon2 --with-crypto_backend=openssl --enable-asciidoc
