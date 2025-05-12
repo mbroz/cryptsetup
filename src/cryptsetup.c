@@ -1911,6 +1911,8 @@ static int action_open_luks(void)
 				goto out;
 			r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT, kc1, CRYPT_ANY_SLOT, kc2, activate_flags);
 		}
+		if (r == -EPERM)
+			log_err(_("Volume key does not match the volume."));
 		if (r)
 			goto out;
 	} else {
@@ -2247,7 +2249,7 @@ static int action_luksAddKey(void)
 {
 	bool pin_provided = false;
 	int keyslot_old, keyslot_new, keysize = 0, r = -EINVAL;
-	char *key = NULL, *password = NULL, *vk_description = NULL;
+	char *key, *vk_description, *password = NULL;
 	size_t password_size = 0;
 	struct crypt_device *cd = NULL;
 	struct crypt_keyslot_context *p_kc_new = NULL, *kc = NULL, *kc_new = NULL;
@@ -2323,16 +2325,23 @@ static int action_luksAddKey(void)
 		if (r == -EPERM)
 			log_err(_("Volume key does not match the volume."));
 		check_signal(&r);
-		if (r < 0)
+		if (r < 0) {
+			crypt_safe_free(key);
 			goto out;
+		}
 		r = crypt_keyslot_context_init_by_volume_key(cd, key, keysize, &kc);
 		crypt_safe_free(key);
 	} else if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
 		r = tools_parse_vk_description(ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &vk_description);
-		if (!r) {
-			r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description, &kc);
-			free(vk_description);
-		}
+		if (r < 0)
+			goto out;
+		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description, &kc);
+		free(vk_description);
+		if (r < 0)
+			goto out;
+		r = crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0);
+		if (r == -EPERM)
+			log_err(_("Volume key does not match the volume."));
 	} else if (ARG_SET(OPT_TOKEN_ID_ID) || ARG_SET(OPT_TOKEN_TYPE_ID) || ARG_SET(OPT_TOKEN_ONLY_ID)) {
 		r = crypt_keyslot_context_init_by_token(cd,
 				ARG_INT32(OPT_TOKEN_ID_ID),
