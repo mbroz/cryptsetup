@@ -5112,8 +5112,6 @@ static int _activate_reencrypt_device_by_vk(struct crypt_device *cd,
 		}
 
 		r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
-		if (r == -EPERM || r == -ENOENT)
-			log_err(cd, _("Volume key does not match the volume."));
 		if (r >= 0)
 			r = LUKS2_activate(cd, name, vk, NULL, flags);
 		goto out;
@@ -5275,19 +5273,14 @@ static int _verify_key(struct crypt_device *cd,
 			return -EINVAL;
 
 		r = LUKS_verify_volume_key(&cd->u.luks1.hdr, vk);
-		if (r == -EPERM)
-			log_err(cd, _("Volume key does not match the volume."));
 	} else if (isLUKS2(cd->type)) {
 		if (!vk)
 			return -EINVAL;
 
 		if (unbound_key)
 			r = LUKS2_digest_verify_by_any_matching(cd, vk);
-		else {
+		else
 			r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
-			if (r == -EPERM || r == -ENOENT)
-				log_err(cd, _("Volume key does not match the volume."));
-		}
 	} else if (isVERITY(cd->type))
 		r = KEY_VERIFIED;
 	else if (isTCRYPT(cd->type))
@@ -7537,6 +7530,40 @@ int crypt_keyring_get_key_by_name(struct crypt_device *cd,
 	r = keyring_read_key(kid, key, key_size);
 	if (r < 0)
 		log_dbg(cd, "keyring_read_key failed with errno %d.", errno);
+
+	return r;
+}
+
+int crypt_keyring_get_keysize_by_name(struct crypt_device *cd,
+		const char *key_description,
+		size_t *r_key_size)
+{
+	int r;
+	key_serial_t kid;
+
+	if (!key_description || !r_key_size)
+		return -EINVAL;
+
+	log_dbg(cd, "Searching for key by name %s.", key_description);
+
+	kid = keyring_find_key_id_by_name(key_description);
+	if (kid == -ENOTSUP) {
+		log_dbg(cd, "Kernel keyring features disabled.");
+		return -ENOTSUP;
+	} else if (kid < 0) {
+		log_dbg(cd, "keyring_find_key_id_by_name failed with errno %d.", errno);
+		return -EINVAL;
+	}
+	else if (kid == 0) {
+		log_dbg(cd, "keyring_find_key_id_by_name failed with errno %d.", ENOENT);
+		return -ENOENT;
+	}
+
+	log_dbg(cd, "Reading content of kernel key (id %" PRIi32 ").", kid);
+
+	r = keyring_read_keysize(kid, r_key_size);
+	if (r < 0)
+		log_dbg(cd, "keyring_read_keysize failed with errno %d.", errno);
 
 	return r;
 }

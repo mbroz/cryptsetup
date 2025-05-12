@@ -61,7 +61,12 @@ typedef int (*keyslot_context_get_passphrase) (
 	size_t *r_passphrase_size);
 
 typedef void (*keyslot_context_free) (
-		struct crypt_keyslot_context *kc);
+	struct crypt_keyslot_context *kc);
+
+typedef int (*keyslot_context_get_key_size) (
+	struct crypt_device *cd,
+	struct crypt_keyslot_context *kc,
+	size_t *r_key_size);
 
 #define KC_VERSION_BASIC          UINT8_C(1)
 #define KC_VERSION_SELF_CONTAINED UINT8_C(2)
@@ -117,6 +122,7 @@ struct crypt_keyslot_context {
 	struct {
 		const char *key_description;
 		char *i_key_description;
+		size_t i_key_size;
 	} vk_kr;
 	} u;
 
@@ -134,6 +140,7 @@ struct crypt_keyslot_context {
 	keyslot_context_get_generic_signed_key	get_verity_volume_key;
 	keyslot_context_get_generic_volume_key	get_integrity_volume_key;
 	keyslot_context_get_passphrase		get_passphrase;
+	keyslot_context_get_key_size		get_key_size;
 	keyslot_context_free			context_free;
 };
 
