@@ -17,11 +17,15 @@
 static char *keyfiles[MAX_KEYFILES];
 static char *keyring_links[MAX_KEYRING_LINKS];
 static char *vks_in_keyring[MAX_VK_IN_KEYRING];
+static char *vk_files[2];
 static char *keyfile_stdin = NULL;
+static uint32_t key_sizes[2];
 
 static int keyfiles_count = 0;
 static int keyring_links_count = 0;
 static int vks_in_keyring_count = 0;
+static int vk_files_count = 0;
+static int key_sizes_count = 0;
 int64_t data_shift = 0;
 
 const char *device_type = "luks";
@@ -52,6 +56,8 @@ void tools_cleanup(void)
 		free(keyring_links[--keyring_links_count]);
 	while (vks_in_keyring_count)
 		free(vks_in_keyring[--vks_in_keyring_count]);
+	while (vk_files_count)
+		free(vk_files[--vk_files_count]);
 
 	total_keyfiles = 0;
 }
@@ -1784,27 +1790,37 @@ static int action_open_luks(void)
 			goto out;
 	}
 
+	/*
+	 * When activating device in-reencryption with --volume-key-file or --volume-key-keyring
+	 * the ordering of parameters does not matter. This applies also if any parameter is used
+	 * twice. The library internal code tests both passed keys if they match old or new
+	 * volume key digests and assign them respectively.
+	 */
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID) || ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
-		if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
-			keysize = crypt_get_volume_key_size(cd);
-			if (!keysize && !ARG_SET(OPT_KEY_SIZE_ID)) {
+		if (vk_files[0] && !vk_files[1]) {
+			keysize = key_sizes[0] / 8;
+			if (!keysize)
+				keysize = crypt_get_volume_key_size(cd);
+			if (!keysize) /* only in LUKS2 decryption or with no keyslots */
+				keysize = crypt_get_old_volume_key_size(cd);
+
+			if (!keysize) {
 				log_err(_("Cannot determine volume key size for LUKS without keyslots, please use --key-size option."));
 				r = -EINVAL;
 				goto out;
-			} else if (!keysize)
-				keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
-		}
+			}
+		} else if (vk_files[0] && vk_files[1])
+			keysize = key_sizes[0] / 8;
 
-		r = luks_init_keyslot_contexts_by_volume_keys(cd, ARG_STR(OPT_VOLUME_KEY_FILE_ID),
-							      NULL /* unused */,
-							      keysize,
-							      0 /* unused */,
+		r = luks_init_keyslot_contexts_by_volume_keys(cd, vk_files[0], vk_files[1],
+							      keysize, key_sizes[1] / 8,
 							      vks_in_keyring[0],
 							      vks_in_keyring[1],
 							      &kc1, &kc2);
 		if (r < 0)
 			goto out;
 
+		/* The ordering of kc1 or kc2 does not matter */
 		r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT,
 						      kc1, CRYPT_ANY_SLOT, kc2, activate_flags);
 		if (r == -EPERM)
@@ -3314,6 +3330,9 @@ static const char *verify_open(void)
 		ARG_SET(OPT_VOLUME_KEY_FILE_ID)) && !strcmp_or_null(device_type, "plain"))
 		return _("Option --volume-key-keyring cannot be combined with --hash or --volume-key-file.");
 
+	if (vk_files[1] && !key_sizes[1])
+		return _("Both --volume-key-file options must be paired with respective --key-size options.");
+
 	/* "open --type tcrypt" and "tcryptDump" checks are identical */
 	return verify_tcryptdump();
 }
@@ -3628,6 +3647,14 @@ static void basic_options_cb(poptContext popt_context,
 			usage(popt_context, EXIT_FAILURE,
 			      _("Key size must be a multiple of 8 bits"),
 			      poptGetInvocationName(popt_context));
+
+		if (key_sizes_count < 2)
+			key_sizes[key_sizes_count++] = ARG_UINT32(OPT_KEY_SIZE_ID);
+		else {
+			usage(popt_context, EXIT_FAILURE,
+			      _("At most 2 key size specifications can be supplied."),
+			      poptGetInvocationName(popt_context));
+		}
 		break;
 	case OPT_INTEGRITY_KEY_SIZE_ID:
 		if (ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID) == 0)
@@ -3649,6 +3676,17 @@ static void basic_options_cb(poptContext popt_context,
 			usage(popt_context, EXIT_FAILURE,
 			      _("Key size must be a multiple of 8 bits"),
 			      poptGetInvocationName(popt_context));
+		break;
+	case OPT_VOLUME_KEY_FILE_ID:
+		if (vk_files_count < 2)
+			vk_files[vk_files_count++] = strdup(ARG_STR(OPT_VOLUME_KEY_FILE_ID));
+		else {
+			if (snprintf(buf, sizeof(buf), _("At most %d volume key specifications can be supplied."), 2) < 0)
+				buf[0] = '\0';
+			usage(popt_context, EXIT_FAILURE,
+			      buf,
+			      poptGetInvocationName(popt_context));
+		}
 		break;
 	case OPT_VOLUME_KEY_KEYRING_ID:
 		if (vks_in_keyring_count < MAX_VK_IN_KEYRING)

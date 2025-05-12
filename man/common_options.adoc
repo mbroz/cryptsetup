@@ -543,7 +543,10 @@ current volume key. Also, it is used when new unbound keyslot is created by
 specifying --unbound parameter.
 endif::[]
 ifdef::ACTION_OPEN[]
-This option can be used for _plain_ device type only.
+This option can be used for _plain_ and _luks_ devices. For LUKS2 devices
+in reencryption you may use the parameter twice to specify both old and new volume key
+sizes. Each --key-size option corresponds to the respective --volume-key-file parameter
+(also allowed to be used up to two times).
 endif::[]
 ifndef::ACTION_REENCRYPT,ACTION_OPEN,ACTION_LUKSADDKEY[]
 This option can be used for _open --type plain_ or _luksFormat_. All
@@ -1313,6 +1316,9 @@ It may be also used when no keyslot is active.
 endif::[]
 ifdef::ACTION_OPEN[]
 This allows one to open _luks_ and _bitlk_ device types without giving a passphrase. +
+For devices in reencryption the option may be used twice to specify both old and new volume keys.
+When using the option twice make sure you pair each --volume-key-file option with respective
+--key-size parameter as well.
 endif::[]
 ifdef::ACTION_REENCRYPT[]
 Use (set) new volume key stored in a file. +
@@ -1330,7 +1336,8 @@ Use a volume key stored in a keyring.
 This allows one to open _luks_ and _plain_ device types without giving a passphrase.
 +
 For LUKS, the key and associated type has to be readable from userspace so that volume
-key digest may be verified in before activation.
+key digest may be verified in before activation. For devices in reencryption the option may be
+used twice to specify both old and new volume keys.
 +
 For PLAIN type, the user must ensure that the key in the keyring is unchanged since activation.
 Otherwise, reloading the key can cause data corruption after an unexpected key change.
