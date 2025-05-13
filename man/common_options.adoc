@@ -527,7 +527,7 @@ endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT,ACTION_BENCHMARK,ACTION_LUKSADDKEY[]
 *--key-size, -s* _bits_::
-ifndef::ACTION_LUKSADDKEY[]
+ifndef::ACTION_LUKSADDKEY,ACTION_REENCRYPT[]
 Sets key size in _bits_. The argument has to be a multiple of 8. The
 possible key-sizes are limited by the cipher and mode used.
 +
@@ -554,13 +554,12 @@ other LUKS actions will use the key-size specified in the LUKS header.
 Use _cryptsetup --help_ to show the compiled-in defaults.
 endif::[]
 ifdef::ACTION_REENCRYPT[]
-*LUKS1*:
-If you are increasing key size, there must be enough space in the LUKS header
-for enlarged keyslots (data offset must be large enough) or reencryption
-cannot be performed.
+*LUKS2*:
+Provide current key size in _bits_. The argument has to be a multiple of 8.
+Useful when specifying the size of current volume key when no keyslot is active.
 +
-If there is not enough space for keyslots with new key size,
-you can destructively shrink device with --reduce-device-size option.
+*LUKS1*:
+See --new-key-size.
 endif::[]
 endif::[]
 
@@ -687,6 +686,24 @@ ifdef::ACTION_LUKSADDKEY[]
 Set key description in keyring that will be used for new passphrase retrieval.
 endif::[]
 
+ifdef::ACTION_REENCRYPT[]
+*--new-key-size* _bits_::
+Sets new key size in _bits_. The argument has to be a multiple of 8. The
+possible key-sizes are limited by the new cipher and mode used in
+reencryption.
++
+See /proc/crypto for more information. Note that key-size in
+/proc/crypto is stated in bytes.
++
+*LUKS1*:
+If you are increasing key size, there must be enough space in the LUKS header
+for enlarged keyslots (data offset must be large enough) or reencryption
+cannot be performed.
++
+If there is not enough space for keyslots with new key size,
+you can destructively shrink device with --reduce-device-size option.
+endif::[]
+
 ifdef::ACTION_LUKSADDKEY[]
 *--new-key-slot <0-N>*::
 This option allows you to specify which key slot is selected for
@@ -703,6 +720,35 @@ endif::[]
 ifdef::ACTION_LUKSADDKEY[]
 *--new-token-id*::
 Specify what token to use to get the passphrase for a new keyslot.
+endif::[]
+
+ifdef::ACTION_REENCRYPT[]
+*--new-volume-key-file*::
+Use (set) new volume key stored in a file. The option must be paired
+with --new-key-size parameter when initializing reencryption
+operation.
++
+*WARNING:* If you create your own volume key, you need to make sure to
+do it right. Otherwise, you can end up with a low-entropy or otherwise
+partially predictable volume key which will compromise security.
+endif::[]
+
+ifdef::ACTION_REENCRYPT[]
+*--new-volume-key-keyring* _<key description>_::
+Use (set) new volume key stored in a keyring.
++
+The size of key stored in a keyring must be compatible with new cipher used
+in reencryption operation. See /proc/crypto for more information.
+Note that key-size in /proc/crypto is stated in bytes.
++
+The _<key description>_ uses keyctl-compatible syntax. This can either be a
+numeric key ID or a string name in the format _%<key type>:<key name>_. See
+also *KEY IDENTIFIERS* section of *keyctl*(1). When no _%<key type>:_ prefix
+is specified we assume the key type is _user_ (default type).
++
+*WARNING:* If you create your own volume key, you need to make sure to
+do it right. Otherwise, you can end up with a low-entropy or otherwise
+partially predictable volume key which will compromise security.
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
@@ -1321,9 +1367,15 @@ When using the option twice make sure you pair each --volume-key-file option wit
 --key-size parameter as well.
 endif::[]
 ifdef::ACTION_REENCRYPT[]
-Use (set) new volume key stored in a file. +
+*LUKS2*:
+Provides current volume key stored in a file. It can be used to reencrypt the device with
+no active keyslot together with --new-volume-key-file or --new-volume-key-keyring options.
++
+*LUKS1*:
+See --new-volume-key-file.
++
 endif::[]
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_REENCRYPT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY[]
 *WARNING:* If you create your own volume key, you need to make sure to
 do it right. Otherwise, you can end up with a low-entropy or otherwise
 partially predictable volume key which will compromise security.

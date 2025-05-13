@@ -118,9 +118,15 @@ ARG(OPT_NEW_KEYFILE_SIZE, '\0', POPT_ARG_STRING, N_("Limits the read from newly 
 
 ARG(OPT_NEW_KEY_DESCRIPTION, '\0', POPT_ARG_STRING, N_("Keyring new key description"), NULL, CRYPT_ARG_STRING, {}, OPT_NEW_KEY_DESCRIPTION_ACTIONS)
 
+ARG(OPT_NEW_KEY_SIZE, '\0', POPT_ARG_STRING, N_("The size of the new encryption key"), N_("BITS"), CRYPT_ARG_UINT32, {}, OPT_NEW_KEY_SIZE_ACTIONS)
+
 ARG(OPT_NEW_KEY_SLOT, '\0', POPT_ARG_STRING, N_("Slot number for new key (default is first free)"), "INT", CRYPT_ARG_INT32, { .i32_value = CRYPT_ANY_SLOT }, OPT_NEW_KEY_SLOT_ACTIONS)
 
 ARG(OPT_NEW_TOKEN_ID, '\0', POPT_ARG_STRING, N_("Token number (default: any)"), "INT", CRYPT_ARG_INT32, { .i32_value = CRYPT_ANY_TOKEN }, OPT_NEW_TOKEN_ID_ACTIONS)
+
+ARG(OPT_NEW_VOLUME_KEY_FILE, '\0', POPT_ARG_STRING, N_("Use the new volume key from file"), NULL, CRYPT_ARG_STRING, {}, OPT_NEW_VOLUME_KEY_FILE_ACTIONS)
+
+ARG(OPT_NEW_VOLUME_KEY_KEYRING, '\0', POPT_ARG_STRING, N_("Use the specified keyring key as new volume key"), NULL, CRYPT_ARG_STRING, {}, OPT_NEW_VOLUME_KEY_KEYRING_ACTIONS)
 
 ARG(OPT_OFFSET, 'o', POPT_ARG_STRING, N_("The start offset in the backend device"), N_("SECTORS"), CRYPT_ARG_UINT64, {}, OPT_OFFSET_ACTIONS)
 
