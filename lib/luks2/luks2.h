@@ -416,6 +416,8 @@ int LUKS2_get_keyslot_stored_key_size(struct luks2_hdr *hdr, int keyslot);
 const char *LUKS2_get_keyslot_cipher(struct luks2_hdr *hdr, int keyslot, size_t *key_size);
 int LUKS2_keyslot_find_empty(struct crypt_device *cd, struct luks2_hdr *hdr, size_t keylength);
 int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment);
+int LUKS2_find_keyslot_with_new_key(struct luks2_hdr *hdr);
+int LUKS2_find_keyslot_with_old_key(struct luks2_hdr *hdr);
 crypt_keyslot_info LUKS2_keyslot_info(struct luks2_hdr *hdr, int keyslot);
 int LUKS2_keyslot_area(struct luks2_hdr *hdr,
 	int keyslot,

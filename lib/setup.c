@@ -7648,6 +7648,30 @@ int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_descripti
 	return 0;
 }
 
+int crypt_keyslot_get_id(struct crypt_device *cd, uint32_t keyslot_query)
+{
+	int r;
+
+	if (!cd || !isLUKS2(cd->type))
+		return -EINVAL;
+
+	switch (keyslot_query) {
+	case CRYPT_KEYSLOT_FREE_ID:
+		r = LUKS2_keyslot_find_empty(cd, &cd->u.luks2.hdr, 0);
+		break;
+	case CRYPT_KEYSLOT_OLD_VOLUME_KEY:
+		r = LUKS2_find_keyslot_with_old_key(&cd->u.luks2.hdr);
+		break;
+	case CRYPT_KEYSLOT_NEW_VOLUME_KEY:
+		r = LUKS2_find_keyslot_with_new_key(&cd->u.luks2.hdr);
+		break;
+	default:
+		r = -EINVAL;
+	}
+
+	return r;
+}
+
 /* internal only */
 void crypt_drop_uploaded_keyring_key(struct crypt_device *cd, struct volume_key *vks)
 {
