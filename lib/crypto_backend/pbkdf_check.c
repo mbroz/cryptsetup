@@ -408,6 +408,9 @@ int crypt_pbkdf_perf(const char *kdf, const char *hash,
 	if (r < 0)
 		return r;
 
+	if (parallel_threads > pbkdf_limits.max_parallel)
+		return -EINVAL;
+
 	min_memory = pbkdf_limits.min_bench_memory;
 	if (min_memory > max_memory_kb)
 		min_memory = max_memory_kb;
