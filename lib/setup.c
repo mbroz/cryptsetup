@@ -7528,7 +7528,7 @@ int crypt_keyring_get_key_by_name(struct crypt_device *cd,
 	if (!key_description || !key || !key_size)
 		return -EINVAL;
 
-	log_dbg(cd, "Searching for key by name %s.", key_description);
+	log_dbg(cd, "Searching for kernel key by name %s.", key_description);
 
 	kid = keyring_find_key_id_by_name(key_description);
 	if (kid == -ENOTSUP) {
