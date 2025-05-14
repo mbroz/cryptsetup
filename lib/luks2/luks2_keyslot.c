@@ -966,3 +966,34 @@ int LUKS2_keyslot_swap(struct crypt_device *cd, struct luks2_hdr *hdr,
 
 	return r;
 }
+
+static int LUKS2_find_keyslot_by_key_state(struct luks2_hdr *hdr, bool new_volume_key)
+{
+	int digest, i, r;
+
+	assert(hdr);
+
+	digest = new_volume_key ? LUKS2_reencrypt_digest_new(hdr) : LUKS2_reencrypt_digest_old(hdr);
+	if (digest < 0)
+		return digest;
+
+	for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++) {
+		r = LUKS2_digest_by_keyslot(hdr, i);
+		if (r < 0)
+			continue;
+		if (r == digest)
+			return i;
+	}
+
+	return -ENOENT;
+}
+
+int LUKS2_find_keyslot_with_new_key(struct luks2_hdr *hdr)
+{
+	return LUKS2_find_keyslot_by_key_state(hdr, true /* new key */);
+}
+
+int LUKS2_find_keyslot_with_old_key(struct luks2_hdr *hdr)
+{
+	return LUKS2_find_keyslot_by_key_state(hdr, false /* old key */);
+}

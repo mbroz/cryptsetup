@@ -3222,6 +3222,23 @@ int crypt_set_keyring_to_link(struct crypt_device* cd,
 	const char* key_type_desc,
 	const char* keyring_to_link_vk);
 
+/** Return first unused keyslot id */
+#define CRYPT_KEYSLOT_FREE_ID        UINT32_C(1)
+/** Return keyslot containing old volume key if device is in reencryption */
+#define CRYPT_KEYSLOT_OLD_VOLUME_KEY UINT32_C(2)
+/** Return keyslot containing new volume key if device is in reencryption */
+#define CRYPT_KEYSLOT_NEW_VOLUME_KEY UINT32_C(3)
+
+/**
+ * Get LUKS2 keyslot id of a keyslot matching the criteria defined by a query type
+ *
+ * @param cd crypt LUKS2 device handle
+ * @param keyslot_query the criteria returned id must match
+ *
+ * @return keyslot id of the keyslot matching the criteria or negative errno otherwise.
+ */
+int crypt_keyslot_get_id(struct crypt_device *cd, uint32_t keyslot_query);
+
 /** @} */
 
 #ifdef __cplusplus
