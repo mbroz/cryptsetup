@@ -3709,6 +3709,11 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		return -EINVAL;
 	}
 
+	if (isLUKS2(cd->type) && crypt_get_integrity_tag_size(cd)) {
+		log_err(cd, _("Resize of LUKS2 device with integrity protection is not supported."));
+		return -ENOTSUP;
+	}
+
 	if (new_size)
 		log_dbg(cd, "Resizing device %s to %" PRIu64 " sectors.", name, new_size);
 	else
