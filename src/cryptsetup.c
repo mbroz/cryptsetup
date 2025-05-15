@@ -1589,7 +1589,7 @@ int luksFormat(struct crypt_device **r_cd, struct crypt_keyslot_context **r_kc)
 			goto out;
 	}
 
-	keysize = get_adjusted_key_size(cipher_mode, ARG_UINT32(OPT_KEY_SIZE_ID),
+	keysize = get_adjusted_key_size(cipher, cipher_mode, ARG_UINT32(OPT_KEY_SIZE_ID),
 					DEFAULT_LUKS1_KEYBITS, integrity_keysize);
 
 	if (ARG_SET(OPT_HW_OPAL_ONLY_ID))

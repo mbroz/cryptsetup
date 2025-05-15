@@ -139,11 +139,11 @@ int set_tries_tty(bool keyring)
 	return (tools_is_stdin(ARG_STR(OPT_KEY_FILE_ID)) && isatty(STDIN_FILENO)) ? ARG_UINT32(OPT_TRIES_ID) : 1;
 }
 
-int get_adjusted_key_size(const char *cipher_mode, uint32_t keysize_bits,
+int get_adjusted_key_size(const char *cipher, const char *cipher_mode, uint32_t keysize_bits,
 			  uint32_t default_size_bits, int integrity_keysize)
 {
 #if ENABLE_LUKS_ADJUST_XTS_KEYSIZE
-	if (!keysize_bits && !strncmp(cipher_mode, "xts-", 4)) {
+	if (!keysize_bits && (!strncmp(cipher_mode, "xts-", 4) || !strncmp(cipher, "capi:xts(", 9))) {
 		if (default_size_bits == 128)
 			keysize_bits = 256;
 		else if (default_size_bits == 256)
