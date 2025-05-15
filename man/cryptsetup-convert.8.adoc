@@ -20,6 +20,12 @@ Converts the device between LUKS1 and LUKS2 format (if possible). The
 conversion will not be performed if there is an additional LUKS2 feature
 or LUKS1 has unsupported header size.
 
+For conversion from LUKS2 to LUKS1, all active keyslots must use the PBKDF2
+key-derivation function. The PBKDF2 and anti-forensic filter (AF) hash must
+be the same as the hash used in the digest.
+All keyslot numbers must be lower than 8 (LUKS1 maximum slot number).
+There must be at least one active keyslot and no unbound or reencryption keyslots.
+
 Conversion (both directions) must be performed on inactive device. There
 must not be active dm-crypt mapping established for LUKS header
 requested for conversion.
