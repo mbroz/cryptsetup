@@ -767,6 +767,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	int i, r, last_active = 0;
 	uint64_t offset, area_length;
 	char *buf, luksMagic[] = LUKS_MAGIC;
+	crypt_keyslot_info ki;
 
 	jobj_digest  = LUKS2_get_digest_jobj(hdr2, 0);
 	if (!jobj_digest)
@@ -824,11 +825,18 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	key_size = r;
 
 	for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++) {
-		if (LUKS2_keyslot_info(hdr2, i) == CRYPT_SLOT_INACTIVE)
+		ki = LUKS2_keyslot_info(hdr2, i);
+
+		if (ki == CRYPT_SLOT_INACTIVE)
 			continue;
 
-		if (LUKS2_keyslot_info(hdr2, i) == CRYPT_SLOT_INVALID) {
+		if (ki == CRYPT_SLOT_INVALID) {
 			log_err(cd, _("Cannot convert to LUKS1 format - keyslot %u is in invalid state."), i);
+			return -EINVAL;
+		}
+
+		if (ki == CRYPT_SLOT_UNBOUND) {
+			log_err(cd, _("Cannot convert to LUKS1 format - keyslot %u is unbound."), i);
 			return -EINVAL;
 		}
 
