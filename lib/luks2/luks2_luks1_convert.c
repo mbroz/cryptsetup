@@ -687,30 +687,54 @@ static int keyslot_LUKS1_compatible(struct crypt_device *cd, struct luks2_hdr *h
 	if (!jobj_keyslot)
 		return 1;
 
-	if (!json_object_object_get_ex(jobj_keyslot, "type", &jobj) ||
-	    strcmp(json_object_get_string(jobj), "luks2"))
+	/* Keyslot type */
+	if (!json_object_object_get_ex(jobj_keyslot, "type", &jobj))
 		return 0;
+	if (strcmp(json_object_get_string(jobj), "luks2")) {
+		log_dbg(cd, "Keyslot %d type %s is not compatible.",
+			keyslot, json_object_get_string(jobj));
+		return 0;
+	}
 
-	/* Using PBKDF2, this implies memory and parallel is not used. */
+	/* Keyslot uses PBKDF2, this implies memory and parallel is not used. */
 	jobj = NULL;
 	if (!json_object_object_get_ex(jobj_keyslot, "kdf", &jobj_kdf) ||
-	    !json_object_object_get_ex(jobj_kdf, "type", &jobj) ||
-	    strcmp(json_object_get_string(jobj), CRYPT_KDF_PBKDF2) ||
-	    !json_object_object_get_ex(jobj_kdf, "hash", &jobj) ||
-	    strcmp(json_object_get_string(jobj), hash))
+	    !json_object_object_get_ex(jobj_kdf, "type", &jobj))
 		return 0;
+	if (strcmp(json_object_get_string(jobj), CRYPT_KDF_PBKDF2)) {
+		log_dbg(cd, "Keyslot %d does not use PBKDF2.", keyslot);
+		return 0;
+	}
 
+	/* Keyslot KDF hash is the same as the digest hash. */
+	jobj = NULL;
+	if (!json_object_object_get_ex(jobj_kdf, "hash", &jobj))
+		return 0;
+	if (strcmp(json_object_get_string(jobj), hash)) {
+		log_dbg(cd, "Keyslot %d PBKDF uses different hash %s than digest hash %s.",
+			keyslot, json_object_get_string(jobj), hash);
+		return 0;
+	}
+
+	/* Keyslot AF use compatible striptes. */
 	jobj = NULL;
 	if (!json_object_object_get_ex(jobj_keyslot, "af", &jobj_af) ||
-	    !json_object_object_get_ex(jobj_af, "stripes", &jobj) ||
-	    json_object_get_int(jobj) != LUKS_STRIPES)
+	    !json_object_object_get_ex(jobj_af, "stripes", &jobj))
 		return 0;
+	if (json_object_get_int(jobj) != LUKS_STRIPES) {
+		log_dbg(cd, "Keyslot %d AF uses incompatible stripes count.", keyslot);
+		return 0;
+	}
 
+	/* Keyslot AF hash is the same as the digest hash. */
 	jobj = NULL;
-	if (!json_object_object_get_ex(jobj_af, "hash", &jobj) ||
-	    (crypt_hash_size(json_object_get_string(jobj)) < 0) ||
-	    strcmp(json_object_get_string(jobj), hash))
+	if (!json_object_object_get_ex(jobj_af, "hash", &jobj))
 		return 0;
+	if (strcmp(json_object_get_string(jobj), hash)) {
+		log_dbg(cd, "Keyslot %d AF uses different hash %s than digest hash %s.",
+			keyslot, json_object_get_string(jobj), hash);
+		return 0;
+	}
 
 	ks_cipher = LUKS2_get_keyslot_cipher(hdr, keyslot, &ks_key_size);
 	data_cipher = LUKS2_get_cipher(hdr, CRYPT_DEFAULT_SEGMENT);
@@ -767,6 +791,8 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	if (!json_object_object_get_ex(jobj_digest, "hash", &jobj2))
 		return -EINVAL;
 	hash = json_object_get_string(jobj2);
+	if (crypt_hash_size(hash) < 0)
+		return -EINVAL;
 
 	r = crypt_parse_name_and_mode(LUKS2_get_cipher(hdr2, CRYPT_DEFAULT_SEGMENT), cipher, NULL, cipher_mode);
 	if (r < 0)
@@ -791,8 +817,10 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 	}
 
 	r = LUKS2_get_volume_key_size(hdr2, 0);
-	if (r < 0)
+	if (r < 0) {
+		log_err(cd, _("Cannot convert to LUKS1 format - there are no active keyslots."), r);
 		return -EINVAL;
+	}
 	key_size = r;
 
 	for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++) {
