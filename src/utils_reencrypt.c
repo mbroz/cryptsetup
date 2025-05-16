@@ -248,38 +248,6 @@ static int reencrypt_hint_force_offline_reencrypt(const char *data_device)
 	return 0;
 }
 
-/* libcryptsetup API does not provide function to get old volume key size directly */
-static int reencrypt_get_decrypt_volume_key_size(struct crypt_device *cd, int keyslot)
-{
-	int i;
-	crypt_keyslot_info ki;
-
-	if (keyslot != CRYPT_ANY_SLOT) {
-		ki = crypt_keyslot_status(cd, keyslot);
-		if (ki == CRYPT_SLOT_INVALID)
-			return -EINVAL;
-		if (ki != CRYPT_SLOT_ACTIVE && ki != CRYPT_SLOT_ACTIVE_LAST)
-			return -ENOENT;
-
-		return crypt_keyslot_get_key_size(cd, keyslot);
-	}
-
-	for (i = 0; i < crypt_keyslot_max(CRYPT_LUKS2); i++) {
-		switch (crypt_keyslot_status(cd, keyslot)) {
-		case CRYPT_SLOT_INACTIVE:
-		case CRYPT_SLOT_UNBOUND:
-			break;
-		case CRYPT_SLOT_ACTIVE:
-		case CRYPT_SLOT_ACTIVE_LAST:
-			return crypt_keyslot_get_key_size(cd, keyslot);
-		default:
-			return -EINVAL;
-		}
-	}
-
-	return -ENOENT;
-}
-
 static int reencrypt_single_key_unlock(struct crypt_device *cd,
 				       const struct crypt_params_reencrypt *params,
 				       struct crypt_keyslot_context **r_kc)
@@ -290,16 +258,16 @@ static int reencrypt_single_key_unlock(struct crypt_device *cd,
 	assert(params);
 	assert(r_kc);
 
-	if (ARG_SET(OPT_KEY_SIZE_ID))
-		keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
-
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID) || ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
-		if (!keysize && params->mode == CRYPT_REENCRYPT_DECRYPT)
-			keysize = reencrypt_get_decrypt_volume_key_size(cd, ARG_INT32(OPT_KEY_SLOT_ID));
-		else if (!keysize && params->mode == CRYPT_REENCRYPT_ENCRYPT)
+		if (params->mode == CRYPT_REENCRYPT_DECRYPT)
+			keysize = crypt_get_old_volume_key_size(cd);
+		else if (params->mode == CRYPT_REENCRYPT_ENCRYPT)
 			keysize = crypt_get_volume_key_size(cd);
 
-		if (keysize <= 0 && !ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
+		if (!keysize && ARG_SET(OPT_KEY_SIZE_ID))
+			keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
+
+		if (!keysize && !ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
 			log_err(_("Cannot determine volume key size for LUKS without keyslots, please use --key-size option."));
 			return -EINVAL;
 		}
