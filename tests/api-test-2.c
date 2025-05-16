@@ -4201,6 +4201,7 @@ static void Luks2Reencryption(void)
 	EQ_(getflags & CRYPT_REQUIREMENT_ONLINE_REENCRYPT, CRYPT_REQUIREMENT_ONLINE_REENCRYPT);
 
 	/* some parameters are expected to change immediately after reencryption initialization */
+	EQ_(crypt_get_old_volume_key_size(cd), 32);
 	EQ_(crypt_get_volume_key_size(cd), 64);
 	OK_(strcmp(crypt_get_cipher_mode(cd), "xts-plain64"));
 	EQ_(crypt_get_sector_size(cd), 4096);
@@ -4402,6 +4403,34 @@ static void Luks2Reencryption(void)
 	CRYPT_FREE(cd);
 	CRYPT_FREE(cd2);
 
+	/* same key size reencryption */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
+	EQ_(crypt_keyslot_add_by_key(cd, 10, NULL, 32, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 10);
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_REENCRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "none",
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY
+	};
+	rparams.luks2 = &(struct crypt_params_luks2){ .sector_size = 512 };
+	NOTFAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, 10, "aes", "xts-plain64", &rparams), "Failed to initialize reencryption");
+	EQ_(crypt_get_volume_key_size(cd), 32);
+	EQ_(crypt_get_old_volume_key_size(cd), 32);
+	CRYPT_FREE(cd);
+
+	/* same key reencryption */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
+	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
+	NOTFAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, 0, "aes", "xts-plain64", &rparams), "Failed to initialize reencryption");
+	EQ_(crypt_get_volume_key_size(cd), 32);
+	EQ_(crypt_get_old_volume_key_size(cd), 32);
+	CRYPT_FREE(cd);
+
 	/* data shift related tests */
 	params2.sector_size = 512;
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
@@ -4517,6 +4546,8 @@ static void Luks2Reencryption(void)
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	EQ_(crypt_reencrypt_status(cd, &retparams), CRYPT_REENCRYPT_CLEAN);
+	/* With encryption there's no old volume key */
+	EQ_(crypt_get_old_volume_key_size(cd), 0);
 	EQ_(retparams.mode, CRYPT_REENCRYPT_ENCRYPT);
 	OK_(strcmp(retparams.resilience, "datashift"));
 	EQ_(retparams.data_shift, 8192);
@@ -4632,6 +4663,7 @@ static void Luks2Reencryption(void)
 	rparams.resilience = "none";
 	rparams.max_hotzone_size = 2048;
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
+	EQ_(crypt_get_old_volume_key_size(cd), 32);
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	CRYPT_FREE(cd);
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
