@@ -160,7 +160,7 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 	int segment,
 	const struct volume_key *vk)
 {
-	int r = -EINVAL;
+	int r;
 	unsigned s;
 
 	if (segment == CRYPT_ANY_SEGMENT) {
@@ -172,7 +172,11 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 		return -EPERM;
 	}
 
-	return LUKS2_digest_verify_by_digest(cd, LUKS2_digest_by_segment(hdr, segment), vk);
+	r = LUKS2_digest_by_segment(hdr, segment);
+	if (r < 0)
+		return r;
+
+	return LUKS2_digest_verify_by_digest(cd, r, vk);
 }
 
 /* FIXME: segment can have more digests */

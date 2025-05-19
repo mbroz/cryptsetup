@@ -3125,7 +3125,7 @@ static int reencrypt_init(struct crypt_device *cd,
 
 		/* do not create new digest in case it matches the current one */
 		r = LUKS2_digest_verify_by_segment(cd, hdr, CRYPT_DEFAULT_SEGMENT, vk);
-		if (r == -EPERM)
+		if (r == -EPERM || r == -ENOENT)
 			r = LUKS2_digest_create(cd, "pbkdf2", hdr, vk);
 
 		crypt_free_volume_key(vk);
