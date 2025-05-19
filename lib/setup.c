@@ -7266,17 +7266,22 @@ static int keyslot_add_by_key(struct crypt_device *cd,
 	digest = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
 	if (digest >= 0) /* if key matches volume key digest tear down new vk flag */
 		flags &= ~CRYPT_VOLUME_KEY_SET;
-	else {
+	else if (digest == -EPERM) {
 		/* if key matches any existing digest, do not create new digest */
 		if ((flags & CRYPT_VOLUME_KEY_DIGEST_REUSE))
 			digest = LUKS2_digest_verify_by_any_matching(cd, vk);
+
+		/* Anything other than -EPERM or -ENOENT suggests broken metadata. Abort */
+		if (digest < 0 && digest != -ENOENT && digest != -EPERM)
+			return digest;
 
 		/* no segment flag or new vk flag requires new key digest */
 		if (flags & (CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_SET)) {
 			if (digest < 0 || !(flags & CRYPT_VOLUME_KEY_DIGEST_REUSE))
 				digest = LUKS2_digest_create(cd, "pbkdf2", &cd->u.luks2.hdr, vk);
 		}
-	}
+	} else /* Anything other than -EPERM suggests broken metadata. Abort */
+		return digest;
 
 	r = digest;
 	if (r < 0) {
