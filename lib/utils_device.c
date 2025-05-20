@@ -48,7 +48,7 @@ struct device {
 
 static size_t device_fs_block_size_fd(int fd)
 {
-	size_t page_size = crypt_getpagesize();
+	size_t max_size = MAX_SECTOR_SIZE;
 
 #if HAVE_SYS_STATVFS_H
 	struct statvfs buf;
@@ -57,10 +57,10 @@ static size_t device_fs_block_size_fd(int fd)
 	 * NOTE: some filesystems (NFS) returns bogus blocksize (1MB).
 	 * Page-size io should always work and avoids increasing IO beyond aligned LUKS header.
 	 */
-	if (!fstatvfs(fd, &buf) && buf.f_bsize && buf.f_bsize <= page_size)
+	if (!fstatvfs(fd, &buf) && buf.f_bsize && buf.f_bsize <= max_size)
 		return (size_t)buf.f_bsize;
 #endif
-	return page_size;
+	return max_size;
 }
 
 static size_t device_block_size_fd(int fd, size_t *min_size)
@@ -533,7 +533,7 @@ void device_topology_alignment(struct crypt_device *cd,
 
 	/* minimum io size */
 	if (ioctl(fd, BLKIOMIN, &min_io_size) == -1) {
-		log_dbg(cd, "Topology info for %s not supported, using default offset %lu bytes.",
+		log_dbg(cd, "Topology info for %s not supported, using default alignment %lu bytes.",
 			device->path, default_alignment);
 		goto out;
 	}
