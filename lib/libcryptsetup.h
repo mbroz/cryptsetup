@@ -2035,6 +2035,19 @@ uint64_t crypt_get_iv_offset(struct crypt_device *cd);
 int crypt_get_volume_key_size(struct crypt_device *cd);
 
 /**
+ * Get size (in bytes) of old volume key for LUKS2 device in reencryption.
+ *
+ * @param cd crypt LUKS2 device handle
+ *
+ * @return old volume key size when device is in reencryption state
+ *
+ * @note For LUKS2, this function can be used only if there is at least
+ *       one keyslot assigned to old data segment. Also with reencryption
+ *       mode 'encrypt' there's no old volume key.
+ */
+int crypt_get_old_volume_key_size(struct crypt_device *cd);
+
+/**
  * Get size (in bytes) of encryption sector for crypt device.
  *
  * @param cd crypt device handle

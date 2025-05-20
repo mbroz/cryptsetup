@@ -6413,6 +6413,19 @@ int crypt_get_volume_key_size(struct crypt_device *cd)
 	return 0;
 }
 
+int crypt_get_old_volume_key_size(struct crypt_device *cd)
+{
+	int r = _onlyLUKS2(cd, CRYPT_CD_QUIET,
+			   CRYPT_REQUIREMENT_ONLINE_REENCRYPT | CRYPT_REQUIREMENT_OPAL);
+
+	if (r < 0)
+		return 0;
+
+	r = LUKS2_get_old_volume_key_size(&cd->u.luks2.hdr);
+
+	return r < 0 ? 0 : r;
+}
+
 int crypt_get_hw_encryption_key_size(struct crypt_device *cd)
 {
 	if (!cd || !isLUKS2(cd->type))

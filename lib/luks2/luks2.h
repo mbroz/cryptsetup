@@ -411,6 +411,7 @@ const char *LUKS2_get_integrity(struct luks2_hdr *hdr, int segment);
 int LUKS2_get_integrity_key_size(struct luks2_hdr *hdr, int segment);
 int LUKS2_keyslot_params_default(struct crypt_device *cd, struct luks2_hdr *hdr,
 	 struct luks2_keyslot_params *params);
+int LUKS2_get_old_volume_key_size(struct luks2_hdr *hdr);
 int LUKS2_get_volume_key_size(struct luks2_hdr *hdr, int segment);
 int LUKS2_get_keyslot_stored_key_size(struct luks2_hdr *hdr, int keyslot);
 const char *LUKS2_get_keyslot_cipher(struct luks2_hdr *hdr, int keyslot, size_t *key_size);

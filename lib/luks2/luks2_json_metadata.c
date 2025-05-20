@@ -2461,6 +2461,19 @@ int LUKS2_get_volume_key_size(struct luks2_hdr *hdr, int segment)
 	return -1;
 }
 
+int LUKS2_get_old_volume_key_size(struct luks2_hdr *hdr)
+{
+	int old_segment;
+
+	assert(hdr);
+
+	old_segment = LUKS2_reencrypt_segment_old(hdr);
+	if (old_segment < 0)
+		return old_segment;
+
+	return LUKS2_get_volume_key_size(hdr, old_segment);
+}
+
 uint32_t LUKS2_get_sector_size(struct luks2_hdr *hdr)
 {
 	return json_segment_get_sector_size(LUKS2_get_segment_jobj(hdr, CRYPT_DEFAULT_SEGMENT));
