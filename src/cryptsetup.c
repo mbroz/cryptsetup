@@ -1823,6 +1823,8 @@ static int action_open_luks(void)
 		/* The ordering of kc1 or kc2 does not matter */
 		r = crypt_activate_by_keyslot_context(cd, activated_name, CRYPT_ANY_SLOT,
 						      kc1, CRYPT_ANY_SLOT, kc2, activate_flags);
+		if (r == -ESRCH)
+			log_err(_("Device requires two volume keys."));
 		if (r == -EPERM)
 			log_err(_("Volume key does not match the volume."));
 	} else {

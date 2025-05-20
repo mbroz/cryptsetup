@@ -299,6 +299,8 @@ static int reencrypt_multi_key_unlock(struct crypt_device *cd,
 		r = crypt_activate_by_keyslot_context(cd, NULL, ARG_INT32(OPT_KEY_SLOT_ID),
 						      kc1, ARG_INT32(OPT_NEW_KEY_SLOT_ID), kc2,
 						      0);
+		if (r == -ESRCH)
+			log_err(_("Device requires two volume keys."));
 		if (r == -EPERM)
 			log_err(_("Volume key does not match the volume."));
 	} else {
