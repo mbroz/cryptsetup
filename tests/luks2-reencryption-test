@@ -297,6 +297,28 @@ resize_file() # $1 dev, $2 shrink bytes
 	losetup -c $LOOPDEV
 }
 
+error_io() { # $1 dmdev, $2 data dev, $3 offset, $4 size
+	local _dev_size=$(blockdev --getsz /dev/mapper/$1)
+	local _offset=$(($3+$4))
+	local _size=$((_dev_size-_offset))
+	local _table=
+	dmsetup create $1-err --table "0 $_dev_size error" || fail
+
+	if [ $3 -ne 0 ]; then
+		_table="0 $3 linear $2 0\n"
+	fi
+
+	_table=$_table"$3 $4 error"
+
+	if [ $_size -ne 0 ]; then
+		_table="$_table\n$_offset $_size linear $2 $_offset"
+	fi
+
+	echo -e "$_table" | dmsetup load $1 || fail
+	dmsetup resume $1 || fail
+	blockdev --setra 0 /dev/mapper/$1
+}
+
 error_writes() { # $1 dmdev, $2 data dev, $3 offset, $4 size
 	local _dev_size=$(blockdev --getsz /dev/mapper/$1)
 	local _offset=$(($3+$4))
@@ -1206,6 +1228,50 @@ echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --reduce-device-size 64M --ini
 check_hash_dev_head /dev/mapper/$DEV_NAME 2048 $HASH2
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q || fail
 check_hash_dev_head /dev/mapper/$DEV_NAME 2048 $HASH2
+$CRYPTSETUP close $DEV_NAME || fail
+
+# encryption with both data shift and reduced data size
+prepare_linear_dev 65
+
+# --reduce-device-size + --device-size (1MiB+512B) is larger than real device size
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --init-only --device-size 2049s --reduce-device-size 64M -q $FAST_PBKDF_ARGON >/dev/null 2>&1 && fail
+$CRYPTSETUP isLuks --type luks2 $DEV && fail
+# no changes in data device
+check_hash_dev_head $DEV 2048 $HASH2
+
+# --reduce-device-size (1MiB+8KiB) + --device-size (64MiB - (8KiB-512B)) is larger than real device size
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --init-only --device-size 131057s --reduce-device-size 2064s -q $FAST_PBKDF_ARGON >/dev/null 2>&1 && fail
+$CRYPTSETUP isLuks --type luks2 $DEV && fail
+# no changes in data device
+check_hash_dev_head $DEV 2048 $HASH2
+
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --device-size 1M --reduce-device-size 32M -q $FAST_PBKDF_ARGON || fail
+check_hash_head $PWD1 2048 $HASH2
+
+# test limit values (--device-size + --reduce-device-size = real device size)
+wipe_dev_head $DEV 43
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --device-size 43M --reduce-device-size 22M -q $FAST_PBKDF_ARGON || fail
+check_hash_head $PWD1 88064 $HASH6
+
+wipe_dev_head $DEV 1
+# check reencryption code does not touch data in-between --device-size and --reduce-device-size
+# data device: [ reduce-device-size / 2 ] [ device-size ] [ error minefield ] [ reduce-device-size / 2]
+ERROFFSET=34816
+ERRLENGTH=65536
+error_io $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --device-size 1M --reduce-device-size 32M -q $FAST_PBKDF_ARGON  || fail
+fix_writes $OVRDEV $OLD_DEV
+check_hash_head $PWD1 2048 $HASH2
+
+wipe_dev_head $DEV 43
+
+ERROFFSET=104448
+ERRLENGTH=12288
+# data device: [ reduce-device-size / 2 ] [ device-size ] [ error minefield ] [ reduce-device-size / 2]
+error_io $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --device-size 43M --reduce-device-size 16M -q $FAST_PBKDF_ARGON || fail
+fix_writes $OVRDEV $OLD_DEV
+check_hash_head $PWD1 88064 $HASH6
 
 echo "[3] Encryption with detached header"
 preparebig 256

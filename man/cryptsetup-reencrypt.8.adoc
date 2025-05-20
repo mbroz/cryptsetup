@@ -142,6 +142,13 @@ is unused (e.g.: does not contain filesystem data):
 
 *cryptsetup reencrypt --encrypt --type luks2 --reduce-device-size 32m /dev/plaintext_device*
 
+Encrypt LUKS2 device (in-place). Only the initial 1 GiB of original
+_/dev/plaintext_ data is encrypted while being shifted backwards.
+Make sure last 32 MiB (tail) on the data device is unused (e.g.: does
+not contain any data):
+
+*cryptsetup reencrypt --encrypt --type luks2 --device-size 1g --reduce-device-size 32m /dev/plaintext_device*
+
 Encrypt LUKS2 device (in-place) with detached header put in a file:
 
 *cryptsetup reencrypt --encrypt --type luks2 --header my_luks2_header /dev/plaintext_device*
