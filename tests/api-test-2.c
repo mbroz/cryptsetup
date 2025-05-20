@@ -4132,11 +4132,12 @@ static void Luks2Reencryption(void)
 	struct crypt_keyslot_context *kc_pass12 = NULL, *kc_pass21 = NULL, *kc_file12 = NULL, *kc_file21 = NULL,
 				     *kc_token12 = NULL, *kc_token21 = NULL, *kc_key = NULL, *kc_key2 = NULL;
 
-	const char *vk_hex = "bb21babe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a",
-		   *vk_hex2 = "bb21bebe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a";
+	const char *vk_hex =  "bb21babe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a",
+		   *vk_hex2 = "bb21bebe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a" \
+			      "cc21cfcf733229347ce4f681891f213d94d685cf6b5b84818baf7b78b6rf7b1b";
 	size_t key_size = strlen(vk_hex) / 2,
 	       key_size2 = strlen(vk_hex2) / 2;
-	char key[128], key2[32];
+	char key[128], key2[64];
 
 	crypt_decode_key(key, vk_hex, key_size);
 	crypt_decode_key(key2, vk_hex2, key_size2);
@@ -4622,6 +4623,38 @@ static void Luks2Reencryption(void)
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ANY_SLOT, 30, "aes", "xts-plain64", &rparams));
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+	CRYPT_FREE(cd);
+
+	/* wipe existing header from previous run */
+	_system("dd if=/dev/zero of=" DMDIR L_DEVICE_OK " bs=4K count=5 2>/dev/null", 1);
+
+	/* offline in-place encryption with reserved space in the head of data device (using no keyslot, by volume key) */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_ENCRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "checksum",
+		.hash = "sha256",
+		.luks2 = &(struct crypt_params_luks2){ .sector_size = 512 },
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY | CRYPT_REENCRYPT_CREATE_NEW_DIGEST
+	};
+	/* key does not matter. the new one from encrypt will be used */
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, &params2));
+	CRYPT_FREE(cd);
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	OK_(crypt_keyslot_context_init_by_volume_key(cd, key, key_size, &kc_key));
+	OK_(crypt_reencrypt_init_by_keyslot_context(cd, NULL, NULL, kc_key, CRYPT_ANY_SLOT, CRYPT_ANY_SLOT, "aes", "xts-plain64", &rparams));
+	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc_key, CRYPT_ANY_SLOT, NULL, 0));
+	FAIL_(crypt_reencrypt_run(cd, NULL, NULL), "context not initialized");
+	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY | CRYPT_REENCRYPT_CREATE_NEW_DIGEST;
+	FAIL_(crypt_reencrypt_init_by_keyslot_context(cd, NULL, NULL, kc_key, CRYPT_ANY_SLOT, CRYPT_ANY_SLOT, "aes", "xts-plain64", &rparams), "Can not use direct key flag with resume only.");
+	rparams.flags = CRYPT_REENCRYPT_RESUME_ONLY;
+	OK_(crypt_reencrypt_init_by_keyslot_context(cd, NULL, NULL, kc_key, CRYPT_ANY_SLOT, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
+	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc_key, CRYPT_ANY_SLOT, NULL, 0));
+	crypt_keyslot_context_free(kc_key);
 	CRYPT_FREE(cd);
 
 	/* wipe existing header from previous run */
@@ -5132,14 +5165,14 @@ static void Luks2Reencryption(void)
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	EQ_(crypt_keyslot_status(cd, 13), CRYPT_SLOT_UNBOUND);
 
-	// add previous key as unbound key.
-	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, kc_key2, 12, kc_token12, CRYPT_VOLUME_KEY_NO_SEGMENT), 12);
-
-	// FIXME: This should not require the previous step of adding a keyslot.
-	// reencrypt just by volume keys
-	NOTFAIL_(crypt_reencrypt_init_by_keyslot_context(cd, NULL, kc_key, kc_key2, CRYPT_ANY_SLOT, 12, "aes", "xts-plain64", &rparams), "Reencrypt init failed");
+	// reencrypt just by volume keys (new key is passed directly w/o being stored in any keyslot)
+	rparams.flags |= CRYPT_REENCRYPT_CREATE_NEW_DIGEST;
+	NOTFAIL_(crypt_reencrypt_init_by_keyslot_context(cd, NULL, kc_key, kc_key2, CRYPT_ANY_SLOT, CRYPT_ANY_SLOT, "aes", "xts-plain64", &rparams), "Reencrypt init failed");
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	EQ_(crypt_keyslot_status(cd, 13), CRYPT_SLOT_UNBOUND);
+	rparams.flags &= ~CRYPT_REENCRYPT_CREATE_NEW_DIGEST;
+	// store new key in a keyslot
+	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, kc_key2, 12, kc_token12, 0), 12);
 
 	// add previous key as unbound key.
 	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, kc_key, 21, kc_token21, CRYPT_VOLUME_KEY_NO_SEGMENT), 21);
@@ -5182,14 +5215,45 @@ static void Luks2Reencryption(void)
 
 	EQ_(crypt_keyslot_status(cd, 13), CRYPT_SLOT_UNBOUND);
 
-	crypt_keyslot_context_free(kc_pass12);
 	crypt_keyslot_context_free(kc_pass21);
-	crypt_keyslot_context_free(kc_key);
-	crypt_keyslot_context_free(kc_key2);
 	crypt_keyslot_context_free(kc_file12);
 	crypt_keyslot_context_free(kc_file21);
 	crypt_keyslot_context_free(kc_token12);
 	crypt_keyslot_context_free(kc_token21);
+
+	CRYPT_FREE(cd);
+
+	/* specifically test reencryption of device with no active keyslots */
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, key, key_size, &(struct crypt_params_luks2){ .sector_size = 512 }));
+	FAIL_(crypt_reencrypt_init_by_keyslot_context(cd, NULL, kc_key, kc_key2, CRYPT_ANY_SLOT, CRYPT_ANY_SLOT, "aes", "xts-plain64", &rparams), "Reencrypt init failed due to missing new key keyslot.");
+	rparams.flags |= CRYPT_REENCRYPT_CREATE_NEW_DIGEST;
+	NOTFAIL_(crypt_reencrypt_init_by_keyslot_context(cd, NULL, kc_key, kc_key2, CRYPT_ANY_SLOT, CRYPT_ANY_SLOT, "aes", "xts-plain64", &rparams), "Reencrypt init failed.");
+
+	FAIL_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc_key, CRYPT_ANY_SLOT, NULL, 0), "Missing key for device in reencryption.");
+	FAIL_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc_key2, CRYPT_ANY_SLOT, NULL, 0), "Missing key for device in reencryption.");
+
+	/* after reencryption gets initialized the order in which user provides keyslot contexts does not matter */
+	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc_key, CRYPT_ANY_SLOT, kc_key2, 0));
+	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc_key2, CRYPT_ANY_SLOT, kc_key, 0));
+
+	OK_(crypt_reencrypt_run(cd, NULL, NULL));
+	CRYPT_FREE(cd);
+
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+
+	/* check digest was properly stored in mda */
+	OK_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc_key2, CRYPT_ANY_SLOT, NULL, 0));
+	FAIL_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc_key, CRYPT_ANY_SLOT, NULL, 0), "Not valid volume key");
+
+	/* add keyslot by new volume key */
+	EQ_(crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, kc_key2, 12, kc_pass12, 0), 12);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, 12, kc_pass12, CRYPT_ANY_SLOT, NULL, 0), 12);
+
+	crypt_keyslot_context_free(kc_pass12);
+	crypt_keyslot_context_free(kc_key);
+	crypt_keyslot_context_free(kc_key2);
 
 	CRYPT_FREE(cd);
 

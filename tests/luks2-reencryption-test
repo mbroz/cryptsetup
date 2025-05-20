@@ -26,14 +26,28 @@ HEADER_LUKS2_PV=blkid-luks2-pv.img
 IMG_FS=xfs_512_block_size.img
 KEY1=key1
 VKEY1=vkey1
+VKEY2=vkey2
+BACKUP_FILE=reenc_header_baseline.img
 PWD1="93R4P4pIqAH8"
 PWD2="1cND4319812f"
 PWD3="1-9Qu5Ejfnqv"
+PWD4="d54uVMKW-'7M"
+PWD5="oDe{yCiZ_';_"
+PWD6="T'E'Y_}<'9=q"
+PWD7="UR%]T;x*w{3V"
+
 DEV_LINK="reenc-test-link"
 KEYRING="luks2_reencryption_test_kr"
 KEY_TYPE="user"
 KEY_NAME1="luks2-reencryption-test1"
 KEY_NAME2="luks2-reencryption-test2"
+KEY_NAME3="luks2-reencryption-test3"
+KEY_NAME4="luks2-reencryption-test4"
+KEY_NAME5="luks2-reencryption-test5"
+KEY_NAME6="luks2-reencryption-test6"
+KEY_NAME7="luks2-reencryption-key-desc1"
+KEY_NAME_VK1="luks2-reencryption-test-vk1"
+KEY_NAME_VK2="luks2-reencryption-test-vk2"
 KEY_SPEC1="${KEYRING}::%${KEY_TYPE}:${KEY_NAME1}"
 KEY_SPEC2="${KEYRING}::%${KEY_TYPE}:${KEY_NAME2}"
 HAVE_KEYRING=0
@@ -113,7 +127,7 @@ remove_mapping()
 	[ -b /dev/mapper/$OVRDEV-err ] && dmsetup remove --retry $OVRDEV-err 2>/dev/null
 	[ -n "$LOOPDEV" ] && losetup -d $LOOPDEV
 	unset LOOPDEV
-	rm -f $IMG $IMG_JSON $IMG_HDR $KEY1 $VKEY1 $DEVBIG $DEV_LINK $HEADER_LUKS2_PV $IMG_FS >/dev/null 2>&1
+	rm -f $IMG $IMG_JSON $IMG_HDR $KEY1 $VKEY1 $VKEY2 $BACKUP_FILE $DEVBIG $DEV_LINK $HEADER_LUKS2_PV $IMG_FS >/dev/null 2>&1
 	rmmod scsi_debug >/dev/null 2>&1
 	scsi_debug_teardown $DEV
 }
@@ -227,6 +241,11 @@ prepare() # $1 dev1_siz
 		echo -n $'\x44\xc6\x74\x4f\x41\x4e\x50\xc0\x79\xc2\x2d\x5b\x5f\x68\x84\x17' >$VKEY1
 		echo -n $'\x9c\x03\xba\xbe\x4d\x0f\x9a\x75\xb3\x90\x70\x32\x0a\xf8\xae\xc4'>>$VKEY1
 	fi
+
+#	if [ ! -e $VKEY2 ]; then
+#		echo -n $'\x41\xc6\x74\x4f\x41\x4e\x50\xc0\x79\xc2\x2d\x5b\x5f\x68\x84\x17' >$VKEY2
+#		echo -n $'\x9c\x03\xba\xbe\x4d\x0f\x9a\x75\xb3\x90\x70\x32\x0a\xf8\xae\xc5'>>$VKEY2
+#	fi
 
 	add_scsi_device $@
 }
@@ -844,6 +863,27 @@ reencrypt_online_fixed_size() {
 	[ -n "$7" -a -f "$7" ] && rm -f $7
 }
 
+reformat_reencrypt_device() {
+	if [ ! -e $BACKUP_FILE ]; then
+		echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -S0 $FAST_PBKDF_ARGON $DEV || fail
+		echo -e "$PWD1\n$PWD2" | $CRYPTSETUP -q luksAddKey -S2 $FAST_PBKDF_ARGON $DEV || fail
+		echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey -S4 $FAST_PBKDF_ARGON $DEV || fail
+		echo -e "$PWD1\n$PWD4" | $CRYPTSETUP -q luksAddKey -S6 $FAST_PBKDF_ARGON $DEV || fail
+		echo -e "$PWD1\n$PWD5" | $CRYPTSETUP -q luksAddKey -S8 $FAST_PBKDF_ARGON $DEV || fail
+		echo -e "$PWD1\n$PWD6" | $CRYPTSETUP -q luksAddKey -S10 $FAST_PBKDF_ARGON $DEV || fail
+		echo -e "$PWD1\n$PWD7" | $CRYPTSETUP -q luksAddKey -S12 $FAST_PBKDF_ARGON $DEV || fail
+
+		$CRYPTSETUP token add $DEV --token-id 1 --key-description $KEY_NAME3 -S6
+		$CRYPTSETUP token add $DEV --token-id 2 --key-description $KEY_NAME4 -S8
+		$CRYPTSETUP token add $DEV --token-id 3 --key-description $KEY_NAME5 -S10
+		echo -e "{\"type\":\"luks2-keyring\",\"keyslots\":[\"4\", \"12\"],\"key_description\":\"$KEY_NAME6\"}" | $CRYPTSETUP token import $DEV --token-id 4 --json-file -
+
+		$CRYPTSETUP luksHeaderBackup --header-backup-file $BACKUP_FILE $DEV || fail
+	else
+		$CRYPTSETUP luksHeaderRestore --header-backup-file $BACKUP_FILE $DEV || fail
+	fi
+}
+
 prepare_vk_keyring()
 {
 	local s_desc=$(keyctl rdescribe @s | cut -d';' -f5)
@@ -856,6 +896,11 @@ prepare_vk_keyring()
 
 	keyctl newring $KEYRING "@s" >/dev/null || fail "Failed to setup test keyring environment"
 	keyctl search "@s" keyring $KEYRING >/dev/null 2>&1 || fail "Could not find test keyring in a session keyring."
+
+	echo -n $PWD4 | keyctl padd user $KEY_NAME3 %:$KEYRING > /dev/null || fail
+	echo -n "wRonG_passFrejz" | keyctl padd user $KEY_NAME5 %:$KEYRING > /dev/null || fail
+	echo -n $PWD7 | keyctl padd user $KEY_NAME6 %:$KEYRING > /dev/null || fail
+	echo -n $PWD2 | keyctl padd user $KEY_NAME7 %:$KEYRING > /dev/null || fail
 }
 
 setup_luks2_env() {
@@ -1785,7 +1830,7 @@ prepare dev_size_mb=32
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 256 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
 echo -e "$PWD1\n$PWD3" | $CRYPTSETUP -q luksAddKey $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -S0 $FAST_PBKDF_ARGON --volume-key-file $VKEY1 -s 128 || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -S0 $FAST_PBKDF_ARGON --new-volume-key-file $VKEY1 --new-key-size 128 || fail
 check_hash $PWD1 $HASH1
 $CRYPTSETUP luksErase -q $DEV || fail
 echo $PWD1 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_ARGON --volume-key-file $VKEY1 -s 128 $DEV || fail
@@ -2385,6 +2430,212 @@ echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME
 wipe_dev /dev/mapper/$DEV_NAME
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt --header $IMG_HDR $DEV -q || fail
 check_hash_dev_head $DEV 2048 $HASH2
+
+echo "[38] Reencrypt by keyslot context (new initialization and resume methods)"
+prepare dev_size_mb=32
+
+# keyslot0  - pass1
+# keyslot2  - pass2
+# keyslot4  - pass3, token4 (wrong pass)
+# keyslot6  - pass4, token1
+# keyslot8  - pass5, token2 (missing)
+# keyslot10 - pass6, token3 (wrong pass)
+# keyslot12 - pass7, token4
+reformat_reencrypt_device
+
+# tokens
+$CRYPTSETUP reencrypt -q --token-id 1 $DEV <&- || fail
+reformat_reencrypt_device
+$CRYPTSETUP reencrypt -q --token-only $DEV <&- || fail
+reformat_reencrypt_device
+$CRYPTSETUP reencrypt -q --token-type luks2-keyring $DEV <&- || fail
+
+reformat_reencrypt_device
+# keyslots 6 and 12 are unlocked by tokens 1 and 4
+echo -e "$PWD1\n$PWD2\n$PWD3\n$PWD5\n$PWD6" | $CRYPTSETUP reencrypt -q $DEV || fail
+
+# keyfile
+echo -n $PWD2 > $KEY1
+reformat_reencrypt_device
+$CRYPTSETUP reencrypt -q --key-file $KEY1 $DEV 2>/dev/null <&- && fail
+$CRYPTSETUP reencrypt -q --key-file $KEY1 -S4 $DEV 2>/dev/null <&- && fail
+$CRYPTSETUP reencrypt -q --key-file $KEY1 -S2 $DEV <&- || fail
+
+# passphrase in keyring
+reformat_reencrypt_device
+$CRYPTSETUP reencrypt -q --key-description $KEY_NAME7 $DEV 2>/dev/null <&- && fail
+$CRYPTSETUP reencrypt -q --key-description $KEY_NAME7 -S4 $DEV 2>/dev/null <&- && fail
+$CRYPTSETUP reencrypt -q --key-description $KEY_NAME7 -S2 $DEV <&- || fail
+
+# tokens
+reformat_reencrypt_device
+$CRYPTSETUP reencrypt -q --token-id 1 $DEV --init-only <&- || fail
+$CRYPTSETUP open --token-id 1 $DEV $DEV_NAME <&- || fail
+$CRYPTSETUP reencrypt -q --token-id 1 $DEV --resume-only <&- || fail
+$CRYPTSETUP close $DEV_NAME || fail
+
+reformat_reencrypt_device
+$CRYPTSETUP reencrypt -q --token-only --init-only $DEV <&- || fail
+$CRYPTSETUP open --token-only $DEV $DEV_NAME <&- || fail
+$CRYPTSETUP reencrypt -q --token-only --resume-only $DEV <&- || fail
+$CRYPTSETUP close $DEV_NAME || fail
+
+reformat_reencrypt_device
+$CRYPTSETUP reencrypt -q --token-type luks2-keyring --init-only $DEV <&- || fail
+$CRYPTSETUP open --token-type luks2-keyring $DEV $DEV_NAME <&- || fail
+$CRYPTSETUP reencrypt -q --token-type luks2-keyring --resume-only $DEV <&- || fail
+$CRYPTSETUP close $DEV_NAME || fail
+
+reformat_reencrypt_device
+echo -e "$PWD1\n$PWD2\n$PWD3\n$PWD5\n$PWD6" | $CRYPTSETUP reencrypt --init-only -q $DEV || fail
+echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
+echo -e $PWD1 | $CRYPTSETUP reencrypt --resume-only -q $DEV || fail
+$CRYPTSETUP close $DEV_NAME || fail
+
+# keyfile
+echo -n $PWD2 > $KEY1
+reformat_reencrypt_device
+$CRYPTSETUP reencrypt -q --init-only --key-file $KEY1 $DEV 2>/dev/null <&- && fail
+$CRYPTSETUP reencrypt -q --init-only --key-file $KEY1 -S4 $DEV 2>/dev/null <&- && fail
+
+$CRYPTSETUP reencrypt -q --init-only --key-file $KEY1 -S2 $DEV <&- || fail
+$CRYPTSETUP open --key-file $KEY1 $DEV $DEV_NAME <&- || fail
+$CRYPTSETUP reencrypt -q --resume-only --key-file $KEY1 $DEV <&- || fail
+$CRYPTSETUP close $DEV_NAME || fail
+
+# passphrase in keyring
+reformat_reencrypt_device
+$CRYPTSETUP reencrypt -q --init-only --key-description $KEY_NAME7 $DEV 2>/dev/null <&- && fail
+$CRYPTSETUP reencrypt -q --init-only --key-description $KEY_NAME7 -S4 $DEV 2>/dev/null <&- && fail
+$CRYPTSETUP reencrypt -q --init-only --key-description $KEY_NAME7 -S2 $DEV <&- || fail
+$CRYPTSETUP open -q --key-description $KEY_NAME7 $DEV $DEV_NAME <&- || fail
+$CRYPTSETUP reencrypt -q --resume-only --key-description $KEY_NAME7 $DEV <&- || fail
+$CRYPTSETUP close $DEV_NAME || fail
+
+# volume key
+reformat_reencrypt_device
+echo $PWD1 | $CRYPTSETUP luksDump --dump-volume-key --volume-key-file $VKEY2 $DEV >/dev/null || fail
+
+$CRYPTSETUP -q reencrypt --force-no-keyslots --volume-key-file $VKEY2 --new-volume-key-file $VKEY1 --new-key-size 256 $DEV <&- || fail
+
+# missing key size information (no active keyslot)
+$CRYPTSETUP open --test-passphrase --volume-key-file $VKEY1 $DEV <&- 2>/dev/null && fail
+$CRYPTSETUP open --test-passphrase --volume-key-file $VKEY1 --key-size 256 $DEV <&- || fail
+$CRYPTSETUP open --test-passphrase --volume-key-file $VKEY2 --key-size 512 $DEV 2>/dev/null <&- && fail
+
+echo $PWD1 | $CRYPTSETUP luksAddKey --volume-key-file $VKEY1 --key-size 256 $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP open --test-passphrase $DEV || fail
+
+reformat_reencrypt_device
+$CRYPTSETUP -q reencrypt --init-only --force-no-keyslots --volume-key-file $VKEY2 --new-volume-key-file $VKEY1 --new-key-size 256 $DEV <&- || fail
+
+# For unlock operation we do not require specific --volume-key-file ordering (unlike in reencryption initialization)
+$CRYPTSETUP -q open --test-passphrase --volume-key-file $VKEY1 --key-size 256 --volume-key-file $VKEY2 --key-size 512 $DEV <&- || fail
+
+# with 2 --volume-key-files options --key-size must be also supplied twice
+$CRYPTSETUP -q open --test-passphrase --volume-key-file $VKEY1 --volume-key-file $VKEY2 --key-size 512 $DEV 2>/dev/null <&- && fail
+# Missing old volume key
+$CRYPTSETUP -q open --test-passphrase --volume-key-file $VKEY2 --key-size 512 $DEV <&- 2>/dev/null && fail
+
+$CRYPTSETUP -q open --volume-key-file $VKEY2 --key-size 512 --volume-key-file $VKEY1 --key-size 256 $DEV $DEV_NAME <&- || fail
+
+$CRYPTSETUP -q reencrypt --resume-only --volume-key-file $VKEY2 --new-volume-key-file $VKEY1 --key-size 512 --new-key-size 256 $DEV <&- || fail
+$CRYPTSETUP close $DEV_NAME || fail
+
+# wrong key size
+$CRYPTSETUP -q open --test-passphrase --volume-key-file $VKEY1 --key-size 512 $DEV <&- 2>/dev/null && fail
+# wrong key
+$CRYPTSETUP -q open --test-passphrase --volume-key-file $VKEY2 --key-size 256 $DEV <&- 2>/dev/null && fail
+
+# missing key size
+$CRYPTSETUP -q open --test-passphrase --volume-key-file $VKEY1 $DEV <&- 2>/dev/null && fail
+$CRYPTSETUP -q open --test-passphrase --volume-key-file $VKEY1 --key-size 256 $DEV <&- || fail
+
+# no remaining keyslots test (--force-no-keyslots is not needed)
+reformat_reencrypt_device
+$CRYPTSETUP -q luksErase $DEV || fail
+
+$CRYPTSETUP -q reencrypt --volume-key-file $VKEY2 -s 512 --new-volume-key-file $VKEY1 --new-key-size 256 $DEV <&- || fail
+$CRYPTSETUP open --test-passphrase --volume-key-file $VKEY1 --key-size 256 $DEV <&- || fail
+
+reformat_reencrypt_device
+$CRYPTSETUP -q luksErase $DEV || fail
+$CRYPTSETUP -q reencrypt --init-only --volume-key-file $VKEY2 -s 512 --new-volume-key-file $VKEY1 --new-key-size 256 $DEV <&- || fail
+
+# For unlock operation we do not require specific --volume-key-file ordering (unlike in reencryption initialization)
+$CRYPTSETUP -q open --test-passphrase --volume-key-file $VKEY1 --key-size 256 --volume-key-file $VKEY2 --key-size 512 $DEV <&- || fail
+
+# with 2 --volume-key-files options --key-size must be also supplied twice
+$CRYPTSETUP -q open --test-passphrase --volume-key-file $VKEY1 --volume-key-file $VKEY2 --key-size 512 $DEV 2>/dev/null <&- && fail
+# Missing old volume key
+$CRYPTSETUP -q open --test-passphrase --volume-key-file $VKEY2 --key-size 512 $DEV <&- 2>/dev/null && fail
+
+$CRYPTSETUP -q open --volume-key-file $VKEY2 --key-size 512 --volume-key-file $VKEY1 --key-size 256 $DEV $DEV_NAME <&- || fail
+
+$CRYPTSETUP -q reencrypt --resume-only --volume-key-file $VKEY2 --new-volume-key-file $VKEY1 --key-size 512 --new-key-size 256 $DEV <&- || fail
+$CRYPTSETUP close $DEV_NAME || fail
+
+# reencryption by volume key in kernel keyring
+reformat_reencrypt_device
+head -c 64 $VKEY2 | keyctl padd user $KEY_NAME_VK2 %:$KEYRING > /dev/null || fail
+head -c 32 $VKEY1 | keyctl padd user $KEY_NAME_VK1 %:$KEYRING > /dev/null || fail
+
+$CRYPTSETUP -q reencrypt --force-no-keyslots --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- || fail
+
+# test unlock with key after reencryption
+$CRYPTSETUP open --test-passphrase --volume-key-keyring $KEY_NAME_VK1 $DEV <&- || fail
+$CRYPTSETUP open --test-passphrase --volume-key-keyring $KEY_NAME_VK2 $DEV <&- 2>/dev/null && fail
+
+reformat_reencrypt_device
+$CRYPTSETUP -q reencrypt --init-only --force-no-keyslots --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- || fail
+
+# For unlock operation we do not require specific --volume-key-file ordering (unlike in reencryption initialization)
+$CRYPTSETUP -q open --test-passphrase --volume-key-keyring $KEY_NAME_VK1 --volume-key-keyring $KEY_NAME_VK2 $DEV <&- || fail
+
+# Missing old volume key
+$CRYPTSETUP -q open --test-passphrase --volume-key-keyring $KEY_NAME_VK1 $DEV <&- 2>/dev/null && fail
+
+$CRYPTSETUP -q open --volume-key-keyring $KEY_NAME_VK1 --volume-key-keyring $KEY_NAME_VK2 $DEV $DEV_NAME <&- || fail
+
+$CRYPTSETUP -q reencrypt --resume-only --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- || fail
+$CRYPTSETUP close $DEV_NAME || fail
+
+# no remaining keyslots test (--force-no-keyslots is not needed)
+reformat_reencrypt_device
+$CRYPTSETUP -q luksErase $DEV || fail
+
+$CRYPTSETUP -q reencrypt --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- || fail
+
+reformat_reencrypt_device
+$CRYPTSETUP -q luksErase $DEV || fail
+$CRYPTSETUP -q reencrypt --init-only --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- || fail
+
+# For unlock operation we do not require specific --volume-key-file ordering (unlike in reencryption initialization)
+$CRYPTSETUP -q open --test-passphrase --volume-key-keyring $KEY_NAME_VK1 --volume-key-keyring $KEY_NAME_VK2 $DEV <&- || fail
+
+# Missing old volume key
+$CRYPTSETUP -q open --test-passphrase --volume-key-keyring $KEY_NAME_VK2 $DEV <&- 2>/dev/null && fail
+
+$CRYPTSETUP -q open --volume-key-keyring $KEY_NAME_VK1 --volume-key-keyring $KEY_NAME_VK2 $DEV $DEV_NAME <&- || fail
+
+$CRYPTSETUP -q reencrypt --resume-only --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- || fail
+$CRYPTSETUP close $DEV_NAME || fail
+
+# test b0rked kernel keys
+reformat_reencrypt_device
+$CRYPTSETUP -q luksErase $DEV || fail
+
+head -c 63 $VKEY2 | keyctl padd user $KEY_NAME_VK2 %:$KEYRING > /dev/null || fail
+$CRYPTSETUP -q reencrypt --init-only --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- 2>/dev/null && fail
+$CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt" && fail "Failed initialization with reencryption flag"
+
+head -c 64 $VKEY2 | keyctl padd user $KEY_NAME_VK2 %:$KEYRING > /dev/null || fail
+$CRYPTSETUP open --test-passphrase --volume-key-keyring $KEY_NAME_VK2 $DEV || fail
+
+# new key size incompatible with cipher
+head -c 31 $VKEY1 | keyctl padd user $KEY_NAME_VK1 %:$KEYRING > /dev/null || fail
+$CRYPTSETUP -q reencrypt --init-only --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- 2>/dev/null && fail
+$CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt" && fail "Failed initialization with reencryption flag"
 
 remove_mapping
 cleanup_keyring
