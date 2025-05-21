@@ -3859,7 +3859,8 @@ static int reencrypt_init_by_keyslot_context(struct crypt_device *cd,
 			r = kc_new->get_key_size(cd, kc_new, &key_length);
 		else {
 			r = crypt_keyslot_get_key_size(cd, keyslot_new);
-			key_length = r;
+			if (r >= 0)
+				key_length = r;
 		}
 		if (r < 0)
 			return r;
