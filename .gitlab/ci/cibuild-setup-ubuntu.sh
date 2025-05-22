@@ -31,7 +31,7 @@ if [[ $COMPILER == "gcc" ]]; then
 	PACKAGES+=(gcc-$COMPILER_VERSION)
 elif [[ $COMPILER == "clang" ]]; then
 	wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-	add-apt-repository "deb http://apt.llvm.org/${RELEASE}/   llvm-toolchain-${RELEASE}-${COMPILER_VERSION} main"
+	add-apt-repository -n "deb http://apt.llvm.org/${RELEASE}/   llvm-toolchain-${RELEASE}-${COMPILER_VERSION} main"
 
 	# scan-build
 	PACKAGES+=(clang-tools-$COMPILER_VERSION clang-$COMPILER_VERSION lldb-$COMPILER_VERSION lld-$COMPILER_VERSION clangd-$COMPILER_VERSION)
@@ -40,7 +40,9 @@ else
 	exit 1
 fi
 
-apt-get -y update --fix-missing
+#apt-get -y update --fix-missing
+(r=3;while ! apt-get -y update --fix-missing ; do ((--r))||exit;sleep 5;echo "Retrying";done)
+
 DEBIAN_FRONTEND=noninteractive apt-get -yq install "${PACKAGES[@]}"
 apt-get -y build-dep cryptsetup
 
