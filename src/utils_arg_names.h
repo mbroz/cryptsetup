@@ -62,6 +62,7 @@
 #define OPT_INTEGRITY_BITMAP_MODE	"integrity-bitmap-mode"
 #define OPT_INTEGRITY_KEY_FILE		"integrity-key-file"
 #define OPT_INTEGRITY_KEY_SIZE		"integrity-key-size"
+#define OPT_INTEGRITY_INLINE		"integrity-inline"
 #define OPT_INTEGRITY_LEGACY_PADDING	"integrity-legacy-padding"
 #define OPT_INTEGRITY_LEGACY_HMAC	"integrity-legacy-hmac"
 #define OPT_INTEGRITY_LEGACY_RECALC	"integrity-legacy-recalculate"

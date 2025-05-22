@@ -30,6 +30,7 @@ cleanup() {
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmremove $DEV_NAME2
 	[ -n "$DEV_LOOP" ] && losetup -d "$DEV_LOOP"
 	DEV_LOOP=""
+	IDEV=""
 	rm -f $DEV $DEV2 $KEY_FILE $KEY_FILE2 >/dev/null 2>&1
 }
 
@@ -68,6 +69,8 @@ dm_integrity_features()
 		DM_INTEGRITY_RESIZE_SUPPORTED=1
 		DM_INTEGRITY_HMAC_FIX=1
 		DM_INTEGRITY_RESET=1
+		DM_INTEGRITY_INLINE=1
+		DM_INTEGRITY_RECALCULATE_INLINE=1
 		return
 	}
 	[ $VER_MIN -gt 1 ] && {
@@ -86,6 +89,12 @@ dm_integrity_features()
 	[ $VER_MIN -gt 7 ] && {
 		DM_INTEGRITY_RESET=1
 	}
+	[ $VER_MIN -ge 12 ] && {
+		DM_INTEGRITY_INLINE=1
+	}
+	[ $VER_MIN -ge 13 ] && {
+		DM_INTEGRITY_RECALCULATE_INLINE=1
+	}
 }
 
 add_device() {
@@ -94,7 +103,19 @@ add_device() {
 	dd if=/dev/urandom of=$KEY_FILE2 bs=1 count=32 >/dev/null 2>&1
 	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
 	dd if=/dev/zero of=$DEV2 bs=1M count=32 >/dev/null 2>&1
-	sync
+	IDEV=$DEV
+	INLINE_PARAMS=""
+}
+
+add_device_inline() {
+	cleanup
+	add_device
+	DEV_LOOP=$(losetup -f $DEV --show)
+	[ -z "$DEV_LOOP" ] && fail
+	dmsetup create $DEV_NAME2 --table "0 32768 integrity $DEV_LOOP 0 64 J 2 block_size:4096 fix_padding"
+	[ ! -b /dev/mapper/$DEV_NAME2 ] && fail
+	IDEV=/dev/mapper/$DEV_NAME2
+	INLINE_PARAMS="--integrity-inline "
 }
 
 status_check() # name value
@@ -109,7 +130,7 @@ status_check() # name value
 
 dump_check() # name value
 {
-	X=$($INTSETUP dump $DEV | grep "$1" | sed 's/.*: //' | cut -d' '  -f 1)
+	X=$($INTSETUP dump $IDEV | grep "$1" | sed 's/.*: //' | cut -d' '  -f 1)
 	if [ "$X" != "$2" ] ; then
 		echo "[dump FAIL]"
 		echo " Expecting $1:$2 got \"$X\"."
@@ -166,7 +187,7 @@ int_check_sum() # alg checksum [keyfile keysize]
 	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M oflag=direct >/dev/null 2>&1
 	dmremove $DEV_NAME
 
-	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS || fail "Cannot activate device."
+	$INTSETUP open $IDEV $DEV_NAME --integrity $1 $KEY_PARAMS || fail "Cannot activate device."
 
 	int_check_sum_only $2
 }
@@ -188,7 +209,7 @@ intformat() # alg alg_out tagsize outtagsize sector_size csum [keyfile keysize]
 	echo -n "[INTEGRITY:$2:$4:$5]"
 	[ -n "$8" ] && echo -n "[KEYFILE:$8]"
 	echo -n "[FORMAT]"
-	$INTSETUP format --integrity-legacy-padding -q --integrity $1 $TAG_PARAMS --sector-size $5 $KEY_PARAMS $DEV >/dev/null 2>&1
+	$INTSETUP format --integrity-legacy-padding -q --integrity $1 $INLINE_PARAMS $TAG_PARAMS --sector-size $5 $KEY_PARAMS $IDEV >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
 		if [[ $1 =~ "sha2" || $1 =~ "crc" ]] ; then
 			fail "Cannot format device."
@@ -200,7 +221,7 @@ intformat() # alg alg_out tagsize outtagsize sector_size csum [keyfile keysize]
 	dump_check "tag size" $4
 	dump_check "sector size" $5
 	echo -n "[ACTIVATE]"
-	$INTSETUP open $DEV $DEV_NAME --integrity $1 $KEY_PARAMS || fail "Cannot activate device."
+	$INTSETUP open $IDEV $DEV_NAME --integrity $1 $KEY_PARAMS || fail "Cannot activate device."
 	if [ -n "$8" ]; then
 		KEY_HEX=$(xxd -c 4096 -l $8 -p $7)
 		[ -z "$KEY_HEX" ] && fail "Cannot decode key."
@@ -232,11 +253,11 @@ int_error_detection() # mode alg tagsize outtagsize sector_size key_file key_siz
 	else
 		TAG_PARAMS=""
 	fi
-	dd if=/dev/zero of=$DEV bs=1M count=32 >/dev/null 2>&1
+	dd if=/dev/zero of=$IDEV bs=1M count=32 >/dev/null 2>&1
 
 	echo -n "[INTEGRITY:$1:$2:$4:$5]"
 	echo -n "[FORMAT]"
-	$INTSETUP format -q --integrity $2 $TAG_PARAMS --sector-size $5 $KEY_PARAMS $DEV $INT_MODE >/dev/null 2>&1
+	$INTSETUP format -q --integrity $2 $INLINE_PARAMS $TAG_PARAMS --sector-size $5 $KEY_PARAMS $IDEV $INT_MODE >/dev/null 2>&1
 	if [ $? -ne 0 ] ; then
 		if [[ $2 =~ "sha2" || $2 =~ "crc" ]] ; then
 			fail "Cannot format device."
@@ -245,7 +266,7 @@ int_error_detection() # mode alg tagsize outtagsize sector_size key_file key_siz
 		return
 	fi
 	echo -n "[ACTIVATE]"
-	$INTSETUP open $DEV $DEV_NAME --integrity $2 --integrity-no-journal $KEY_PARAMS $INT_MODE || fail "Cannot activate device."
+	$INTSETUP open $IDEV $DEV_NAME --integrity $2 --integrity-no-journal $KEY_PARAMS $INT_MODE || fail "Cannot activate device."
 
 	if [ -n "$6" -a -n "$7" ]; then
 		echo -n "[KEYED HASH]"
@@ -259,15 +280,15 @@ int_error_detection() # mode alg tagsize outtagsize sector_size key_file key_siz
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 
 	# find offset of data area
-	ARR=($(dd if=$DEV bs=512 2>/dev/null | hexdump -C | grep 'EXAMPLE TEXT'))
+	ARR=($(dd if=$IDEV bs=512 2>/dev/null | hexdump -C | grep 'EXAMPLE TEXT'))
 	OFF_HEX=${ARR[0]}
 	OFF_DEC=$((16#$OFF_HEX))
 
 	echo -n "[CORRUPT DATA:$OFF_DEC]"
-	echo -n "Z" | dd of=$DEV bs=1 seek=$OFF_DEC conv=notrunc >/dev/null 2>&1 || fail "Cannot write to device."
+	echo -n "Z" | dd of=$IDEV bs=1 seek=$OFF_DEC conv=notrunc >/dev/null 2>&1 || fail "Cannot write to device."
 
 	echo -n "[DETECT ERROR]"
-	$INTSETUP open $DEV $DEV_NAME --integrity $2 $KEY_PARAMS $INT_MODE || fail "Cannot activate device."
+	$INTSETUP open $IDEV $DEV_NAME --integrity $2 $KEY_PARAMS $INT_MODE || fail "Cannot activate device."
 	dd if=/dev/mapper/$DEV_NAME  >/dev/null 2>&1 && fail "Error detection failed."
 	echo -n "[REMOVE]"
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
@@ -445,6 +466,7 @@ command -v xxd >/dev/null || skip "WARNING: xxd tool required."
 modprobe dm-integrity >/dev/null 2>&1
 dm_integrity_features
 
+echo "Integrity mode tests:"
 add_device
 intformat blake2s-256 blake2s-256    32 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11
 intformat blake2b-256 blake2b-256    32 32  512 8e5fe4119558e117bfc40e3b0f13ade3abe497b52604d4c7cca0cfd6c7f4cf11
@@ -472,9 +494,28 @@ int_error_detection J sha1     0 20 4096
 int_error_detection J sha256   0 32  512
 int_error_detection J sha256   0 32 4096
 
-command -v xxd >/dev/null || skip "WARNING: xxd tool required."
 int_error_detection J hmac-sha256  0 32 512 $KEY_FILE 32
 int_error_detection J hmac-sha256  0 32 4096 $KEY_FILE 32
+
+if [ -n "$DM_INTEGRITY_INLINE" ] ; then
+	echo "Integrity mode tests (inline tags): "
+	add_device_inline
+	intformat crc32c      crc32c          0  4 4096 98abca7cb88f35f1944dface4c5040423a99886f4e5a716f061fd153d8661fe8
+	intformat crc32       crc32           0  4 4096 98abca7cb88f35f1944dface4c5040423a99886f4e5a716f061fd153d8661fe8
+	intformat xxhash64    xxhash64        0  8 4096 98abca7cb88f35f1944dface4c5040423a99886f4e5a716f061fd153d8661fe8
+	intformat sha1        sha1            0 20 4096 98abca7cb88f35f1944dface4c5040423a99886f4e5a716f061fd153d8661fe8
+	intformat sha1        sha1           16 16 4096 98abca7cb88f35f1944dface4c5040423a99886f4e5a716f061fd153d8661fe8
+	intformat sha256      sha256          0 32 4096 98abca7cb88f35f1944dface4c5040423a99886f4e5a716f061fd153d8661fe8
+	intformat hmac-sha256 hmac\(sha256\)  0 32 4096 98abca7cb88f35f1944dface4c5040423a99886f4e5a716f061fd153d8661fe8 $KEY_FILE 32
+	intformat hmac-sha256 hmac\(sha256\)  0 32 4096 98abca7cb88f35f1944dface4c5040423a99886f4e5a716f061fd153d8661fe8 $KEY_FILE 4096
+	echo "Error detection tests (inline tags):"
+	int_error_detection J crc32c   0  4 4096
+	int_error_detection J crc32    0  4 4096
+	int_error_detection J xxhash64 0  8 4096
+	int_error_detection J sha1     0 20 4096
+	int_error_detection J sha256   0 32 4096
+	int_error_detection J hmac-sha256  0 32 4096 $KEY_FILE 32
+fi
 
 echo "Journal parameters tests:"
 # Watermark is calculated in kernel, so it can be rounded down/up
@@ -497,26 +538,33 @@ int_mode sha256      32 512
 int_mode hmac-sha256 32 512  $KEY_FILE 32
 int_mode hmac-sha256 32 4096 $KEY_FILE 32
 
-echo -n "Recalculate tags in-kernel:"
-add_device
-if [ -n "$DM_INTEGRITY_RECALC" ] ; then
-	$INTSETUP format -q $DEV --no-wipe || fail "Cannot format device."
-	$INTSETUP open $DEV $DEV_NAME --integrity-recalculate || fail "Cannot activate device."
+recalc_test() # $1 checksum
+{
+	$INTSETUP format -q $IDEV $INLINE_PARAMS --sector-size 4096 --no-wipe || fail "Cannot format device."
+	$INTSETUP open $IDEV $DEV_NAME --integrity-recalculate || fail "Cannot activate device."
 	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=1M 2>/dev/null || fail "Cannot recalculate tags in-kernel"
-	int_check_sum_only 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
+	int_check_sum_only $1
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo -n "[OK]"
 	if [ -n "$DM_INTEGRITY_RESET" ] ; then
-		$INTSETUP open $DEV $DEV_NAME -I sha256 --integrity-recalculate-reset || fail "Cannot activate device."
+		$INTSETUP open $IDEV $DEV_NAME -I sha256 --integrity-recalculate-reset || fail "Cannot activate device."
 		dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=1M 2>/dev/null || fail "Cannot reset recalculate tags in-kernel"
-		int_check_sum_only 08f63eb27fb9ce2ce903b0a56429c68ce5e209253ba42154841ef045a53839d7
+		int_check_sum_only $1
 		$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 		echo "[RESET OK]"
 	else
 		echo "[RESET N/A]"
 	fi
-else
-	echo "[N/A]"
+}
+if [ -n "$DM_INTEGRITY_RECALC" ] ; then
+	echo -n "Recalculate tags in-kernel:"
+	add_device
+	recalc_test eab969b9d69b73dd20bf3f3d2a14936710595fd7ec61be6729690dde86cc7ba6
+	if [ -n "$DM_INTEGRITY_RECALCULATE_INLINE" ] ; then
+		echo -n "Recalculate tags in-kernel (inline tags):"
+		add_device_inline 65072
+		recalc_test 98abca7cb88f35f1944dface4c5040423a99886f4e5a716f061fd153d8661fe8
+	fi
 fi
 
 echo -n "Separate metadata device:"
@@ -638,12 +686,29 @@ $INTSETUP open -q $DEV $DEV_NAME $ARGS >/dev/null 2>&1 || fail "Cannot activate 
 echo -n "[SHRINK]"
 $INTSETUP resize $DEV_NAME --device-size 1MiB  >/dev/null 2>&1 || fail "Failed to resize the device to 1MiB."
 check_device_size $DEV_NAME $(( 1024*1024 / 512 )) "Shrinking device failed"
-dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detectied after resize."
+dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after resize."
 echo "[OK]"
+
+if [ -n "$DM_INTEGRITY_INLINE" ] ; then
+	echo -n "[INTEGRITY BASIC RESIZE NOKEY (inline tags)]"
+	add_device_inline
+	ARGS="--integrity crc32"
+
+	echo -n "[FORMAT]"
+	$INTSETUP format -q $IDEV $INLINE_PARAMS --sector-size 4096 $ARGS || fail "Cannot format device."
+	echo -n "[ACTIVATE]"
+	$INTSETUP open -q $IDEV $DEV_NAME $ARGS >/dev/null 2>&1 || fail "Cannot activate device."
+	echo -n "[RESIZE]"
+	$INTSETUP resize $DEV_NAME --device-size 1MiB  >/dev/null 2>&1 || fail "Failed to resize the device to 1MiB."
+	check_device_size $DEV_NAME $(( 1024*1024 / 512 )) "Shrinking device failed"
+	$INTSETUP resize $DEV_NAME --device-size 8MiB >/dev/null 2>&1 || fail "Failed to resize the device to 8MiB."
+	check_device_size $DEV_NAME $(( 8*1024*1024 / 512 )) "Enlarging device failed"
+	dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after resize."
+	echo "[OK]"
+fi
 
 echo -n "[INTEGRITY BASIC RESIZE KEY]"
 add_device
-
 ARGS="--integrity hmac-sha256 --integrity-key-size 128 --integrity-key-file $KEY_FILE --journal-integrity hmac-sha256 --journal-integrity-key-file $KEY_FILE --journal-integrity-key-size 128 --journal-crypt ctr-aes --journal-crypt-key-size 16 --journal-crypt-key-file $KEY_FILE"
 
 echo -n "[FORMAT]"
@@ -653,7 +718,7 @@ $INTSETUP open -q $DEV $DEV_NAME $ARGS >/dev/null 2>&1 || fail "Cannot activate 
 echo -n "[SHRINK]"
 $INTSETUP resize $DEV_NAME --device-size 1MiB >/dev/null 2>&1 || fail "Failed to resize the device to 1MiB."
 check_device_size $DEV_NAME $(( 1024*1024 / 512 )) "Shrinking device failed"
-dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detectied after resize."
+dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after resize."
 echo "[OK]"
 
 test_resize "[INTEGRITY RESIZE NOKEY]" 0 0 "--integrity crc32"

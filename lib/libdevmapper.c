@@ -238,6 +238,9 @@ static void _dm_set_integrity_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 8, 0, integrity_maj, integrity_min, integrity_patch))
 		_dm_flags |= DM_INTEGRITY_RESET_RECALC_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 12, 0, integrity_maj, integrity_min, integrity_patch))
+		_dm_flags |= DM_INTEGRITY_INLINE_MODE_SUPPORTED;
+
 	_dm_integrity_checked = true;
 }
 
@@ -903,7 +906,9 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 	if (r < 0 || r >= max_size)
 		goto out;
 
-	if (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP)
+	if (flags & CRYPT_ACTIVATE_INLINE_MODE)
+		mode = 'I';
+	else if (flags & CRYPT_ACTIVATE_NO_JOURNAL_BITMAP)
 		mode = 'B';
 	else if (flags & CRYPT_ACTIVATE_RECOVERY)
 		mode = 'R';
@@ -1803,6 +1808,12 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		log_err(cd, _("Requested dm-integrity bitmap mode is not supported."));
 		r = -EINVAL;
 	}
+
+	if (dmd->segment.type == DM_INTEGRITY && (dmd->flags & CRYPT_ACTIVATE_INLINE_MODE) &&
+	    !(dmt_flags & DM_INTEGRITY_INLINE_MODE_SUPPORTED)) {
+		log_err(cd, _("Requested dm-integrity inline mode is not supported."));
+		r = -EINVAL;
+	}
 out:
 	/*
 	 * Print warning if activating dm-crypt cipher_null device unless it's reencryption helper or
@@ -2502,7 +2513,7 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 
 	/* journal */
 	c = toupper(*(++params));
-	if (!*params || *(++params) != ' ' || (c != 'D' && c != 'J' && c != 'R' && c != 'B'))
+	if (!*params || *(++params) != ' ' || (c != 'D' && c != 'J' && c != 'R' && c != 'B' && c != 'I'))
 		goto err;
 	if (c == 'D')
 		*act_flags |= CRYPT_ACTIVATE_NO_JOURNAL;
@@ -2511,6 +2522,10 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 	if (c == 'B') {
 		*act_flags |= CRYPT_ACTIVATE_NO_JOURNAL;
 		*act_flags |= CRYPT_ACTIVATE_NO_JOURNAL_BITMAP;
+	}
+	if (c == 'I') {
+		*act_flags |= CRYPT_ACTIVATE_NO_JOURNAL;
+		*act_flags |= CRYPT_ACTIVATE_INLINE_MODE;
 	}
 
 	tgt->u.integrity.sector_size = SECTOR_SIZE;
@@ -3174,6 +3189,54 @@ int dm_get_iname(const char *name, char **iname, bool with_path)
 	return r < 0 ? -ENOMEM : 0;
 }
 
+char *dm_get_active_iname(struct crypt_device *cd, const char *name)
+{
+	struct crypt_dm_active_device dmd = {}, dmdi = {};
+	struct dm_target *tgt = &dmd.segment, *tgti = &dmdi.segment;
+	char *ipath = NULL, *iname = NULL, *ret_iname = NULL;
+	struct stat st;
+
+	if (!name)
+		return NULL;
+
+	if (dm_query_device(cd, name, DM_ACTIVE_UUID, &dmd) < 0)
+		return NULL;
+
+	if (!single_segment(&dmd))
+		goto out;
+
+	if (tgt->type != DM_CRYPT || tgt->u.crypt.tag_size == 0)
+		goto out;
+
+	if (dm_get_iname(name, &iname, false) < 0)
+		goto out;
+
+	if (dm_get_iname(name, &ipath, true) < 0)
+		goto out;
+
+	if (stat(ipath, &st) < 0 || !S_ISBLK(st.st_mode))
+		goto out;
+
+	if (dm_query_device(cd, iname, DM_ACTIVE_UUID, &dmdi) < 0)
+		goto out;
+
+	if (single_segment(&dmdi) &&
+	    tgti->type == DM_INTEGRITY &&
+	    dm_uuid_integrity_cmp(dmd.uuid, dmdi.uuid) == 0) {
+		ret_iname = iname;
+		iname = NULL;
+	}
+out:
+	dm_targets_free(cd, &dmdi);
+	dm_targets_free(cd, &dmd);
+	free(CONST_CAST(void*)dmd.uuid);
+	free(CONST_CAST(void*)dmdi.uuid);
+	free(ipath);
+	free(iname);
+
+	return ret_iname;
+}
+
 int dm_is_dm_device(int major)
 {
 	return dm_is_dm_major((uint32_t)major);
@@ -3182,6 +3245,92 @@ int dm_is_dm_device(int major)
 int dm_is_dm_kernel_name(const char *name)
 {
 	return strncmp(name, "dm-", 3) ? 0 : 1;
+}
+
+/*
+ * compares UUIDs returned by device-mapper (striped by cryptsetup) and uuid in header
+ */
+int dm_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
+{
+	int i, j;
+	char *str;
+
+	if (!dm_uuid || !hdr_uuid)
+		return -EINVAL;
+
+	/* skip beyond LUKS2_HW_OPAL prefix */
+	if (!strncmp(dm_uuid, CRYPT_LUKS2_HW_OPAL, strlen(CRYPT_LUKS2_HW_OPAL)))
+		dm_uuid = dm_uuid + strlen(CRYPT_LUKS2_HW_OPAL);
+
+	str = strchr(dm_uuid, '-');
+	if (!str)
+		return -EINVAL;
+
+	for (i = 0, j = 1; hdr_uuid[i]; i++) {
+		if (hdr_uuid[i] == '-')
+			continue;
+
+		if (!str[j] || str[j] == '-')
+			return -EINVAL;
+
+		if (str[j] != hdr_uuid[i])
+			return -EINVAL;
+		j++;
+	}
+
+	return 0;
+}
+
+/*
+ * compares two UUIDs returned by device-mapper (striped by cryptsetup)
+ * used for stacked LUKS2 & INTEGRITY devices
+ */
+int dm_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid)
+{
+	int i;
+	char *str, *stri;
+
+	if (!dm_uuid || !dmi_uuid)
+		return -EINVAL;
+
+	/* skip beyond LUKS2_HW_OPAL prefix */
+	if (!strncmp(dm_uuid, CRYPT_LUKS2_HW_OPAL, strlen(CRYPT_LUKS2_HW_OPAL)))
+		dm_uuid = dm_uuid + strlen(CRYPT_LUKS2_HW_OPAL);
+
+	str = strchr(dm_uuid, '-');
+	if (!str)
+		return -EINVAL;
+
+	stri = strchr(dmi_uuid, '-');
+	if (!stri)
+		return -EINVAL;
+
+	for (i = 1; str[i] && str[i] != '-'; i++) {
+		if (!stri[i])
+			return -EINVAL;
+
+		if (str[i] != stri[i])
+			return -EINVAL;
+	}
+
+	return 0;
+}
+
+/*
+ * compares type of active device to provided string
+ */
+int dm_uuid_type_cmp(const char *dm_uuid, const char *type)
+{
+	size_t len;
+
+	assert(type);
+
+	len = strlen(type);
+	if (dm_uuid && strlen(dm_uuid) > len &&
+	    !strncmp(dm_uuid, type, len) && dm_uuid[len] == '-')
+		return 0;
+
+	return -ENODEV;
 }
 
 int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,

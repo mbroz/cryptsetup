@@ -3385,7 +3385,7 @@ int LUKS2_reencrypt_lock_by_dm_uuid(struct crypt_device *cd, const char *dm_uuid
 			 dm_uuid + 6, dm_uuid + 14, dm_uuid + 18, dm_uuid + 22, dm_uuid + 26);
 		if (r < 0 || (size_t)r != (sizeof(hdr_uuid) - 1))
 			return -EINVAL;
-	} else if (crypt_uuid_cmp(dm_uuid, uuid))
+	} else if (dm_uuid_cmp(dm_uuid, uuid))
 		return -EINVAL;
 
 	return reencrypt_lock_internal(cd, uuid, reencrypt_lock);

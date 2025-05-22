@@ -397,6 +397,21 @@ For more info, see _AUTHENTICATED DISK ENCRYPTION_ section in *cryptsetup*(8).
 endif::[]
 
 ifdef::ACTION_LUKSFORMAT[]
+*--integrity-inline*::
+Store integrity tags to hardware sector integrity fields.
+The device must support sectors with additional protection information
+(PI, also known as DIF - data integrity field) of the requested size.
+Another storage subsystem must not use the additional field
+(the device must present a "nop" profile in the kernel).
+Note that some devices must be reformatted at a low level to support
+this option; for NVMe devices, see nvme(1) id-ns LBA profiles.
++
+No journal or bitmap is used in this mode. The device should operate
+with native speed (without any overhead).
+This option is available since the Linux kernel version 6.11.
+endif::[]
+
+ifdef::ACTION_LUKSFORMAT[]
 *--integrity-key-size BYTES*::
 The size of the data integrity key. Configurable only for HMAC integrity.
 Default integrity key size is set to the same as hash output length.

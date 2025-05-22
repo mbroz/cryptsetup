@@ -476,21 +476,6 @@ const char *device_block_path(const struct device *device)
 	return device->path;
 }
 
-/* Get device-mapper name of device (if possible) */
-const char *device_dm_name(const struct device *device)
-{
-	const char *dmdir = dm_get_dir();
-	size_t dmdir_len = strlen(dmdir);
-
-	if (!device)
-		return NULL;
-
-	if (strncmp(device->path, dmdir, dmdir_len))
-		return NULL;
-
-	return &device->path[dmdir_len+1];
-}
-
 /* Get path to device / file */
 const char *device_path(const struct device *device)
 {
@@ -1015,6 +1000,22 @@ int device_is_zoned(struct device *device)
 		return 0;
 
 	return crypt_dev_is_zoned(major(st.st_rdev), minor(st.st_rdev));
+}
+
+int device_is_nop_dif(struct device *device, uint32_t *tag_size)
+{
+	struct stat st;
+
+	if (!device)
+		return -EINVAL;
+
+	if (stat(device_path(device), &st) < 0)
+		return -EINVAL;
+
+	if (!S_ISBLK(st.st_mode))
+		return 0;
+
+	return crypt_dev_is_nop_dif(major(st.st_rdev), minor(st.st_rdev), tag_size);
 }
 
 size_t device_alignment(struct device *device)
