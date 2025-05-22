@@ -33,6 +33,25 @@ reencryption recovery so that reencryption can continue later.
 Repairing reencryption requires verification of reencryption
 keyslot so passphrase or keyfile is needed.
 
+=== LUKS keyslots corruption detection
+
+The repair command also checks for detectable corruption of keyslot
+content. Corruption of a keyslot results in a situation when a known
+password is no longer accepted. It can happen due to storage media
+failure or overwriting the keyslot area by some other data.
+Only certain corruptions, usually only a low-entropy area
+(like zeroed blocks), can be detected.
+
+The detection prints only warnings. It does not modify keyslots.
+It can also print more specific offsets on the device for detailed
+manual inspection.
+
+Please note that the warning can be a false positive
+(no real corruption happened).
+Conversely, if the keyslot is corrupted, no recovery is possible.
+You have to use LUKS header backup.
+
+
 *<options>* can be [--timeout, --verify-passphrase, --disable-locks,
 --type, --header, --key-file, --keyfile-size, --keyfile-offset, --key-slot].
 

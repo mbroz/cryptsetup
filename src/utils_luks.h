@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+struct crypt_device;
+
 const char *luksType(const char *type);
 
 bool isLUKS1(const char *type);
@@ -63,5 +65,7 @@ int luks_init_keyslot_contexts_by_volume_keys(struct crypt_device *cd,
 					      const char *vk_in_keyring2,
 					      struct crypt_keyslot_context **r_kc1,
 					      struct crypt_keyslot_context **r_kc2);
+
+void luks_check_keyslots(struct crypt_device *cd, const char *device);
 
 #endif /* UTILS_LUKS_H */
