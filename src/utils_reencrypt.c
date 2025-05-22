@@ -1427,7 +1427,8 @@ static int reencrypt_add_single_token_keyslots(struct crypt_device *cd,
 		if (r < 0)
 			return r;
 
-		count += r;
+		if (r > 0)
+			count++;
 	}
 
 	return count;
@@ -1450,7 +1451,8 @@ static int reencrypt_add_token_keyslots_for_unlock(struct crypt_device *cd,
 		if (r < 0)
 			return r;
 
-		count += r;
+		if (r > 0)
+			count++;
 	}
 
 	return count;
