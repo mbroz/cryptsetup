@@ -2923,6 +2923,18 @@ int LUKS2_deactivate(struct crypt_device *cd, const char *name, struct luks2_hdr
 		ret = 0;
 		dep = deps;
 		while (*dep) {
+			/*
+			 * FIXME: dm-integrity has now proper SUBDEV prefix so
+			 * it would be deactivated here, but due to specific
+			 * dm_remove_device(iname) above the iname device
+			 * is no longer active. This will be fixed when
+			 * we switch to SUBDEV deactivation after 2.8 release.
+			 */
+			if (iname && !strcmp(*dep, iname)) {
+				dep++;
+				continue;
+			}
+
 			log_dbg(cd, "Deactivating LUKS2 dependent device %s.", *dep);
 			r = dm_query_device(cd, *dep, DM_ACTIVE_CRYPT_KEY | DM_ACTIVE_CRYPT_KEYSIZE, &dmdc);
 			if (r < 0) {
