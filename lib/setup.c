@@ -959,13 +959,27 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 	}
 
 	if (params)
-		cd->u.verity.hdr.flags = params->flags;
+		cd->u.verity.hdr.flags |= params->flags;
 
 	/* Hash availability checked in sb load */
 	cd->u.verity.root_hash_size = crypt_hash_size(cd->u.verity.hdr.hash_name);
 	if (cd->u.verity.root_hash_size > 4096) {
 		r = -EINVAL;
 		goto out;
+	}
+
+	if (params->flags & CRYPT_VERITY_ROOT_HASH_EMBEDDED) {
+		if (cd->u.verity.hdr.hash_size != cd->u.verity.root_hash_size) {
+			r = -EINVAL;
+			goto out;
+		}
+		params->hash_size = cd->u.verity.hdr.hash_size;
+		params->hash = cd->u.verity.hdr.hash;
+	}
+
+	if (params->flags & CRYPT_VERITY_ROOT_HASH_SIG_EMBEDDED) {
+		params->hash_sig_size = cd->u.verity.hdr.hash_sig_size;
+		params->hash_sig = cd->u.verity.hdr.hash_sig;
 	}
 
 	if (params && params->data_device &&
@@ -2705,6 +2719,49 @@ static int _crypt_format_verity(struct crypt_device *cd,
 	struct device *fec_device = NULL;
 	char *fec_device_path = NULL, *hash_name = NULL, *root_hash = NULL, *salt = NULL;
 
+	/* if we only want to update signature, skip normal hashing/format, might need own caller */
+	if (params->flags & CRYPT_VERITY_UPDATE_SIGNATURE) {
+		log_dbg(cd, "Using CRYPT_VERITY_UPDATE_SIGNATURE path for verity header update.");
+
+		/*
+		 *  Load the existing verity superblock from disk, so that
+		 *  cd->u.verity.hdr is populated with root_hash, salt, etc.
+		 */
+		r = _crypt_load_verity(cd, params);
+		if (r < 0) {
+			log_err(cd, _("Failed to load existing verity sb."));
+			return r;
+		}
+
+		if (params->hash_sig && params->hash_sig_size) {
+			/* free old signature if present */
+			if (cd->u.verity.hdr.hash_sig) {
+				free(CONST_CAST(void*)cd->u.verity.hdr.hash_sig);
+				cd->u.verity.hdr.hash_sig = NULL;
+			}
+			cd->u.verity.hdr.hash_sig_size = params->hash_sig_size;
+			cd->u.verity.hdr.hash_sig      = params->hash_sig;
+		} else {
+			log_err(cd, _("No signature found."));
+			return -EINVAL;
+		}
+
+		if (!cd->u.verity.uuid) {
+			log_dbg(cd, "No existing Verity UUID, generating a new one...");
+			r = VERITY_UUID_generate(&cd->u.verity.uuid);
+			if (r < 0) {
+				log_err(cd, _("Failed generating verity UUID."));
+				return r;
+			}
+		}
+
+		r = VERITY_write_sb(cd,
+				    cd->u.verity.hdr.hash_area_offset,
+				    cd->u.verity.uuid,
+				    &cd->u.verity.hdr);
+		return r;
+	}
+
 	if (!crypt_metadata_device(cd)) {
 		log_err(cd, _("Can't format VERITY without device."));
 		return -EINVAL;
@@ -2834,6 +2891,20 @@ static int _crypt_format_verity(struct crypt_device *cd,
 			r = VERITY_FEC_process(cd, &cd->u.verity.hdr, cd->u.verity.fec_device, 0, NULL);
 		if (r)
 			goto out;
+
+		if (params->flags & CRYPT_VERITY_ROOT_HASH_EMBEDDED) {
+			cd->u.verity.hdr.hash_size = cd->u.verity.root_hash_size;
+
+			cd->u.verity.hdr.hash = malloc(cd->u.verity.root_hash_size);
+			if (!cd->u.verity.hdr.hash) {
+				r = -ENOMEM;
+				goto out;
+			}
+
+			memcpy(CONST_CAST(char *)cd->u.verity.hdr.hash,
+			       cd->u.verity.root_hash,
+			       cd->u.verity.root_hash_size);
+		}
 	}
 
 	if (!(params->flags & CRYPT_VERITY_NO_HEADER)) {
