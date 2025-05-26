@@ -507,8 +507,7 @@ echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --typ
 
 prepare "[3] format" wipe
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q $FAST_PBKDF_OPT -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 --hw-opal $OPAL2_DEV || fail
-# FIXME: BUG (--hw-opal-only should reject --cipher, --key-size & co)
-#echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q $FAST_PBKDF_OPT --hw-opal-only -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 $OPAL2_DEV 2> /dev/null && fail
+
 prepare "[4] format using hash sha512" wipe
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP $FAST_PBKDF_OPT -h sha512 -c aes-cbc-essiv:sha256 -s 128 luksFormat --type luks2 --hw-opal $OPAL2_DEV || fail
 $CRYPTSETUP -q luksDump  $OPAL2_DEV | grep "0: pbkdf2" -A2 | grep "Hash:" | grep -qe sha512 || fail
@@ -609,7 +608,7 @@ fi
 
 # format hw-opal-only
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --volume-key-file /dev/urandom --type luks2 --hw-opal-only $OPAL2_DEV || fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --volume-key-file /dev/urandom -s 512 --uuid $TEST_UUID --type luks2 --hw-opal-only $OPAL2_DEV || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --volume-key-file /dev/urandom --uuid $TEST_UUID --type luks2 --hw-opal-only $OPAL2_DEV || fail
 $CRYPTSETUP luksOpen -d $KEY_PWD1 $OPAL2_DEV $DEV_NAME || fail
 $CRYPTSETUP -q luksClose  $DEV_NAME || fail
 # open by UUID
@@ -948,7 +947,7 @@ prepare "[26] LUKS convert" wipe
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --sector-size 512 -s256 --hw-opal $OPAL2_DEV || fail
 $CRYPTSETUP -q convert --type luks1 $OPAL2_DEV >/dev/null 2>&1 && fail
 $CRYPTSETUP isLuks --type luks2 $OPAL2_DEV || fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --sector-size 512 -s256 --hw-opal-only $OPAL2_DEV || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --sector-size 512 --hw-opal-only $OPAL2_DEV || fail
 $CRYPTSETUP -q convert --type luks1 $OPAL2_DEV >/dev/null 2>&1 && fail
 $CRYPTSETUP isLuks --type luks2 $OPAL2_DEV || fail
 
@@ -1118,10 +1117,10 @@ $CRYPTSETUP luksDump $OPAL2_DEV | grep -q "3: luks2 (unbound)" && fail
 prepare "[34] LUKS2 metadata areas" wipe
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV 2> /dev/null || fail
 DEFAULT_OFFSET=$($CRYPTSETUP luksDump $OPAL2_DEV | grep "offset: " | cut -f 2 -d ' ')
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=128k --luks2-keyslots-size=127k 2> /dev/null && fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=127k --luks2-keyslots-size=128k 2> /dev/null && fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=128k --luks2-keyslots-size=129M >/dev/null 2>&1 && fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-metadata-size=128k --luks2-keyslots-size=128k >/dev/null || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --luks2-metadata-size=128k --luks2-keyslots-size=127k 2> /dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --luks2-metadata-size=127k --luks2-keyslots-size=128k 2> /dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --luks2-metadata-size=128k --luks2-keyslots-size=129M >/dev/null 2>&1 && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --luks2-metadata-size=128k --luks2-keyslots-size=128k >/dev/null || fail
 $CRYPTSETUP luksDump $OPAL2_DEV | grep "Metadata area:" | grep -q "131072 \[bytes\]" || fail
 $CRYPTSETUP luksDump $OPAL2_DEV | grep "Keyslots area:" | grep -q "131072 \[bytes\]" || fail
 echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
@@ -1129,18 +1128,18 @@ echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --
 $CRYPTSETUP luksDump $OPAL2_DEV | grep "Metadata area:" | grep -q "131072 \[bytes\]" || fail
 $CRYPTSETUP luksDump $OPAL2_DEV | grep "Keyslots area:" | grep -q "$((DEFAULT_OFFSET-2*131072)) \[bytes\]" || fail
 echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --luks2-keyslots-size=128k >/dev/null || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --luks2-keyslots-size=128k >/dev/null || fail
 $CRYPTSETUP luksDump $OPAL2_DEV | grep "Metadata area:" | grep -q "16384 \[bytes\]" || fail
 $CRYPTSETUP luksDump $OPAL2_DEV | grep "Keyslots area:" | grep -q "131072 \[bytes\]" || fail
 echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --offset 16384 || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --offset 16384 || fail
 $CRYPTSETUP luksDump $OPAL2_DEV | grep "Metadata area:" | grep -q "16384 \[bytes\]" || fail
 $CRYPTSETUP luksDump $OPAL2_DEV | grep "Keyslots area:" | grep -q "8355840 \[bytes\]" || fail
 echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q || fail
 # data offset vs area size
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --offset 64 --luks2-keyslots-size=8192 >/dev/null 2>&1 && fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --offset $((256+56)) >/dev/null 2>&1 && fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --key-size 256 --offset $((256+64)) >/dev/null || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --offset 64 --luks2-keyslots-size=8192 >/dev/null 2>&1 && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --offset $((256+56)) >/dev/null 2>&1 && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV --offset $((256+64)) >/dev/null || fail
 
 prepare "[35] Per-keyslot encryption parameters" wipe
 KEYSLOT_CIPHER="aes-cbc-plain64"
@@ -1317,7 +1316,7 @@ prepare "[39] LUKS2 reencryption/decryption blocked" wipe
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal $OPAL2_DEV || fail
 test_reencryption_does_not_init
 
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal-only $OPAL2_DEV || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV || fail
 test_reencryption_does_not_init
 
 prepare "[40] LUKS2 reencryption/decryption blocked (detached header)" wipe
@@ -1325,7 +1324,7 @@ prepare "[40] LUKS2 reencryption/decryption blocked (detached header)" wipe
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --header $HEADER_IMG --type luks2 -s256 --hw-opal $OPAL2_DEV || fail
 test_reencryption_does_not_init $HEADER_IMG
 
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --header $HEADER_IMG --type luks2 -s256 --hw-opal-only $OPAL2_DEV || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --header $HEADER_IMG --type luks2 --hw-opal-only $OPAL2_DEV || fail
 test_reencryption_does_not_init $HEADER_IMG
 
 prepare "[41] LUKS2 encryption blocked" wipe
@@ -1337,12 +1336,12 @@ $CRYPTSETUP isLuks $OPAL2_DEV && fail
 test -b $DEV_NAME && fail
 echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal $OPAL2_DEV 2>/dev/null && fail
 $CRYPTSETUP isLuks $OPAL2_DEV && fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --init-only --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal-only $OPAL2_DEV 2>/dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --init-only --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV 2>/dev/null && fail
 $CRYPTSETUP isLuks $OPAL2_DEV && fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --init-only --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal-only $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --init-only --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
 $CRYPTSETUP isLuks $OPAL2_DEV && fail
 test -b $DEV_NAME && fail
-echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 -s256 --hw-opal-only $OPAL2_DEV 2>/dev/null && fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP reencrypt --encrypt --reduce-device-size 32m $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV 2>/dev/null && fail
 $CRYPTSETUP isLuks $OPAL2_DEV && fail
 fi
 
