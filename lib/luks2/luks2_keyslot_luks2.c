@@ -305,7 +305,7 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	const char *password, size_t passwordLen,
 	char *volume_key, size_t volume_key_len)
 {
-	struct crypt_pbkdf_type pbkdf, *cd_pbkdf;
+	struct crypt_pbkdf_type pbkdf;
 	char *AfKey = NULL;
 	size_t AFEKSize;
 	const char *af_hash = NULL;
@@ -359,16 +359,6 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 		r = -ENOMEM;
 		goto out;
 	}
-
-	/*
-	 * Print warning when keyslot requires more memory than available
-	 * (if maximum memory was adjusted - no swap, not enough memory),
-	 * but be silent if user set keyslot memory cost above default limit intentionally.
-	 */
-	cd_pbkdf = crypt_get_pbkdf(cd);
-	if (cd_pbkdf->max_memory_kb && pbkdf.max_memory_kb > cd_pbkdf->max_memory_kb &&
-	    pbkdf.max_memory_kb <= DEFAULT_LUKS2_MEMORY_KB)
-		log_std(cd, _("Warning: keyslot operation could fail as it requires more than available memory.\n"));
 
 	/*
 	 * If requested, serialize unlocking for memory-hard KDF. Usually NOOP.
