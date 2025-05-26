@@ -3269,7 +3269,15 @@ static int _compare_device_types(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (isLUKS2(cd->type) && !strncmp("INTEGRITY-", tgt->uuid, strlen("INTEGRITY-"))) {
+	/*
+	 * FIXME: The CRYPT_SUBDEV prefix should be enough but we need
+	 * to keep INTEGRITY- for dm-integrity subdevices opened with
+	 * cryptsetup version < 2.8.0. Drop the INTEGRITY condition
+	 * in next Y release.
+	 */
+	if (isLUKS2(cd->type) &&
+	    (!strncmp("INTEGRITY-", tgt->uuid, strlen("INTEGRITY-")) ||
+	     !strncmp(CRYPT_SUBDEV, tgt->uuid, strlen(CRYPT_SUBDEV)))) {
 		if (dm_uuid_cmp(tgt->uuid, src->uuid)) {
 			log_dbg(cd, "LUKS UUID mismatch.");
 			return -EINVAL;
@@ -4921,7 +4929,7 @@ static int _create_device_with_integrity(struct crypt_device *cd,
 
 	device_check = dmd->flags & CRYPT_ACTIVATE_SHARED ? DEV_OK : DEV_EXCL;
 
-	r = INTEGRITY_activate_dmd_device(cd, iname, CRYPT_INTEGRITY, dmdi, 0);
+	r = INTEGRITY_activate_dmd_device(cd, iname, CRYPT_SUBDEV, dmdi, 0);
 	if (r)
 		return r;
 
