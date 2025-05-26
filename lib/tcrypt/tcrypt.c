@@ -902,7 +902,7 @@ int TCRYPT_activate(struct crypt_device *cd,
 
 		log_dbg(cd, "Trying to activate TCRYPT device %s using cipher %s.",
 			dm_name, dmd.segment.u.crypt.cipher);
-		r = dm_create_device(cd, dm_name, CRYPT_TCRYPT, &dmd);
+		r = dm_create_device(cd, dm_name, i == 1 ? CRYPT_TCRYPT : CRYPT_SUBDEV, &dmd);
 
 		dm_targets_free(cd, &dmd);
 		device_free(cd, device);
@@ -941,7 +941,9 @@ static int TCRYPT_remove_one(struct crypt_device *cd, const char *name,
 		return r;
 
 	r = dm_query_device(cd, dm_name, DM_ACTIVE_UUID, &dmd);
-	if (!r && !strncmp(dmd.uuid, base_uuid, strlen(base_uuid)))
+	if (!r &&
+	    (!strncmp(dmd.uuid, base_uuid, strlen(base_uuid)) ||
+	     !dm_uuid_cmp(dmd.uuid, strchr(base_uuid, '-'))))
 		r = dm_remove_device(cd, dm_name, flags);
 
 	free(CONST_CAST(void*)dmd.uuid);
@@ -963,6 +965,7 @@ int TCRYPT_deactivate(struct crypt_device *cd, const char *name, uint32_t flags)
 	if (r < 0)
 		goto out;
 
+	/* FIXME: replace with dependency based deactivation (CRYPT_SUBDEV) in later releases */
 	r = TCRYPT_remove_one(cd, name, dmd.uuid, 1, flags);
 	if (r < 0)
 		goto out;
