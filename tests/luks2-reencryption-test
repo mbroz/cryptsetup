@@ -878,9 +878,9 @@ reformat_reencrypt_device() {
 		$CRYPTSETUP token add $DEV --token-id 3 --key-description $KEY_NAME5 -S10
 		echo -e "{\"type\":\"luks2-keyring\",\"keyslots\":[\"4\", \"12\"],\"key_description\":\"$KEY_NAME6\"}" | $CRYPTSETUP token import $DEV --token-id 4 --json-file -
 
-		$CRYPTSETUP luksHeaderBackup --header-backup-file $BACKUP_FILE $DEV || fail
+		$CRYPTSETUP -q luksHeaderBackup --header-backup-file $BACKUP_FILE $DEV || fail
 	else
-		$CRYPTSETUP luksHeaderRestore --header-backup-file $BACKUP_FILE $DEV || fail
+		$CRYPTSETUP -q luksHeaderRestore --header-backup-file $BACKUP_FILE $DEV || fail
 	fi
 }
 
