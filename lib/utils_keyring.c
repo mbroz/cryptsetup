@@ -150,7 +150,11 @@ static key_serial_t find_key_by_type_and_desc(const char *type, const char *desc
 	do {
 		id = request_key(type, desc, NULL, 0);
 	} while (id < 0 && errno == EINTR);
-	if (id >= 0 || errno == ENOMEM)
+
+	if (id < 0 && errno == ENOMEM)
+		return 0;
+
+	if (id >= 0)
 		return id;
 
 	f = open("/proc/keys", O_RDONLY);
