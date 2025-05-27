@@ -7558,7 +7558,7 @@ int crypt_keyring_get_key_by_name(struct crypt_device *cd,
 
 	kid = keyring_find_key_id_by_name(key_description);
 	if (kid == 0) {
-		log_dbg(cd, "keyring_find_key_id_by_name failed with errno %d.", ENOENT);
+		log_dbg(cd, "keyring_find_key_id_by_name failed with errno %d.", errno);
 		return -ENOENT;
 	}
 
