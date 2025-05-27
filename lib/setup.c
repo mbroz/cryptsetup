@@ -7557,14 +7557,7 @@ int crypt_keyring_get_key_by_name(struct crypt_device *cd,
 	log_dbg(cd, "Searching for kernel key by name %s.", key_description);
 
 	kid = keyring_find_key_id_by_name(key_description);
-	if (kid == -ENOTSUP) {
-		log_dbg(cd, "Kernel keyring features disabled.");
-		return -ENOTSUP;
-	} else if (kid < 0) {
-		log_dbg(cd, "keyring_find_key_id_by_name failed with errno %d.", errno);
-		return -EINVAL;
-	}
-	else if (kid == 0) {
+	if (kid == 0) {
 		log_dbg(cd, "keyring_find_key_id_by_name failed with errno %d.", ENOENT);
 		return -ENOENT;
 	}
