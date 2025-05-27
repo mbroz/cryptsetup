@@ -36,7 +36,7 @@ static double chisquared_bits(void *b, uint64_t count)
 {
 	size_t i;
 	double f[2] = {0};
-	double tmp, t = 0, e = count * 8 / ARRAY_SIZE(f);
+	double tmp, t = 0, e = count * 8 / (double)ARRAY_SIZE(f);
 
 	f[1] = bitcount((uint64_t*)b, count / sizeof(uint64_t));
 	f[0] = (count * 8) - f[1];
@@ -56,7 +56,7 @@ static double chisquared_bytes(unsigned char *N, uint64_t count)
 {
 	size_t i;
 	double f[256] = {0};
-	double tmp, t = 0, e = count / ARRAY_SIZE(f);
+	double tmp, t = 0, e = count / (double)ARRAY_SIZE(f);
 
 	for (i = 0; i < count; i++)
 		f[N[i]]++;
@@ -168,7 +168,7 @@ void luks_check_keyslots(struct crypt_device *cd, const char *device)
 		 * data_length is the really used keyslot area
 		 * length = data_legth + padding_4096
 		 */
-		data_length = r * LUKS_STRIPES;
+		data_length = (uint64_t)r * LUKS_STRIPES;
 
 		buffer = malloc(data_length);
 		if (!buffer)
