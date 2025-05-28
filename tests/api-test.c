@@ -323,7 +323,7 @@ static void AddDevicePlain(void)
 
 	uint64_t size, r_size;
 
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 	FAIL_(crypt_init(&cd, ""), "empty device string");
 	FAIL_(crypt_init(&cd, DEVICE_WRONG), "nonexistent device name ");
 	FAIL_(crypt_init(&cd, DEVICE_CHAR), "character device as backing device");
@@ -806,8 +806,8 @@ static void AddDeviceLuks(void)
 	uint64_t r_payload_offset, r_header_size, r_size_1;
 	struct crypt_pbkdf_type pbkdf;
 
-	crypt_decode_key(key, vk_hex, key_size);
-	crypt_decode_key(key3, vk_hex2, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
+	OK_(crypt_decode_key(key3, vk_hex2, key_size));
 
 	// init test devices
 	OK_(get_luks_offsets(1, key_size, 0, 0, &r_header_size, &r_payload_offset));
@@ -1139,7 +1139,7 @@ static void LuksHeaderRestore(void)
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset;
 
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 
 	OK_(get_luks_offsets(0, key_size, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 5000));
@@ -1227,7 +1227,7 @@ static void LuksHeaderLoad(void)
 	uint64_t r_payload_offset, r_header_size;
 	uint64_t mdata_size, keyslots_size;
 
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 
 	// prepare test env
 	OK_(get_luks_offsets(0, key_size, params.data_alignment, 0, &r_header_size, &r_payload_offset));
@@ -1340,7 +1340,7 @@ static void LuksHeaderBackup(void)
 
 	const char *passphrase = PASSPHRASE;
 
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 
 	OK_(get_luks_offsets(0, key_size, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
@@ -1420,7 +1420,7 @@ static void ResizeDeviceLuks(void)
 	const char *cipher_mode = "cbc-essiv:sha256";
 	uint64_t r_payload_offset, r_header_size, r_size;
 
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 
 	// prepare env
 	OK_(get_luks_offsets(0, key_size, params.data_alignment, 0, NULL, &r_payload_offset));
@@ -1517,7 +1517,7 @@ static void HashDevicePlain(void)
 	//         0 1 2 3 4 5 6 7 8 9 a b c d e f
 	vk_hex = "caffeecaffeecaffeecaffeecaffee88";
 	key_size = 16;
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 	OK_(prepare_keyfile(KEYFILE1, key, key_size));
 	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
@@ -1537,7 +1537,7 @@ static void HashDevicePlain(void)
 	//         0 1 2 3 4 5 6 7 8 9 a b c d e f
 	vk_hex = "caffeecaffeecaffeecaffeecaffee88babebabe";
 	key_size = 16;
-	crypt_decode_key(key, vk_hex, strlen(vk_hex) / 2);
+	OK_(crypt_decode_key(key, vk_hex, strlen(vk_hex) / 2));
 	OK_(prepare_keyfile(KEYFILE1, key, strlen(vk_hex) / 2));
 	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
@@ -1560,7 +1560,7 @@ static void HashDevicePlain(void)
 	//         0 1 2 3 4 5 6 7 8 9 a b c d e f
 	vk_hex = "aabbcaffeecaffeecaffeecaffeecaff";
 	key_size = 16;
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 	OK_(prepare_keyfile(KEYFILE1, key, strlen(vk_hex) / 2));
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_format(cd, CRYPT_PLAIN, "aes", "cbc-essiv:sha256", NULL, NULL, 16, &params));
@@ -1631,8 +1631,8 @@ static void VerityTest(void)
 		.flags = CRYPT_VERITY_CREATE_HASH,
 	};
 
-	crypt_decode_key(salt, salt_hex, strlen(salt_hex) / 2);
-	crypt_decode_key(root_hash, root_hex, strlen(root_hex) / 2);
+	OK_(crypt_decode_key(salt, salt_hex, strlen(salt_hex) / 2));
+	OK_(crypt_decode_key(root_hash, root_hex, strlen(root_hex) / 2));
 
 	/* Format */
 	OK_(crypt_init(&cd, DEVICE_2));
@@ -1762,7 +1762,7 @@ static void TcryptTest(void)
 		"3979531d1cdc18af62757cf22286f16f8583d848524f128d7594ac2082668c73";
 	int r;
 
-	crypt_decode_key(key_def, key_hex, strlen(key_hex) / 2);
+	OK_(crypt_decode_key(key_def, key_hex, strlen(key_hex) / 2));
 
 	// First ensure we can use af_alg skcipher interface
 	r = crypt_benchmark(NULL, "aes", "xts", 512, 16, 1024, &enc_mbr, &dec_mbr);
@@ -1936,9 +1936,9 @@ static void ResizeIntegrityWithKey(void)
 	size_t journal_integrity_key_size = strlen(key_journal_integrity_hex) / 2;
 	size_t journal_crypt_key_size = strlen(key_journal_crypt_hex) / 2;
 
-	crypt_decode_key(integrity_key, key_integrity_hex, integrity_key_size);
-	crypt_decode_key(journal_integrity_key, key_journal_integrity_hex, journal_integrity_key_size);
-	crypt_decode_key(journal_crypt_key, key_journal_crypt_hex, journal_crypt_key_size);
+	OK_(crypt_decode_key(integrity_key, key_integrity_hex, integrity_key_size));
+	OK_(crypt_decode_key(journal_integrity_key, key_journal_integrity_hex, journal_integrity_key_size));
+	OK_(crypt_decode_key(journal_crypt_key, key_journal_crypt_hex, journal_crypt_key_size));
 
 	params.integrity_key_size = integrity_key_size;
 
@@ -2016,7 +2016,7 @@ static void IntegrityTest(void)
 	size_t integrity_key_size = strlen(key_integrity_hex) / 2;
 	char integrity_key[128];
 
-	crypt_decode_key(integrity_key, key_integrity_hex, integrity_key_size);
+	OK_(crypt_decode_key(integrity_key, key_integrity_hex, integrity_key_size));
 	params2.integrity_key_size = integrity_key_size;
 
 	OK_(crypt_init(&cd, DEVICE_1));
@@ -2139,8 +2139,8 @@ static void LuksKeyslotAdd(void)
 	uint64_t r_payload_offset;
 	struct crypt_keyslot_context *um1, *um2;
 
-	crypt_decode_key(key, vk_hex, key_size);
-	crypt_decode_key(key3, vk_hex2, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
+	OK_(crypt_decode_key(key3, vk_hex2, key_size));
 
 	// init test devices
 	OK_(get_luks_offsets(0, key_size, params.data_alignment, 0, NULL, &r_payload_offset));
@@ -2245,7 +2245,7 @@ static void VolumeKeyGet(void)
 	uint64_t r_payload_offset;
 	struct crypt_keyslot_context *um1, *um2;
 
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 
 	OK_(prepare_keyfile(KEYFILE1, PASSPHRASE1, strlen(PASSPHRASE1)));
 
