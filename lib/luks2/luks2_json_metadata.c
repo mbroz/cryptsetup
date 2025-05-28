@@ -2661,7 +2661,7 @@ int LUKS2_activate(struct crypt_device *cd,
 {
 	int r;
 	bool dynamic, read_lock, write_lock, opal_lock_on_error = false;
-	uint32_t opal_segment_number, requirements_flags;
+	uint32_t opal_segment_number, req_flags;
 	uint64_t range_offset_sectors, range_length_sectors, device_length_bytes;
 	struct luks2_hdr *hdr = crypt_get_hdr(cd, CRYPT_LUKS2);
 	struct crypt_dm_active_device dmdi = {}, dmd = {
@@ -2760,13 +2760,13 @@ int LUKS2_activate(struct crypt_device *cd,
 
 	dmd.flags |= flags;
 
-	if (crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &requirements_flags)) {
+	if (crypt_persistent_flags_get(cd, CRYPT_FLAGS_REQUIREMENTS, &req_flags)) {
 		r = -EINVAL;
 		goto out;
 	}
 
 	if (crypt_get_integrity_tag_size(cd) &&
-	    !(requirements_flags & CRYPT_REQUIREMENT_INLINE_HW_TAGS)) {
+	    !(req_flags & CRYPT_REQUIREMENT_INLINE_HW_TAGS)) {
 		if (!LUKS2_integrity_compatible(hdr)) {
 			log_err(cd, _("Unsupported device integrity configuration."));
 			r = -EINVAL;
