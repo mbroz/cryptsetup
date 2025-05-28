@@ -4134,7 +4134,7 @@ static void Luks2Reencryption(void)
 
 	const char *vk_hex =  "bb21babe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a",
 		   *vk_hex2 = "bb21bebe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a" \
-			      "cc21cfcf733229347ce4f681891f213d94d685cf6b5b84818baf7b78b6rf7b1b";
+			      "cc21cfcf733229347ce4f681891f213d94d685cf6b5b84818baf7b78b6df7b1b";
 	size_t key_size = strlen(vk_hex) / 2,
 	       key_size2 = strlen(vk_hex2) / 2;
 	char key[128], key2[64];
