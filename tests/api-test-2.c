@@ -865,8 +865,8 @@ static void AddDeviceLuks2(void)
 		pbkdf.max_memory_kb = 0;
 	}
 
-	crypt_decode_key(key, vk_hex, key_size);
-	crypt_decode_key(key3, vk_hex2, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
+	OK_(crypt_decode_key(key3, vk_hex2, key_size));
 
 	// init test devices
 	OK_(get_luks2_offsets(0, 0, 0, &r_header_size, &r_payload_offset));
@@ -1212,7 +1212,7 @@ static void Luks2MetadataSize(void)
 		pbkdf.iterations = 1000;
 	}
 
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 
 	// init test devices
 	OK_(get_luks2_offsets(0, 0, 0, &r_header_size, NULL));
@@ -1404,7 +1404,7 @@ static void Luks2HeaderRestore(void)
 		pbkdf.max_memory_kb = 0;
 	}
 
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 
 	OK_(get_luks2_offsets(0, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 5000));
@@ -1506,7 +1506,7 @@ static void Luks2HeaderLoad(void)
 		pbkdf.max_memory_kb = 0;
 	}
 
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 
 	// hardcoded values for existing image IMAGE1
 	img_size = 8192;
@@ -1641,7 +1641,7 @@ static void Luks2HeaderBackup(void)
 		pbkdf.max_memory_kb = 0;
 	}
 
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 
 	OK_(get_luks2_offsets(1, params.data_alignment, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1));
@@ -1736,7 +1736,7 @@ static void ResizeDeviceLuks2(void)
 		pbkdf.max_memory_kb = 0;
 	}
 
-	crypt_decode_key(key, vk_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
 
 	// prepare env
 	OK_(get_luks2_offsets(0, params.data_alignment, 0, NULL, &r_payload_offset));
@@ -3180,8 +3180,8 @@ static void Luks2KeyslotAdd(void)
 		.sector_size = TST_SECTOR_SIZE
 	};
 
-	crypt_decode_key(key, vk_hex, key_size);
-	crypt_decode_key(key2, vk_hex2, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
+	OK_(crypt_decode_key(key2, vk_hex2, key_size));
 
 	/* Cannot use Argon2 in FIPS */
 	if (_fips_mode) {
@@ -3315,8 +3315,8 @@ static void Luks2KeyslotParams(void)
 	size_t key_size_ret, key_size = strlen(vk_hex) / 2, keyslot_key_size = 16;
 	uint64_t r_payload_offset;
 
-	crypt_decode_key(key, vk_hex, key_size);
-	crypt_decode_key(key2, vk_hex2, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
+	OK_(crypt_decode_key(key2, vk_hex2, key_size));
 
 	OK_(prepare_keyfile(KEYFILE1, PASSPHRASE, strlen(PASSPHRASE)));
 	OK_(prepare_keyfile(KEYFILE2, PASSPHRASE1, strlen(PASSPHRASE1)));
@@ -3916,8 +3916,8 @@ static void Luks2Refresh(void)
 	};
 	struct crypt_active_device cad = {};
 
-	crypt_decode_key(key, vk_hex, key_size);
-	crypt_decode_key(key1, vk_hex2, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
+	OK_(crypt_decode_key(key1, vk_hex2, key_size));
 
 	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_payload_offset + 1000));
@@ -4134,13 +4134,13 @@ static void Luks2Reencryption(void)
 
 	const char *vk_hex =  "bb21babe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a",
 		   *vk_hex2 = "bb21bebe733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a" \
-			      "cc21cfcf733229347ce4f681891f213d94d685cf6b5b84818baf7b78b6rf7b1b";
+			      "cc21cfcf733229347ce4f681891f213d94d685cf6b5b84818baf7b78b6df7b1b";
 	size_t key_size = strlen(vk_hex) / 2,
 	       key_size2 = strlen(vk_hex2) / 2;
 	char key[128], key2[64];
 
-	crypt_decode_key(key, vk_hex, key_size);
-	crypt_decode_key(key2, vk_hex2, key_size2);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
+	OK_(crypt_decode_key(key2, vk_hex2, key_size2));
 
 	/* reencryption currently depends on kernel keyring support in dm-crypt */
 	if (!t_dm_crypt_keyring_support())
@@ -5286,8 +5286,8 @@ static void LuksKeyslotAdd(void)
 	uint64_t r_payload_offset;
 	struct crypt_keyslot_context *um1, *um2;
 
-	crypt_decode_key(key, vk_hex, key_size);
-	crypt_decode_key(key3, vk_hex2, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
+	OK_(crypt_decode_key(key3, vk_hex2, key_size));
 
 	// init test devices
 	OK_(get_luks2_offsets(0, 0, 0, NULL, &r_payload_offset));
@@ -5430,8 +5430,8 @@ static void VolumeKeyGet(void)
 	uint64_t r_payload_offset;
 	struct crypt_keyslot_context *um1, *um2;
 
-	crypt_decode_key(key, vk_hex, key_size);
-	crypt_decode_key(key3, vk2_hex, key_size);
+	OK_(crypt_decode_key(key, vk_hex, key_size));
+	OK_(crypt_decode_key(key3, vk2_hex, key_size));
 
 	OK_(prepare_keyfile(KEYFILE1, PASSPHRASE1, strlen(PASSPHRASE1)));
 
