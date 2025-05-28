@@ -1537,7 +1537,7 @@ static void HashDevicePlain(void)
 	//         0 1 2 3 4 5 6 7 8 9 a b c d e f
 	vk_hex = "caffeecaffeecaffeecaffeecaffee88babebabe";
 	key_size = 16;
-	crypt_decode_key(key, vk_hex, key_size);
+	crypt_decode_key(key, vk_hex, strlen(vk_hex) / 2);
 	OK_(prepare_keyfile(KEYFILE1, key, strlen(vk_hex) / 2));
 	OK_(crypt_activate_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, key_size, 0));
 	OK_(get_key_dm(CDEVICE_1, key, sizeof(key)));
