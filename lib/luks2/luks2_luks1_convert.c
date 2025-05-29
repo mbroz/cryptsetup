@@ -570,6 +570,7 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	json_object *jobj = NULL;
 	size_t buf_size, buf_offset, luks1_size, luks1_shift = 2 * LUKS2_HDR_16K_LEN - LUKS_ALIGN_KEYSLOTS;
 	uint64_t required_size, max_size = crypt_get_data_offset(cd) * SECTOR_SIZE;
+	char cipher_spec[MAX_CAPI_LEN];
 
 	/* for detached headers max size == device size */
 	if (!max_size && (r = device_size(crypt_metadata_device(cd), &max_size)))
@@ -586,6 +587,15 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	}
 
 	if (LUKS2_check_cipher(cd, hdr1->keyBytes, hdr1->cipherName, hdr1->cipherMode)) {
+		log_err(cd, _("Unable to use cipher specification %s-%s for LUKS2."),
+			hdr1->cipherName, hdr1->cipherMode);
+		return -EINVAL;
+	}
+
+	r = snprintf(cipher_spec, sizeof(cipher_spec), "%s-%s", hdr1->cipherName, hdr1->cipherMode);
+	if (r < 0 || (size_t)r >= sizeof(cipher_spec))
+		return -EINVAL;
+	if (LUKS2_keyslot_cipher_incompatible(cd, cipher_spec)) {
 		log_err(cd, _("Unable to use cipher specification %s-%s for LUKS2."),
 			hdr1->cipherName, hdr1->cipherMode);
 		return -EINVAL;
