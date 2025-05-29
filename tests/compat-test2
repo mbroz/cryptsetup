@@ -1046,7 +1046,7 @@ if [ "$HAVE_BLKID" -gt 0 ]; then
 	$CRYPTSETUP isLuks --disable-locks --type luks2 $HEADER_LUKS2_PV && fail
 	$CRYPTSETUP isLuks --type luks2 $HEADER_LUKS2_PV && fail
 fi
-$CRYPTSETUP -q repair $HEADER_LUKS2_PV || fail
+$CRYPTSETUP -q repair $HEADER_LUKS2_PV >/dev/null || fail
 $CRYPTSETUP isLuks $HEADER_LUKS2_PV || fail
 $CRYPTSETUP isLuks --type luks2 $HEADER_LUKS2_PV || fail
 $CRYPTSETUP isLuks --type luks1 $HEADER_LUKS2_PV && fail
