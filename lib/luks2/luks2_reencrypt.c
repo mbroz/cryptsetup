@@ -3071,7 +3071,13 @@ static int reencrypt_init(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (!data_size_bytes && params->mode == CRYPT_REENCRYPT_ENCRYPT &&
+	if (data_size_bytes && params->mode == CRYPT_REENCRYPT_ENCRYPT &&
+	    move_first_segment && data_shift_bytes) {
+		if (data_size_bytes > device_size_bytes - data_shift_bytes) {
+			log_err(cd, _("Reduced data size is larger than real device size."));
+			return -EINVAL;
+		}
+	} else if (!data_size_bytes && params->mode == CRYPT_REENCRYPT_ENCRYPT &&
 	    move_first_segment && data_shift_bytes)
 		data_size_bytes = device_size_bytes - data_shift_bytes;
 	else if (!data_size_bytes)
