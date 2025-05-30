@@ -1930,14 +1930,13 @@ static int reencrypt_assign_segments(struct crypt_device *cd,
 }
 
 static int reencrypt_set_encrypt_segments(struct crypt_device *cd, struct luks2_hdr *hdr,
-					  uint64_t dev_size, uint64_t data_shift, bool move_first_segment,
+					  uint64_t dev_size, uint64_t data_size, uint64_t data_shift, bool move_first_segment,
 					  crypt_reencrypt_direction_info di)
 {
 	int r;
 	uint64_t first_segment_offset, first_segment_length,
 		 second_segment_offset, second_segment_length,
-		 data_offset = LUKS2_get_data_offset(hdr) << SECTOR_SHIFT,
-		 data_size = dev_size - data_shift;
+		 data_offset = LUKS2_get_data_offset(hdr) << SECTOR_SHIFT;
 	json_object *jobj_segment_first = NULL, *jobj_segment_second = NULL, *jobj_segments;
 
 	if (dev_size < data_shift)
@@ -2995,7 +2994,7 @@ static int reencrypt_init(struct crypt_device *cd,
 	char _cipher[128];
 	uint32_t check_sector_size, new_sector_size, old_sector_size;
 	int digest_new, r, reencrypt_keyslot, devfd = -1;
-	uint64_t data_offset_bytes, data_size_bytes = 0;
+	uint64_t data_offset_bytes, data_size_bytes, data_shift_bytes, device_size_bytes;
 	struct volume_key *vk;
 	struct crypt_dm_active_device dmd_target, dmd_source = {
 		.uuid = crypt_get_uuid(cd),
@@ -3047,19 +3046,36 @@ static int reencrypt_init(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	r = device_size(crypt_data_device(cd), &data_size_bytes);
+	r = device_size(crypt_data_device(cd), &device_size_bytes);
 	if (r)
 		return r;
 
-	data_size_bytes -= data_offset_bytes;
-
-	if (params->device_size) {
-		if ((params->device_size << SECTOR_SHIFT) > data_size_bytes) {
-			log_err(cd, _("Reduced data size is larger than real device size."));
-			return -EINVAL;
-		} else
-			data_size_bytes = params->device_size << SECTOR_SHIFT;
+	if (move_first_segment && params->mode == CRYPT_REENCRYPT_ENCRYPT &&
+	    params->data_shift < LUKS2_get_data_offset(hdr)) {
+		log_err(cd, _("Data shift (%" PRIu64 " sectors) is less than future data offset (%" PRIu64 " sectors)."),
+			params->data_shift, LUKS2_get_data_offset(hdr));
+		return -EINVAL;
 	}
+
+	device_size_bytes -= data_offset_bytes;
+	data_shift_bytes = params->data_shift << SECTOR_SHIFT;
+	data_size_bytes = params->device_size << SECTOR_SHIFT;
+
+	if (device_size_bytes < data_shift_bytes && params->direction == CRYPT_REENCRYPT_BACKWARD) {
+		log_err(cd, _("Device %s is too small."), device_path(crypt_data_device(cd)));
+		return -EINVAL;
+	}
+
+	if (data_size_bytes > device_size_bytes) {
+		log_err(cd, _("Reduced data size is larger than real device size."));
+		return -EINVAL;
+	}
+
+	if (!data_size_bytes && params->mode == CRYPT_REENCRYPT_ENCRYPT &&
+	    move_first_segment && data_shift_bytes)
+		data_size_bytes = device_size_bytes - data_shift_bytes;
+	else if (!data_size_bytes)
+		data_size_bytes = device_size_bytes;
 
 	if (MISALIGNED(data_size_bytes, check_sector_size)) {
 		log_err(cd, _("Data device is not aligned to encryption sector size (%" PRIu32 " bytes)."), check_sector_size);
@@ -3072,7 +3088,7 @@ static int reencrypt_init(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
-	if (params->mode == CRYPT_REENCRYPT_DECRYPT && (params->data_shift > 0) && move_first_segment)
+	if (params->mode == CRYPT_REENCRYPT_DECRYPT && data_shift_bytes && move_first_segment)
 		return reencrypt_decrypt_with_datashift_init(cd, name, hdr,
 							     reencrypt_keyslot,
 							     check_sector_size,
@@ -3089,15 +3105,6 @@ static int reencrypt_init(struct crypt_device *cd,
 	 * encryption initialization (or mount)
 	 */
 	if (move_first_segment) {
-		if (data_size_bytes < (params->data_shift << SECTOR_SHIFT)) {
-			log_err(cd, _("Device %s is too small."), device_path(crypt_data_device(cd)));
-			return -EINVAL;
-		}
-		if (params->data_shift < LUKS2_get_data_offset(hdr)) {
-			log_err(cd, _("Data shift (%" PRIu64 " sectors) is less than future data offset (%" PRIu64 " sectors)."),
-				params->data_shift, LUKS2_get_data_offset(hdr));
-			return -EINVAL;
-		}
 		devfd = device_open_excl(cd, crypt_data_device(cd), O_RDWR);
 		if (devfd < 0) {
 			if (devfd == -EBUSY)
@@ -3109,8 +3116,8 @@ static int reencrypt_init(struct crypt_device *cd,
 
 	if (params->mode == CRYPT_REENCRYPT_ENCRYPT) {
 		/* in-memory only */
-		r = reencrypt_set_encrypt_segments(cd, hdr, data_size_bytes,
-						   params->data_shift << SECTOR_SHIFT,
+		r = reencrypt_set_encrypt_segments(cd, hdr, device_size_bytes, data_size_bytes,
+						   data_shift_bytes,
 						   move_first_segment,
 						   params->direction);
 		if (r)
@@ -3184,7 +3191,7 @@ static int reencrypt_init(struct crypt_device *cd,
 			goto out;
 	}
 
-	if (move_first_segment && reencrypt_move_data(cd, devfd, params->data_shift << SECTOR_SHIFT, params->mode)) {
+	if (move_first_segment && reencrypt_move_data(cd, devfd, data_shift_bytes, params->mode)) {
 		r = -EIO;
 		goto out;
 	}
