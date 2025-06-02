@@ -4439,12 +4439,13 @@ static void Luks2Reencryption(void)
 	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 0, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 0);
 	EQ_(crypt_keyslot_add_by_key(cd, 1, NULL, 64, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
-	memset(&rparams, 0, sizeof(rparams));
-	rparams.direction = CRYPT_REENCRYPT_BACKWARD;
-	rparams.resilience = "datashift";
-	rparams.data_shift = 8;
-	rparams.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY;
-	rparams.luks2 = &params2;
+	rparams = (struct crypt_params_reencrypt) {
+		.direction = CRYPT_REENCRYPT_BACKWARD,
+		.resilience = "datashift",
+		.data_shift = 8,
+		.luks2 = &params2,
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY
+	};
 	EQ_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 0, 1, "aes", "xts-plain64", &rparams), 2);
 	EQ_(crypt_reencrypt_status(cd, &retparams), CRYPT_REENCRYPT_CLEAN);
 	EQ_(retparams.data_shift, 8);
@@ -4527,15 +4528,16 @@ static void Luks2Reencryption(void)
 
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
 
-	memset(&rparams, 0, sizeof(rparams));
 	params2.sector_size = 512;
 	params2.data_device = DMDIR L_DEVICE_OK;
-	rparams.mode = CRYPT_REENCRYPT_ENCRYPT;
-	rparams.direction = CRYPT_REENCRYPT_BACKWARD;
-	rparams.resilience = "datashift";
-	rparams.data_shift = 8192;
-	rparams.luks2 = &params2;
-	rparams.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY | CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT;
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_ENCRYPT,
+		.direction = CRYPT_REENCRYPT_BACKWARD,
+		.resilience = "datashift",
+		.data_shift = 8192,
+		.luks2 = &params2,
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY | CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT
+	};
 	OK_(crypt_set_data_offset(cd, 8192));
 	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, &params2));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 30, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)), 30);
@@ -4586,15 +4588,16 @@ static void Luks2Reencryption(void)
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
 
 	/* encryption with datashift and moved segment (data shift + data offset <= device size) */
-	memset(&rparams, 0, sizeof(rparams));
 	params2.sector_size = 512;
 	params2.data_device = DMDIR L_DEVICE_OK;
-	rparams.mode = CRYPT_REENCRYPT_ENCRYPT;
-	rparams.direction = CRYPT_REENCRYPT_BACKWARD;
-	rparams.resilience = "datashift";
-	rparams.data_shift = 8200;
-	rparams.luks2 = &params2;
-	rparams.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY | CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT;
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_ENCRYPT,
+		.direction = CRYPT_REENCRYPT_BACKWARD,
+		.resilience = "datashift",
+		.data_shift = 8200,
+		.luks2 = &params2,
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY | CRYPT_REENCRYPT_MOVE_FIRST_SEGMENT
+	};
 	OK_(crypt_set_data_offset(cd, 8200));
 	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, &params2));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 30, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)), 30);
@@ -4607,14 +4610,15 @@ static void Luks2Reencryption(void)
 
 	/* offline in-place encryption with reserved space in the head of data device */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
-	memset(&rparams, 0, sizeof(rparams));
 	params2.sector_size = 512;
-	rparams.mode = CRYPT_REENCRYPT_ENCRYPT;
-	rparams.direction = CRYPT_REENCRYPT_FORWARD;
-	rparams.resilience = "checksum";
-	rparams.hash = "sha256";
-	rparams.luks2 = &params2;
-	rparams.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY;
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_ENCRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "checksum",
+		.hash = "sha256",
+		.luks2 = &params2,
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY
+	};
 	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, &params2));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 30, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)), 30);
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ANY_SLOT, 30, "aes", "xts-plain64", &rparams));
@@ -4690,11 +4694,12 @@ static void Luks2Reencryption(void)
 	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
 	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
-	memset(&rparams, 0, sizeof(rparams));
-	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
-	rparams.direction = CRYPT_REENCRYPT_BACKWARD;
-	rparams.resilience = "none";
-	rparams.max_hotzone_size = 2048;
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_DECRYPT,
+		.direction = CRYPT_REENCRYPT_BACKWARD,
+		.resilience = "none",
+		.max_hotzone_size = 2048
+	};
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
 	EQ_(crypt_get_old_volume_key_size(cd), 32);
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
@@ -4712,11 +4717,12 @@ static void Luks2Reencryption(void)
 	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
 	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
-	memset(&rparams, 0, sizeof(rparams));
-	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
-	rparams.direction = CRYPT_REENCRYPT_FORWARD;
-	rparams.resilience = "none";
-	rparams.max_hotzone_size = 2048;
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_DECRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "none",
+		.max_hotzone_size = 2048
+	};
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	CRYPT_FREE(cd);
@@ -4728,11 +4734,12 @@ static void Luks2Reencryption(void)
 	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_2, 6, PASSPHRASE, strlen(PASSPHRASE), 0), 6);
-	memset(&rparams, 0, sizeof(rparams));
-	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
-	rparams.direction = CRYPT_REENCRYPT_FORWARD;
-	rparams.resilience = "none";
-	rparams.max_hotzone_size = 2048;
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_DECRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "none",
+		.max_hotzone_size = 2048
+	};
 	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_2, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
 	CRYPT_FREE(cd);
@@ -4751,11 +4758,12 @@ static void Luks2Reencryption(void)
 	OK_(crypt_init_data_device(&cd, BACKUP_FILE, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	EQ_(crypt_get_data_offset(cd), r_header_size);
-	memset(&rparams, 0, sizeof(rparams));
-	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
-	rparams.direction = CRYPT_REENCRYPT_FORWARD;
-	rparams.resilience = "datashift";
-	rparams.data_shift = r_header_size;
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_DECRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "datashift",
+		.data_shift = r_header_size
+	};
 	OK_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
 	EQ_(crypt_get_data_offset(cd), 0);
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
@@ -4783,11 +4791,12 @@ static void Luks2Reencryption(void)
 	OK_(crypt_init_data_device(&cd, BACKUP_FILE, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 	EQ_(crypt_get_data_offset(cd), r_header_size);
-	memset(&rparams, 0, sizeof(rparams));
-	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
-	rparams.direction = CRYPT_REENCRYPT_FORWARD;
-	rparams.resilience = "datashift";
-	rparams.data_shift = r_header_size;
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_DECRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "datashift",
+		.data_shift = r_header_size
+	};
 	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_2, PASSPHRASE, strlen(PASSPHRASE), 6, CRYPT_ANY_SLOT, NULL, NULL, &rparams));
 	EQ_(crypt_get_data_offset(cd), 0);
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
@@ -4816,11 +4825,11 @@ static void Luks2Reencryption(void)
 	EQ_(crypt_activate_by_passphrase(cd2, CDEVICE_2, 6, PASSPHRASE, strlen(PASSPHRASE), 0), 6);
 	CRYPT_FREE(cd2);
 	EQ_(crypt_keyslot_add_by_key(cd, 1, NULL, 32, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
-
-	memset(&rparams, 0, sizeof(rparams));
-	rparams.resilience = "none";
-	rparams.max_hotzone_size = 16*2048;
-	rparams.luks2 = &params2;
+	rparams = (struct crypt_params_reencrypt) {
+		.resilience = "none",
+		.max_hotzone_size = 16*2048,
+		.luks2 = &params2
+	};
 
 	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "cbc-essiv:sha256", &rparams));
 	OK_(crypt_reencrypt_run(cd, NULL, NULL));
@@ -4887,12 +4896,13 @@ static void Luks2Reencryption(void)
 	OK_(crypt_volume_key_keyring(cd, 0)); /* disable keyring */
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 6, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ACTIVATE_ALLOW_DISCARDS), 6);
 	OK_(crypt_volume_key_keyring(cd, 1));
-	rparams.mode = CRYPT_REENCRYPT_REENCRYPT;
-	rparams.direction = CRYPT_REENCRYPT_FORWARD,
-	rparams.resilience = "none",
-	rparams.max_hotzone_size = 8;
-	rparams.luks2 = &params2;
-	rparams.flags = 0;
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_REENCRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "none",
+		.max_hotzone_size = 8,
+		.luks2 = &params2
+	};
 	EQ_(crypt_keyslot_add_by_key(cd, 1, NULL, 64, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
 	OK_(crypt_reencrypt_init_by_passphrase(cd, CDEVICE_1, PASSPHRASE, strlen(PASSPHRASE), 6, 1, "aes", "xts-plain64", &rparams));
 	test_progress_steps = 2;
@@ -4915,15 +4925,12 @@ static void Luks2Reencryption(void)
 	_cleanup_dmdevices();
 	OK_(create_dmdevice_over_loop(L_DEVICE_OK, r_header_size + 16));
 
-	rparams.mode = CRYPT_REENCRYPT_REENCRYPT;
-	rparams.direction = CRYPT_REENCRYPT_FORWARD;
-	rparams.resilience = "none";
-	rparams.hash = NULL;
-	rparams.data_shift = 0;
-	rparams.max_hotzone_size = 0;
-	rparams.device_size = 0;
-	rparams.luks2 = &params2;
-	rparams.flags = 0;
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_REENCRYPT,
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "none",
+		.luks2 = &params2
+	};
 
 	/* Test support for specific key reencryption */
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
@@ -5962,14 +5969,15 @@ static void KeyslotContextAndKeyringLink(void)
 
 	OK_(crypt_init(&cd, DMDIR H_DEVICE));
 
-	memset(&rparams, 0, sizeof(rparams));
 	params2.sector_size = 512;
 	params2.data_device = DMDIR L_DEVICE_OK;
-	rparams.mode = CRYPT_REENCRYPT_ENCRYPT;
-	rparams.luks2 = &params2;
-	rparams.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY;
-	rparams.resilience = "checksum";
-	rparams.hash = "sha256";
+	rparams = (struct crypt_params_reencrypt) {
+		.mode = CRYPT_REENCRYPT_ENCRYPT,
+		.resilience = "checksum",
+		.hash = "sha256",
+		.luks2 = &params2,
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY,
+	};
 	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "xts-plain64", NULL, NULL, 64, &params2));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 1, NULL, 64, PASSPHRASE, strlen(PASSPHRASE)), 1);
 	EQ_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), CRYPT_ANY_SLOT, 1, "aes", "xts-plain64", &rparams), 0);

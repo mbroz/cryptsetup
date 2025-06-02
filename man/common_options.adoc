@@ -124,6 +124,13 @@ ifdef::ACTION_REENCRYPT[]
 It means that only specified area (from the start of the device
 to the specified size) will be reencrypted.
 +
+*LUKS2*:
+When used together with --reduce-device-size, only the initial _size_ value
+(--device-size parameter) of data is shifted backwards while being encrypted.
++
+*NOTE*:
+The sum of --device-size and --reduce-device-size values must not exceed real device size.
++
 *WARNING:* This is destructive operation. Data beyond --device-size limit may
 be lost after operation gets finished.
 endif::[]
@@ -993,10 +1000,17 @@ unrecoverable.
 +
 *LUKS2*:
 Initialize LUKS2 reencryption with data device size reduction
-(currently only encryption mode is supported).
+(currently only encryption mode is supported). The last _size_ sectors
+on the original plaintext device is used for temporarily storing original
+first data segment. The former first data segment is replaced with LUKS2
+header (half the _size_ value) and plaintext data are shifted backwards (
+again half the _size_ value) while being encrypted.
 +
 Recommended minimal size is twice the default LUKS2 header size
 (--reduce-device-size 32M) for encryption mode.
++
+*NOTE*:
+The sum of --device-size and --reduce-device-size values must not exceed real device size.
 +
 *LUKS1*:
 Enlarge data offset to specified value by shrinking device size.
