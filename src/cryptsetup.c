@@ -78,6 +78,7 @@ static bool isLUKS(const char *type)
 static int _set_keyslot_encryption_params(struct crypt_device *cd)
 {
 	const char *type = crypt_get_type(cd);
+	int r;
 
 	if (!ARG_SET(OPT_KEYSLOT_KEY_SIZE_ID) && !ARG_SET(OPT_KEYSLOT_CIPHER_ID))
 		return 0;
@@ -87,7 +88,11 @@ static int _set_keyslot_encryption_params(struct crypt_device *cd)
 		return -EINVAL;
 	}
 
-	return crypt_keyslot_set_encryption(cd, ARG_STR(OPT_KEYSLOT_CIPHER_ID), ARG_UINT32(OPT_KEYSLOT_KEY_SIZE_ID) / 8);
+	r = crypt_keyslot_set_encryption(cd, ARG_STR(OPT_KEYSLOT_CIPHER_ID), ARG_UINT32(OPT_KEYSLOT_KEY_SIZE_ID) / 8);
+	if (r < 0)
+		log_err(_("Keyslot encryption parameters are not compatible with LUKS2 keyslot encryption."));
+
+	return r;
 }
 
 static int init_new_keyslot_context(struct crypt_device *cd,

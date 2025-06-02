@@ -239,7 +239,9 @@ fi
 
 prepare "Image in file tests (root capabilities not required)" file
 echo "[1] format"
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $IMG $FAST_PBKDF_OPT || fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 -c 'capi:xts(aes)-plain64' $IMG $FAST_PBKDF_OPT || fail
+echo $PWD0 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 $IMG $FAST_PBKDF_OPT --disable-blkid || fail
 echo "[2] open"
 echo $PWD0 | $CRYPTSETUP luksOpen $IMG --test-passphrase 2>/dev/null && fail
 [ $? -ne 2 ] && fail "luksOpen should return EPERM exit code"

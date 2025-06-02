@@ -6,13 +6,16 @@
  * Copyright (C) 2014-2025 Milan Broz
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <strings.h>
 #include "bitops.h"
 #include "crypto_backend.h"
 
-#define SECTOR_SHIFT	9
+#define SECTOR_SHIFT       9
+#define MAX_CAPI_LEN      64
+#define MAX_CAPI_LEN_STR "63"
 
 /*
  * Internal IV helper
@@ -212,36 +215,49 @@ int crypt_storage_init(struct crypt_storage **ctx,
 		       bool large_iv)
 {
 	struct crypt_storage *s;
-	char mode_name[64];
+	char cipher_name[MAX_CAPI_LEN], mode_name[MAX_CAPI_LEN], mode_tmp[MAX_CAPI_LEN];
 	char *cipher_iv = NULL;
-	int r = -EIO;
+	int r;
 
 	if (sector_size < (1 << SECTOR_SHIFT) ||
 	    sector_size > (1 << (SECTOR_SHIFT + 3)) ||
 	    sector_size & (sector_size - 1))
 		return -EINVAL;
 
-	s = malloc(sizeof(*s));
-	if (!s)
-		return -ENOMEM;
-	memset(s, 0, sizeof(*s));
+	/* Convert from capi mode */
+	if (!strncmp(cipher, "capi:", 5)) {
+		r = sscanf(cipher, "capi:%" MAX_CAPI_LEN_STR "[^(](%" MAX_CAPI_LEN_STR "[^)])", mode_tmp, cipher_name);
+		if (r != 2)
+			return -EINVAL;
+		r = snprintf(mode_name, sizeof(mode_name), "%s-%s", mode_tmp, cipher_mode);
+		if (r < 0 || (size_t)r >= sizeof(mode_name))
+			return -EINVAL;
+	} else {
+		strncpy(cipher_name, cipher, sizeof(cipher_name));
+		cipher_name[sizeof(cipher_name) - 1] = 0;
+		strncpy(mode_name, cipher_mode, sizeof(mode_name));
+		mode_name[sizeof(mode_name) - 1] = 0;
+	}
 
 	/* Remove IV if present */
-	strncpy(mode_name, cipher_mode, sizeof(mode_name));
-	mode_name[sizeof(mode_name) - 1] = 0;
 	cipher_iv = strchr(mode_name, '-');
 	if (cipher_iv) {
 		*cipher_iv = '\0';
 		cipher_iv++;
 	}
 
-	r = crypt_cipher_init(&s->cipher, cipher, mode_name, key, key_length);
+	s = malloc(sizeof(*s));
+	if (!s)
+		return -ENOMEM;
+	memset(s, 0, sizeof(*s));
+
+	r = crypt_cipher_init(&s->cipher, cipher_name, mode_name, key, key_length);
 	if (r) {
 		crypt_storage_destroy(s);
 		return r;
 	}
 
-	r = crypt_sector_iv_init(&s->cipher_iv, cipher, mode_name, cipher_iv, key, key_length, sector_size);
+	r = crypt_sector_iv_init(&s->cipher_iv, cipher_name, mode_name, cipher_iv, key, key_length, sector_size);
 	if (r) {
 		crypt_storage_destroy(s);
 		return r;

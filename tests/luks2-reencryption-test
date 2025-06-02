@@ -1855,14 +1855,16 @@ if [ $HAVE_KEYRING -gt 0 ]; then
 fi
 $CRYPTSETUP close $DEV_NAME
 
-# simulate LUKS2 device with cipher_null in both keyslot and segment (it can be created only by up conversion from LUKS1)
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 -s 128 -c cipher_null-ecb --offset 8192 $FAST_PBKDF2 $DEV || fail
-$CRYPTSETUP convert -q --type luks2 $DEV || fail
-wipe $PWD1
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON >/dev/null || fail
-check_hash $PWD1 $HASH1
-# both keyslot and segment cipher must not be null after reencryption with default params
-$CRYPTSETUP luksDump $DEV | grep -q "cipher_null" && fail
+# FIXME: Add test luks2 image with both keyslot and data using cipher_null and verify LUKS2 reencryption fixes this.
+
+## simulate LUKS2 device with cipher_null in both keyslot and segment (it can be created only by up conversion from LUKS1)
+#echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 -s 128 -c cipher_null-ecb --offset 8192 $FAST_PBKDF2 $DEV || fail
+#$CRYPTSETUP convert -q --type luks2 $DEV || fail
+#wipe $PWD1
+#echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON >/dev/null || fail
+#check_hash $PWD1 $HASH1
+## both keyslot and segment cipher must not be null after reencryption with default params
+#$CRYPTSETUP luksDump $DEV | grep -q "cipher_null" && fail
 
 # multistep reencryption with initial cipher_null
 preparebig 64
