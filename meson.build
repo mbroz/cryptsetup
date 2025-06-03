@@ -2,9 +2,9 @@ project('cryptsetup',
     'c',
     default_options: [ 'prefix=/usr' ],
     meson_version: '>=0.64',
-    version: '2.8.0-git')
+    version: '2.8.0-rc0')
 
-libcryptsetup_version = '12.10.0'
+libcryptsetup_version = '12.11.0'
 
 includes_root = include_directories('.')
 includes_lib = include_directories('lib')
