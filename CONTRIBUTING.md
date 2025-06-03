@@ -119,7 +119,7 @@ libtool --mode=execute gdb --args ./cryptsetup --debug $@
 This will ensure that a properly compiled libcryptsetup file is used.
 
 ### Coding style
-Cryptsetup uses [Linux kernel coding style](https://www.kernel.org/doc/html/latest/process/coding-style.html) for libcryptsetup and tools (where applicable) with some additional notes:
+Cryptsetup uses [Linux kernel coding style](https://cdn.kernel.org/doc/html/latest/process/coding-style.html) for libcryptsetup and tools (where applicable) with some additional notes:
 - Use tabulators for indentation; the line should not exceed 100 characters with an 8-character tabulator. Otherwise, use a tab of any length. :-).
 - The minimal C standard required is C99.
 - The ``goto`` use is allowed only for error path (``goto out`` for common code path, ``goto err`` for specific error code path).

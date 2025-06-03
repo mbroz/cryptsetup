@@ -38,7 +38,7 @@
   LUKS1 and LUKS2.
  
   The LUKS1 on-disk format specification is at  
-  https://www.kernel.org/pub/linux/utils/cryptsetup/LUKS_docs/on-disk-format.pdf  
+  https://cdn.kernel.org/pub/linux/utils/cryptsetup/LUKS_docs/on-disk-format.pdf  
   The LUKS2 on-disk format specification is at  
   https://gitlab.com/cryptsetup/LUKS2-docs
 
