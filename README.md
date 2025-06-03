@@ -48,7 +48,7 @@ Release notes and tarballs are available at
 Previous versions
  * [Version 2.6.1](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v2.6/cryptsetup-2.6.1.tar.xz) -
    [Signature](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v2.6/cryptsetup-2.6.1.tar.sign) -
-   [Release Notes](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v2.5/v2.5.0-ReleaseNotes).
+   [Release Notes](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v2.6/v2.6.1-ReleaseNotes).
  * [Version 1.7.5](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.5.tar.xz) -
    [Signature](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.5.tar.sign) -
    [Release Notes](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v1.7/v1.7.5-ReleaseNotes).
