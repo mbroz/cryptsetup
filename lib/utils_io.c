@@ -278,7 +278,7 @@ ssize_t read_lseek_blockwise(int fd, size_t bsize, size_t alignment,
 		length -= innerCount;
 	}
 
-	ret = read_blockwise(fd, bsize, alignment, buf, length);
+	ret = length ? read_blockwise(fd, bsize, alignment, buf, length) : 0;
 	if (ret >= 0)
 		ret += innerCount;
 out:
