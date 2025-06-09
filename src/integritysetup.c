@@ -211,7 +211,7 @@ static int action_format(void)
 
 	if (!ARG_SET(OPT_BATCH_MODE_ID) && !crypt_get_integrity_info(cd, &params2))
 		log_std(_("Formatted with tag size %u%s, internal integrity %s.\n"),
-			params2.tag_size, ARG_SET(OPT_INTEGRITY_INLINE_ID) ? " (inline hw tags)" : "", params2.integrity);
+			params2.tag_size, ARG_SET(OPT_INTEGRITY_INLINE_ID) ? _(" (inline hw tags)") : "", params2.integrity);
 
 	if (!ARG_SET(OPT_NO_WIPE_ID)) {
 		r = _wipe_data_device(cd, integrity_key);
