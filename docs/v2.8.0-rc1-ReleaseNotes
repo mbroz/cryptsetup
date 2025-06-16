@@ -1,0 +1,328 @@
+Cryptsetup 2.8.0-rc1 Release Notes
+==================================
+Stable release with new features and bug fixes
+
+All users of cryptsetup 2.7 must upgrade to this version.
+
+Changes since version 2.7.5
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Introduce support for inline mode (use HW sectors with additional hardware metadata space).
+
+  Some enterprise NVMe drives allow formatting sector size with additional metadata space,
+  for example, sector size 4096 bytes + 64 bytes for metadata.
+  We hope common firmware will soon support such features in more recent models.
+
+  If this metadata space is available (not internally used by a data integrity profile),
+  it removes the need to use the dm-integrity layer for sector metadata allocation.
+  This means that the performance bottleneck caused by the dm-integrity journal is eliminated.
+
+  Note: such drive must be reformatted with an external nvme tool.
+  You can check for support (reported as LBA format) by running the command
+    "nvme id-ns -H <nvme device>" and then you can reformat to the selected profile
+  (with complete data loss) with "nvme format -l <lbaf>.
+  This way, you can also reformat NVMe drive to 4096-byte sectors,which is strongly recommended
+  for encryption performance.
+
+  The required device mapper for inline mode was introduced in Linux kernel version 6.11.
+
+  The inline mode can be used with the new --integrity-inline option.
+
+  For integritysetup, the kernel dm-integrity layer is still used, but it directly maps metadata
+  to the hardware (eliminating the journal).
+  For cryptsetup, the dm-integrity layer is eliminated, and only the dm-crypt kernel driver is used.
+  The libcryptsetup exports a new crypt_format_inline API call.
+
+  Examples (underlying device must provide inline HW metadata space):
+
+  Use integritysetup format with inline mode with default CRC32 checksums:
+
+   # integritysetup format --sector-size 4096 --integrity-inline <device> [--no-wipe]
+   # integritysetup open <device> test
+   # integritysetup status test
+     /dev/mapper/test is active.
+       type:    INTEGRITY
+       tag size: 4 [bytes]
+       integrity: crc32c
+       device: <device>
+       sector size:  4096 [bytes]
+       ...
+       inline mode
+       journal: not active
+
+  Use LUKS2 with authenticated encryption (here with AEGIS AEAD cipher):
+
+   # cryptsetup luksFormat --integrity-inline --integrity aead --sector-size 4096 \
+                -c aegis128-random --key-size 128 <device> [--integrity-no-wipe]
+   # cryptsetup open <device> test
+   # cryptsetup luksDump <device>
+     ...
+     Requirements:   inline-hw-tags
+
+  After format, the inline mode is used automatically, and no special options are needed.
+  Please check the manual pages for more details about used options.
+
+  Note that the LUKS2 authenticated encryption is still an experimental feature.
+  The inline mode only improves performance by removing the dm-integrity layer.
+
+* Finalize use of keyslot context API.
+
+  Keyslot context is a generic abstraction over keyslot manipulation.
+  It extends many exiting commands by additional functions like tokens in activation, resume,
+  reencryption and similar commands without introducing new specific API functions.
+
+* Make all keyslot context types fully self-contained.
+
+  In the previous version, the caller is responsible for releasing of some allocated memory.
+  In this version, all memory is allocated internally. The existing keyslot context API function
+  provides backward compatibility through versioned symbols.
+
+* Add --key-description and --new-key-description cryptsetup options.
+
+  These can be used for the specification of the keyring with passphrase retrieval in the open,
+  resize, luksResume, luksFormat, luksAddKey and luksDump.
+
+* Support more precise keyslot selection in reencryption initialization.
+
+  Reencryption must update stored keys in keyslots, so it needs to unlock all keyslots first.
+
+  When no specific keyslot is selected by the --key-slot option, all active keyslots are updated.
+
+  Users may narrow down the selection of keyslots by specifying either --token-id, --token-type
+  or --token-only option. Only keyslots associated with the specific token (--token-id) or
+  a specific type (--token-type) or any token (--token-only) will be updated.
+  All other keyslots will be erased after reencryption is finished.
+
+  During reencryption, there are two volume keys (old and new).
+  For very specific use cases, reencryption can also be initialized by providing
+  volume keys directly by --volume-key-file, --new-volume-key-file, --volume-key-keyring
+  or --new-volume-key-keyring options. These options allow reencryption of the device with
+  no active keyslots (these can be added later).
+  If the --force-no-keyslots option is specified, all active keyslots will be erased after
+  the reencryption operation is finished.
+
+* Allow reencryption to resume using token and volume keys.
+
+  The reencryption can be resumed using tokens (similar to initialization described above).
+  For very specific use cases, reencryption can be resumed by providing volume keys.
+
+* Cryptsetup repair command now tries to check LUKS keyslot areas for corruption.
+
+  A keyslot binary area contains an encrypted volume key diffused to a larger area by
+  the anti-forensic splitter. If this area is corrupted, the keyslot can no longer be unlocked,
+  even with the correct password.
+
+  Active keyslot area should look like random data, so some specific corruption can be detected
+  by randomness analysis.
+
+  Cryptsetup repair command now tries to analyze the area expecting a uniform distribution
+  of bytes in 4096-byte blocks. If a problem is detected, it tries to localize corruption
+  in a smaller block (using the expected bit count).
+  Both tests are based on the Chi-squared statistical test.
+
+  This analysis can replace the external keyslot check program and usually is more sensitive.
+  However, it cannot detect all corruptions and can produce false positives.
+
+  Please use it as a hint when your password is no longer accepted, and you suspect
+  header corruption. This is the example output of the analysis:
+
+  # cryptsetup repair <device>
+    Keyslot 2 binary data could be corrupted.
+      Suspected offset: 0x88000
+    You can use hexdump -v -C -n 128 -s <offset_0xXXXX> <device> to inspect the data.
+
+  The test does not modify the header. A keyslot corruption cannot be repaired.
+  You have to use a backup header.
+
+* Opal2 SED: PSID keyfile is now expected to be 32 alphanumeric characters.
+
+  If the keyfile size is not explicitly set, it uses only first 32 bytes.
+  All Opal2 manufacturers seem to use PSID of this length.
+
+* Opal2: Avoid the Erase method and use Secure Erase for locking range.
+
+  The Erase method is defined for Single-user mode (SUM) and works on SUM-enabled locking ranges.
+  As we do not use SUM yet, this always fails and falls back to Secure erase anyway.
+
+* Opal2: Fix some error description (in debug only).
+
+  Some Opal error messages were incorrect.
+  Cryptsetup now use all codes according to TCG specifications.
+
+* Opal2: Do not allow deferred deactivation.
+
+  The self-encrypting drive must be locked immediately; deferred deactivation is not supported.
+
+* Allow --reduce-device-size and --device-size combination for reencryption (encrypt) action.
+
+  For some very specific cases, this can be used to encrypt only part of the device together
+  with allocation a new space for the LUKS header.
+
+* Fix the userspace storage backend to support kernel "capi:" cipher specification format.
+
+  This avoids unnecessary fallback to the device-mapper instead of the userspace crypto library
+  in luksFormat. The "capi:" is Linux kernel cryptographic format.
+  For example, capi:xts(aes)-plain64 is equivalent of aes-xts-plain64.
+
+* Disallow conversion from LUKS2 to LUKS1 if kernel "capi:" cipher specification is used.
+
+  LUKS1 never officially supported this cipher specification format.
+  Such devices cannot be converted to LUKS1 (while existing devices can still be activated).
+
+* Explicitly disallow kernel "capi:" cipher specification format for LUKS2 keyslot encryption.
+
+  This specification is intended to be used for data encryption, not for keyslots.
+
+* Do not allow conversion of LUKS2 to LUKS1 if an unbound keyslot is present.
+
+  LUKS1 does not support unbound keyslots. Such devices cannot be converted.
+
+* cryptsetup: Adjust the XTS key size for kernel "capi:" cipher specification.
+
+  Double key size as there are two keys the same way as for dm-crypt format.
+
+* Remove keyslot warning about possible failure due to low memory.
+
+  This check was intended to warn users about possible out-of-memory situations
+  but produced many false positives.
+
+* Do not limit Argon2 KDF memory cost on systems with more than 4GB of available memory.
+
+  The memory cost is intended to be limited only in low-memory situations (like virtual machines
+  without swap), not on systems with plenty of RAM.
+
+* Properly report out of memory error for cryptographic backends implementing Argon2.
+
+* Avoid KDF2 memory cost overflow on 32-bit platforms.
+
+* Do not use page size as a fallback for device block size.
+
+  This check produced wrong values if used on platforms with larger page sizes (64kB)
+  and specific underlying storage (like ZFS).
+
+* veritysetup: Check hash device size in advance.
+
+  If hashes are stored in a file image, allocate the size in advance.
+  For a block device, check if hashes (Merkle tree) fits the device.
+
+* Print a better error message for unsupported LUKS2 AEAD device resize.
+
+* Optimize LUKS2 metadata writes.
+
+  LUKS2 supports several JSON area length configurations. Do not write full metadata
+  (including padding), as it may generate noticeable overhead with LUKS2.
+
+* veritysetup: support --error-as-corruption option.
+
+  The panic/restart_on_error options were introduced in Linux kernel 6.12 and process errors
+  (like media read error) the same way as data corruption.
+  Use this flag in combination with --panic-on-corruption or --restart-on-corruption.
+
+* Report all sizes in status and dump command output in the correct units.
+
+  Since the support of --sector-size option, the meaning of "sectors" became ambiguous as it
+  usually means 512-byte sectors (device-mapper unit). Confusion occurs when the sector size
+  is 4096 bytes while units used for display are 512-byte sectors.
+
+  All status commands in tools now display units explicitly to avoid confusion.
+
+  For example:
+  # cryptsetup status test
+    ...
+    sector size:  4096 [bytes]
+    offset:  32768 [512-byte units] (134217728 [bytes])
+    size:    7501443760 [512-byte units] (30725913640960 [bytes])
+
+  If you parse the output of status commands, please check your scripts to ensure they work
+  with the new output properly.
+
+* Add --integrity-key-size option to cryptsetup.
+
+  This option can be used to set up non-standard integrity key size (e.g. for HMAC).
+  It adds a new (optional) JSON "key_size" attribute in the segment.integrity JSON object
+  (see updated LUKS2 specification). If not set, the code uses selected hash length size.
+
+* Support trusted & encrypted keyrings for plain devices.
+
+* Support plain format resize with a keyring key.
+
+  If a plain dm-crypt device references the keyring, cryptsetup now allows resizing.
+  The user must ensure that the key in the keyring is unchanged since activation.
+  Otherwise, reloading the key can cause data corruption after an unexpected key change.
+
+* TCRYPT: Clear mapping of system-encrypted partitions.
+
+  TrueCrypt/VeraCrypt supports full system encryption (only a partition table is not encrypted)
+  or system partition encryption (only a system partition is encrypted).
+  The metadata header then contains the offset and size of the encrypted area.
+  Cryptsetup needs to know the specific partition offset to calculate encryption parameters.
+
+  To properly map a partition, the user must specify a real partition device so cryptsetup
+  can calculate this offset. As the partition can be an image in a file, cryptsetup now tries
+  to determine proper parameters and use device size stored in VeraCrypt metadata.
+
+  Please see the manual page description (TCRYPT section) for a detailed description.
+
+* TCRYPT: Print all information from the decrypted metadata header in the tcryptDump command.
+
+  Print also volume sizes (if present) and flags.
+
+* Always lock the volume key structure in memory.
+
+  Some memory for safe allocation was not allocated from locked (unswappable) memory.
+  Older cryptsetup locked all memory. Selective locking was introduced in version 2.6.0.
+
+* Do not run direct-io read check on block devices.
+
+  Block devices always support direct-io.
+  This check produced unnecessary error with locked Opal2 devices.
+
+* Fix a possible segfault in deferred deactivation.
+
+  Thanks Clément Guérin for the report.
+
+* Exclude cipher allocation time from the cryptsetup benchmark.
+
+* Add Mbed-TLS optional crypto backend.
+
+  Mbed-TLS is a tiny TLS implementation designed for embedded environments.
+  The backend can be enabled with the --with-crypto_backend=mbedtls configure option.
+
+* Fix the wrong preprocessor use of #ifdef for config.h processed by Meson.
+
+  Cryptsetup supports Autoconf and, optionally, Meson configuration.
+  Part of the code wrongly used #ifdef instead of #if conditional sections.
+  This caused problems with Meson-generated config.h.
+
+* Reorganize license files.
+
+  The license text files are now in docs/licenses.
+  The COPYING file in the root directory is the default license.
+
+Libcryptsetup API extensions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The libcryptsetup API is backward compatible with all existing symbols.
+
+Due to the self-contained memory allocation, these symbols have the new version
+ crypt_keyslot_context_init_by_passphrase;
+ crypt_keyslot_context_init_by_keyfile;
+ crypt_keyslot_context_init_by_token;
+ crypt_keyslot_context_init_by_volume_key;
+ crypt_keyslot_context_init_by_signed_key;
+ crypt_keyslot_context_init_by_keyring;
+ crypt_keyslot_context_init_by_vk_in_keyring;
+
+New symbols:
+ crypt_format_inline
+ crypt_get_old_volume_key_size
+ crypt_reencrypt_init_by_keyslot_context
+ crypt_safe_memcpy
+
+New defines:
+ CRYPT_ACTIVATE_HIGH_PRIORITY
+ CRYPT_ACTIVATE_ERROR_AS_CORRUPTION
+ CRYPT_ACTIVATE_INLINE_MODE
+ CRYPT_REENCRYPT_CREATE_NEW_DIGEST
+
+New requirement flag:
+ CRYPT_REQUIREMENT_INLINE_HW_TAGS
