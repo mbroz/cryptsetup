@@ -2,7 +2,7 @@
 
 Summary: Utility for setting up encrypted disks
 Name: cryptsetup
-Version: 2.8.0-rc0
+Version: 2.8.0-rc1
 Release: 1%{?dist}
 License: GPL-2.0-or-later WITH cryptsetup-OpenSSL-exception AND LGPL-2.1-or-later WITH cryptsetup-OpenSSL-exception
 URL: https://gitlab.com/cryptsetup/cryptsetup
@@ -18,7 +18,7 @@ Obsoletes: %{name}-reencrypt <= %{version}
 Provides: %{name}-reencrypt = %{version}
 
 %global upstream_version %{version_no_tilde}
-Source0: https://cdn.kernel.org/pub/linux/utils/cryptsetup/v2.7/cryptsetup-%{upstream_version}.tar.xz
+Source0: https://cdn.kernel.org/pub/linux/utils/cryptsetup/v2.8/cryptsetup-%{upstream_version}.tar.xz
 
 %description
 The cryptsetup package contains a utility for setting up
