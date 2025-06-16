@@ -54,7 +54,7 @@ load_vars()
 	fi
 
 	local file=$(echo $1 | sed -e s/^$TST_DIR\\/// | sed -e s/\.img$//)
-	source <(grep = <(grep -A$num_vars "\[$file\]" $TST_DIR/images.conf))
+	eval $(grep -A$num_vars -Fx "[$file]" $TST_DIR/images.conf | grep =)
 }
 
 check_dump()
