@@ -558,7 +558,7 @@ echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --o
 $CRYPTSETUP -q luksDump  $LOOPDEV | grep -q "offset: $((512 * 16384)) \[bytes\]" || fail
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV -q --sector-size 1024 --offset 16384 >/dev/null || fail
 $CRYPTSETUP -q luksDump  $LOOPDEV | grep -q "offset: $((512 * 16384)) \[bytes\]" || fail
-truncate -s 4096 $HEADER_IMG
+truncate -s 4096 $HEADER_IMG || fail
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV --header $HEADER_IMG -q --offset 80000 >/dev/null 2>&1 || fail
 
 prepare "[2] Sector size and old payload alignment" wipe
