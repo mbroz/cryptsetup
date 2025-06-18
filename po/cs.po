@@ -33,10 +33,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 2.8.0-rc0\n"
+"Project-Id-Version: cryptsetup 2.8.0-rc1\n"
 "Report-Msgid-Bugs-To: cryptsetup@lists.linux.dev\n"
-"POT-Creation-Date: 2025-06-03 09:23+0200\n"
-"PO-Revision-Date: 2025-06-08 12:56+02:00\n"
+"POT-Creation-Date: 2025-06-16 13:51+0200\n"
+"PO-Revision-Date: 2025-06-17 17:52+02:00\n"
 "Last-Translator: Petr Pisar <petr.pisar@atlas.cz>\n"
 "Language-Team: Czech <translation-team-cs@lists.sourceforge.net>\n"
 "Language: cs\n"
@@ -3315,11 +3315,14 @@ msgstr ""
 "Pro zachování datového zařízení použije přepínač --no-wipe (a pak jej\n"
 "aktivujte pomocí --integrity-recalculate)."
 
-# TODO: Internationalize second argument.
 #: src/integritysetup.c:213
 #, c-format
 msgid "Formatted with tag size %u%s, internal integrity %s.\n"
 msgstr "Formátováno s velikostí značky %u%s, vnitřní integrita %s.\n"
+
+#: src/integritysetup.c:214
+msgid " (inline hw tags)"
+msgstr " (inline hardwarové značky)"
 
 #: src/integritysetup.c:297
 msgid "Setting recalculate flag is not supported, you may consider using --wipe instead."
