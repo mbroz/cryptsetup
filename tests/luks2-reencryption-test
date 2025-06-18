@@ -208,15 +208,15 @@ wipe_dev() # $1 dev
 		fi
 	else
 		local size=$(stat --printf="%s" $1)
-		truncate -s 0 $1
+		truncate -s 0 $1 || fail
 		if [ $# -gt 2 ]; then
 			local diff=$((size-$2*1024*1024))
 			echo "size: $size, diff: $diff"
-			truncate -s $diff $1
+			truncate -s $diff $1 || fail
 			# wipe_dev_head $1 $((diff/(1024*1024)))
 			dd if=/dev/urandom of=$1 bs=1M seek=$2 size=$((diff/(1024*1024))) conv=notrunc >/dev/null 2>&1
 		else
-			truncate -s $size $1
+			truncate -s $size $1 || fail
 		fi
 	fi
 }
@@ -258,7 +258,7 @@ preparebig() # $1 dev1_siz
 		dd if=/dev/urandom of=$KEY1 count=1 bs=32 >/dev/null 2>&1
 	fi
 
-	truncate -s "$1"M $DEVBIG
+	truncate -s "$1"M $DEVBIG || fail
 	LOOPDEV=$(losetup -f)
 	losetup -f $DEVBIG || fail
 	DEV=$LOOPDEV
@@ -293,7 +293,7 @@ check_hash_head() # $1 pwd, $2 len, $3 hash, $4 hdr
 resize_file() # $1 dev, $2 shrink bytes
 {
 	local size=$(stat --printf="%s" $1)
-	truncate -s $(($size + $2)) $1
+	truncate -s $(($size + $2)) $1 || fail
 	losetup -c $LOOPDEV
 }
 

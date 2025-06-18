@@ -437,7 +437,7 @@ test_resize() # description detached_metadata wipe args
 	check_device_size $DEV_NAME $WHOLE_DISK_SIZE "Resizing disk to maximum size failed"
 
 	echo -n "[EXPAND FIXED]"
-	fallocate $DEV --len 64M
+	truncate -s 64M $DEV || fail
 	$INTSETUP resize -q $wipe_flag $DEV_NAME --device-size 40MiB || fail "Failed to expand the device to a fixed size."
 	dd if=/dev/mapper/$DEV_NAME >/dev/null 2>&1 || fail "Errors detected after expanding to a fixed size."
 	check_device_size $DEV_NAME $(( 40*1024*1024 / 512 )) "Resizing disk after expanding to a fixed size failed"
