@@ -3007,6 +3007,12 @@ int crypt_format_inline(struct crypt_device *cd,
 
 	log_dbg(cd, "Formatting device %s as type %s with inline tags.", mdata_device_path(cd) ?: "(none)", type);
 
+	crypt_reset_null_type(cd);
+
+	r = init_crypto(cd);
+	if (r < 0)
+		return r;
+
 	if (isINTEGRITY(type)) {
 		lparams = NULL;
 		iparams = params;
