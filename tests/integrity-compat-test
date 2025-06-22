@@ -518,6 +518,7 @@ if [ -n "$DM_INTEGRITY_INLINE" ] ; then
 fi
 
 echo "Journal parameters tests:"
+add_device
 # Watermark is calculated in kernel, so it can be rounded down/up
 int_journal crc32  4  512  66 1000 hmac-sha256 $KEY_FILE 32 hmac\(sha256\)
 int_journal sha256 32 4096 34 5000 hmac-sha1   $KEY_FILE 16 hmac\(sha1\)
