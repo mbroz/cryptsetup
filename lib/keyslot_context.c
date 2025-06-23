@@ -479,7 +479,7 @@ static int get_luks1_volume_key_by_keyring(struct crypt_device *cd,
 	int r;
 
 	assert(cd);
-	assert(kc && kc->type == CRYPT_KC_TYPE_PASSPHRASE);
+	assert(kc && kc->type == CRYPT_KC_TYPE_KEYRING);
 	assert(r_vk);
 
 	r = get_passphrase_by_keyring(cd, kc, CONST_CAST(const char **) &kc->i_passphrase,
