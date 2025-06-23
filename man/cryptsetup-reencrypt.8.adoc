@@ -168,6 +168,16 @@ Reencrypt LUKS2 device (refresh volume key only):
 
 *cryptsetup reencrypt /dev/encrypted_device*
 
+Reencrypt LUKS2 device using keyslot(s) associated to the token 3.
+All other keyslots will be removed after the reencryption finishes.
+
+*cryptsetup reencrypt --token-id 3 /dev/encrypted_device*
+
+Reencrypt LUKS2 device using keyslots associated to all 'systemd-tpm2'
+tokens. All other keyslots will be removed after the reencryption finishes.
+
+*cryptsetup reencrypt --token-type systemd-tpm2 /dev/encrypted_device*
+
 === LUKS2 DECRYPTION EXAMPLES
 
 Decrypt LUKS2 device with header put in head of data device (header file does not exist):
