@@ -9,6 +9,7 @@ EXTRA_DIST += meson_options.txt \
 	scripts/meson.build \
 	src/meson.build \
 	tests/meson.build \
+	tests/fuzz/meson.build \
 	tokens/meson.build \
 	tokens/ssh/meson.build
 
