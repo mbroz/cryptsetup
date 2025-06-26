@@ -167,29 +167,36 @@ export LD_PRELOAD="$LD_PRELOAD:$FAKE_TPM_PATH"
 export TPM_PATH=$TPM_PATH
 echo "TPM path is $TPM_PATH"
 
+if [ -z "$CRYPTSETUP_TOKENS_PATH" ]; then
+	echo "Running with system cryptsetup plugins path"
+	CRYPTSETUP_EXTERNAL_PATH_PARAM=
+else
+	CRYPTSETUP_EXTERNAL_PATH_PARAM="--external-tokens-path $CRYPTSETUP_TOKENS_PATH"
+fi
+
 dd if=/dev/zero of=$IMG bs=1M count=32 >/dev/null 2>&1
 echo $PASSWD | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $IMG --force-password -q
 
 echo "Enrolling the device to TPM 2 using systemd-cryptenroll.."
 LD_PRELOAD="$LD_PRELOAD:$CRYPTENROLL_LD_PRELOAD" PASSWORD="$PASSWD" $SYSTEMD_CRYPTENROLL $IMG --tpm2-device=$TPM_PATH >/dev/null 2>&1
 
-$CRYPTSETUP luksDump --external-tokens-path $CRYPTSETUP_TOKENS_PATH $IMG | grep -q "tpm2-blob" || fail "Failed to dump $IMG using systemd_tpm2 token (no tpm2-blob in output)."
+$CRYPTSETUP luksDump $CRYPTSETUP_EXTERNAL_PATH_PARAM $IMG | grep -q "tpm2-blob" || fail "Failed to dump $IMG using systemd_tpm2 token (no tpm2-blob in output)."
 echo "Activating the device via TPM2 external token.."
-$CRYPTSETUP open --external-tokens-path $CRYPTSETUP_TOKENS_PATH --token-only $IMG $MAP >/dev/null 2>&1 || fail "Failed to open $IMG using systemd_tpm2 token."
+$CRYPTSETUP open $CRYPTSETUP_EXTERNAL_PATH_PARAM --token-only $IMG $MAP >/dev/null 2>&1 || fail "Failed to open $IMG using systemd_tpm2 token."
 $CRYPTSETUP close $MAP >/dev/null 2>&1 || fail "Failed to close $MAP."
 
 echo "Adding passphrase via TPM2 token.."
-echo $PASSWD2 | $CRYPTSETUP luksAddKey --external-tokens-path $CRYPTSETUP_TOKENS_PATH $FAST_PBKDF_OPT $IMG --force-password -q --token-only >/dev/null 2>&1 || fail "Failed to add passphrase by tpm2 token."
+echo $PASSWD2 | $CRYPTSETUP luksAddKey $CRYPTSETUP_EXTERNAL_PATH_PARAM $FAST_PBKDF_OPT $IMG --force-password -q --token-only >/dev/null 2>&1 || fail "Failed to add passphrase by tpm2 token."
 echo $PASSWD2 | $CRYPTSETUP open $IMG --test-passphrase --disable-external-tokens >/dev/null 2>&1 || fail "Failed to test passphrase added by tpm2 token."
 
 echo "Exporting and removing TPM2 token.."
 EXPORTED_TOKEN=$($CRYPTSETUP token export $IMG --token-id 0)
 $CRYPTSETUP token remove $IMG --token-id 0
-$CRYPTSETUP open --external-tokens-path $CRYPTSETUP_TOKENS_PATH $IMG --test-passphrase --token-only >/dev/null 2>&1 && fail "Activating without passphrase should fail after TPM2 token removal."
+$CRYPTSETUP open $CRYPTSETUP_EXTERNAL_PATH_PARAM $IMG --test-passphrase --token-only >/dev/null 2>&1 && fail "Activating without passphrase should fail after TPM2 token removal."
 
 echo "Re-importing TPM2 token.."
 echo $EXPORTED_TOKEN | $CRYPTSETUP token import $IMG --token-id 0 || fail "Failed to re-import deleted token."
-$CRYPTSETUP open --external-tokens-path $CRYPTSETUP_TOKENS_PATH $IMG --test-passphrase --token-only >/dev/null 2>&1 || fail "Failed to activate after re-importing deleted token."
+$CRYPTSETUP open $CRYPTSETUP_EXTERNAL_PATH_PARAM $IMG --test-passphrase --token-only >/dev/null 2>&1 || fail "Failed to activate after re-importing deleted token."
 
 cleanup
 exit 0
