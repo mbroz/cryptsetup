@@ -156,9 +156,6 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
     echo "Virtual TPM set up at $TPM_PATH"
 }
 
-if [ -n "$SSH_BUILD_DIR" ]; then
-	CUSTOM_TOKENS_PATH="--external-tokens-path $SSH_BUILD_DIR"
-fi
 FAKE_TPM_PATH="$(pwd)/fake_systemd_tpm_path.so"
 [ ! -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ] && FAKE_TPM_PATH="$CRYPTSETUP_PATH/../tests/fake_systemd_tpm_path.so"
 [ -f $FAKE_TPM_PATH ] || skip "Please compile $FAKE_TPM_PATH."
