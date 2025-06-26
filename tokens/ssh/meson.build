@@ -12,6 +12,8 @@ if get_option('ssh-token')
                 jsonc,
                 libssh,
             ],
+            install: true,
+            install_dir: luks2_external_tokens_path,
             link_with: libcryptsetup,
             link_args: token_link_args,
             include_directories: includes_tools + ['..'])
@@ -34,6 +36,8 @@ if get_option('ssh-token')
             popt,
             pwquality,
         ],
+        install: true,
+        install_dir: get_option('sbindir'),
         link_with: libcryptsetup,
         include_directories: includes_tools + ['..'])
 endif
