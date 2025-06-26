@@ -30,6 +30,7 @@ test-main-commit-job-rawhide:
   variables:
     RUN_SSH_PLUGIN_TEST: "1"
     RUN_KEYRING_TRUSTED_TEST: "1"
+    RUN_SYSTEMD_PLUGIN_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
@@ -51,6 +52,7 @@ test-mergerq-job-rawhide:
   variables:
     RUN_SSH_PLUGIN_TEST: "1"
     RUN_KEYRING_TRUSTED_TEST: "1"
+    RUN_SYSTEMD_PLUGIN_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
