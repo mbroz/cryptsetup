@@ -9,7 +9,7 @@ MAP=tctst
 PASSWORD="aaaaaaaaaaaa"
 PASSWORD_HIDDEN="bbbbbbbbbbbb"
 PASSWORD_72C="aaaaaaaaaaaabbbbbbbbbbbbccccccccccccddddddddddddeeeeeeeeeeeeffffffffffff"
-PIM=1234
+PASSWORD_PIM="cccccccccccccccccccc"
 LOOP_SYS=""
 PART_IMG=tctst-part-img
 
@@ -77,11 +77,40 @@ test_kdf() # hash img_hash
 	fi
 }
 
-get_HASH_CIPHER() # filename
+test_pbkdf() # pbkdf img_hash
+{
+	$CRYPTOCHECK pbkdf $1
+	if [ $? -ne 0 ] ; then
+		echo "$1 [N/A]"
+		IMGS=$(ls $TST_DIR/[tv]c* | grep "$2")
+		[ -n "$IMGS" ] && rm $IMGS
+	else
+		echo "$1 [OK]"
+	fi
+}
+
+get_PARAMS() # filename
 {
 	# speed up the test by limiting options for hash and (first) cipher
 	HASH=$(echo $file | cut -d'-' -f3)
 	CIPHER=$(echo $file | cut -d'-' -f5)
+
+	if [[ $file =~ vcpim.* ]] ; then
+		PIM=$(echo $file | sed -r s/.*vcpim_1_\([[:digit:]]+\).*/\\1/)
+		PIM_OPT="--veracrypt-pim $PIM"
+		PWD=$PASSWORD_PIM
+	else
+		PIM=""
+		PIM_OPT=""
+		PWD=$PASSWORD
+	fi
+
+	SYS_OPT=""
+	if [[ $file =~ sys_.* ]] ; then
+		SYS_OPT="--tcrypt-system"
+	else
+		SYS_OPT=""
+	fi
 }
 
 test_required()
@@ -96,6 +125,8 @@ test_required()
 	test_kdf ripemd160   ripemd160
 	test_kdf whirlpool   whirlpool
 	test_kdf stribog512  stribog
+
+	test_pbkdf argon2id argon2id
 
 	echo "REQUIRED CIPHERS TEST"
 	test_one aes cbc 256 cbc-aes
@@ -155,16 +186,12 @@ test_required
 echo "HEADER CHECK"
 for file in $(ls $TST_DIR/[tv]c_* $TST_DIR/vcpim_* $TST_DIR/sys_[tv]c_*) ; do
 	echo -n " $file"
-	PIM_OPT=""
-	[[ $file =~ vcpim.* ]] && PIM_OPT="--veracrypt-pim $PIM"
-	SYS_OPT=""
-	[[ $file =~ sys_.* ]] && SYS_OPT="--tcrypt-system"
-	get_HASH_CIPHER $file
-	echo $PASSWORD | $CRYPTSETUP tcryptDump $SYS_OPT $PIM_OPT -h $HASH -c $CIPHER $file >/dev/null || fail
+	get_PARAMS $file
+	echo $PWD | $CRYPTSETUP tcryptDump $SYS_OPT $PIM_OPT -h $HASH -c $CIPHER $file >/dev/null || fail
 	if [[ $file =~ .*-sha512-xts-aes$ ]] ; then
-		echo $PASSWORD | $CRYPTSETUP tcryptDump $SYS_OPT $PIM_OPT -h sha512 -c aes $file >/dev/null || fail
-		echo $PASSWORD | $CRYPTSETUP tcryptDump $SYS_OPT $PIM_OPT -h xxxx $file 2>/dev/null && fail
-		echo $PASSWORD | $CRYPTSETUP tcryptDump $SYS_OPT $PIM_OPT -h sha512 -c xxx $file 2>/dev/null && fail
+		echo $PWD | $CRYPTSETUP tcryptDump $SYS_OPT $PIM_OPT -h sha512 -c aes $file >/dev/null || fail
+		echo $PWD | $CRYPTSETUP tcryptDump $SYS_OPT $PIM_OPT -h xxxx $file 2>/dev/null && fail
+		echo $PWD | $CRYPTSETUP tcryptDump $SYS_OPT $PIM_OPT -h sha512 -c xxx $file 2>/dev/null && fail
 	fi
 	echo " [OK]"
 done
@@ -172,17 +199,15 @@ done
 echo "HEADER CHECK (TCRYPT only)"
 for file in $(ls $TST_DIR/vc_* $TST_DIR/vcpim_*) ; do
 	echo -n " $file"
-	PIM_OPT=""
-	[[ $file =~ vcpim.* ]] && PIM_OPT="--veracrypt-pim $PIM"
-	get_HASH_CIPHER $file
-	echo $PASSWORD | $CRYPTSETUP tcryptDump --disable-veracrypt $PIM_OPT -h $HASH -c $CIPHER $file >/dev/null 2>&1 && fail
+	get_PARAMS $file
+	echo $PWD | $CRYPTSETUP tcryptDump --disable-veracrypt $PIM_OPT -h $HASH -c $CIPHER $file >/dev/null 2>&1 && fail
 	echo " [OK]"
 done
 
 echo "HEADER CHECK (HIDDEN)"
 for file in $(ls $TST_DIR/[tv]c_*-hidden) ; do
 	echo -n " $file (hidden)"
-	get_HASH_CIPHER $file
+	get_PARAMS $file
 	echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptDump --tcrypt-hidden -h $HASH -c $CIPHER $file >/dev/null || fail
 	echo " [OK]"
 done
@@ -190,10 +215,10 @@ done
 echo "HEADER KEYFILES CHECK"
 for file in $(ls $TST_DIR/[tv]ck_*) ; do
 	echo -n " $file"
+	get_PARAMS $file
 	PWD=$PASSWORD
 	[[ $file =~ vck_1_nopw.* ]] && PWD=""
 	[[ $file =~ vck_1_pw72.* ]] && PWD=$PASSWORD_72C
-	get_HASH_CIPHER $file
 	echo $PWD | $CRYPTSETUP tcryptDump -d $TST_DIR/keyfile1 -d $TST_DIR/keyfile2 -h $HASH -c $CIPHER $file >/dev/null || fail
 	echo " [OK]"
 done
@@ -207,10 +232,8 @@ fi
 echo "ACTIVATION FS UUID CHECK"
 for file in $(ls $TST_DIR/[tv]c_* $TST_DIR/vcpim_*) ; do
 	echo -n " $file"
-	PIM_OPT=""
-	[[ $file =~ vcpim.* ]] && PIM_OPT="--veracrypt-pim $PIM"
-	get_HASH_CIPHER $file
-	out=$(echo $PASSWORD | $CRYPTSETUP tcryptOpen $PIM_OPT -r -h $HASH -c $CIPHER $file $MAP 2>&1)
+	get_PARAMS $file
+	out=$(echo $PWD | $CRYPTSETUP tcryptOpen $PIM_OPT -r -h $HASH -c $CIPHER $file $MAP 2>&1)
 	ret=$?
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT legacy mode" ) && echo " [N/A]" && continue
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT compatible mapping" ) && echo " [N/A]" && continue
@@ -241,28 +264,28 @@ for file in $(ls $TST_DIR/sys_[tv]c_*) ; do
 		LOOP_SYS=""
 		continue
 	fi
-	get_HASH_CIPHER $file
+	get_PARAMS $file
 	# map through partition name
 	echo -n " [PART]"
-	echo $PASSWORD | $CRYPTSETUP tcryptOpen --tcrypt-system -r -h $HASH -c $CIPHER $LOOP_PART $MAP || fail
+	echo $PWD | $CRYPTSETUP tcryptOpen --tcrypt-system -r -h $HASH -c $CIPHER $LOOP_PART $MAP || fail
 	check_uuid DEAD-BABE
 	$CRYPTSETUP close $MAP || fail
 	if [[ $file =~ _part ]]; then
 		# map through image only (TCRYPT hdr contains partition offset and size)
 		echo -n "[IMG]"
-		echo $PASSWORD | $CRYPTSETUP tcryptOpen --tcrypt-system -r -h $HASH -c $CIPHER $file $MAP 2>/dev/null || fail
+		echo $PWD | $CRYPTSETUP tcryptOpen --tcrypt-system -r -h $HASH -c $CIPHER $file $MAP 2>/dev/null || fail
 		check_uuid DEAD-BABE
 		$CRYPTSETUP close $MAP || fail
 		# map through full device (TCRYPT hdr contains partition offset and size)
 		echo -n "[DRIVE]"
-		echo $PASSWORD | $CRYPTSETUP tcryptOpen --tcrypt-system -r -h $HASH -c $CIPHER $LOOP_SYS $MAP || fail
+		echo $PWD | $CRYPTSETUP tcryptOpen --tcrypt-system -r -h $HASH -c $CIPHER $LOOP_SYS $MAP || fail
 		check_uuid DEAD-BABE
 		$CRYPTSETUP close $MAP || fail
 	elif [[ $file =~ _full ]]; then
 		# map through image + header in real partition (whole system)
 		dd if=$LOOP_PART of=$PART_IMG bs=1M >/dev/null 2>&1
 		echo -n "[PART+IMG]"
-		echo $PASSWORD | $CRYPTSETUP tcryptOpen --tcrypt-system -r -h $HASH -c $CIPHER --header $LOOP_PART $PART_IMG $MAP || fail
+		echo $PWD | $CRYPTSETUP tcryptOpen --tcrypt-system -r -h $HASH -c $CIPHER --header $LOOP_PART $PART_IMG $MAP || fail
 		check_uuid DEAD-BABE
 		$CRYPTSETUP close $MAP || fail
 		rm $PART_IMG
@@ -275,7 +298,7 @@ done
 echo "ACTIVATION FS UUID (HIDDEN) CHECK"
 for file in $(ls $TST_DIR/[tv]c_*-hidden) ; do
 	echo -n " $file"
-	get_HASH_CIPHER $file
+	get_PARAMS $file
 	out=$(echo $PASSWORD_HIDDEN | $CRYPTSETUP tcryptOpen -r -h $HASH -c $CIPHER $file $MAP --tcrypt-hidden 2>&1)
 	ret=$?
 	[ $ret -eq 1 ] && ( echo "$out" | grep -q -e "TCRYPT legacy mode" ) && echo " [N/A]" && continue
