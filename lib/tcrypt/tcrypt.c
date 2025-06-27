@@ -22,25 +22,28 @@ static const struct {
 	const char *name;
 	const char *hash;
 	unsigned int iterations;
+	uint32_t parallel_cost;
+	uint32_t memory_cost;
 	uint32_t veracrypt_pim_const;
 	uint32_t veracrypt_pim_mult;
 } tcrypt_kdf[] = {
-	{ false, false, "pbkdf2", "ripemd160",   2000, 0, 0 },
-	{ false, false, "pbkdf2", "ripemd160",   1000, 0, 0 },
-	{ false, false, "pbkdf2", "sha512",      1000, 0, 0 },
-	{ false, false, "pbkdf2", "whirlpool",   1000, 0, 0 },
-	{  true, false, "pbkdf2", "sha1",        2000, 0, 0 },
-	{ false,  true, "pbkdf2", "sha512",    500000, 15000, 1000 },
-	{ false,  true, "pbkdf2", "whirlpool", 500000, 15000, 1000 },
-	{ false,  true, "pbkdf2", "sha256",    500000, 15000, 1000 }, // VeraCrypt 1.0f
-	{ false,  true, "pbkdf2", "sha256",    200000,     0, 2048 }, // boot only
-	{ false,  true, "pbkdf2", "blake2s-256", 500000, 15000, 1000 }, // VeraCrypt 1.26.2
-	{ false,  true, "pbkdf2", "blake2s-256", 200000,     0, 2048 }, // boot only
-	{ false,  true, "pbkdf2", "ripemd160", 655331, 15000, 1000 },
-	{ false,  true, "pbkdf2", "ripemd160", 327661,     0, 2048 }, // boot only
-	{ false,  true, "pbkdf2", "stribog512",500000, 15000, 1000 },
-//	{ false,  true, "pbkdf2", "stribog512",200000,     0, 2048 }, // boot only
-	{ false, false,     NULL,        NULL,      0,     0,    0 }
+	{ false, false,   "pbkdf2",   "ripemd160",   2000, 0,      0,     0,    0 },
+	{ false, false,   "pbkdf2",   "ripemd160",   1000, 0,      0,     0,    0 },
+	{ false, false,   "pbkdf2",      "sha512",   1000, 0,      0,     0,    0 },
+	{ false, false,   "pbkdf2",   "whirlpool",   1000, 0,      0,     0,    0 },
+	{  true, false,   "pbkdf2",        "sha1",   2000, 0,      0,     0,    0 },
+	{ false,  true,   "pbkdf2",      "sha512", 500000, 0,      0, 15000, 1000 },
+	{ false,  true,   "pbkdf2",   "whirlpool", 500000, 0,      0, 15000, 1000 },
+	{ false,  true,   "pbkdf2",      "sha256", 500000, 0,      0, 15000, 1000 }, // VeraCrypt 1.0f
+	{ false,  true,   "pbkdf2",      "sha256", 200000, 0,      0,     0, 2048 }, // boot only
+	{ false,  true, "argon2id",          NULL,      6, 1, 425984,     0,    0 }, // VeraCrypt 1.26.27
+	{ false,  true,   "pbkdf2", "blake2s-256", 500000, 0,      0, 15000, 1000 }, // VeraCrypt 1.26.2
+	{ false,  true,   "pbkdf2", "blake2s-256", 200000, 0,      0,     0, 2048 }, // boot only
+	{ false,  true,   "pbkdf2",   "ripemd160", 655331, 0,      0, 15000, 1000 },
+	{ false,  true,   "pbkdf2",   "ripemd160", 327661, 0,      0,     0, 2048 }, // boot only
+	{ false,  true,   "pbkdf2",  "stribog512", 500000, 0,      0, 15000, 1000 },
+//	{ false,  true,   "pbkdf2",  "stribog512", 200000, 0,      0,     0, 2048 }, // boot only
+	{ false, false,       NULL,          NULL,      0, 0,      0,     0,    0 }
 };
 
 struct tcrypt_alg {
@@ -239,7 +242,8 @@ static int TCRYPT_hdr_from_disk(struct crypt_device *cd,
 	/* Set params */
 	params->passphrase = NULL;
 	params->passphrase_size = 0;
-	params->hash_name  = tcrypt_kdf[kdf_index].hash;
+	/* For Argon2, overload hash_name */
+	params->hash_name  = tcrypt_kdf[kdf_index].hash ?: tcrypt_kdf[kdf_index].name;
 	params->key_size = tcrypt_cipher[cipher_index].chain_key_size;
 	params->cipher = tcrypt_cipher[cipher_index].long_name;
 	params->mode = tcrypt_cipher[cipher_index].mode;
@@ -522,7 +526,8 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	unsigned char pwd[VCRYPT_KEY_POOL_LEN] = {};
 	size_t passphrase_size, max_passphrase_size;
 	char *key;
-	unsigned int i, skipped = 0, iterations;
+	unsigned int i, skipped = 0;
+	uint32_t iterations, memory;
 	int r = -EPERM, keyfiles_pool_length;
 
 	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
@@ -561,7 +566,9 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 		pwd[i] += params->passphrase[i];
 
 	for (i = 0; tcrypt_kdf[i].name; i++) {
-		if (params->hash_name && !strstr(tcrypt_kdf[i].hash, params->hash_name))
+		if (params->hash_name && tcrypt_kdf[i].hash && !strstr(tcrypt_kdf[i].hash, params->hash_name))
+			continue;
+		if (params->hash_name && !tcrypt_kdf[i].hash && !strstr(tcrypt_kdf[i].name, params->hash_name))
 			continue;
 		if (!(params->flags & CRYPT_TCRYPT_LEGACY_MODES) && tcrypt_kdf[i].legacy)
 			continue;
@@ -572,19 +579,36 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			if (!tcrypt_kdf[i].veracrypt)
 				continue;
 			/* adjust iterations to given PIM cmdline parameter */
-			iterations = tcrypt_kdf[i].veracrypt_pim_const +
-				    (tcrypt_kdf[i].veracrypt_pim_mult * params->veracrypt_pim);
-		} else
+			if (!strcmp(tcrypt_kdf[i].name, "argon2id")) {
+				if (params->veracrypt_pim <= 31) {
+					iterations = (params->veracrypt_pim - 1) / 3 + 3;
+					memory = 1024 * (64 + (params->veracrypt_pim - 1) * 32);
+				} else{
+					iterations = params->veracrypt_pim - 18;
+					memory = 1024 * 1024;
+				}
+			} else {
+				iterations = tcrypt_kdf[i].veracrypt_pim_const +
+					(tcrypt_kdf[i].veracrypt_pim_mult * params->veracrypt_pim);
+				memory = 0;
+			}
+		} else {
 			iterations = tcrypt_kdf[i].iterations;
+			memory = tcrypt_kdf[i].memory_cost;
+		}
 		/* Derive header key */
-		log_dbg(cd, "TCRYPT: trying KDF: %s-%s-%d%s.",
-			tcrypt_kdf[i].name, tcrypt_kdf[i].hash, tcrypt_kdf[i].iterations,
-			params->veracrypt_pim && tcrypt_kdf[i].veracrypt ? "-PIM" : "");
+		if (!strcmp(tcrypt_kdf[i].name, "argon2id"))
+			log_dbg(cd, "TCRYPT: trying KDF: %s%s.", tcrypt_kdf[i].name,
+				params->veracrypt_pim && tcrypt_kdf[i].veracrypt ? "-PIM" : "");
+		else
+			log_dbg(cd, "TCRYPT: trying KDF: %s-%s-%d%s.",
+				tcrypt_kdf[i].name, tcrypt_kdf[i].hash, tcrypt_kdf[i].iterations,
+				params->veracrypt_pim && tcrypt_kdf[i].veracrypt ? "-PIM" : "");
 		r = crypt_pbkdf(tcrypt_kdf[i].name, tcrypt_kdf[i].hash,
 				(char*)pwd, passphrase_size,
 				hdr->salt, TCRYPT_HDR_SALT_LEN,
 				key, TCRYPT_HDR_KEY_LEN,
-				iterations, 0, 0);
+				iterations, memory, tcrypt_kdf[i].parallel_cost);
 		if (r < 0) {
 			log_verbose(cd, _("PBKDF2 hash algorithm %s not available, skipping."),
 				      tcrypt_kdf[i].hash);
@@ -1189,7 +1213,11 @@ int TCRYPT_dump(struct crypt_device *cd,
 			log_std(cd, "Volume size:\t%" PRIu64 " [bytes]\n", hdr->d.volume_size);
 		if (hdr->d.hidden_volume_size)
 			log_std(cd, "Hidden size:\t%" PRIu64 " [bytes]\n", hdr->d.hidden_volume_size);
-		log_std(cd, "PBKDF2 hash:\t%s\n", params->hash_name);
+		if (strcmp(params->hash_name, "argon2id")) {
+			log_std(cd, "PBKDF:\t\tPBKDF2\n");
+			log_std(cd, "PBKDF2 hash:\t%s\n", params->hash_name);
+		} else
+			log_std(cd, "PBKDF:\t\tArgon2id\n");
 	}
 	log_std(cd, "Cipher chain:\t%s\n", params->cipher);
 	log_std(cd, "Cipher mode:\t%s\n", params->mode);
