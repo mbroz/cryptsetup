@@ -47,9 +47,36 @@ static int check_hash(const char *hash)
 	return EXIT_SUCCESS;
 }
 
+static int check_pbkdf(const char *pbkdf)
+{
+	const char *hash;
+	uint32_t iterations, memory, parallel;
+	char out[32];
+
+	if (!strcmp(pbkdf, "pbkdf2")) {
+		hash = "sha256";
+		iterations = 1000;
+		memory = 0;
+		parallel = 0;
+	} else if (!strncmp(pbkdf, "argon2", 6)) {
+		hash = NULL;
+		iterations = 3;
+		memory = 256;
+		parallel = 1;
+	} else
+		return EXIT_FAILURE;
+
+	if (!crypt_pbkdf(pbkdf, hash, "01234567890abcdef01234567890abcdef", 32,
+	    "11234567890abcdef11234567890abcdef", 32, out, sizeof(out),
+	    iterations, memory, parallel))
+		return EXIT_SUCCESS;
+
+	return EXIT_FAILURE;
+}
+
 static void __attribute__((noreturn)) exit_help(bool destroy_backend)
 {
-	printf("Use: crypto_check version | fips_mode | fips_mode_kernel | hash <alg> | cipher <alg> <mode> [key_bits]\n");
+	printf("Use: crypto_check version | fips_mode | fips_mode_kernel | hash <alg> | cipher <alg> <mode> [key_bits] | pbkdf <alg>\n");
 	if (destroy_backend)
 		crypt_backend_destroy();
 	exit(EXIT_FAILURE);
@@ -92,6 +119,10 @@ int main(int argc, char *argv[])
 				exit_help(true);
 		}
 		r = check_cipher(argv[2], argv[3], ul);
+	} else if (!strcmp(argv[1], "pbkdf")) {
+		if (argc != 3)
+			exit_help(true);
+		r = check_pbkdf(argv[2]);
 	}
 
 	crypt_backend_destroy();
