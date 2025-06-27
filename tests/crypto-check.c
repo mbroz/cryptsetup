@@ -84,7 +84,6 @@ static int check_pbkdf(const char *pbkdf)
 	} else
 		return EXIT_FAILURE;
 
-
 	if (!crypt_pbkdf(pbkdf, hash, "01234567890abcdef01234567890abcdef", 32,
 	    "11234567890abcdef11234567890abcdef", 32, out, sizeof(out),
 	    iterations, memory, parallel))
