@@ -1,0 +1,8 @@
+public_job:
+  extends:
+    - .fail_if_coredump_generated
+  stage: test
+  script:
+    - echo "This is the PUBLIC pipeline!"
+  rules:
+    - when: on_success

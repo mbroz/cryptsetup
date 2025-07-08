@@ -7,10 +7,11 @@ stages:
     - '[ "$(ls -A /var/coredumps)" ] && exit 1 || true'
 
 include:
+  - local: .gitlab/ci/public.yml
   - local: .gitlab/ci/debian.yml
   - local: .gitlab/ci/fedora.yml
   - local: .gitlab/ci/fedora-opal.yml
-  - local: .gitlab/ci/rhel.yml
+#  - local: .gitlab/ci/rhel.yml
   - local: .gitlab/ci/centos.yml
 #  - local: .gitlab/ci/annocheck.yml
   - local: .gitlab/ci/csmock.yml
