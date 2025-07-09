@@ -16,47 +16,37 @@ cryptsetup-repair - repair the device metadata
 
 == DESCRIPTION
 
-Tries to repair the device metadata if possible. Currently supported
-only for LUKS device type.
+Tries to repair the device metadata if possible.
+Currently supported only for LUKS device type.
 
-This command is useful to fix some known benign LUKS metadata header
-corruptions. Only basic corruptions of unused keyslot are fixable. This
-command will only change the LUKS header, not any key-slot data. You may
-enforce LUKS version by adding --type option.
+This command is useful to fix some known benign LUKS metadata header corruptions.
+Only basic corruptions of unused keyslot are fixable.
+This command will only change the LUKS header, not any key-slot data.
+You may enforce LUKS version by adding --type option.
 
-It also repairs (upgrades) LUKS2 reencryption metadata by adding
-a metadata digest that protects it against malicious changes.
+It also repairs (upgrades) LUKS2 reencryption metadata by adding a metadata digest that protects it against malicious changes.
 
-If LUKS2 reencryption was interrupted in the middle of writing
-reencryption segment the repair command can be used to perform
-reencryption recovery so that reencryption can continue later.
-Repairing reencryption requires verification of reencryption
-keyslot so passphrase or keyfile is needed.
+If LUKS2 reencryption was interrupted in the middle of writing reencryption segment the repair command can be used to perform reencryption recovery so that reencryption can continue later.
+Repairing reencryption requires verification of reencryption keyslot so passphrase or keyfile is needed.
 
 === LUKS keyslots corruption detection
 
-The repair command also checks for detectable corruption of keyslot
-content. Corruption of a keyslot results in a situation when a known
-password is no longer accepted. It can happen due to storage media
-failure or overwriting the keyslot area by some other data.
-Only certain corruptions, usually only a low-entropy area
-(like zeroed blocks), can be detected.
+The repair command also checks for detectable corruption of keyslot content.
+Corruption of a keyslot results in a situation when a known password is no longer accepted.
+It can happen due to storage media failure or overwriting the keyslot area by some other data.
+Only certain corruptions, usually only a low-entropy area (like zeroed blocks), can be detected.
 
-The detection prints only warnings. It does not modify keyslots.
-It can also print more specific offsets on the device for detailed
-manual inspection.
+The detection prints only warnings.
+It does not modify keyslots.
+It can also print more specific offsets on the device for detailed manual inspection.
 
-Please note that the warning can be a false positive
-(no real corruption happened).
+Please note that the warning can be a false positive (no real corruption happened).
 Conversely, if the keyslot is corrupted, no recovery is possible.
 You have to use LUKS header backup.
 
+*<options>* can be [--timeout, --verify-passphrase, --disable-locks, --type, --header, --key-file, --keyfile-size, --keyfile-offset, --key-slot].
 
-*<options>* can be [--timeout, --verify-passphrase, --disable-locks,
---type, --header, --key-file, --keyfile-size, --keyfile-offset, --key-slot].
-
-*WARNING:* Always create a binary backup of the original header before
-calling this command.
+*WARNING:* Always create a binary backup of the original header before calling this command.
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]

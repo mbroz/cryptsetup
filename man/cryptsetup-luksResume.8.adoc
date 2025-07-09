@@ -16,15 +16,10 @@ cryptsetup-luksResume - resume a suspended device and reinstate the key
 
 == DESCRIPTION
 
-Resumes a suspended device and reinstates the encryption key. Prompts
-interactively for a passphrase if no token is usable (LUKS2 only) or
---key-file is not given.
+Resumes a suspended device and reinstates the encryption key.
+Prompts interactively for a passphrase if no token is usable (LUKS2 only) or --key-file is not given.
 
-*<options>* can be [--key-file, --keyfile-size, --keyfile-offset,
---key-slot, --header, --disable-keyring, --disable-locks, --token-id,
---token-only, --token-type, --disable-external-tokens, --type, --tries,
---timeout, --verify-passphrase, --volume-key-keyring, --link-vk-to-keyring,
---external-tokens-path].
+*<options>* can be [--key-file, --keyfile-size, --keyfile-offset, --key-slot, --header, --disable-keyring, --disable-locks, --token-id, --token-only, --token-type, --disable-external-tokens, --type, --tries, --timeout, --verify-passphrase, --volume-key-keyring, --link-vk-to-keyring, --external-tokens-path].
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]

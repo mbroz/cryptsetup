@@ -18,20 +18,14 @@ cryptsetup-tcryptDump - dump the header information of a TCRYPT (TrueCrypt or Ve
 
 Dump the header information of a TCRYPT (TrueCrypt or VeraCrypt compatible) device.
 
-If the --dump-volume-key option is used, the TCRYPT device volume key is
-dumped instead of TCRYPT header info. Beware that the volume key (or
-concatenated volume keys if cipher chain is used) can be used to decrypt
-the data stored in the TCRYPT container without a passphrase. This means
-that if the volume key is compromised, the whole device has to be erased
-to prevent further access. Use this option carefully.
+If the --dump-volume-key option is used, the TCRYPT device volume key is dumped instead of TCRYPT header info.
+Beware that the volume key (or concatenated volume keys if cipher chain is used) can be used to decrypt the data stored in the TCRYPT container without a passphrase.
+This means that if the volume key is compromised, the whole device has to be erased to prevent further access.
+Use this option carefully.
 
-*<options>* can be [--dump-volume-key, --key-file, --tcrypt-hidden,
---tcrypt-system, --tcrypt-backup, --veracrypt (ignored), --disable-veracrypt,
---veracrypt-pim, --veracrypt-query-pim, --cipher, --hash, --header,
---verify-passphrase, --timeout].
+*<options>* can be [--dump-volume-key, --key-file, --tcrypt-hidden, --tcrypt-system, --tcrypt-backup, --veracrypt (ignored), --disable-veracrypt, --veracrypt-pim, --veracrypt-query-pim, --cipher, --hash, --header, --verify-passphrase, --timeout].
 
-The keyfile parameter allows a combination of file content with the
-passphrase and can be repeated.
+The keyfile parameter allows a combination of file content with the passphrase and can be repeated.
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]

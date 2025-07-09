@@ -22,14 +22,10 @@ Stores a binary backup of the LUKS header and keyslot area. +
 
 *<options>* can be [--header, --header-backup-file, --disable-locks].
 
-*WARNING:* This backup file and a passphrase valid at the time of backup
-allows decryption of the LUKS data area, even if the passphrase was
-later changed or removed from the LUKS device. Also note that with a
-header backup you lose the ability to securely wipe the LUKS device by
-just overwriting the header and key-slots. You either need to securely
-erase all header backups in addition or overwrite the encrypted data
-area as well. The second option is less secure, as some sectors can
-survive, e.g., due to defect management.
+*WARNING:* This backup file and a passphrase valid at the time of backup allows decryption of the LUKS data area, even if the passphrase was later changed or removed from the LUKS device.
+Also note that with a header backup you lose the ability to securely wipe the LUKS device by just overwriting the header and key-slots.
+You either need to securely erase all header backups in addition or overwrite the encrypted data area as well.
+The second option is less secure, as some sectors can survive, e.g., due to defect management.
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]
