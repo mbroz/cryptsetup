@@ -36,17 +36,17 @@ is inverted for historical reasons, all other aliases use the standard
 
 === PLAIN
 *open --type plain <device> <name>* --cipher <spec> --key-size <bits> --hash <alg> +
-plainOpen <device> <name> (*old syntax*) +
-create <name> <device> (*OBSOLETE syntax*)
+plainOpen <device> <name> (old syntax) +
+create <name> <device> (OBSOLETE syntax)
 
 Opens (creates a mapping with) <name> backed by device <device>.
 
-*WARNING:* You should always specify options *--cipher*, *--key-size* and
-(if no keyfile or keyring is used) then also *--hash* to avoid incompatibility as
+*WARNING:* You should always specify options --cipher, --key-size and
+(if no keyfile or keyring is used) then also --hash to avoid incompatibility as
 default values can be different in older cryptsetup versions. +
 
 The plain format also allows retrieving a volume key from a kernel keyring
-specified by *--volume-key-keyring*.  Key in kernel keyring must be configured
+specified by --volume-key-keyring.  Key in kernel keyring must be configured
 before issuing cryptsetup commands, as cryptsetup does not upload any keys to
 the keyring in plain mode. For subsequent commands (like resize), the user must
 ensure that the key in the keyring is unchanged. Otherwise, reloading the key
@@ -74,8 +74,8 @@ Note that the key size must match the preconfigured key in the keyring.
 
 === LUKS
 *open <device> <name>* +
-open --type <luks1|luks2> <device> <name> (*explicit version request*) +
-luksOpen <device> <name> (*old syntax*)
+open --type <luks1|luks2> <device> <name> (explicit version request) +
+luksOpen <device> <name> (old syntax)
 
 Opens the LUKS device <device> and sets up a mapping <name> after
 successful verification of the supplied passphrase.
@@ -100,7 +100,7 @@ matching PIN protected token.
 
 === loopAES
 *open --type loopaes <device> <name> --key-file <keyfile>* +
-loopaesOpen <device> <name> --key-file <keyfile> (*old syntax*)
+loopaesOpen <device> <name> --key-file <keyfile> (old syntax)
 
 Opens the loop-AES <device> and sets up a mapping <name>.
 
@@ -115,16 +115,16 @@ only part of the multi-key file would be read. +
 If you need it in script, just use the pipe redirection: +
 echo $keyfile | cryptsetup loopaesOpen --key-file=- <device> <name>
 
-Use *--keyfile-size* to specify the proper key length if needed.
+Use --keyfile-size to specify the proper key length if needed.
 
-Use *--offset* to specify device offset. Note that the units need to be
+Use --offset to specify device offset. Note that the units need to be
 specified in number of 512 byte sectors.
 
-Use *--skip* to specify the IV offset. If the original device used an
+Use --skip to specify the IV offset. If the original device used an
 offset and but did not use it in IV sector calculations, you have to
-explicitly use *--skip 0* in addition to the offset parameter.
+explicitly use --skip 0 in addition to the offset parameter.
 
-Use *--hash* to override the default hash function for passphrase
+Use --hash to override the default hash function for passphrase
 hashing (otherwise it is detected according to key size).
 
 *<options>* can be [--cipher, --key-file, --keyfile-size, --keyfile-offset,
@@ -132,7 +132,7 @@ hashing (otherwise it is detected according to key size).
 
 === TrueCrypt and VeraCrypt
 *open --type tcrypt <device> <name>* +
-tcryptOpen <device> <name> (*old syntax*)
+tcryptOpen <device> <name> (old syntax)
 
 Opens the TCRYPT (TrueCrypt and VeraCrypt compatible) <device> and sets
 up a mapping <name>.
@@ -147,23 +147,23 @@ The keyfile parameter allows a combination of file content with the
 passphrase and can be repeated. Note that using keyfiles is compatible
 with TCRYPT and is different from LUKS keyfile logic.
 
-If *--cipher* or *--hash* options are used, only cipher chains or PBKDF2
+If --cipher or --hash options are used, only cipher chains or PBKDF2
 variants with the specified hash algorithms are checked. This could
 speed up unlocking the device (but also it reveals some information
 about the container).
 
-If you use *--header* in combination with hidden or system options, the
+If you use --header in combination with hidden or system options, the
 header file must contain specific headers on the same positions as the
 original encrypted container.
 
-*WARNING:* Option *--allow-discards* cannot be combined with option
-*--tcrypt-hidden*. For normal mapping, it can cause the *destruction of
-hidden volume* (hidden volume appears as unused space for outer volume
+*WARNING:* Option --allow-discards cannot be combined with option
+--tcrypt-hidden. For normal mapping, it can cause the destruction of
+hidden volume (hidden volume appears as unused space for outer volume
 so this space can be discarded).
 
 === BitLocker
 *open --type bitlk <device> <name>* +
-bitlkOpen <device> <name> (*old syntax*)
+bitlkOpen <device> <name> (old syntax)
 
 Opens the BITLK (a BitLocker compatible) <device> and sets up a mapping
 <name>.
@@ -172,14 +172,14 @@ Opens the BITLK (a BitLocker compatible) <device> and sets up a mapping
 --readonly, --test-passphrase, --allow-discards --volume-key-file, --tries,
 --timeout, --verify-passphrase].
 
-Note that *--test-passphrase* doesn't work with *--volume-key-file* because
+Note that --test-passphrase doesn't work with --volume-key-file because
 we cannot check whether the provided volume key is correct for this device
-or not. When using *--volume-key-file* the device will be opened even if
+or not. When using --volume-key-file the device will be opened even if
 the provided key is not correct.
 
 === FileVault2
 *open --type fvault2 <device> <name>* +
-fvault2Open <device> <name> (*old syntax*)
+fvault2Open <device> <name> (old syntax)
 
 Opens the FVAULT2 (a FileVault2 compatible) <device> and sets up a mapping
 <name>.
