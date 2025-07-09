@@ -40,12 +40,12 @@ the device).
 
 === OPEN
 *open <device> <name>* +
-create <name> <device> (*OBSOLETE syntax*)
+create <name> <device> (OBSOLETE syntax)
 
 Open a mapping with <name> backed by device <device>.
 
 If the integrity algorithm of the device is non-default,
-then the algorithm should be specified with the *--integrity* option.
+then the algorithm should be specified with the --integrity option.
 This will not be detected from the device.
 
 *<options>* can be [--data-device, --batch-mode, --journal-watermark,
@@ -57,7 +57,7 @@ This will not be detected from the device.
 
 === CLOSE
 *close <name>* +
-remove <name> (*OBSOLETE syntax*)
+remove <name> (OBSOLETE syntax)
 
 Removes existing mapping <name>.
 
@@ -93,21 +93,21 @@ kernel version 5.7, shrinking should work on older kernels too.
 Allow the use of discard (TRIM) requests for the device. This option
 is available since the Linux kernel version 5.7.
 
-*--batch-mode, -q*::
+*--batch-mode*, *-q*::
 Do not ask for confirmation.
 
-*--bitmap-flush-time MS*::
+*--bitmap-flush-time* _ms_::
 Bitmap flush time in milliseconds.
 +
 *WARNING:*
 In case of a crash, it is possible that the data and integrity tag
 doesn't match if the journal is disabled.
 
-*--bitmap-sectors-per-bit SECTORS*::
+*--bitmap-sectors-per-bit* _sectors_::
 Number of 512-byte sectors per bitmap bit, the value must be power of
 two.
 
-*--buffer-sectors SECTORS*::
+*--buffer-sectors* _sectors_::
 The number of sectors in one buffer.
 +
 The tag area is accessed using buffers, the large buffer size means that
@@ -117,7 +117,7 @@ the I/O size will be larger, but there could be less I/Os issued.
 Removes a previously configured deferred device removal in *close*
 command.
 
-*--data-device <data_device>*::
+*--data-device* _<data_device>_::
 Specify a separate data device that contains existing data. The
 <device> then will contain calculated integrity tags and journal for
 data on <data_device>.
@@ -134,10 +134,10 @@ always prefixed by *#*.
 Defers device removal in *close* command until the last user closes
 it.
 
-*--help, -?*::
+*--help*, *-?*::
 Show help text and default parameters.
 
-*--integrity, -I ALGORITHM*::
+*--integrity*, *-I* _algorithm_::
 Use internal integrity calculation (standalone mode). The integrity
 algorithm can be CRC (crc32c/crc32), non-cryptographic hash function
 (xxhash64) or hash function (sha1, sha256).
@@ -145,7 +145,7 @@ algorithm can be CRC (crc32c/crc32), non-cryptographic hash function
 For HMAC (hmac-sha256) you have also to specify an integrity key and its
 size.
 
-*--integrity-bitmap-mode. -B*::
+*--integrity-bitmap-mode*, *-B*::
 Use alternate bitmap mode (available since Linux kernel 5.2) where
 dm-integrity uses bitmap instead of a journal. If a bit in the bitmap
 is 1, the corresponding region's data and integrity tags are not
@@ -168,13 +168,13 @@ No journal or bitmap is used in this mode. The device should operate
 with native speed (without any overhead).
 This option is available since the Linux kernel version 6.11.
 
-*--integrity-key-file FILE*::
+*--integrity-key-file* _file_::
 The file with the integrity key.
 
-*--integrity-key-size BYTES*::
+*--integrity-key-size* _bytes_::
 The size of the data integrity key. Maximum is 4096 bytes.
 
-*--integrity-no-journal, -D*::
+*--integrity-no-journal*, *-D*::
 Disable journal for integrity device.
 
 *--integrity-recalculate*::
@@ -190,17 +190,17 @@ to change the integrity checksum function. Note it does not change the
 tag length. This option is available since the Linux kernel version
 5.13.
 
-*--integrity-recovery-mode. -R*::
+*--integrity-recovery-mode*, *-R*::
 Recovery mode (no journal, no tag checking).
 
-*--interleave-sectors SECTORS*::
+*--interleave-sectors* _sectors_::
 The number of interleaved sectors.
 
-*--journal-commit-time MS*::
+*--journal-commit-time* _ms_::
 Commit time in milliseconds. When this time passes (and no explicit
 flush operation was issued), the journal is written.
 
-*--journal-crypt ALGORITHM*::
+*--journal-crypt* _algorithm_::
 Encryption algorithm for journal data area. You can use a block cipher
 here such as cbc-aes or a stream cipher, for example, chacha20 or
 ctr-aes.
@@ -208,26 +208,26 @@ ctr-aes.
 *NOTE:* The journal encryption options are only intended for testing.
 Using journal encryption does not make sense without encryption of the data.
 
-*--journal-crypt-key-file FILE*::
+*--journal-crypt-key-file* _file_::
 The file with the journal encryption key.
 
-*--journal-crypt-key-size BYTES*::
+*--journal-crypt-key-size* _bytes_::
 The size of the journal encryption key. Maximum is 4096 bytes.
 
-*--journal-integrity ALGORITHM*::
+*--journal-integrity* _algorithm_::
 Integrity algorithm for journal area. See --integrity option for
 detailed specification.
 
-*--journal-integrity-key-file FILE*::
+*--journal-integrity-key-file* _file_::
 The file with the integrity key.
 
-*--journal-integrity-key-size BYTES*::
+*--journal-integrity-key-size* _bytes_::
 The size of the journal integrity key. Maximum is 4096 bytes.
 
-*--journal-size, -j BYTES*::
+*--journal-size*, *-j* _butes_::
 Size of the journal.
 
-*--journal-watermark PERCENT*::
+*--journal-watermark* _percent_::
 Journal watermark in percents. When the size of the journal exceeds
 this watermark, the journal flush will be started.
 
@@ -235,7 +235,7 @@ this watermark, the journal flush will be started.
 Do not wipe the device after format. A device that is not initially
 wiped will contain invalid checksums.
 
-*--progress-frequency <seconds>*::
+*--progress-frequency* _seconds_::
 Print separate line every <seconds> with wipe progress.
 
 *--progress-json*::
@@ -259,10 +259,10 @@ Note on numbers in JSON output: Due to JSON parsers limitations all
 numbers are represented in a string format due to need of full 64bit
 unsigned integers.
 
-*--sector-size, -s BYTES*::
+*--sector-size*, *-s* _bytes_::
 Sector size (power of two: 512, 1024, 2048, 4096).
 
-*--tag-size, -t BYTES*::
+*--tag-size*, *-t* _bytes_::
 Size of the integrity tag per-sector (here the integrity function will
 store authentication tag).
 +
@@ -272,10 +272,10 @@ in that case only part of the hash will be stored.
 *--usage*::
 Show short option help.
 
-*--verbose, -v*::
+*--verbose*, *-v*::
 Print more information on command execution.
 
-*--version, -V*::
+*--version*, *-V*::
 Show the program version.
 
 *--wipe*::

@@ -49,7 +49,7 @@ hex-encoded text format in <path>.
 === OPEN
 *open <data_device> <name> <hash_device> <root_hash>* +
 *open <data_device> <name> <hash_device> --root-hash-file <path>* +
-create <name> <data_device> <hash_device> <root_hash> (*OBSOLETE syntax*)
+create <name> <data_device> <hash_device> <root_hash> (OBSOLETE syntax)
 
 Creates a mapping with <name> backed by device <data_device> and using
 <hash_device> for in-kernel verification.
@@ -91,7 +91,7 @@ as in initial format operation.
 
 === CLOSE
 *close <name>* +
-remove <name> (*OBSOLETE syntax*)
+remove <name> (OBSOLETE syntax)
 
 Removes existing mapping <name>.
 
@@ -110,7 +110,7 @@ Reports parameters of verity device from on-disk stored superblock.
 *<options>* can be [--hash-offset].
 
 == OPTIONS
-*--batch-mode, -q*::
+*--batch-mode*, *-q*::
 Do not ask for confirmation.
 
 *--cancel-deferred*::
@@ -125,11 +125,11 @@ from the data device, rather than every time.
 tampering of the data device's content will be detected, not online
 tampering. This option is available since Linux kernel version 4.17.
 
-*--data-blocks=blocks*::
+*--data-blocks* _blocks_::
 Size of data device used in verification. If not specified, the whole
 device is used.
 
-*--data-block-size=bytes*::
+*--data-block-size* _bytes_::
 Used block size for the data device. (Note kernel supports only
 page-size as maximum here.)
 
@@ -145,7 +145,7 @@ it.
 Handle device I/O errors the same as data corruption. This option must
 be combined with --restart-on-corruption or --panic-on-corruption.
 
-*--fec-device=fec_device*::
+*--fec-device* _device_::
 Use forward error correction (FEC) to recover from corruption if hash
 verification fails. Use encoding data from the specified device.
 +
@@ -167,34 +167,34 @@ rest of the image after the hash area.
 If hash and FEC device is in the image, metadata ends on the FEC area
 offset.
 
-*--fec-offset=bytes*::
+*--fec-offset* _bytes_::
 This is the offset, in bytes, from the start of the FEC device to the
 beginning of the encoding data.
 
-*--fec-roots=num*::
+*--fec-roots* _number_::
 Number of generator roots. This equals to the number of parity bytes
 in the encoding data. In RS(M, N) encoding, the number of roots is
 M-N. M is 255 and M-N is between 2 and 24 (including).
 
-*--format=number*::
+*--format* _number_::
 Specifies the hash version type. Format type 0 is original Chrome OS
 version. Format type 1 is current version.
 
-*--hash=hash*::
+*--hash* _hash_::
 Hash algorithm for dm-verity. For default see --help option.
 
-*--hash-block-size=bytes*::
+*--hash-block-size* _bytes_::
 Used block size for the hash device. (Note kernel supports only
 page-size as maximum here.)
 
-*--hash-offset=bytes*::
+*--hash-offset* _bytes_::
 Offset of hash area/superblock on hash_device. Value must be aligned
 to disk sector offset.
 
-*--help, -?*::
+*--help*, *-?*::
 Show help text and default parameters.
 
-*--ignore-corruption, --restart-on-corruption, --panic-on-corruption*::
+*--ignore-corruption*, *--restart-on-corruption*, *--panic-on-corruption*::
 Defines what to do if data integrity problem is detected (data
 corruption).
 +
@@ -217,10 +217,10 @@ available since Linux kernel version 4.5.
 *--no-superblock*::
 Create or use dm-verity without permanent on-disk superblock.
 
-*--root-hash-file=FILE*::
+*--root-hash-file* _file_*::
 Path to file with stored root hash in hex-encoded text.
 
-*--root-hash-signature=FILE*::
+*--root-hash-signature* _file_*::
 Path to root hash signature file used to verify the root hash (in
 kernel). This feature requires Linux kernel version 5.4 or more
 recent.
@@ -240,17 +240,17 @@ Show short option help.
 Try to use kernel tasklets in dm-verity driver for performance reasons.
 This option is available since Linux kernel version 6.0.
 
-*--uuid=UUID*::
+*--uuid* _UUID_::
 Use the provided UUID for format command instead of generating new
 one.
 +
 The UUID must be provided in standard UUID format, e.g.
 12345678-1234-1234-1234-123456789abc.
 
-*--verbose, -v*::
+*--verbose*, *-v*::
 Print more information on command execution.
 
-*--version, -V*::
+*--version*, *-V*::
 Show the program version.
 
 == RETURN CODES
