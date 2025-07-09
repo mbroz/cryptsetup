@@ -16,40 +16,30 @@ cryptsetup-token - manage LUKS2 tokens
 
 == DESCRIPTION
 
-Action _add_ creates a new keyring token to enable auto-activation of the
-device. For the auto-activation, the passphrase must be stored in
-keyring with the specified description. Usually, the passphrase should
-be stored in _user_ or _user-session_ keyring. The _token_ command is
-supported only for LUKS2.
+Action _add_ creates a new keyring token to enable auto-activation of the device.
+For the auto-activation, the passphrase must be stored in keyring with the specified description.
+Usually, the passphrase should be stored in _user_ or _user-session_ keyring.
+The _token_ command is supported only for LUKS2.
 
 For adding new keyring token, option --key-description is mandatory.
-Also, new token is assigned to key slot specified with --key-slot option
-or to all active key slots in the case --key-slot option is omitted.
+Also, new token is assigned to key slot specified with --key-slot option or to all active key slots in the case --key-slot option is omitted.
 
-To remove existing token, specify the token ID which should be removed
-with --token-id option.
+To remove existing token, specify the token ID which should be removed with --token-id option.
 
-*WARNING:* The action _token remove_ removes any token type, not just
-_keyring_ type from token slot specified by --token-id option.
+*WARNING:* The action _token remove_ removes any token type, not just _keyring_ type from token slot specified by --token-id option.
 
-Action _import_ can store arbitrary valid token json in LUKS2 header. It
-may be passed via standard input or via file passed in --json-file
-option. If you specify --key-slot then successfully imported token is
-also assigned to the key slot.
+Action _import_ can store arbitrary valid token json in LUKS2 header.
+It may be passed via standard input or via file passed in --json-file option.
+If you specify --key-slot then successfully imported token is also assigned to the key slot.
 
-Action _export_ writes requested token JSON to a file passed with
---json-file or to standard output.
+Action _export_ writes requested token JSON to a file passed with --json-file or to standard output.
 
-Action _unassign_ removes token binding to specified keyslot. Both token
-and keyslot must be specified by --token-id and --key-slot parameters.
+Action _unassign_ removes token binding to specified keyslot.
+Both token and keyslot must be specified by --token-id and --key-slot parameters.
 
-If --token-id is used with action _add_ or action _import_ and a token
-with that ID already exists, option --token-replace can be used to
-replace the existing token.
+If --token-id is used with action _add_ or action _import_ and a token with that ID already exists, option --token-replace can be used to replace the existing token.
 
-*<options>* can be [--header, --token-id, --key-slot, --key-description,
---disable-external-tokens, --disable-locks, --disable-keyring,
---json-file, --token-replace, --unbound, --external-tokens-path].
+*<options>* can be [--header, --token-id, --key-slot, --key-description, --disable-external-tokens, --disable-locks, --disable-keyring, --json-file, --token-replace, --unbound, --external tokens-path].
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]
