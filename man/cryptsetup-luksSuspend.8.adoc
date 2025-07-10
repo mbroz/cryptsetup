@@ -21,7 +21,7 @@ Needs kernel 2.6.19 or later.
 
 While the _luksSuspend_ operation wipes encryption keys from memory, it does not remove possible plaintext data in various caches or in-kernel metadata for mounted filesystems.
 
-After this operation, you have to use _luksResume_ to reinstate the encryption key and unblock the device or _close_ to remove the mapped device.
+After this operation, you must use _luksResume_ to reinstate the encryption key and unblock the device or _close_ to remove the mapped device.
 
 *<options>* can be [--header, --disable-locks].
 
