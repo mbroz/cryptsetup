@@ -18,13 +18,13 @@ cryptsetup-resize - resize an active mapping
 
 Resizes an active mapping <name>.
 
-If --size (in 512-bytes sectors) or --device-size are not specified, the size is computed from the underlying device.
-For LUKS it is the size of the underlying device without the area reserved for LUKS header (see data payload offset in *luksDump* command).
-For plain crypt device, the whole device size is used.
+If --size (in 512-byte sectors) or --device-size is not specified, the size is computed from the underlying device.
+For LUKS, it is the size of the underlying device without the area reserved for the LUKS header (see data payload offset in the *luksDump* command).
+For a plain crypt device, the whole device size is used.
 
-Note that this does not change the raw device geometry, it just changes how many sectors of the raw device are represented in the mapped device.
+Note that this does not change the raw device geometry; it just changes how many sectors of the raw device are represented in the mapped device.
 
-If cryptsetup detected volume key for active device loaded in kernel keyring service, resize action would first try to retrieve the key using a token.
+If cryptsetup detected a volume key for the active device loaded in the kernel keyring service, the resize action would first try to retrieve the key using a token.
 Only if it failed, it'd ask for a passphrase to unlock a keyslot (LUKS) or to derive a volume key again (plain mode).
 The kernel keyring is used by default for LUKS2 devices.
 

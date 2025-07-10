@@ -26,17 +26,17 @@ There are 3 basic modes of operation:
 
 <device> or --active-name <name> (LUKS2 only) is mandatory parameter.
 
-Cryptsetup _reencrypt_ action can be used to change reencryption parameters which otherwise require full on-disk data change (re-encryption).
-The _reencrypt_ action reencrypts data on LUKS device in-place.
+Cryptsetup _reencrypt_ action can be used to change reencryption parameters, which otherwise require full on-disk data change (re-encryption).
+The _reencrypt_ action reencrypts data on the LUKS device in-place.
 
 You can regenerate *volume key* (the real key used in on-disk encryption unlocked by passphrase), *cipher*, *cipher mode* or *encryption sector size* (LUKS2 only).
 
-*WARNING:* If you need to use both luksChangeKey and reencrypt (e.g. to recover from a leak) you need to use them in that order to not leak the new volume key.
+*WARNING:* If you need to use both luksChangeKey and reencrypt (e.g., to recover from a leak), you need to use them in that order to avoid leaking the new volume key.
 
-Reencryption process may be safely interrupted by a user via SIGINT signal (ctrl+c).
-Same applies to SIGTERM signal (i.e. issued by systemd during system shutdown).
+The reencryption process may be safely interrupted by a user via SIGINT signal (ctrl+c).
+The same applies to the SIGTERM signal (i.e., issued by systemd during system shutdown).
 
-For in-place encryption mode, the _reencrypt_ action additionally takes all options available for _luksFormat_ action for respective LUKS version (see cryptsetup-luksFormat man page for more details).
+For in-place encryption mode, the _reencrypt_ action additionally takes all options available for the _luksFormat_ action for the respective LUKS version (see cryptsetup-luksFormat man page for more details).
 See *cryptsetup-luksFormat*(8).
 
 *NOTE* that for encrypt and decrypt mode, the whole device must be treated as unencrypted -- there are no guarantees of confidentiality as part of the device contains plaintext.
@@ -88,22 +88,22 @@ See *cryptsetup-luksFormat*(8).
 
 == LUKS2 REENCRYPTION
 
-With <device> parameter cryptsetup looks up active <device> dm mapping.
-If no active mapping is detected, it starts offline LUKS2 reencryption otherwise online reencryption takes place.
+With the <device> parameter, cryptsetup looks up the active <device> dm mapping.
+If no active mapping is detected, it starts offline LUKS2 reencryption; otherwise, online reencryption occurs.
 
 To resume already initialized or interrupted reencryption, just run the cryptsetup _reencrypt_ command again to continue the reencryption operation.
 Reencryption may be resumed with different --resilience or --hotzone-size unless implicit datashift resilience mode is used: either encrypt mode with --reduce-device-size option or decrypt mode with original LUKS2 header exported in --header file.
 
-If the reencryption process was interrupted abruptly (reencryption process crash, system crash, poweroff) it may require recovery.
-The recovery is currently run automatically on next activation (action _open_) when needed or explicitly by user (action _repair_).
+If the reencryption process was interrupted abruptly (reencryption process crash, system crash, or power off), it may require recovery.
+The recovery is run automatically on next activation (action _open_) when needed or explicitly by the user (action _repair_).
 
-Optional parameter <new_name> takes effect only with encrypt option and it activates device <new_name> immediately after encryption initialization gets finished.
-That's useful when device needs to be ready as soon as possible and mounted (used) before full data area encryption is completed.
+The optional parameter <new_name> takes effect only with the encrypt option, and it activates device <new_name> immediately after encryption initialization is finished.
+That's useful when the device needs to be ready as soon as possible and mounted (used) before full data area encryption is completed.
 
 == LUKS1 REENCRYPTION
 
-Current working directory must be writable and temporary files created during reencryption must be present.
-During reencryption process the LUKS1 device is marked unavailable and must be offline (no dm-crypt mapping or mounted filesystem).
+The current working directory must be writable, and temporary files created during reencryption must be present.
+During reencryption, the LUKS1 device is marked unavailable and must be offline (no dm-crypt mapping or mounted filesystem).
 
 *WARNING*: The LUKS1 reencryption code is not resistant to hardware or kernel failures during reencryption (you can lose your data in this case).
 
@@ -116,17 +116,17 @@ include::man/common_options.adoc[]
 === LUKS2 ENCRYPTION EXAMPLES
 
 Encrypt LUKS2 device (in-place).
-Make sure last 32 MiB on _/dev/plaintext_ is unused (e.g.: does not contain filesystem data):
+Make sure the last 32 MiB on _/dev/plaintext_ is unused (e.g., does not contain filesystem data):
 
 *cryptsetup reencrypt --encrypt --type luks2 --reduce-device-size 32m /dev/plaintext_device*
 
 Encrypt LUKS2 device (in-place).
 Only the initial 1 GiB of original _/dev/plaintext_ data is encrypted while being shifted backwards.
-Make sure last 32 MiB (tail) on the data device is unused (e.g.: does not contain any data):
+Make sure the last 32 MiB (tail) on the data device is unused (e.g., does not contain any data):
 
 *cryptsetup reencrypt --encrypt --type luks2 --device-size 1g --reduce-device-size 32m /dev/plaintext_device*
 
-Encrypt LUKS2 device (in-place) with detached header put in a file:
+Encrypt LUKS2 device (in-place) with detached header, put in a file:
 
 *cryptsetup reencrypt --encrypt --type luks2 --header my_luks2_header /dev/plaintext_device*
 
@@ -134,7 +134,7 @@ Initialize LUKS2 in-place encryption operation only and activate the device (not
 
 *cryptsetup reencrypt --encrypt --type luks2 --init-only --reduce-device-size 32m /dev/plaintext_device my_future_luks_device*
 
-Resume online encryption on device initialized in example above:
+Resume online encryption on the device initialized in the example above:
 
 *cryptsetup reencrypt --resume-only /dev/plaintext_device* or
 *cryptsetup reencrypt --active-name my_future_luks_device*
@@ -145,19 +145,19 @@ Reencrypt LUKS2 device (refresh volume key only):
 
 *cryptsetup reencrypt /dev/encrypted_device*
 
-Reencrypt LUKS2 device using keyslot(s) associated to the token 3.
+Reencrypt LUKS2 device using keyslot(s) associated with the token 3.
 All other keyslots will be removed after the reencryption finishes.
 
 *cryptsetup reencrypt --token-id 3 /dev/encrypted_device*
 
-Reencrypt LUKS2 device using keyslots associated to all 'systemd-tpm2' tokens.
+Reencrypt LUKS2 device using keyslots associated with all 'systemd-tpm2' tokens.
 All other keyslots will be removed after the reencryption finishes.
 
 *cryptsetup reencrypt --token-type systemd-tpm2 /dev/encrypted_device*
 
 === LUKS2 DECRYPTION EXAMPLES
 
-Decrypt LUKS2 device with header put in head of data device (header file does not exist):
+Decrypt LUKS2 device with header put in the head of the data device (header file does not exist):
 
 *cryptsetup reencrypt --decrypt --header /export/header/to/file /dev/encrypted_device*
 

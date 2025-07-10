@@ -18,16 +18,16 @@ cryptsetup-luksAddKey - add a new passphrase
 
 Adds a keyslot protected by a new passphrase.
 An existing passphrase must be supplied interactively, via --key-file or LUKS2 token (plugin).
-Alternatively to existing passphrase user may pass directly volume key (via --volume-key-file or --volume-key-keyring).
+Alternatively to the existing passphrase, the user may pass directly the volume key (via --volume-key-file or --volume-key-keyring).
 The new passphrase to be added can be specified interactively, read from the file given as the positional argument (also via --new-keyfile parameter) or via LUKS2 token.
 
 *NOTE:* with --unbound option the action creates new unbound LUKS2 keyslot.
 The keyslot cannot be used for device activation.
-If you don't pass new key via --volume-key-file option, new random key is generated.
-Existing passphrase for any active keyslot is not required.
+If you don't pass a new key via --volume-key-file option, a new random key is generated.
+The existing passphrase for any active keyslot is not required.
 
-*NOTE:* some parameters are effective only if used with LUKS2 format that supports per-keyslot parameters.
-For LUKS1, PBKDF type and hash algorithm is always the same for all keyslots.
+*NOTE:* Some parameters are effective only if used with the LUKS2 format that supports per-keyslot parameters.
+For LUKS1, the PBKDF type and hash algorithm are always the same for all keyslots.
 
 *<options>* can be [--key-file, --keyfile-offset, --keyfile-size, --new-keyfile, --new-keyfile-offset, --new-keyfile-size, --key-slot, --new-key-slot, --volume-key-file, --volume-key-keyring, --force-password, --hash, --header, --disable-locks, --iter-time, --pbkdf, --pbkdf-force-iterations, --pbkdf-memory, --pbkdf-parallel, --unbound, --type, --keyslot-cipher, --keyslot-key-size, --key-size, --timeout, --token-id, --token-type, --token-only, --new-token-id, --verify-passphrase, --external-tokens-path].
 
@@ -35,13 +35,13 @@ include::man/common_options.adoc[]
 
 == EXAMPLES
 
-*NOTE*: When not specified otherwise interactive passphrase prompt is always default method.
+*NOTE*: The interactive passphrase prompt is always the default method when not specified otherwise.
 
-Add new keyslot using interactive passphrase prompt for both existing and new passphrase:
+Add new keyslot using interactive passphrase prompt for both existing and new passphrases:
 
 *cryptsetup luksAddKey /dev/device*
 
-Add new keyslot using LUKS2 tokens to unlock existing keyslot with interactive passphrase prompt for new passphrase:
+Add a new keyslot using LUKS2 tokens to unlock the existing keyslot with an interactive passphrase prompt for the new passphrase:
 
 *cryptsetup luksAddKey --token-only /dev/device*
 

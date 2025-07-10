@@ -6,7 +6,7 @@
 
 == NAME
 
-integritysetup - manage dm-integrity (block level integrity) volumes
+integritysetup - manage dm-integrity (block-level integrity) volumes
 
 == SYNOPSIS
 
@@ -16,9 +16,9 @@ integritysetup - manage dm-integrity (block level integrity) volumes
 
 Integritysetup is used to configure dm-integrity managed device-mapper mappings.
 
-Device-mapper integrity target provides read-write transparent integrity checking of block devices.
-The dm-integrity target emulates an additional data integrity field per-sector.
-You can use this additional field directly with integritysetup utility, or indirectly (for authenticated encryption) through cryptsetup.
+The device-mapper integrity target provides read-write transparent integrity checking for block devices.
+The dm-integrity target emulates an additional data integrity field per sector.
+You can use this additional field directly with the integritysetup utility, or indirectly (for authenticated encryption) through cryptsetup.
 
 == BASIC ACTIONS
 
@@ -58,18 +58,18 @@ Reports status for the active integrity mapping <name>.
 === DUMP
 *dump <device>*
 
-Reports parameters from on-disk stored superblock.
+Report parameters from the on-disk stored superblock.
 
 === RESIZE
 *resize <name>*
 
 Resizes an active mapping <name>.
 
-If --size (in 512-bytes sectors) or --device-size are not specified, the size is computed from the underlying device.
+If --size (in 512-byte sectors) or --device-size is not specified, the size is computed from the underlying device.
 After resize, the *recalculating* flag is set.
 If --wipe flag is set and the size of the device is increased, the newly added section will be wiped.
 
-Increasing the size of integrity volumes is available since the Linux kernel version 5.7, shrinking should work on older kernels too.
+Increasing the size of integrity volumes has been possible since the Linux kernel version 5.7; shrinking should work on older kernels, too.
 
 *<options>* can be [--size, --device-size, --wipe].
 
@@ -85,48 +85,49 @@ Do not ask for confirmation.
 Bitmap flush time in milliseconds.
 +
 *WARNING:*
-In case of a crash, it is possible that the data and integrity tag doesn't match if the journal is disabled.
+In case of a crash, it is possible that the data and integrity tag don't match if the journal is disabled.
 
 *--bitmap-sectors-per-bit* _sectors_::
-Number of 512-byte sectors per bitmap bit, the value must be power of two.
+The number of 512-byte sectors per bitmap bit must be a power of two.
 
 *--buffer-sectors* _sectors_::
 The number of sectors in one buffer.
 +
-The tag area is accessed using buffers, the large buffer size means that the I/O size will be larger, but there could be less I/Os issued.
+The tag area is accessed using buffers; the large buffer size means the I/O size will be larger, but there could be less I/Os issued.
 
 *--cancel-deferred*::
-Removes a previously configured deferred device removal in *close* command.
+Removes a previously configured deferred device removal in the *close* command.
 
 *--data-device* _<data_device>_::
 Specify a separate data device that contains existing data.
-The <device> then will contain calculated integrity tags and journal for data on <data_device>.
+The <device> will then contain calculated integrity tags and a journal for data on <data_device>.
 +
-*NOTE:* To not wipe the data device after initial format, also specify --no-wipe option and activate with --integrity-recalculate to automatically recalculate integrity tags.
+*NOTE:* To not wipe the data device after initial format, also specify --no-wipe option and activate with --integrity-recalculate to recalculate integrity tags automatically.
 
 *--debug*::
 Run in debug mode with full diagnostic logs.
 Debug output lines are always prefixed by *#*.
 
 *--deferred*::
-Defers device removal in *close* command until the last user closes it.
+Defers device removal in the *close* command until the last user closes it.
 
 *--help*, *-?*::
 Show help text and default parameters.
 
 *--integrity*, *-I* _algorithm_::
 Use internal integrity calculation (standalone mode).
-The integrity algorithm can be CRC (crc32c/crc32), non-cryptographic hash function (xxhash64) or hash function (sha1, sha256).
+The integrity algorithm can be CRC (crc32c/crc32), a non-cryptographic hash function (xxhash64) or a hash function (sha1, sha256).
 +
-For HMAC (hmac-sha256) you have also to specify an integrity key and its size.
+For HMAC (hmac-sha256), you must specify an integrity key and its size.
 
 *--integrity-bitmap-mode*, *-B*::
-Use alternate bitmap mode (available since Linux kernel 5.2) where dm-integrity uses bitmap instead of a journal.
+Use alternate bitmap mode (available since Linux kernel 5.2), where dm-integrity uses a bitmap instead of a journal.
 If a bit in the bitmap is 1, the corresponding region's data and integrity tags are not synchronized - if the machine crashes, the unsynchronized regions will be recalculated.
-The bitmap mode is faster than the journal mode, because we don't have to write the data twice, but it is also less reliable, because if data corruption happens when the machine crashes, it may not be detected.
+The bitmap mode is faster than the journal mode because we don't have to write the data twice.
+However, it is also less reliable because if data corruption happens when the machine crashes, it may not be detected.
 
 *--integrity-inline*::
-Store integrity tags to hardware sector integrity fields.
+Store integrity tags in hardware sector integrity fields.
 The device must support sectors with additional protection information (PI, also known as DIF - data integrity field) of the requested size.
 Another storage subsystem must not use the additional field (the device must present a "nop" profile in the kernel).
 Note that some devices must be reformatted at a low level to support this option; for NVMe devices, see nvme(1) id-ns LBA profiles.
@@ -143,17 +144,17 @@ The size of the data integrity key.
 Maximum is 4096 bytes.
 
 *--integrity-no-journal*, *-D*::
-Disable journal for integrity device.
+Disable the journal for the integrity device.
 
 *--integrity-recalculate*::
-Automatically recalculate integrity tags in kernel on activation.
-The device can be used during automatic integrity recalculation but becomes fully integrity protected only after the background operation is finished.
+Automatically recalculate integrity tags in the kernel on activation.
+The device can be used during automatic integrity recalculation, but becomes fully integrity protected only after the background operation is finished.
 This option is available since the Linux kernel version 4.19.
 
 *--integrity-recalculate-reset*::
 Restart recalculation from the beginning of the device.
 It can be used to change the integrity checksum function.
-Note it does not change the tag length.
+Note, it does not change the tag length.
 This option is available since the Linux kernel version 5.13.
 
 *--integrity-recovery-mode*, *-R*::
@@ -164,11 +165,11 @@ The number of interleaved sectors.
 
 *--journal-commit-time* _ms_::
 Commit time in milliseconds.
-When this time passes (and no explicit flush operation was issued), the journal is written.
+The journal is written when this time passes (and no explicit flush operation was issued).
 
 *--journal-crypt* _algorithm_::
-Encryption algorithm for journal data area.
-You can use a block cipher here such as cbc-aes or a stream cipher, for example, chacha20 or ctr-aes.
+Encryption algorithm for the journal data area.
+You can use a block cipher here, such as cbc-aes or a stream cipher, for example, chacha20 or ctr-aes.
 +
 *NOTE:* The journal encryption options are only intended for testing.
 Using journal encryption does not make sense without encryption of the data.
@@ -181,7 +182,7 @@ The size of the journal encryption key.
 Maximum is 4096 bytes.
 
 *--journal-integrity* _algorithm_::
-Integrity algorithm for journal area.
+Integrity algorithm for the journal area.
 See --integrity option for detailed specification.
 
 *--journal-integrity-key-file* _file_::
@@ -195,20 +196,20 @@ Maximum is 4096 bytes.
 Size of the journal.
 
 *--journal-watermark* _percent_::
-Journal watermark in percents.
-When the size of the journal exceeds this watermark, the journal flush will be started.
+Journal watermark in percent.
+When the journal size exceeds this watermark, the journal flush will be started.
 
 *--no-wipe*::
-Do not wipe the device after format.
+Do not wipe the device after formatting.
 A device that is not initially wiped will contain invalid checksums.
 
 *--progress-frequency* _seconds_::
-Print separate line every <seconds> with wipe progress.
+Print a separate line every <seconds> with wipe progress.
 
 *--progress-json*::
-Prints wipe progress data in json format suitable mostly for machine processing.
-It prints separate line every half second (or based on --progress-frequency value).
-The JSON output looks as follows during wipe progress (except it's compact single line):
+Prints wipe progress data in JSON format, which is suitable mostly for machine processing.
+It prints a separate line every half second (or based on --progress-frequency value).
+The JSON output looks as follows during wipe progress (except it's a compact single line):
 +
 ....
 {
@@ -221,15 +222,15 @@ The JSON output looks as follows during wipe progress (except it's compact singl
 }
 ....
 +
-Note on numbers in JSON output: Due to JSON parsers limitations all numbers are represented in a string format due to need of full 64bit unsigned integers.
+Note on numbers in JSON output: Due to JSON parsers' limitations, all numbers are represented in a string format due to the need for full 64-bit unsigned integers.
 
 *--sector-size*, *-s* _bytes_::
 Sector size (power of two: 512, 1024, 2048, 4096).
 
 *--tag-size*, *-t* _bytes_::
-Size of the integrity tag per-sector (here the integrity function will store authentication tag).
+Size of the integrity tag per-sector (here, the integrity function will store the authentication tag).
 +
-*NOTE:* The size can be smaller that output size of the hash function, in that case only part of the hash will be stored.
+*NOTE:* The size can be smaller than the output size of the hash function; in that case, only part of the hash will be stored.
 
 *--usage*::
 Show short option help.
@@ -241,13 +242,13 @@ Print more information on command execution.
 Show the program version.
 
 *--wipe*::
-Wipe the newly allocated area after resize to bigger size.
-If this flag is not set, checksums will be calculated for the data previously stored in the newly allocated area.
+Wipe the newly allocated area after resizing to a bigger size.
+If this flag is not set, checksums will be calculated for previously stored data in the newly allocated area.
 
 == LEGACY COMPATIBILITY OPTIONS
 
 *WARNING:*::
-Do not use these options until you need compatibility with specific old kernel.
+Do not use these options until you need compatibility with a specific old kernel.
 
 *--integrity-legacy-padding*::
 Use inefficient legacy padding.
@@ -267,7 +268,7 @@ Error codes are: *1* wrong parameters, *2* no permission, *3* out of memory, *4*
 == NOTES
 The dm-integrity target is available since Linux kernel version 4.12.
 
-Format and activation of an integrity device always require superuser privilege because the superblock is calculated and handled in dm-integrity kernel target.
+Format and activation of an integrity device always require superuser privilege because the superblock is calculated and handled in the dm-integrity kernel target.
 
 == EXAMPLES
 
@@ -293,7 +294,7 @@ Dump dm-integrity superblock information:
 
 == DM-INTEGRITY ON-DISK FORMAT
 
-The on-disk format specification available at https://gitlab.com/cryptsetup/cryptsetup/wikis/DMIntegrity[DMIntegrity] page.
+The on-disk format specification is available on the https://gitlab.com/cryptsetup/cryptsetup/wikis/DMIntegrity[DMIntegrity] page.
 
 == AUTHORS
 
