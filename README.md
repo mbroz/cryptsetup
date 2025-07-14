@@ -70,7 +70,7 @@ Below are the packages needed to build for certain Linux distributions:
 
 **For Fedora**:
 ```
-git gcc make autoconf automake gettext-devel pkgconfig openssl-devel popt-devel device-mapper-devel libuuid-devel json-c-devel libblkid-devel findutils libtool libssh-devel tar
+git gcc make autoconf automake gettext-devel pkgconfig openssl-devel popt-devel device-mapper-devel libuuid-devel json-c-devel libblkid-devel findutils libtool libssh-devel tar rubygem-asciidoctor
 
 Optionally: libargon2-devel libpwquality-devel
 ```
@@ -81,7 +81,7 @@ sharutils device-mapper jq vim-common expect keyutils netcat shadow-utils openss
 
 **For Debian and Ubuntu**:
 ```
-git gcc make autoconf automake autopoint pkg-config libtool gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol-dev libjson-c-dev libssh-dev libblkid-dev tar
+git gcc make autoconf automake autopoint pkg-config libtool gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol-dev libjson-c-dev libssh-dev libblkid-dev tar asciidoctor
 
 Optionally: libargon2-0-dev libpwquality-dev
 ```
