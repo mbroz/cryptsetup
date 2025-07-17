@@ -38,7 +38,7 @@ create <name> <device> (OBSOLETE syntax)
 
 Opens (creates a mapping with) <name> backed by device <device>.
 
-*WARNING:* You should always specify options --cipher, --key-size and (if no keyfile or keyring is used) then also --hash to avoid incompatibility, as default values can differ in older cryptsetup versions. +
+*WARNING:* You should always specify options --cipher, --key-size and (if no keyfile or keyring is used) then also --hash to avoid incompatibility, as default values can differ in older cryptsetup versions.
 
 The plain format also allows retrieving a volume key from a kernel keyring specified by --volume-key-keyring.
 The key in the kernel keyring must be configured before issuing cryptsetup commands, as cryptsetup does not upload any keys to the keyring in plain mode.
@@ -82,13 +82,11 @@ loopaesOpen <device> <name> --key-file <keyfile> (old syntax)
 
 Opens the loop-AES <device> and sets up a mapping <name>.
 
-If the key file is encrypted with GnuPG, then you have to use --key-file=- and decrypt it before use, e.g., like this: +
-gpg --decrypt <keyfile> | cryptsetup loopaesOpen --key-file=- <device>
-<name>
+If the key file is encrypted with GnuPG, then you have to use --key-file=- and decrypt it before use, e.g., like this:
+*gpg --decrypt <keyfile> | cryptsetup loopaesOpen --key-file=- <device> <name>*.
 
-*WARNING:* The loop-AES extension cannot use the direct input of the key file on the real terminal because the keys are separated by end-of-line, and only part of the multi-key file would be read. +
-If you need it in script, just use the pipe redirection: +
-echo $keyfile | cryptsetup loopaesOpen --key-file=- <device> <name>
+*WARNING:* The loop-AES extension cannot use the direct input of the key file on the real terminal because the keys are separated by end-of-line, and only part of the multi-key file would be read.
+If you need it in script, just use the pipe redirection: *echo $keyfile | cryptsetup loopaesOpen --key-file=- <device> <name>*.
 
 Use --keyfile-size to specify the proper key length if needed.
 

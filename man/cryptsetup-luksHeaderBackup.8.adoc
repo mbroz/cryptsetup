@@ -16,10 +16,11 @@ cryptsetup-luksHeaderBackup - store a binary backup of the LUKS header and keysl
 
 == DESCRIPTION
 
-Stores a binary backup of the LUKS header and keyslot area. +
-*NOTE:* Using '-' as a filename writes the header backup to a file named '-'.
+Stores a binary backup of the LUKS header and keyslot area.
 
 *<options>* can be [--header, --header-backup-file, --disable-locks].
+
+*NOTE:* Using '-' as a filename writes the header backup to a file named '-'.
 
 *WARNING:* This backup file and a passphrase valid at the time of backup allow decryption of the LUKS data area, even if the passphrase was later changed or removed from the LUKS device.
 Also, note that with a header backup, you lose the ability to wipe the LUKS device securely by just overwriting the header and keyslots.

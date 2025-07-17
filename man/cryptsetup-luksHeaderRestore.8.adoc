@@ -16,10 +16,11 @@ cryptsetup-luksHeaderRestore - restore a binary backup of the LUKS header and ke
 
 == DESCRIPTION
 
-Restores a binary backup of the LUKS header and keyslot area from the specified file. +
-*NOTE:* Using '-' as a filename reads the header backup from a file named '-'.
+Restores a binary backup of the LUKS header and keyslot area from the specified file.
 
 *<options>* can be [--header, --header-backup-file, --disable-locks].
+
+*NOTE:* Using '-' as a filename reads the header backup from a file named '-'.
 
 *WARNING:* Header and keyslots will be replaced; only the passphrases from the backup will work afterward.
 
