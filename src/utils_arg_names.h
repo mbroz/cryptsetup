@@ -94,6 +94,8 @@
 #define OPT_KEYSLOT_CIPHER		"keyslot-cipher"
 #define OPT_KEYSLOT_KEY_SIZE		"keyslot-key-size"
 #define OPT_NO_SUPERBLOCK		"no-superblock"
+#define OPT_EMBED_ROOT_HASH		"embedded-root-hash"
+#define OPT_EMBED_ROOT_SIG		"embedded-root-signature"
 #define OPT_NO_WIPE			"no-wipe"
 #define OPT_WIPE			"wipe"
 #define OPT_LABEL			"label"

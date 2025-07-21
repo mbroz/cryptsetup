@@ -42,13 +42,17 @@ ARG(OPT_IGNORE_ZERO_BLOCKS, '\0', POPT_ARG_NONE, N_("Do not verify zeroed blocks
 
 ARG(OPT_NO_SUPERBLOCK, '\0', POPT_ARG_NONE, N_("Do not use verity superblock"), NULL, CRYPT_ARG_BOOL, {}, {})
 
+ARG(OPT_EMBED_ROOT_HASH, '\0', POPT_ARG_NONE, N_("Embed root hash into verity superblock"), NULL, CRYPT_ARG_BOOL, {}, {})
+
+ARG(OPT_EMBED_ROOT_SIG, '\0', POPT_ARG_NONE, N_("Embedded root signature in verity superblock"), NULL, CRYPT_ARG_BOOL, {}, {})
+
 ARG(OPT_PANIC_ON_CORRUPTION, '\0', POPT_ARG_NONE, N_("Panic kernel if corruption is detected"), NULL, CRYPT_ARG_BOOL, {}, OPT_PANIC_ON_CORRUPTION_ACTIONS)
 
 ARG(OPT_RESTART_ON_CORRUPTION, '\0', POPT_ARG_NONE, N_("Restart kernel if corruption is detected"), NULL, CRYPT_ARG_BOOL, {}, OPT_RESTART_ON_CORRUPTION_ACTIONS)
 
 ARG(OPT_ROOT_HASH_FILE, '\0', POPT_ARG_STRING, N_("Path to root hash file"), NULL, CRYPT_ARG_STRING, {}, OPT_ROOT_HASH_FILE_ACTIONS)
 
-ARG(OPT_ROOT_HASH_SIGNATURE, '\0', POPT_ARG_STRING, N_("Path to root hash signature file"), NULL, CRYPT_ARG_STRING, {}, OPT_ROOT_HASH_SIGNATURE_ACTIONS)
+ARG(OPT_ROOT_HASH_SIGNATURE, '\0', POPT_ARG_STRING, N_("Path to root hash signature file"), NULL, CRYPT_ARG_STRING, {}, OPT_ROOT_HASH_SIGNATURE_ACTIONS )
 
 ARG(OPT_SALT, 's', POPT_ARG_STRING, N_("Salt"), N_("hex string"), CRYPT_ARG_STRING, {}, {})
 

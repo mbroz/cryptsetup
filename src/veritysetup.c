@@ -95,6 +95,9 @@ static int action_format(void)
 	if (ARG_SET(OPT_NO_SUPERBLOCK_ID))
 		flags |= CRYPT_VERITY_NO_HEADER;
 
+	if (ARG_SET(OPT_EMBED_ROOT_HASH_ID))
+		flags |= CRYPT_VERITY_ROOT_HASH_EMBEDDED;
+
 	r = _prepare_format(&params, action_argv[0], flags);
 	if (r < 0)
 		goto out;
@@ -156,7 +159,8 @@ static int _activate(const char *dm_device,
 	ssize_t hash_size, hash_size_hex;
 	struct stat st;
 	char *signature = NULL;
-	int signature_size = 0, root_hash_fd = -1, r;
+	int root_hash_fd = -1, r;
+	size_t signature_size = 0;
 
 	if ((r = crypt_init_data_device(&cd, hash_device, data_device)))
 		goto out;
@@ -177,6 +181,10 @@ static int _activate(const char *dm_device,
 		activate_flags |= CRYPT_ACTIVATE_TASKLETS;
 	if (ARG_SET(OPT_SHARED_ID))
 		activate_flags |= CRYPT_ACTIVATE_SHARED;
+	if (ARG_SET(OPT_EMBED_ROOT_HASH_ID))
+		flags |= CRYPT_VERITY_ROOT_HASH_EMBEDDED;
+	if (ARG_SET(OPT_EMBED_ROOT_SIG_ID))
+		 flags |= CRYPT_VERITY_ROOT_HASH_SIG_EMBEDDED;
 
 	if (!ARG_SET(OPT_NO_SUPERBLOCK_ID)) {
 		params.flags = flags;
@@ -197,7 +205,15 @@ static int _activate(const char *dm_device,
 	if (r < 0)
 		goto out;
 
-	hash_size = crypt_get_volume_key_size(cd);
+
+	if (params.flags & CRYPT_VERITY_ROOT_HASH_EMBEDDED && params.hash_size) {
+		hash_size = params.hash_size;
+		root_hash_bytes = (char *) params.hash;
+		root_hash = crypt_bytes_to_hex(hash_size, root_hash_bytes);
+	} else {
+		hash_size = crypt_get_volume_key_size(cd);
+	}
+
 	hash_size_hex = 2 * hash_size;
 
 	if (!root_hash) {
@@ -228,13 +244,18 @@ static int _activate(const char *dm_device,
 		root_hash = root_hash_from_file;
 	}
 
-	if (crypt_hex_to_bytes(root_hash, &root_hash_bytes, 0) != hash_size) {
-		log_err(_("Invalid root hash string specified."));
-		r = -EINVAL;
-		goto out;
+	if (!root_hash_bytes) {
+		if (crypt_hex_to_bytes(root_hash, &root_hash_bytes, 0) != hash_size) {
+			log_err(_("Invalid root hash string specified."));
+			r = -EINVAL;
+			goto out;
+		}
 	}
 
-	if (ARG_SET(OPT_ROOT_HASH_SIGNATURE_ID)) {
+	if (params.flags & CRYPT_VERITY_ROOT_HASH_SIG_EMBEDDED && params.hash_sig_size) {
+		signature_size = params.hash_sig_size;
+		signature = (char *) params.hash_sig;
+	} else if (ARG_SET(OPT_ROOT_HASH_SIGNATURE_ID)) {
 		// FIXME: check max file size
 		if (stat(ARG_STR(OPT_ROOT_HASH_SIGNATURE_ID), &st) || !S_ISREG(st.st_mode) || !st.st_size) {
 			log_err(_("Invalid signature file %s."), ARG_STR(OPT_ROOT_HASH_SIGNATURE_ID));
@@ -254,7 +275,8 @@ static int _activate(const char *dm_device,
 					 signature, signature_size,
 					 activate_flags);
 out:
-	crypt_safe_free(signature);
+	if (!(params.flags & CRYPT_VERITY_ROOT_HASH_SIG_EMBEDDED))
+		crypt_safe_free(signature);
 	crypt_free(cd);
 	free(root_hash_from_file);
 	free(root_hash_bytes);
@@ -266,7 +288,7 @@ out:
 
 static int action_open(void)
 {
-	if (action_argc < 4 && !ARG_SET(OPT_ROOT_HASH_FILE_ID)) {
+	if (action_argc < 4 && !ARG_SET(OPT_ROOT_HASH_FILE_ID) && !ARG_SET(OPT_EMBED_ROOT_HASH_ID)) {
 		log_err(_("Command requires <root_hash> or --root-hash-file option as argument."));
 		return -EINVAL;
 	}
@@ -283,7 +305,7 @@ static int action_open(void)
 
 static int action_verify(void)
 {
-	if (action_argc < 3 && !ARG_SET(OPT_ROOT_HASH_FILE_ID)) {
+	if (action_argc < 3 && !ARG_SET(OPT_ROOT_HASH_FILE_ID) && !ARG_SET(OPT_EMBED_ROOT_HASH_ID)) {
 		log_err(_("Command requires <root_hash> or --root-hash-file option as argument."));
 		return -EINVAL;
 	}
@@ -451,6 +473,88 @@ out:
 	return r;
 }
 
+static int action_sig_update(void)
+{
+	struct crypt_device *cd = NULL;
+	struct crypt_params_verity params = {};
+	const char *hash_device, *sig_file;
+	char *sigbuf = NULL;
+	struct stat st;
+	int r;
+
+	/* We expect exactly <hash_device> */
+	if (action_argc != 1) {
+		log_err(_("Command requires <hash_device>."));
+		return -EINVAL;
+	}
+
+	hash_device = action_argv[0];
+
+	if (!ARG_SET(OPT_ROOT_HASH_SIGNATURE_ID)) {
+		log_err(_("Command requires option --root-hash-signature"));
+		return -EINVAL;
+	}
+
+	sig_file = ARG_STR(OPT_ROOT_HASH_SIGNATURE_ID);
+
+	/* Allocate a crypt_device for the hash_device */
+	r = crypt_init(&cd, hash_device);
+	if (r < 0) {
+		log_err(_("Cannot init crypt device %s."), hash_device);
+		return r;
+	}
+
+	log_dbg("Updating verity signature on device %s with file %s.\n", hash_device, sig_file);
+
+	params.hash_area_offset = ARG_UINT64(OPT_HASH_OFFSET_ID);
+	params.fec_area_offset  = ARG_UINT64(OPT_FEC_OFFSET_ID);
+	params.fec_device       = ARG_STR(OPT_FEC_DEVICE_ID);
+
+	/* Read the signature file into memory */
+	if (stat(sig_file, &st) < 0) {
+		log_err(_("Cannot stat signature file %s."), sig_file);
+		r = -errno;
+		goto out;
+	}
+	if (!S_ISREG(st.st_mode) || st.st_size <= 0) {
+		log_err(_("Invalid signature file %s."), sig_file);
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = tools_read_vk(ARG_STR(OPT_ROOT_HASH_SIGNATURE_ID), &sigbuf, st.st_size);
+	if (r < 0) {
+		log_err(_("Cannot read signature file %s."), ARG_STR(OPT_ROOT_HASH_SIGNATURE_ID));
+		goto out;
+	}
+
+	/* Fill crypt_params_verity so that crypt_format knows we only want to update signature */
+	params.flags         = CRYPT_VERITY_UPDATE_SIGNATURE;
+	params.hash_sig      = sigbuf;
+	params.hash_sig_size = st.st_size;
+
+	/* We pass CRYPT_VERITY to crypt_format, no volume_key, etc. */
+	r = crypt_format(cd,
+			 CRYPT_VERITY,
+		/* cipher= */ NULL, /* not used for verity */
+		/* cipher_mode= */ NULL,
+		/* uuid= */ NULL,
+		/* volume_key= */ NULL,
+		/* volume_key_size= */ 0,
+		/* verity-specific params= */ &params);
+	if (r < 0) {
+		log_err(_("Failed to update verity signature on %s."), hash_device);
+		goto out;
+	}
+
+	log_std(_("Signature updated successfully for device %s.\n"), hash_device);
+
+out:
+	crypt_safe_free(sigbuf);
+	crypt_free(cd);
+	return r;
+}
+
 static int action_dump(void)
 {
 	struct crypt_device *cd = NULL;
@@ -488,6 +592,7 @@ static struct action_type {
 	{ "close",	action_close,  1, N_("<name>"),N_("close device (remove mapping)") },
 	{ "status",	action_status, 1, N_("<name>"),N_("show active device status") },
 	{ "dump",	action_dump,   1, N_("<hash_device>"),N_("show on-disk information") },
+	{ "sig-update", action_sig_update, 1, N_("<hash_device>"), N_("update the signature of verity sb") },
 	{ NULL, NULL, 0, NULL, NULL }
 };
 
