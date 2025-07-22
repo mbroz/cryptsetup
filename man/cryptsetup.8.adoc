@@ -92,21 +92,23 @@ It adds a standardized header at the start of the device, a keyslot area directl
 The whole set is called a 'LUKS container'.
 The device that a LUKS container resides on is called a 'LUKS device'.
 For most purposes, both terms can be used interchangeably.
-But note that when the LUKS header is at a non-zero offset in a device, then the device is not a LUKS device anymore, but has a LUKS container stored in it at an offset.
 
-LUKS can manage multiple passphrases that can be individually revoked or changed and that can be securely scrubbed from persistent media due to the use of anti-forensic stripes.
-Passphrases are protected against brute-force and dictionary attacks by Password-Based Key Derivation Function (PBKDF).
+LUKS can manage multiple passphrases that can be individually revoked or changed.
+Each passphrase uses an individual keyslot containing a volume key for data encryption.
+Keyslots can be securely scrubbed from persistent media due to the use of anti-forensic stripes.
+Passphrases are protected against brute-force and dictionary attacks by the Password-Based Key Derivation Function (PBKDF).
+A passphrase stored in a file is called a key file.
+The only difference between a passphrase and a key file is that a key file can contain binary data.
+Both are processed the same.
 
-LUKS2 is a new version of the header format that allows additional extensions like different PBKDF algorithms or authenticated encryption.
-You can format the device with a LUKS2 header if you specify *--type luks2* in the *luksFormat* command.
-For activation, the format is already recognized automatically.
-
-Each passphrase, also called a *key* in this document, is associated with one of 8 keyslots.
-Key operations that do not specify a slot affect the first slot that matches the supplied passphrase or the first empty slot if a new passphrase is added.
+LUKS version 1 (or LUKS1) is the original metadata format, while LUKS2 is a new version that allows additional extensions like different PBKDF algorithms or authenticated encryption.
+You can format the device with a specific LUKS version with *--type luks1* or *--type luks2* in the *luksFormat* command.
+Normally, you do not need to specify any version as it is recognized automatically.
+The default format is LUKS2.
 
 The *<device>* parameter can also be specified by a LUKS UUID in the format UUID=<uuid>.
-Translation to real device name uses symlinks in /dev/disk/by-uuid directory.
 
+The LUKS header can be detached from data (stored separately).
 To specify a detached header, the --header parameter can be used in all LUKS commands and always takes precedence over the positional *<device>* parameter.
 
 The following are valid LUKS actions:
@@ -251,7 +253,7 @@ VeraCrypt is an extension of TrueCrypt with an increased iteration count, so unl
 To open a VeraCrypt device with a custom Personal Iteration Multiplier (PIM) value, use either the --veracrypt-pim PIM option to directly specify the PIM on the command line or use --veracrypt-query-pim to be prompted for the PIM.
 
 The PIM value affects the number of iterations applied during key derivation.
-Please refer to https://www.veracrypt.fr/en/Personal%20Iterations%20Multiplier%20%28PIM%29.html[PIM] for more detailed information.
+Please refer to https://veracrypt.io/en/Personal%20Iterations%20Multiplier%20(PIM).html[PIM] for more detailed information.
 
 If you need to disable VeraCrypt device support, use --disable-veracrypt option.
 
@@ -351,14 +353,15 @@ See *cryptsetup-open*(8).
 Cryptsetup supports using native hardware encryption on drives that provide an *OPAL* interface, both nested with *dm-crypt* and standalone.
 Passphrases, tokens and metadata are stored using the LUKS2 header format, and are thus compatible with any software or system that uses LUKS2 (e.g., tokens).
 
-*WARNING:* This support is new and experimental, and requires at least kernel v6.4.
+OPAL support requires at least kernel v6.4.
 Resizing devices is not supported.
 
 The --hw-opal can be specified for OPAL + dm-crypt, and --hw-opal-only can be specified to use OPAL only, without a dm-crypt layer.
 
 Opening, closing and enrolling tokens work the same way as with LUKS2 and dm-crypt.
 The new parameters are only necessary when formatting; the LUKS2 metadata will ensure the right setup is performed when opening or closing.
-If no *subsystem* is specified, it will be automatically set to *HW-OPAL* so that it is immediately apparent when a device uses OPAL.
+
+If no *subsystem* label is specified, it will be automatically set to *HW-OPAL* so that it is immediately apparent when a device uses OPAL.
 
 === FORMAT
 *luksFormat --type luks2 --hw-opal <device> [<key file>]*
@@ -392,10 +395,10 @@ See *cryptsetup-repair*(8).
 Benchmarks, ciphers and KDF (key derivation function).
 See *cryptsetup-benchmark*(8).
 
-== PLAIN DM-CRYPT OR LUKS?
+== PLAIN MODE OR LUKS?
 
 Unless you understand the cryptographic background well, use LUKS.
-With plain dm-crypt, there are a number of possible user errors that massively decrease security.
+With plain mode, there are a number of possible user errors that massively decrease security.
 While LUKS cannot fix them all, it can lessen the impact for many of them.
 
 == WARNINGS
@@ -416,14 +419,11 @@ It is therefore highly recommended to select passphrase characters only from 7-b
 
 *LUKS header:* If the header of a LUKS volume gets damaged, all data is permanently lost unless you have a header backup.
 If a keyslot is damaged, it can only be restored from a header backup or if another active keyslot with a known passphrase is undamaged.
-Damaging the LUKS header is something people manage to do with surprising frequency.
 This risk is the result of a trade-off between security and safety, as LUKS is designed for fast and secure wiping by just overwriting the header and keyslot area.
 
 *Previously used partitions:* If a partition was previously used, it is a very good idea to wipe filesystem signatures, data, etc., before creating a LUKS or plain dm-crypt container.
-For a quick removal of filesystem signatures, use *wipefs*(8).
-This may not remove everything.
-In particular, MD RAID signatures at the end of a device may survive.
-It also does not remove data.
+For a quick removal of filesystem signatures, use *wipefs*(8) with the --all option.
+Note that it does not remove data; it only invalidates known format signatures.
 For a full wipe, overwrite the whole partition before creating a container.
 If you do not know how to do that, the cryptsetup FAQ describes several options.
 
@@ -479,7 +479,7 @@ No warning will be given if the amount of data read from stdin is less than the 
 
 *From a key file*: It will be truncated to the key size of the used cipher or the size given by -s and directly used as a binary key.
 
-*WARNING*: The --hash argument is being ignored.
+The --hash argument is being ignored.
 The --hash option is usable only for stdin input in plain mode.
 
 If the key file is shorter than the key, cryptsetup will quit with an error.
@@ -509,10 +509,11 @@ This does slow down all later luksOpen operations accordingly.
 
 === Incoherent behavior for invalid passphrases/keys
 
-LUKS checks for a valid passphrase when an encrypted partition is unlocked.
+LUKS checks for a valid passphrase when a keyslot is decrypted.
+
 The behavior of plain dm-crypt is different.
-It will always decrypt with the passphrase given.
-If the given passphrase is wrong, the device mapped by plain dm-crypt will essentially still contain encrypted data and will be unreadable.
+It will always unlock the device with the passphrase given.
+If the given passphrase is wrong, the device mapped by plain dm-crypt will use the wrong encryption key, and the data will be unreadable.
 
 === Supported ciphers, modes, hashes and key sizes
 
@@ -520,8 +521,8 @@ The available combinations of ciphers, modes, hashes and key sizes depend on ker
 See /proc/crypto for a list of available options.
 You might need to load additional kernel crypto modules to get more options.
 
-For the --hash option, if the crypto backend is libgcrypt, then all algorithms supported by the gcrypt library are available.
-For other crypto backends, some algorithms may be missing.
+Cryptsetup processes many operations outside of the kernel, so the configured cryptographic library must also support selected algorithms.
+Some algorithms may be missing as cryptsetup can be compiled with various cryptographic backends (libraries).
 
 === Notes on passphrases
 
