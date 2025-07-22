@@ -6,7 +6,7 @@
 
 == Name
 
-cryptsetup - manage plain dm-crypt, LUKS, and other encrypted volumes
+cryptsetup - utility for configuring and managing encrypted storage devices
 
 == SYNOPSIS
 
@@ -14,12 +14,17 @@ cryptsetup - manage plain dm-crypt, LUKS, and other encrypted volumes
 
 == DESCRIPTION
 
-cryptsetup is used to conveniently set up dm-crypt managed device-mapper mappings.
-These include plain dm-crypt volumes and LUKS volumes.
-The difference is that LUKS uses a metadata header and can offer more features than plain dm-crypt.
-On the other hand, the header is visible and vulnerable to damage.
+*Cryptsetup* is a utility for configuring and managing full-disk encryption on storage devices.
+It can encrypt block devices (such as hard drives or partitions) and containers (disk images stored as files).
 
-In addition, cryptsetup provides limited support for using loop-AES volumes, TrueCrypt, VeraCrypt, BitLocker and FileVault2 compatible volumes, and hardware-based encryption on OPAL capable drives.
+When you unlock an encrypted volume, *cryptsetup* creates a new device mapping that applications can access like any regular storage device.
+The actual encryption and decryption work is performed transparently by the kernel's device-mapper dm-crypt driver.
+
+*Cryptsetup* works with two main volume types: plain encrypted volumes and LUKS (Linux Unified Key Setup) volumes.
+Plain volumes provide basic encryption, while LUKS volumes include a metadata header that enables advanced features like multiple keyslots and key management.
+Additionally, LUKS can be used to manage hardware-based encryption on OPAL-capable storage drives.
+
+*Cryptsetup* also provides limited support for volumes created by other encryption systems, including *loop-AES*, *TrueCrypt*, *VeraCrypt*, *BitLocker*, and *FileVault2*.
 
 For more information about a specific cryptsetup action, see *cryptsetup-<action>*(8), where *<action>* is the name of the cryptsetup action.
 

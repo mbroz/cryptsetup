@@ -6,7 +6,7 @@
 
 == NAME
 
-veritysetup - manage dm-verity (block-level verification) volumes
+veritysetup - utility for configuring and managing dm-verity devices
 
 == SYNOPSIS
 
@@ -14,11 +14,13 @@ veritysetup - manage dm-verity (block-level verification) volumes
 
 == DESCRIPTION
 
-Veritysetup is used to configure dm-verity managed device-mapper mappings.
+*Veritysetup* is a utility for configuring and managing kernel *dm-verity* devices.
 
-Device-mapper verity target provides read-only transparent integrity checking of block devices using kernel crypto API.
+Kernel device-mapper *dm-verity* target provides read-only transparent data integrity protection of block devices.
 
-The dm-verity devices are always read-only.
+When you configure the *dm-verity* device, veritysetup creates a new mapping that applications can access like any regular storage device.
+The kernel performs the verification transparently by comparing each block against pre-computed cryptographic hashes.
+The verification uses a Merkle tree and happens transparently at the kernel level without affecting applications.
 
 == BASIC ACTIONS
 

@@ -6,7 +6,7 @@
 
 == NAME
 
-integritysetup - manage dm-integrity (block-level integrity) volumes
+integritysetup - utility for configuring and managing dm-integrity devices
 
 == SYNOPSIS
 
@@ -14,11 +14,13 @@ integritysetup - manage dm-integrity (block-level integrity) volumes
 
 == DESCRIPTION
 
-Integritysetup is used to configure dm-integrity managed device-mapper mappings.
+*Integritysetup* is a utility for configuring and managing kernel dm-integrity devices.
 
-The device-mapper integrity target provides read-write transparent integrity checking for block devices.
-The dm-integrity target emulates an additional data integrity field per sector.
-You can use this additional field directly with the integritysetup utility, or indirectly (for authenticated encryption) through cryptsetup.
+Kernel device-mapper *dm-integrity* target emulates an additional data integrity tag per disk sector and provides transparent data integrity protection of block devices.
+
+You can configure these additional integrity tags directly with *integritysetup*, or indirectly (for authenticated encryption) through *LUKS2* and *cryptsetup*(8).
+Unlike *dm-verity*, *dm-integrity* devices support both read and write operations.
+The kernel performs data integrity checking transparently using a selected checksum or cryptographic hash algorithm.
 
 == BASIC ACTIONS
 
