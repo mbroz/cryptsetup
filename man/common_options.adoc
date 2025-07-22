@@ -571,7 +571,8 @@ endif::[]
 ifdef::ACTION_LUKSFORMAT,ACTION_CONFIG,ACTION_REENCRYPT[]
 *--label* _<label>_,  *--subsystem* _<subsystem>_::
 Set label and subsystem description for LUKS2 device.
-The label and subsystem are optional fields and can be later used in udev scripts for triggering user actions once the device marked by these labels is detected.
+These are similar to filesystem labels.
+The label and subsystem are optional fields and can be later used in udev scripts to trigger user actions once the device marked by these labels is detected.
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_LUKSRESUME[]
