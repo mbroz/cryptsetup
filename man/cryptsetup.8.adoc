@@ -563,7 +563,7 @@ Albeit Linux kernel 5.7 added TRIM support for standalone dm-integrity devices, 
 Some integrity modes require two independent keys (a key for encryption and authentication).
 Both these keys are stored in one LUKS keyslot.
 
-*WARNING:* All support for authenticated modes is experimental, and only some modes are available now.
+Support for authenticated modes is experimental, and only some modes are available now.
 Note that very few authenticated encryption algorithms are suitable for disk encryption.
 You also cannot use CRC32 or other non-cryptographic checksums (other than the special integrity mode "none").
 If, for some reason, you want to have integrity control without using authentication mode, then you should separately configure dm-integrity independently of LUKS2.

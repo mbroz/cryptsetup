@@ -377,7 +377,7 @@ ifdef::ACTION_LUKSFORMAT[]
 *--integrity-legacy-padding*::
 Use inefficient legacy padding.
 +
-*WARNING*: Do not use this option until you need compatibility with a specific old kernel.
+Do not use this option until you need compatibility with a specific old kernel.
 endif::[]
 
 ifdef::ACTION_REFRESH[]
@@ -464,7 +464,7 @@ ifndef::ACTION_REENCRYPT[]
 See section _NOTES ON PASSPHRASE PROCESSING_ in *cryptsetup*(8) for more information.
 endif::[]
 ifdef::ACTION_REENCRYPT[]
-*WARNING:* --key-file option can be used only if there is only one active keyslot, or alternatively, also if --key-slot option is specified (then all other keyslots will be disabled in the new LUKS device).
+The --key-file option can be used only if there is only one active keyslot, or alternatively, also if --key-slot option is specified (then all other keyslots will be disabled in the new LUKS device).
 +
 If this option is not used, cryptsetup will ask for all active keyslot passphrases.
 endif::[]
