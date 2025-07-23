@@ -104,7 +104,7 @@ Removes a previously configured deferred device removal in the *close* command.
 Specify a separate data device that contains existing data.
 The <device> will then contain calculated integrity tags and a journal for data on <data_device>.
 +
-*NOTE:* To not wipe the data device after initial format, also specify --no-wipe option and activate with --integrity-recalculate to recalculate integrity tags automatically.
+To not wipe the data device after initial format, also specify --no-wipe option and activate with --integrity-recalculate to recalculate integrity tags automatically.
 
 *--debug*::
 Run in debug mode with full diagnostic logs.
@@ -172,7 +172,7 @@ The journal is written when this time passes (and no explicit flush operation wa
 Encryption algorithm for the journal data area.
 You can use a block cipher here, such as cbc-aes or a stream cipher, for example, chacha20 or ctr-aes.
 +
-*NOTE:* The journal encryption options are only intended for testing.
+The journal encryption options are only intended for testing.
 Using journal encryption does not make sense without encryption of the data.
 
 *--journal-crypt-key-file* _file_::
@@ -231,7 +231,7 @@ Sector size (power of two: 512, 1024, 2048, 4096).
 *--tag-size*, *-t* _bytes_::
 Size of the integrity tag per-sector (here, the integrity function will store the authentication tag).
 +
-*NOTE:* The size can be smaller than the output size of the hash function; in that case, only part of the hash will be stored.
+The size can be smaller than the output size of the hash function; in that case, only part of the hash will be stored.
 
 *--usage*::
 Show short option help.

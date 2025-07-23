@@ -39,7 +39,7 @@ The same applies to the SIGTERM signal (i.e., issued by systemd during system sh
 For in-place encryption mode, the _reencrypt_ action additionally takes all options available for the _luksFormat_ action for the respective LUKS version (see cryptsetup-luksFormat man page for more details).
 See *cryptsetup-luksFormat*(8).
 
-*NOTE* that for encrypt and decrypt mode, the whole device must be treated as unencrypted -- there are no guarantees of confidentiality as part of the device contains plaintext.
+Note that for encrypt and decrypt mode, the whole device must be treated as unencrypted -- there are no guarantees of confidentiality as part of the device contains plaintext.
 
 *ALWAYS BE SURE YOU HAVE RELIABLE BACKUP BEFORE USING THIS ACTION ON LUKS DEVICE.*
 
@@ -111,7 +111,7 @@ include::man/common_options.adoc[]
 
 == EXAMPLES
 
-*NOTE*: You may drop *--type luks2* option as long as LUKS2 format is default.
+You may drop *--type luks2* option as long as LUKS2 format is default.
 
 === LUKS2 ENCRYPTION EXAMPLES
 

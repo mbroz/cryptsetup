@@ -257,7 +257,7 @@ Please refer to https://veracrypt.io/en/Personal%20Iterations%20Multiplier%20(PI
 
 If you need to disable VeraCrypt device support, use --disable-veracrypt option.
 
-*NOTE:* Activation with *tcryptOpen* is supported only for cipher chains using LRW or XTS encryption modes.
+Activation with *tcryptOpen* is supported only for cipher chains using LRW or XTS encryption modes.
 
 The *tcryptDump* command should work for all recognized TCRYPT devices and doesn't require superuser privilege.
 
@@ -268,7 +268,7 @@ To use a hidden header (and map hidden device, if available), use --tcrypt-hidde
 
 To explicitly use the backup (secondary) header, use --tcrypt-backup option.
 
-*NOTE:* There is no protection for a hidden volume if the outer volume is mounted.
+There is no protection for a hidden volume if the outer volume is mounted.
 The reason is that if there were any protection, it would require some metadata describing what to protect in the outer volume, and the hidden volume would become detectable.
 
 === OPEN
@@ -327,7 +327,7 @@ Please note that cryptsetup does not use any Windows BitLocker code; please repo
 
 Cryptsetup supports the mapping of FileVault2 (FileVault2 full-disk encryption) by Apple for the macOS operating system using a native Linux kernel API.
 
-*NOTE:* Cryptsetup supports only FileVault2 based on Core Storage and HFS+ filesystem (introduced in MacOS X 10.7 Lion).
+Cryptsetup supports only FileVault2 based on Core Storage and HFS+ filesystem (introduced in MacOS X 10.7 Lion).
 It does NOT support the new version of FileVault based on the APFS filesystem used in recent macOS versions.
 
 Header formatting and FVAULT2 header changes are not supported; cryptsetup never changes the FVAULT2 header on-device.
@@ -376,7 +376,7 @@ Securely erase a partition or device.
 Requires admin password.
 Additionally specify --hw-opal-factory-reset for a FULL factory reset of the drive, using the drive's *PSID* (typically printed on the label) instead of the admin password.
 
-*NOTE*: PSID must be entered without dashes, spaces or underscores.
+PSID must be entered without dashes, spaces or underscores.
 
 *WARNING*: A factory reset will cause ALL data on the device to be lost, regardless of the partition it is run on, if any, and regardless of any LUKS2 header backup.
 
