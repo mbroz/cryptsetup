@@ -16,24 +16,29 @@ cryptsetup-luksFormat - initialize a LUKS partition and set the initial passphra
 
 == DESCRIPTION
 
-Initializes a LUKS partition and sets the initial passphrase (for keyslot 0) via prompting or <key file>.
+Initializes a LUKS partition and sets the passphrase via prompting or <key file>.
 Note that if the second argument is present, the passphrase is taken from the file given there, without using the --key-file option.
 Also note that for both forms of reading the passphrase from a file, you can give '-' as a file name, which results in the passphrase being read from stdin and the safety question being skipped.
 
 You cannot call luksFormat on a device or filesystem that is mapped or in use, e.g., a mounted filesystem, used in LVM, active RAID member, etc.
 The device or filesystem has to be unmounted in order to call luksFormat.
 
-To use a specific version of LUKS format, use _--type luks1_ or _type luks2_.
+To enforce a specific version of LUKS format, use _--type luks1_ or _type luks2_.
+The default format is LUKS2.
 
-To use OPAL hardware encryption on a self-encrypting drive, use --hw-opal or --hw-opal-only.
+To use hardware encryption on an OPAL self-encrypting drive, use --hw-opal or --hw-opal-only.
 Note that some OPAL drives can require a PSID reset (with deletion of data) before using the LUKS format with OPAL options.
 See --hw-opal-factory-reset option in cryptsetup _erase_ command.
+
+Doing a luksFormat on an existing LUKS container will regenerate the volume key.
+Unless you have a header backup, all old encrypted data in the container will be permanently irretrievable.
+Note that luksFormat does not wipe or overwrite the data area.
+It only creates a new LUKS header with fresh keyslots.
+See cryptsetup FAQ for more info on how to wipe the whole device, including encrypted data.
 
 *<options>* can be [--hash, --cipher, --verify-passphrase, --key-size, --key-slot, --key-file (takes precedence over optional second argument), --keyfile-offset, --keyfile-size, --use-random, --use-urandom, --uuid, --volume-key-file, --iter-time, --header, --pbkdf-force-iterations, --force-password, --disable-locks, --timeout, --type, --offset, --align-payload (DEPRECATED)].
 
 For LUKS2, additional *<options>* can be [--integrity, --integrity-no-wipe, --sector-size, --label, --subsystem, --pbkdf, --pbkdf-memory, --pbkdf-parallel, --disable-locks, --disable-keyring, --luks2-metadata-size, --luks2-keyslots-size, --keyslot-cipher, --keyslot-key-size, --integrity-legacy-padding, --hw-opal, --hw-opal-only].
-
-*WARNING:* Doing a luksFormat on an existing LUKS container will make all data in the old container permanently irretrievable unless you have a header backup.
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]
