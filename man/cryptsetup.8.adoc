@@ -98,7 +98,7 @@ For most purposes, both terms can be used interchangeably.
 LUKS can manage multiple passphrases that can be individually revoked or changed.
 Each passphrase uses an individual keyslot containing a volume key for data encryption.
 Keyslots can be securely scrubbed from persistent media due to the use of anti-forensic stripes.
-Passphrases are protected against brute-force and dictionary attacks by the Password-Based Key Derivation Function (PBKDF).
+Passphrases are protected against brute-force attacks by the Password-Based Key Derivation Function (PBKDF).
 A passphrase stored in a file is called a key file.
 The only difference between a passphrase and a key file is that a key file can contain binary data.
 Both are processed the same.
@@ -489,8 +489,6 @@ The maximum input size is defined by the same compiled-in default as the maximum
 
 === Passphrase processing for LUKS
 
-LUKS uses PBKDF to protect against dictionary attacks and to give some protection to low-entropy passphrases (see cryptsetup FAQ).
-
 *From a terminal*: The passphrase is read until the first newline and then processed by PBKDF2 without the newline character.
 
 *From stdin*: LUKS will read passphrases from stdin up to the first newline character or the compiled-in maximum key file length.
@@ -500,7 +498,15 @@ If --keyfile-size is given, it is ignored.
 Newline characters do not terminate the input.
 The --keyfile-size option can be used to limit what is read.
 
-*Passphrase processing*: Whenever a passphrase is added to a LUKS header (luksAddKey, luksFormat), the user may specify how much time the passphrase processing should consume.
+LUKS uses *Password-Based Key Derivation Function* (PBKDF) to protect against brute-force attacks and to give some protection to low-entropy passphrases (see cryptsetup FAQ).
+LUKS1 supports the PBKDF2 algorithm only, while LUKS2 also supports memory-hard Argon2.
+PBKDFs are configured with costs: how long the iteration should run (CPU cost or iteration count), how much memory is used (memory cost), and how many parallel processes are used (parallel cost).
+PBKDF2 supports only iteration count.
+Cryptsetup uses PBKDF benchmarking to calculate optimal costs based on the computer where the new passphrase is being initialized.
+If needed, these costs can also be overwritten.
+Note that there are some hardcoded limits, for details see *MINIMAL AND MAXIMAL PBKDF COSTS* section in --pbkdf option description.
+
+Whenever a passphrase is added to a LUKS header (luksAddKey, luksFormat), the user may specify how much time the passphrase processing should consume.
 The time is used to determine the iteration count for PBKDF2, and higher times will offer better protection for low-entropy passphrases, but the open command will take longer to complete.
 For passphrases that have entropy higher than the used key length, higher iteration times will not increase security.
 

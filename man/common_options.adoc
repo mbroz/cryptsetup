@@ -736,13 +736,27 @@ This will override the values without benchmarking.
 Note it can cause extremely long unlocking time or cause out-of-memory conditions with unconditional process termination.
 Use only in specific cases, for example, if you know that the formatted device will be used on some small embedded system.
 +
-*MINIMAL AND MAXIMAL PBKDF COSTS:* For *PBKDF2*, the minimum iteration count is 1000 and maximum is 4294967295 (maximum for 32-bit unsigned integer).
-Memory and parallel costs are unused for PBKDF2.
+*MINIMAL AND MAXIMAL PBKDF COSTS:* For *PBKDF2*, the minimum iteration count is 1000 and the maximum is 4294967295 (maximum for 32-bit unsigned integer).
+Memory and parallel costs are not supported for PBKDF2.
 For *Argon2i* and *Argon2id*, the minimum iteration count (CPU cost) is 4, and the maximum is 4294967295 (maximum for a 32-bit unsigned integer).
 Minimum memory cost is 32 KiB and maximum is 4 GiB.
-(Limited by addressable memory on some CPU platforms.)
 If the memory cost parameter is benchmarked (not specified by a parameter), it is always in the range from 64 MiB to 1 GiB.
-The parallel cost minimum is 1 and maximum 4 (if enough CPU cores are available, otherwise it is decreased).
+Memory cost above 1GiB (up to the 4GiB maximum) can be setup only by the --pbkdf-memory parameter.
+The parallel cost minimum is 1 and maximum 4 (if enough CPU cores are available, otherwise it is decreased by the available CPU cores).
++
+*WARNING:* Increasing PBKDF computational costs above the mentioned limits provides negligible additional security improvement.
+While elevated costs significantly increase brute-force overhead, they offer negligible protection against dictionary attacks.
+The marginal cost increase for processing an entire dictionary remains fundamentally insufficient.
++
+The hardcoded PBKDF limits represent engineered trade-offs between cryptographic security and operational usability.
+LUKS maintains portability and must be used within a reasonable time on resource-constrained systems.
++
+Cryptsetup deliberately restricts maximum memory cost (4 GiB) and parallel cost (4) parameters due to architectural limitations (like embedded and legacy systems).
++
+PBKDF memory cost mandates actual physical RAM allocation with intensive write operations that must remain in physical RAM.
+Any swap usage results in unacceptable performance degradation.
+Memory management often overcommits allocations beyond available physical memory, expecting most allocated memory to remain unused.
+In such situations, as PBKDF always uses all allocated memory, it frequently causes out-of-memory failures that abort cryptsetup operations.
 endif::[]
 
 ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
