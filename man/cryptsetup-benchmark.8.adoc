@@ -26,7 +26,7 @@ To benchmark PBKDF you need to specify --pbkdf or --hash with optional cost para
 This benchmark uses memory only and is only informative.
 You cannot directly predict real storage encryption speed from it.
 
-For testing block ciphers, this benchmark requires the kernel userspace crypto API to be available (introduced in Linux kernel 2.6.38).
+For testing block ciphers, this benchmark requires the kernel userspace crypto API to be available.
 If you are configuring the kernel yourself, enable "User-space interface for symmetric key cipher algorithms" in "Cryptographic API" section (CRYPTO_USER_API_SKCIPHER .config option).
 
 *<options>* can be [--cipher, --key-size, --hash, --pbkdf, --iter-time, --pbkdf-memory, --pbkdf-parallel].

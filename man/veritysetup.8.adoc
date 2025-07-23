@@ -106,7 +106,6 @@ Cancels a previously configured deferred device removal in the *close* command.
 Instruct the kernel to verify blocks only once they are read from the data device, rather than every time.
 +
 *WARNING:* It provides a reduced level of security because only offline tampering of the data device's content will be detected, not online tampering.
-This option is available since Linux kernel version 4.17.
 
 *--data-blocks* _blocks_::
 Size of the data device used in verification.
@@ -182,13 +181,11 @@ With --restart-on-corruption or --panic-on-corruption, the kernel is restarted (
 (You have to provide a way to avoid restart loops.)
 +
 *WARNING:* Use these options only for very specific cases.
-These options are available since Linux kernel version 4.1.
 
 *--ignore-zero-blocks*::
 Instruct the kernel not to verify blocks expected to contain zeroes and always directly return zeroes instead.
 +
 *WARNING:* Use this option only in very specific cases.
-This option is available since Linux kernel version 4.5.
 
 *--no-superblock*::
 Create or use dm-verity without a permanent on-disk superblock.

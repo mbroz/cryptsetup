@@ -241,7 +241,7 @@ See also section 7 of the FAQ and http://loop-aes.sourceforge.net[loop-AES] for 
 Cryptsetup supports mapping of TrueCrypt, tcplay, or VeraCrypt encrypted partitions using a native Linux kernel API.
 Header formatting and TCRYPT header change are not supported; cryptsetup never changes the TCRYPT header on-device.
 
-TCRYPT extension requires the kernel userspace crypto API to be available (introduced in Linux kernel 2.6.38).
+TCRYPT extension requires the kernel userspace crypto API to be available.
 If you are configuring the kernel yourself, enable "User-space interface for symmetric key cipher algorithms" in "Cryptographic API" section (CRYPTO_USER_API_SKCIPHER .config option).
 
 Because the TCRYPT header is encrypted, you must always provide a valid passphrase and keyfiles.
@@ -547,8 +547,6 @@ See *urandom*(4) for more information.
 
 === Authenticated disk encryption (EXPERIMENTAL)
 
-Since Linux kernel version 4.12 dm-crypt supports authenticated disk encryption.
-
 Normal disk encryption modes are length-preserving (the plaintext sector is the same size as a ciphertext sector) and can provide only confidentiality protection, not cryptographically sound data integrity protection.
 
 Authenticated modes require additional space per-sector for the authentication tag and use Authenticated Encryption with Additional Data (AEAD) algorithms.
@@ -574,7 +572,6 @@ If, for some reason, you want to have integrity control without using authentica
 
 Cryptsetup is usually used directly on a block device (disk partition or LVM volume).
 However, if the device argument is a file, cryptsetup tries to allocate a loopback device and map it into this file.
-This mode requires a Linux kernel 2.6.25 or more recent, which supports the loop autoclear flag (loop device is cleared on the last close automatically).
 Of course, you can always map a file to a loop device manually.
 See the cryptsetup FAQ for an example.
 

@@ -349,7 +349,7 @@ ifdef::ACTION_LUKSFORMAT[]
 *--integrity* _<integrity algorithm>_::
 Specify the integrity algorithm to be used for authenticated disk encryption in LUKS2.
 +
-*WARNING: This extension is EXPERIMENTAL* and requires dm-integrity kernel target (available since kernel version 4.12).
+*WARNING: This extension is EXPERIMENTAL* and requires dm-integrity kernel target.
 For native AEAD modes, also enable "User-space interface for AEAD cipher algorithms" in the "Cryptographic API" section (CONFIG_CRYPTO_USER_API_AEAD .config option).
 +
 For more info, see the _AUTHENTICATED DISK ENCRYPTION_ section in *cryptsetup*(8).
@@ -790,7 +790,6 @@ Perform encryption using the same CPU on which that IO was submitted.
 The default is to use an unbound workqueue so that encryption work is automatically balanced between available CPUs.
 +
 *NOTE:* This option is available only for low-level dm-crypt performance tuning, use only if you need a change to the default dm-crypt behaviour.
-Needs kernel 4.0 or later.
 endif::[]
 
 ifdef::ACTION_REFRESH,ACTION_OPEN[]
@@ -800,7 +799,6 @@ There are some situations where offloading write bios from the encryption thread
 The default is to offload write bios to the same thread.
 +
 *NOTE:* This option is available only for low-level dm-crypt performance tuning, use only if you need a change to the default dm-crypt behaviour.
-Needs kernel 4.0 or later.
 endif::[]
 
 ifdef::ACTION_OPEN,ACTION_REFRESH[]

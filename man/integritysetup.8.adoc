@@ -151,7 +151,6 @@ Disable the journal for the integrity device.
 *--integrity-recalculate*::
 Automatically recalculate integrity tags in the kernel on activation.
 The device can be used during automatic integrity recalculation, but becomes fully integrity protected only after the background operation is finished.
-This option is available since the Linux kernel version 4.19.
 
 *--integrity-recalculate-reset*::
 Restart recalculation from the beginning of the device.
@@ -268,7 +267,6 @@ Integritysetup returns *0* on success and a non-zero value on error.
 Error codes are: *1* wrong parameters, *2* no permission, *3* out of memory, *4* wrong device specified, *5* device already exists or device is busy.
 
 == NOTES
-The dm-integrity target is available since Linux kernel version 4.12.
 
 Format and activation of an integrity device always require superuser privilege because the superblock is calculated and handled in the dm-integrity kernel target.
 
