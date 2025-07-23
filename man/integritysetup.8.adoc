@@ -22,6 +22,8 @@ You can configure these additional integrity tags directly with *integritysetup*
 Unlike *dm-verity*, *dm-integrity* devices support both read and write operations.
 The kernel performs data integrity checking transparently using a selected checksum or cryptographic hash algorithm.
 
+Integrity devices can be activated during boot through *integritytab*(5), which is part of *systemd*(1).
+
 == BASIC ACTIONS
 
 Integritysetup supports these operations:

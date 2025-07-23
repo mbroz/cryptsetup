@@ -22,6 +22,8 @@ When you configure the *dm-verity* device, veritysetup creates a new mapping tha
 The kernel performs the verification transparently by comparing each block against pre-computed cryptographic hashes.
 The verification uses a Merkle tree and happens transparently at the kernel level without affecting applications.
 
+Verity devices can be activated during boot through *veritytab*(5), which is part of *systemd*(1).
+
 == BASIC ACTIONS
 
 Veritysetup supports these operations:
