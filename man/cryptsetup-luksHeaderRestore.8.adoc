@@ -18,14 +18,14 @@ cryptsetup-luksHeaderRestore - restore a binary backup of the LUKS header and ke
 
 Restores a binary backup of the LUKS header and keyslot area from the specified file.
 
+Using '-' as a filename reads the header backup from a file named '-'.
+
+All keyslots will be replaced; only the passphrases from the backup will work afterward.
+
+This command requires that the volume key size and data offset of the LUKS header and backup match.
+Alternatively, the backup will also be written if the device has no LUKS header.
+
 *<options>* can be [--header, --header-backup-file, --disable-locks].
-
-*NOTE:* Using '-' as a filename reads the header backup from a file named '-'.
-
-*WARNING:* Header and keyslots will be replaced; only the passphrases from the backup will work afterward.
-
-This command requires that the volume key size and data offset of the LUKS header already on the device and the header backup match.
-Alternatively, the backup will also be written if there is no LUKS header on the device.
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]

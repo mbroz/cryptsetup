@@ -27,9 +27,9 @@ If there is no free keyslot, then the keyslot with the old passphrase is overwri
 *WARNING:* If a keyslot is overwritten, a media failure during this operation can cause the overwrite to fail after the old passphrase has been wiped, making the LUKS container inaccessible.
 LUKS2 mitigates that by never overwriting the existing keyslot area as long as there's a free space in the keyslots area at least for one more LUKS2 keyslot.
 
-*WARNING:* If you need to use both luksChangeKey and reencrypt (e.g., to recover from a leak), you need to use them in that order to avoid leaking the new volume key.
+If you need to use both luksChangeKey and reencrypt (e.g., to recover from a key leak), you need to use them in that order to avoid leaking the new volume key.
 
-*NOTE:* Some parameters are effective only if used with the LUKS2 format that supports per-keyslot parameters.
+Some parameters are effective only if used with the LUKS2 format that supports per-keyslot parameters.
 For LUKS1, the PBKDF type and hash algorithm are always the same for all keyslots.
 
 *<options>* can be [--key-file, --keyfile-offset, --keyfile-size, --new-keyfile-offset, --iter-time, --pbkdf, --pbkdf-force-iterations, --pbkdf-memory, --pbkdf-parallel, --new-keyfile-size, --key-slot, --force-password, --hash, --header, --disable-locks, --type, --keyslot-cipher, --keyslot-key-size, --timeout, --verify-passphrase].
