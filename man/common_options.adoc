@@ -924,36 +924,34 @@ endif::[]
 ifndef::ACTION_REENCRYPT[]
 ifdef::ACTION_OPEN[]
 Set encryption sector size for use with _plain_ device type.
-It must be a power of two and in the range 512 - 4096 bytes.
-The default mode is 512 bytes.
-+
-Note that if the sector size is higher than the underlying device hardware sector, using this option can increase the risk of incomplete sector writes during a power failure.
+It must be a power of two and in the 512 - 4096 bytes range.
+The default encryption sector size is 512 bytes.
 endif::[]
 ifdef::ACTION_LUKSFORMAT[]
-Set sector size for use with disk encryption.
-It must be a power of two and in the range 512 - 4096 bytes.
-This option is available only with LUKS2 format.
+Set encryption sector size for use with _LUKS2_ device type.
+It must be a power of two and in the 512 - 4096 bytes range.
 +
-For LUKS2 devices, it's established based on parameters provided by the underlying data device.
-For native 4K block devices, it's 4096 bytes.
-For 4K/512e (4K physical sector size with 512 bytes emulation), it's 4096 bytes.
-For drives reporting only a 512-byte block size, it remains 512 bytes.
-If the data device is a regular file put in the filesystem, it's 4096 bytes.
+The encryption sector size is set based on the underlying data device if not specified explicitly.
+For native 4096-byte physical sector devices, it is set to 4096 bytes.
+For 4096/512e (4096-byte physical sector size with 512-byte sector emulation), it is set to 4096 bytes.
+For drives reporting only a 512-byte physical sector size, it is set to 512 bytes.
+If the data device is a regular file (container), it is set to 4096 bytes.
 +
-Note that if the sector size is higher than the underlying device hardware sector and there is no integrity protection that uses data journal, using this option can increase the risk of incomplete sector writes during a power failure.
-+
-If used together with --integrity option and dm-integrity journal, the atomicity of writes is guaranteed in all cases (but it costs write performance - data has to be written twice).
+If used together with the --integrity option and dm-integrity journal, the atomicity of writes is guaranteed in all cases (but it costs write performance - data has to be written twice).
 endif::[]
 +
-Increasing sector size from 512 bytes to 4096 bytes can provide better performance on most of the modern storage devices, and also with some hw encryption accelerators.
+Increasing sector size from 512 to 4096 bytes can provide better performance on most modern storage devices and with some hardware encryption accelerators.
 endif::[]
 ifdef::ACTION_REENCRYPT[]
 *--sector-size* _bytes_ (LUKS2 only)::
 Reencrypt the device with a new encryption sector size enforced.
 +
-*WARNING:* Increasing encryption sector size may break the hosted filesystem.
+*WARNING:* Increasing the encryption sector size may break the hosted filesystem.
 Do not run reencryption with --force-offline-reencrypt if unsure what block size the filesystem was formatted with.
 endif::[]
++
+Note that using a sector size larger than the underlying storage device's physical sector size may result in data corruption during unexpected power failures.
+A power failure during write operations may result in only partial completion of the encryption sector write, leaving encrypted data in an inconsistent state that cannot be properly decrypted.
 endif::[]
 
 ifdef::ACTION_OPEN[]
