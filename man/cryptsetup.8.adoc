@@ -537,14 +537,12 @@ Still, if your attacker model does not prevent it, storing your passphrase in a 
 Random Number Generators (RNGs) used in cryptsetup are always the kernel RNGs without any modifications or additions to the data stream produced.
 
 There are two types of randomness that cryptsetup/LUKS needs.
-One type (which always uses /dev/urandom) is used for salts, the AF splitter and for wiping deleted keyslots.
-
+One type is used for salts, the AF splitter and for wiping deleted keyslots.
 The second type is used for the volume key.
-You can switch between using /dev/random and /dev/urandom here, see --use-random and --use-urandom options.
-Using /dev/random on a system without enough entropy sources can cause *luksFormat* to block until the requested amount of random data is gathered.
-In a low-entropy situation (embedded system), this can take a very long time and potentially forever.
-At the same time, using /dev/urandom in a low-entropy situation will produce low-quality keys.
-This is a serious problem, but solving it is out of scope for a mere man-page.
+
+With recent kernels (Linux kernel 5.6), you do not need to worry about selecting RNG (/dev/random or /dev/urandom).
+In a low-entropy situation (embedded system), initialization of the kernel RNG can take a very long time, but this happens before cryptsetup can even be started.
+Use _cryptsetup --help_ to show the compiled-in default random number generator.
 See *urandom*(4) for more information.
 
 === Authenticated disk encryption (EXPERIMENTAL)

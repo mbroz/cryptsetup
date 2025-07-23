@@ -1162,12 +1162,8 @@ endif::[]
 ifndef::ACTION_REENCRYPT[]
 For _luksFormat_, these options define which kernel random number generator will be used to create the volume key (which is a long-term key).
 +
-See *NOTES ON RANDOM NUMBER GENERATORS* in *cryptsetup*(8) for more information.
-Use _cryptsetup --help_ to show the compiled-in default random number generator.
-+
-*WARNING:* In a low-entropy situation (e.g., in an embedded system) and older kernels, both selections are problematic.
-Using /dev/urandom can lead to weak keys.
-Using /dev/random can block a long time, potentially forever, if not enough entropy can be harvested by the kernel.
+Do not use these options with recent kernels (later than version 5.6).
+For more details, see *NOTES ON RANDOM NUMBER GENERATORS* in *cryptsetup*(8) and *urandom*(4).
 endif::[]
 endif::[]
 
