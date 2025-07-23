@@ -1,7 +1,7 @@
 == OPTIONS
 
 ifdef::ACTION_LUKSFORMAT,ACTION_REENCRYPT[]
-*--align-payload* _<number of 512 byte sectors>_::
+*--align-payload* _<number of 512 byte sectors>_ (DEPRECATED, use --offset)::
 Align payload at a boundary of _value_ 512-byte sectors.
 +
 If not specified, cryptsetup tries to use the topology info provided by the kernel for the underlying device to get the optimal alignment.
@@ -10,7 +10,7 @@ If not available (or the calculated value is a multiple of the default), data is
 For a detached LUKS header, this option specifies the offset on the data device.
 See also the --header option.
 +
-*WARNING:* This option is DEPRECATED and has an unexpected impact on the data offset and keyslot area size (for LUKS2) due to the complex rounding.
+This option is DEPRECATED and has an unexpected impact on the data offset and keyslot area size (for LUKS2) due to the complex rounding.
 For fixed data device offset, use --offset option instead.
 endif::[]
 
