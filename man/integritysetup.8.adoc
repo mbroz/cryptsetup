@@ -138,6 +138,7 @@ Note that some devices must be reformatted at a low level to support this option
 +
 No journal or bitmap is used in this mode.
 The device should operate with native speed (without any overhead).
++
 This option is available since the Linux kernel version 6.11.
 
 *--integrity-key-file* _file_::
@@ -153,6 +154,11 @@ Disable the journal for the integrity device.
 *--integrity-recalculate*::
 Automatically recalculate integrity tags in the kernel on activation.
 The device can be used during automatic integrity recalculation, but becomes fully integrity protected only after the background operation is finished.
++
+The primary intended use case is to skip initialization (wiping) of the data device after the initial format (see --no-wipe option).
+This parameter can be used for activation, then the kernel will recalculate integrity tags in the background.
+The integrity superblock contains a device offset that indicates the boundary to which the integrity tags are already updated.
+You can check this offset with the dump command.
 
 *--integrity-recalculate-reset*::
 Restart recalculation from the beginning of the device.
