@@ -681,7 +681,14 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 CFLAGS=$saved_CFLAGS
 
 AC_MSG_CHECKING([for systemd tmpfiles config directory])
-PKG_CHECK_VAR([systemd_tmpfilesdir], [systemd], [tmpfilesdir], [], [systemd_tmpfilesdir=no])
+if test "x$prefix" != "xNONE"; then
+	saved_PKG_CONFIG=$PKG_CONFIG
+	PKG_CONFIG="$PKG_CONFIG --define-variable=prefix='${prefix}'"
+	PKG_CHECK_VAR([systemd_tmpfilesdir], [systemd], [tmpfilesdir], [], [systemd_tmpfilesdir=no])
+	PKG_CONFIG=$saved_PKG_CONFIG
+else
+	PKG_CHECK_VAR([systemd_tmpfilesdir], [systemd], [tmpfilesdir], [], [systemd_tmpfilesdir=no])
+fi
 AC_MSG_RESULT([$systemd_tmpfilesdir])
 
 AC_SUBST([DEVMAPPER_LIBS])
