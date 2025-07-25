@@ -833,6 +833,17 @@ else
 	EXTERNAL_LUKS2_TOKENS_PATH="\${libdir}/cryptsetup"
 fi
 AC_SUBST(EXTERNAL_LUKS2_TOKENS_PATH)
+dnl We need to define expanded EXTERNAL_LUKS2_TOKENS_PATH, but some other code can depend on prefix=NONE.
+dnl Pretend you do not see this hack :-)
+saved_prefix=$prefix
+saved_exec_prefix=$exec_prefix
+test "x$prefix" = "xNONE" && prefix="$ac_default_prefix"
+test "x$exec_prefix" = "xNONE" && exec_prefix="$prefix"
+expanded_EXTERNAL_LUKS2_TOKENS_PATH=$(eval echo "$EXTERNAL_LUKS2_TOKENS_PATH")
+expanded_EXTERNAL_LUKS2_TOKENS_PATH=$(eval echo "$expanded_EXTERNAL_LUKS2_TOKENS_PATH")
+AC_DEFINE_UNQUOTED([EXTERNAL_LUKS2_TOKENS_PATH], ["$expanded_EXTERNAL_LUKS2_TOKENS_PATH"], [path to directory with LUKSv2 external token handlers (plugins)])
+prefix=$saved_prefix
+exec_prefix=$saved_exec_prefix
 
 dnl Override default LUKS format version (for cryptsetup or cryptsetup-reencrypt format actions only).
 AC_ARG_WITH([default_luks_format],
