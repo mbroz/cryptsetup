@@ -802,8 +802,9 @@ CS_NUM_WITH([verity-hash-block], [hash block size for verity mode], [4096])
 CS_NUM_WITH([verity-salt-size],  [salt size for verity mode], [32])
 CS_NUM_WITH([verity-fec-roots],  [parity bytes for verity FEC], [2])
 
-CS_STR_WITH([tmpfilesdir], [override default path to directory with systemd temporary files], [])
-test -z "$with_tmpfilesdir" && with_tmpfilesdir=$systemd_tmpfilesdir
+AC_ARG_WITH([tmpfilesdir],
+	AS_HELP_STRING([--with-tmpfilesdir=DIR], [override default path to directory with systemd temporary files]),
+	[], [with_tmpfilesdir=$systemd_tmpfilesdir])
 test "x$with_tmpfilesdir" = "xno" || {
 	CS_ABSPATH([${with_tmpfilesdir}],[with-tmpfilesdir])
 	DEFAULT_TMPFILESDIR=$with_tmpfilesdir
@@ -822,7 +823,9 @@ test -z "$with_luks2_lock_dir_perms" && with_luks2_lock_dir_perms=0700
 DEFAULT_LUKS2_LOCK_DIR_PERMS=$with_luks2_lock_dir_perms
 AC_SUBST(DEFAULT_LUKS2_LOCK_DIR_PERMS)
 
-CS_STR_WITH([luks2-external-tokens-path], [path to directory with LUKSv2 external token handlers (plugins)], [LIBDIR/cryptsetup])
+AC_ARG_WITH([luks2-external-tokens-path],
+	AS_HELP_STRING([--with-luks2-external-tokens-path=DIR], [path to directory with LUKSv2 external token handlers (plugins)]),
+	[], [with_luks2_external_tokens_path=""])
 if test -n "$with_luks2_external_tokens_path"; then
 	CS_ABSPATH([${with_luks2_external_tokens_path}],[with-luks2-external-tokens-path])
 	EXTERNAL_LUKS2_TOKENS_PATH=$with_luks2_external_tokens_path
