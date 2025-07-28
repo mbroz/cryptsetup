@@ -1023,7 +1023,7 @@ static int TCRYPT_status_one(struct crypt_device *cd, const char *name,
 
 	r = 0;
 
-	if (!strncmp(dmd.uuid, base_uuid, strlen(base_uuid))) {
+	if (is_tcrypt_subdev(dmd.uuid, base_uuid)) {
 		if ((c = strchr(tgt->u.crypt.cipher, '-')))
 			*c = '\0';
 		strcat(cipher, "-");

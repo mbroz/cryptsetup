@@ -1848,6 +1848,15 @@ static void TcryptTest(void)
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, NULL, 0, CRYPT_ACTIVATE_READONLY));
 	CRYPT_FREE(cd);
 
+	// Check tcrypt can correctly parse parameters from active stacked cipher device
+	OK_(crypt_init_by_name(&cd, CDEVICE_1));
+	OK_(strcmp(crypt_get_cipher(cd), "aes-twofish-serpent"));
+	OK_(strcmp(crypt_get_cipher_mode(cd), "xts-plain64"));
+	EQ_(crypt_get_volume_key_size(cd), 192);
+	/* just check if it correctly parsed data device down to a loopback device */
+	OK_(strncmp(crypt_get_device_name(cd) ?: "", "/dev/loop", 9));
+	CRYPT_FREE(cd);
+
 	// Deactivate the whole chain
 	EQ_(crypt_status(NULL, CDEVICE_1 "_1"), CRYPT_BUSY);
 	OK_(crypt_deactivate(NULL, CDEVICE_1));
