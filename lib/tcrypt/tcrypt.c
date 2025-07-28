@@ -926,6 +926,24 @@ out:
 	return r;
 }
 
+static bool is_tcrypt_subdev(const char *dm_uuid, const char *base_uuid)
+{
+	assert(base_uuid);
+
+	if (!dm_uuid)
+		return false;
+
+	if (!strncmp(dm_uuid, "SUBDEV-", 7))
+		/* dm_uuid + 6 because function requires dm_uuid to contain '-' */
+		return !dm_uuid_cmp(dm_uuid + 6, strchr(base_uuid, '-'));
+
+	/*
+	 * FIXME: Drop after shift to dependency based deactivation (CRYPT_SUBDEV)
+	 * in later releases
+	 */
+	return !strncmp(dm_uuid, base_uuid, strlen(base_uuid));
+}
+
 static int TCRYPT_remove_one(struct crypt_device *cd, const char *name,
 		      const char *base_uuid, int index, uint32_t flags)
 {
@@ -941,9 +959,7 @@ static int TCRYPT_remove_one(struct crypt_device *cd, const char *name,
 		return r;
 
 	r = dm_query_device(cd, dm_name, DM_ACTIVE_UUID, &dmd);
-	if (!r &&
-	    (!strncmp(dmd.uuid, base_uuid, strlen(base_uuid)) ||
-	     !dm_uuid_cmp(dmd.uuid, strchr(base_uuid, '-'))))
+	if (!r && is_tcrypt_subdev(dmd.uuid, base_uuid))
 		r = dm_remove_device(cd, dm_name, flags);
 
 	free(CONST_CAST(void*)dmd.uuid);
