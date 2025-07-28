@@ -9,6 +9,8 @@
       lvm2-dev openssl-dev popt-dev util-linux-dev json-c-dev
       argon2-dev device-mapper which sharutils gettext gettext-dev automake
       autoconf libtool build-base keyutils tar jq expect git asciidoctor
+    # Be sure we have updated basic tools and system
+    - sudo apk upgrade gcc binutils build-base musl
     - ./autogen.sh
     - ./configure --prefix=/usr --libdir=/lib --sbindir=/sbin --disable-static --enable-libargon2 --with-crypto_backend=openssl --disable-external-tokens --disable-ssh-token --enable-asciidoc
 
