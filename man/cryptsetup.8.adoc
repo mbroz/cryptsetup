@@ -6,7 +6,7 @@
 
 == Name
 
-cryptsetup - manage plain dm-crypt, LUKS, and other encrypted volumes
+cryptsetup - utility for configuring and managing encrypted storage devices
 
 == SYNOPSIS
 
@@ -14,14 +14,21 @@ cryptsetup - manage plain dm-crypt, LUKS, and other encrypted volumes
 
 == DESCRIPTION
 
-cryptsetup is used to conveniently set up dm-crypt managed device-mapper mappings.
-These include plain dm-crypt volumes and LUKS volumes.
-The difference is that LUKS uses a metadata header and can offer more features than plain dm-crypt.
-On the other hand, the header is visible and vulnerable to damage.
+*Cryptsetup* is a utility for configuring and managing full-disk encryption on storage devices.
+It can encrypt block devices (such as hard drives or partitions) and containers (disk images stored as files).
 
-In addition, cryptsetup provides limited support for using loop-AES volumes, TrueCrypt, VeraCrypt, BitLocker and FileVault2 compatible volumes, and hardware-based encryption on OPAL capable drives.
+When you unlock an encrypted volume, *cryptsetup* creates a new device mapping that applications can access like any regular storage device.
+The actual encryption and decryption work is performed transparently by the kernel's device-mapper dm-crypt driver.
+
+*Cryptsetup* works with two main volume types: plain encrypted volumes and LUKS (Linux Unified Key Setup) volumes.
+Plain volumes provide basic encryption, while LUKS volumes include a metadata header that enables advanced features like multiple keyslots and key management.
+Additionally, LUKS can be used to manage hardware-based encryption on OPAL-capable storage drives.
+
+*Cryptsetup* also provides limited support for volumes created by other encryption systems, including *loop-AES*, *TrueCrypt*, *VeraCrypt*, *BitLocker*, and *FileVault2*.
 
 For more information about a specific cryptsetup action, see *cryptsetup-<action>*(8), where *<action>* is the name of the cryptsetup action.
+
+Cryptsetup devices can be activated during boot through *crypttab*(5), which is part of *systemd*(1) or other system init scripts.
 
 == BASIC ACTIONS
 
@@ -87,21 +94,23 @@ It adds a standardized header at the start of the device, a keyslot area directl
 The whole set is called a 'LUKS container'.
 The device that a LUKS container resides on is called a 'LUKS device'.
 For most purposes, both terms can be used interchangeably.
-But note that when the LUKS header is at a non-zero offset in a device, then the device is not a LUKS device anymore, but has a LUKS container stored in it at an offset.
 
-LUKS can manage multiple passphrases that can be individually revoked or changed and that can be securely scrubbed from persistent media due to the use of anti-forensic stripes.
-Passphrases are protected against brute-force and dictionary attacks by Password-Based Key Derivation Function (PBKDF).
+LUKS can manage multiple passphrases that can be individually revoked or changed.
+Each passphrase uses an individual keyslot containing a volume key for data encryption.
+Keyslots can be securely scrubbed from persistent media due to the use of anti-forensic stripes.
+Passphrases are protected against brute-force attacks by the Password-Based Key Derivation Function (PBKDF).
+A passphrase stored in a file is called a key file.
+The only difference between a passphrase and a key file is that a key file can contain binary data.
+Both are processed the same.
 
-LUKS2 is a new version of the header format that allows additional extensions like different PBKDF algorithms or authenticated encryption.
-You can format the device with a LUKS2 header if you specify *--type luks2* in the *luksFormat* command.
-For activation, the format is already recognized automatically.
-
-Each passphrase, also called a *key* in this document, is associated with one of 8 keyslots.
-Key operations that do not specify a slot affect the first slot that matches the supplied passphrase or the first empty slot if a new passphrase is added.
+LUKS version 1 (or LUKS1) is the original metadata format, while LUKS2 is a new version that allows additional extensions like different PBKDF algorithms or authenticated encryption.
+You can format the device with a specific LUKS version with *--type luks1* or *--type luks2* in the *luksFormat* command.
+Normally, you do not need to specify any version as it is recognized automatically.
+The default format is LUKS2.
 
 The *<device>* parameter can also be specified by a LUKS UUID in the format UUID=<uuid>.
-Translation to real device name uses symlinks in /dev/disk/by-uuid directory.
 
+The LUKS header can be detached from data (stored separately).
 To specify a detached header, the --header parameter can be used in all LUKS commands and always takes precedence over the positional *<device>* parameter.
 
 The following are valid LUKS actions:
@@ -234,7 +243,7 @@ See also section 7 of the FAQ and http://loop-aes.sourceforge.net[loop-AES] for 
 Cryptsetup supports mapping of TrueCrypt, tcplay, or VeraCrypt encrypted partitions using a native Linux kernel API.
 Header formatting and TCRYPT header change are not supported; cryptsetup never changes the TCRYPT header on-device.
 
-TCRYPT extension requires the kernel userspace crypto API to be available (introduced in Linux kernel 2.6.38).
+TCRYPT extension requires the kernel userspace crypto API to be available.
 If you are configuring the kernel yourself, enable "User-space interface for symmetric key cipher algorithms" in "Cryptographic API" section (CRYPTO_USER_API_SKCIPHER .config option).
 
 Because the TCRYPT header is encrypted, you must always provide a valid passphrase and keyfiles.
@@ -246,11 +255,11 @@ VeraCrypt is an extension of TrueCrypt with an increased iteration count, so unl
 To open a VeraCrypt device with a custom Personal Iteration Multiplier (PIM) value, use either the --veracrypt-pim PIM option to directly specify the PIM on the command line or use --veracrypt-query-pim to be prompted for the PIM.
 
 The PIM value affects the number of iterations applied during key derivation.
-Please refer to https://www.veracrypt.fr/en/Personal%20Iterations%20Multiplier%20%28PIM%29.html[PIM] for more detailed information.
+Please refer to https://veracrypt.io/en/Personal%20Iterations%20Multiplier%20(PIM).html[PIM] for more detailed information.
 
 If you need to disable VeraCrypt device support, use --disable-veracrypt option.
 
-*NOTE:* Activation with *tcryptOpen* is supported only for cipher chains using LRW or XTS encryption modes.
+Activation with *tcryptOpen* is supported only for cipher chains using LRW or XTS encryption modes.
 
 The *tcryptDump* command should work for all recognized TCRYPT devices and doesn't require superuser privilege.
 
@@ -261,7 +270,7 @@ To use a hidden header (and map hidden device, if available), use --tcrypt-hidde
 
 To explicitly use the backup (secondary) header, use --tcrypt-backup option.
 
-*NOTE:* There is no protection for a hidden volume if the outer volume is mounted.
+There is no protection for a hidden volume if the outer volume is mounted.
 The reason is that if there were any protection, it would require some metadata describing what to protect in the outer volume, and the hidden volume would become detectable.
 
 === OPEN
@@ -320,7 +329,7 @@ Please note that cryptsetup does not use any Windows BitLocker code; please repo
 
 Cryptsetup supports the mapping of FileVault2 (FileVault2 full-disk encryption) by Apple for the macOS operating system using a native Linux kernel API.
 
-*NOTE:* Cryptsetup supports only FileVault2 based on Core Storage and HFS+ filesystem (introduced in MacOS X 10.7 Lion).
+Cryptsetup supports only FileVault2 based on Core Storage and HFS+ filesystem (introduced in MacOS X 10.7 Lion).
 It does NOT support the new version of FileVault based on the APFS filesystem used in recent macOS versions.
 
 Header formatting and FVAULT2 header changes are not supported; cryptsetup never changes the FVAULT2 header on-device.
@@ -346,14 +355,15 @@ See *cryptsetup-open*(8).
 Cryptsetup supports using native hardware encryption on drives that provide an *OPAL* interface, both nested with *dm-crypt* and standalone.
 Passphrases, tokens and metadata are stored using the LUKS2 header format, and are thus compatible with any software or system that uses LUKS2 (e.g., tokens).
 
-*WARNING:* This support is new and experimental, and requires at least kernel v6.4.
+OPAL support requires at least kernel v6.4.
 Resizing devices is not supported.
 
 The --hw-opal can be specified for OPAL + dm-crypt, and --hw-opal-only can be specified to use OPAL only, without a dm-crypt layer.
 
 Opening, closing and enrolling tokens work the same way as with LUKS2 and dm-crypt.
 The new parameters are only necessary when formatting; the LUKS2 metadata will ensure the right setup is performed when opening or closing.
-If no *subsystem* is specified, it will be automatically set to *HW-OPAL* so that it is immediately apparent when a device uses OPAL.
+
+If no *subsystem* label is specified, it will be automatically set to *HW-OPAL* so that it is immediately apparent when a device uses OPAL.
 
 === FORMAT
 *luksFormat --type luks2 --hw-opal <device> [<key file>]*
@@ -368,7 +378,7 @@ Securely erase a partition or device.
 Requires admin password.
 Additionally specify --hw-opal-factory-reset for a FULL factory reset of the drive, using the drive's *PSID* (typically printed on the label) instead of the admin password.
 
-*NOTE*: PSID must be entered without dashes, spaces or underscores.
+PSID must be entered without dashes, spaces or underscores.
 
 *WARNING*: A factory reset will cause ALL data on the device to be lost, regardless of the partition it is run on, if any, and regardless of any LUKS2 header backup.
 
@@ -387,10 +397,10 @@ See *cryptsetup-repair*(8).
 Benchmarks, ciphers and KDF (key derivation function).
 See *cryptsetup-benchmark*(8).
 
-== PLAIN DM-CRYPT OR LUKS?
+== PLAIN MODE OR LUKS?
 
 Unless you understand the cryptographic background well, use LUKS.
-With plain dm-crypt, there are a number of possible user errors that massively decrease security.
+With plain mode, there are a number of possible user errors that massively decrease security.
 While LUKS cannot fix them all, it can lessen the impact for many of them.
 
 == WARNINGS
@@ -411,14 +421,11 @@ It is therefore highly recommended to select passphrase characters only from 7-b
 
 *LUKS header:* If the header of a LUKS volume gets damaged, all data is permanently lost unless you have a header backup.
 If a keyslot is damaged, it can only be restored from a header backup or if another active keyslot with a known passphrase is undamaged.
-Damaging the LUKS header is something people manage to do with surprising frequency.
 This risk is the result of a trade-off between security and safety, as LUKS is designed for fast and secure wiping by just overwriting the header and keyslot area.
 
 *Previously used partitions:* If a partition was previously used, it is a very good idea to wipe filesystem signatures, data, etc., before creating a LUKS or plain dm-crypt container.
-For a quick removal of filesystem signatures, use *wipefs*(8).
-This may not remove everything.
-In particular, MD RAID signatures at the end of a device may survive.
-It also does not remove data.
+For a quick removal of filesystem signatures, use *wipefs*(8) with the --all option.
+Note that it does not remove data; it only invalidates known format signatures.
 For a full wipe, overwrite the whole partition before creating a container.
 If you do not know how to do that, the cryptsetup FAQ describes several options.
 
@@ -474,15 +481,13 @@ No warning will be given if the amount of data read from stdin is less than the 
 
 *From a key file*: It will be truncated to the key size of the used cipher or the size given by -s and directly used as a binary key.
 
-*WARNING*: The --hash argument is being ignored.
+The --hash argument is being ignored.
 The --hash option is usable only for stdin input in plain mode.
 
 If the key file is shorter than the key, cryptsetup will quit with an error.
 The maximum input size is defined by the same compiled-in default as the maximum key file size and can be overwritten using the --keyfile-size option.
 
 === Passphrase processing for LUKS
-
-LUKS uses PBKDF to protect against dictionary attacks and to give some protection to low-entropy passphrases (see cryptsetup FAQ).
 
 *From a terminal*: The passphrase is read until the first newline and then processed by PBKDF2 without the newline character.
 
@@ -493,7 +498,15 @@ If --keyfile-size is given, it is ignored.
 Newline characters do not terminate the input.
 The --keyfile-size option can be used to limit what is read.
 
-*Passphrase processing*: Whenever a passphrase is added to a LUKS header (luksAddKey, luksFormat), the user may specify how much time the passphrase processing should consume.
+LUKS uses *Password-Based Key Derivation Function* (PBKDF) to protect against brute-force attacks and to give some protection to low-entropy passphrases (see cryptsetup FAQ).
+LUKS1 supports the PBKDF2 algorithm only, while LUKS2 also supports memory-hard Argon2.
+PBKDFs are configured with costs: how long the iteration should run (CPU cost or iteration count), how much memory is used (memory cost), and how many parallel processes are used (parallel cost).
+PBKDF2 supports only iteration count.
+Cryptsetup uses PBKDF benchmarking to calculate optimal costs based on the computer where the new passphrase is being initialized.
+If needed, these costs can also be overwritten.
+Note that there are some hardcoded limits, for details see *MINIMAL AND MAXIMAL PBKDF COSTS* section in --pbkdf option description.
+
+Whenever a passphrase is added to a LUKS header (luksAddKey, luksFormat), the user may specify how much time the passphrase processing should consume.
 The time is used to determine the iteration count for PBKDF2, and higher times will offer better protection for low-entropy passphrases, but the open command will take longer to complete.
 For passphrases that have entropy higher than the used key length, higher iteration times will not increase security.
 
@@ -504,10 +517,11 @@ This does slow down all later luksOpen operations accordingly.
 
 === Incoherent behavior for invalid passphrases/keys
 
-LUKS checks for a valid passphrase when an encrypted partition is unlocked.
+LUKS checks for a valid passphrase when a keyslot is decrypted.
+
 The behavior of plain dm-crypt is different.
-It will always decrypt with the passphrase given.
-If the given passphrase is wrong, the device mapped by plain dm-crypt will essentially still contain encrypted data and will be unreadable.
+It will always unlock the device with the passphrase given.
+If the given passphrase is wrong, the device mapped by plain dm-crypt will use the wrong encryption key, and the data will be unreadable.
 
 === Supported ciphers, modes, hashes and key sizes
 
@@ -515,8 +529,8 @@ The available combinations of ciphers, modes, hashes and key sizes depend on ker
 See /proc/crypto for a list of available options.
 You might need to load additional kernel crypto modules to get more options.
 
-For the --hash option, if the crypto backend is libgcrypt, then all algorithms supported by the gcrypt library are available.
-For other crypto backends, some algorithms may be missing.
+Cryptsetup processes many operations outside of the kernel, so the configured cryptographic library must also support selected algorithms.
+Some algorithms may be missing as cryptsetup can be compiled with various cryptographic backends (libraries).
 
 === Notes on passphrases
 
@@ -531,19 +545,15 @@ Still, if your attacker model does not prevent it, storing your passphrase in a 
 Random Number Generators (RNGs) used in cryptsetup are always the kernel RNGs without any modifications or additions to the data stream produced.
 
 There are two types of randomness that cryptsetup/LUKS needs.
-One type (which always uses /dev/urandom) is used for salts, the AF splitter and for wiping deleted keyslots.
-
+One type is used for salts, the AF splitter and for wiping deleted keyslots.
 The second type is used for the volume key.
-You can switch between using /dev/random and /dev/urandom here, see --use-random and --use-urandom options.
-Using /dev/random on a system without enough entropy sources can cause *luksFormat* to block until the requested amount of random data is gathered.
-In a low-entropy situation (embedded system), this can take a very long time and potentially forever.
-At the same time, using /dev/urandom in a low-entropy situation will produce low-quality keys.
-This is a serious problem, but solving it is out of scope for a mere man-page.
+
+With recent kernels (Linux kernel 5.6), you do not need to worry about selecting RNG (/dev/random or /dev/urandom).
+In a low-entropy situation (embedded system), initialization of the kernel RNG can take a very long time, but this happens before cryptsetup can even be started.
+Use _cryptsetup --help_ to show the compiled-in default random number generator.
 See *urandom*(4) for more information.
 
 === Authenticated disk encryption (EXPERIMENTAL)
-
-Since Linux kernel version 4.12 dm-crypt supports authenticated disk encryption.
 
 Normal disk encryption modes are length-preserving (the plaintext sector is the same size as a ciphertext sector) and can provide only confidentiality protection, not cryptographically sound data integrity protection.
 
@@ -561,7 +571,7 @@ Albeit Linux kernel 5.7 added TRIM support for standalone dm-integrity devices, 
 Some integrity modes require two independent keys (a key for encryption and authentication).
 Both these keys are stored in one LUKS keyslot.
 
-*WARNING:* All support for authenticated modes is experimental, and only some modes are available now.
+Support for authenticated modes is experimental, and only some modes are available now.
 Note that very few authenticated encryption algorithms are suitable for disk encryption.
 You also cannot use CRC32 or other non-cryptographic checksums (other than the special integrity mode "none").
 If, for some reason, you want to have integrity control without using authentication mode, then you should separately configure dm-integrity independently of LUKS2.
@@ -570,7 +580,6 @@ If, for some reason, you want to have integrity control without using authentica
 
 Cryptsetup is usually used directly on a block device (disk partition or LVM volume).
 However, if the device argument is a file, cryptsetup tries to allocate a loopback device and map it into this file.
-This mode requires a Linux kernel 2.6.25 or more recent, which supports the loop autoclear flag (loop device is cleared on the last close automatically).
 Of course, you can always map a file to a loop device manually.
 See the cryptsetup FAQ for an example.
 

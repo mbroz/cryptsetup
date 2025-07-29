@@ -17,16 +17,19 @@ cryptsetup-luksKillSlot - wipe a keyslot from the LUKS device
 == DESCRIPTION
 
 Wipe the keyslot with the number from the LUKS device.
+
 Except running in batch-mode (-q), a remaining passphrase must be supplied, either interactively or via --key-file.
 This command can remove the last remaining keyslot, but requires an interactive confirmation when doing so.
 Removing the last passphrase makes a LUKS container permanently inaccessible.
 
-*<options>* can be [--key-file, --keyfile-offset, --keyfile-size, --header, --disable-locks, --type, --verify-passphrase, --timeout].
-
-*WARNING:* If you read the passphrase from stdin (without further argument or with '-' as an argument to --key-file), batch-mode (-q) will be implicitly switched on and no warning will be given when you remove the last remaining passphrase from a LUKS container.
+If you read the passphrase from stdin (without further argument or with '-' as an argument to --key-file), batch-mode (-q) will be implicitly switched on and no warning will be given when you remove the last remaining passphrase from a LUKS container.
 Removing the last passphrase makes the LUKS container permanently inaccessible.
 
-*NOTE:* If no passphrase is provided (on stdin or through --key-file argument) and batch-mode (-q) is active, the keyslot is removed without any other warning.
+If no passphrase is provided (on stdin or through --key-file argument) and batch-mode (-q) is active, the keyslot is removed without any other warning.
+
+This operation removes only the key in a particular keyslot; it does not wipe any encrypted data.
+
+*<options>* can be [--key-file, --keyfile-offset, --keyfile-size, --header, --disable-locks, --type, --verify-passphrase, --timeout].
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]

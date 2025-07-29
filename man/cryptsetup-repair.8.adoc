@@ -29,6 +29,8 @@ It also repairs (upgrades) LUKS2 reencryption metadata by adding a metadata dige
 If LUKS2 reencryption was interrupted while writing the reencryption segment, the repair command can perform reencryption recovery so that reencryption can continue later.
 Repairing reencryption requires verification of the reencryption keyslot, so a passphrase or keyfile is needed.
 
+*WARNING:* Always create a binary backup of the original header before calling this command.
+
 === LUKS keyslots corruption detection
 
 The repair command also checks for detectable corruption of keyslot content.
@@ -45,8 +47,6 @@ Conversely, if the keyslot is corrupted, no recovery is possible.
 You have to use the LUKS header backup.
 
 *<options>* can be [--timeout, --verify-passphrase, --disable-locks, --type, --header, --key-file, --keyfile-size, --keyfile-offset, --key-slot].
-
-*WARNING:* Always create a binary backup of the original header before calling this command.
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]
