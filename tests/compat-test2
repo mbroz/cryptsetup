@@ -1286,6 +1286,7 @@ echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf pbkdf2   --pbkdf-force-
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf pbkdf2   --pbkdf-force-iterations 1234 $LOOPDEV || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Iterations:" | grep -q "1234" || fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2id --pbkdf-force-iterations 3 $LOOPDEV 2>/dev/null && fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2id --pbkdf-parallel 99 $LOOPDEV 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2id --pbkdf-force-iterations 4 --pbkdf-memory 100000 $LOOPDEV || can_fail_fips
 $CRYPTSETUP luksDump $LOOPDEV | grep "PBKDF:" | grep -q "argon2id" || can_fail_fips
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --pbkdf argon2i  --pbkdf-force-iterations 4 \

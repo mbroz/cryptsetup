@@ -3044,6 +3044,8 @@ static void Pbkdf(void)
 	// try to pass illegal values
 	argon2.parallel_threads = 0;
 	FAIL_(crypt_set_pbkdf_type(cd, &argon2), "Parallel threads can't be 0");
+	argon2.parallel_threads = 99;
+	FAIL_(crypt_set_pbkdf_type(cd, &argon2), "Parallel threads can't be higher than maxiimum");
 	argon2.parallel_threads = 1;
 	argon2.max_memory_kb = 0;
 	FAIL_(crypt_set_pbkdf_type(cd, &argon2), "Memory can't be 0");
@@ -3130,7 +3132,7 @@ static void Pbkdf(void)
 	argon2.flags = CRYPT_PBKDF_NO_BENCHMARK;
 	argon2.max_memory_kb = 2 * 1024 * 1024;
 	argon2.iterations = 6;
-	argon2.parallel_threads = 8;
+	argon2.parallel_threads = 4;
 	OK_(crypt_set_pbkdf_type(cd, &argon2));
 	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
 	EQ_(pbkdf->iterations, 6);

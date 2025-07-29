@@ -169,6 +169,11 @@ int verify_pbkdf_params(struct crypt_device *cd,
 		log_err(cd, _("Requested maximum PBKDF memory cannot be zero."));
 		r = -EINVAL;
 	}
+	if (pbkdf->parallel_threads > pbkdf_limits.max_parallel) {
+		log_err(cd, _("Requested maximum PBKDF parallel cost is too high (maximum is %d)."),
+			pbkdf_limits.max_parallel);
+		r = -EINVAL;
+	}
 	if (!pbkdf->parallel_threads) {
 		log_err(cd, _("Requested PBKDF parallel threads cannot be zero."));
 		r = -EINVAL;
@@ -240,12 +245,6 @@ int init_pbkdf_type(struct crypt_device *cd,
 
 	cd_pbkdf->max_memory_kb = pbkdf->max_memory_kb;
 	cd_pbkdf->parallel_threads = pbkdf->parallel_threads;
-
-	if (cd_pbkdf->parallel_threads > pbkdf_limits.max_parallel) {
-		log_dbg(cd, "Maximum PBKDF threads is %d (requested %d).",
-			pbkdf_limits.max_parallel, cd_pbkdf->parallel_threads);
-		cd_pbkdf->parallel_threads = pbkdf_limits.max_parallel;
-	}
 
 	/* Do not limit threads by online CPUs if user forced values (no benchmark). */
 	if (cd_pbkdf->parallel_threads && !(cd_pbkdf->flags & CRYPT_PBKDF_NO_BENCHMARK)) {
