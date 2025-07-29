@@ -274,3 +274,20 @@ int crypt_utf8_to_utf16(char16_t **out, const char *s, size_t length)
 	*p = 0;
 	return 0;
 }
+
+/**
+ * crypt_char16_strlen()
+ * @s: string to get length of
+ *
+ * Returns: number of 16-bit words in the string
+ */
+size_t crypt_char16_strlen(const char16_t *s) {
+	size_t n = 0;
+
+	assert(s);
+
+	while (*s != 0)
+		n++, s++;
+
+	return n;
+}

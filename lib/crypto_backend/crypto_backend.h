@@ -93,6 +93,7 @@ int crypt_base64_decode(char **out, size_t *out_length, const char *in, size_t i
 /* UTF8/16 */
 int crypt_utf16_to_utf8(char **out, const char16_t *s, size_t length /* bytes! */);
 int crypt_utf8_to_utf16(char16_t **out, const char *s, size_t length);
+size_t crypt_char16_strlen(const char16_t *s);
 
 /* Block ciphers */
 int crypt_cipher_ivsize(const char *name, const char *mode);
