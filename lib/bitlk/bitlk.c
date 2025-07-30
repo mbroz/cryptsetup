@@ -982,6 +982,7 @@ static int bitlk_kdf(const char *password,
 	struct crypt_hash *hd = NULL;
 	int len = 0;
 	char16_t *utf16Password = NULL;
+	size_t utf16Len = 0;
 	int i = 0;
 	int r = 0;
 
@@ -1007,7 +1008,8 @@ static int bitlk_kdf(const char *password,
 		if (r < 0)
 			goto out;
 
-		crypt_hash_write(hd, (char*)utf16Password, passwordLen * 2);
+		utf16Len = crypt_char16_strlen(utf16Password);
+		crypt_hash_write(hd, (char*)utf16Password, utf16Len * 2);
 		r = crypt_hash_final(hd, kdf.initial_sha256, len);
 		if (r < 0)
 			goto out;
