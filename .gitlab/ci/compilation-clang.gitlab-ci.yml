@@ -9,7 +9,7 @@ test-clang-compilation:
     - make -j
     - make -j check-programs
 
-test-clang-Wall-script:
+test-clang-Wall-script-ubuntu:
   extends:
     - .gitlab-shared-clang
   script:
@@ -21,9 +21,34 @@ test-clang-Wall-script:
     - make -j CFLAGS="-g -O0 -Werror"
     - make -j CFLAGS="-g -O0 -Werror" check-programs
 
-test-scan-build:
+test-clang-Wall-script-alpine:
+  extends:
+    - .gitlab-shared-clang-alpine
+  allow_failure: true
+  script:
+    - export CFLAGS="-g -O0"
+    - export CC="$CI_PROJECT_DIR/.gitlab/ci/clang-Wall"
+    - ./autogen.sh
+    - $CC --version
+    - ./configure
+    - make -j CFLAGS="-g -O0 -Werror"
+    - make -j CFLAGS="-g -O0 -Werror" check-programs
+
+test-scan-build-ubuntu:
   extends:
     - .gitlab-shared-clang
+  script:
+    - ./autogen.sh
+    - echo "scan-build${COMPILER_VERSION:+-$COMPILER_VERSION}"
+    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -V ./configure CFLAGS="-g -O0"
+    - make clean
+    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j
+    - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j check-programs
+
+test-scan-build-alpine:
+  extends:
+    - .gitlab-shared-clang-alpine
+  allow_failure: true
   script:
     - ./autogen.sh
     - echo "scan-build${COMPILER_VERSION:+-$COMPILER_VERSION}"
