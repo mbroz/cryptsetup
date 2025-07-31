@@ -661,8 +661,8 @@ if get_option('blkid')
     endforeach
 endif
 
-have = get_option('hw-opal')
-if have
+have_opal = get_option('hw-opal')
+if have_opal
     if cc.has_header('linux/sed-opal.h')
         foreach symbol : [
             'OPAL_FL_SUM_SUPPORTED',
@@ -670,17 +670,40 @@ if have
             'IOC_OPAL_GET_GEOMETRY',
         ]
             if not cc.has_header_symbol('linux/sed-opal.h', symbol)
-                have = false
+                have_opal = false
                 warning('OPAL support disabled, linux/sed-opal.h does not define ' + symbol)
             endif
         endforeach
 
     else
-        have = false
+        have_opal = false
         warning('OPAL support disabled, linux/sed-opal.h not found, requires kernel v6.4.')
     endif
 endif
-conf.set10('HAVE_HW_OPAL', have, description: 'Define to 1 to enable OPAL support.')
+conf.set10('HAVE_HW_OPAL', have_opal, description: 'Define to 1 to enable OPAL support.')
+
+# TODO: Kernel feature is not yet available in upstream kernel. Expect kernel patches to land at 6.18
+have = have_opal and get_option('hw-sum-opal')
+if have
+    if cc.has_header('linux/sed-opal.h')
+        foreach symbol : [
+            'IOC_OPAL_REACTIVATE_LSP',
+            'IOC_OPAL_LR_SETUP_START_LENGTH',
+            'IOC_OPAL_LR_ENABLE_DISABLE',
+            'IOC_OPAL_GET_SUM_STATUS',
+        ]
+            if not cc.has_header_symbol('linux/sed-opal.h', symbol)
+                have = false
+                warning('OPAL Single User Mode support disabled, linux/sed-opal.h does not define ' + symbol)
+            endif
+        endforeach
+
+    else
+        have = false
+        warning('OPAL Single User Mode support disabled, linux/sed-opal.h not found, requires kernel v6.18.')
+    endif
+endif
+conf.set10('HAVE_HW_SUM_OPAL', have, description: 'Define to 1 to enable OPAL SUM support.')
 
 
 # ==========================================================================
