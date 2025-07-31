@@ -22,7 +22,8 @@ int opal_setup_ranges(struct crypt_device *cd,
 		      uint32_t opal_block_bytes,
 		      uint32_t segment_number,
 		      const void *admin_key,
-		      size_t admin_key_len);
+		      size_t admin_key_len,
+		      bool disable_sum);
 int opal_lock(struct crypt_device *cd, struct device *dev, uint32_t segment_number);
 int opal_unlock(struct crypt_device *cd,
 		struct device *dev,
