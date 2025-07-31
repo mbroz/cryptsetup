@@ -487,6 +487,48 @@ static int opal_reuse_active_lsp(struct crypt_device *cd, int fd,
 	return r;
 }
 
+static int opal_setup_range(struct crypt_device *cd, int fd, uint32_t segment_number,
+			    uint64_t range_start_blocks, uint64_t range_length_blocks,
+			    const void *admin_key, size_t admin_key_len)
+{
+	int r;
+	struct opal_user_lr_setup *setup = crypt_safe_alloc(sizeof(*setup));
+
+	if (!setup)
+		return -ENOMEM;
+
+	*setup = (struct opal_user_lr_setup) {
+		.range_start = range_start_blocks,
+		.range_length = range_length_blocks,
+		/* Some drives do not enable Locking Ranges on setup. This have some
+		 * interesting consequences: Lock command called later below will pass,
+		 * but locking range will _not_ be locked at all.
+		 */
+		.RLE = 1,
+		.WLE = 1,
+		.session = {
+			.who = OPAL_ADMIN1,
+			.opal_key = {
+				.key_len = admin_key_len,
+				.lr = segment_number,
+			},
+		},
+	};
+	crypt_safe_memcpy(setup->session.opal_key.key, admin_key, admin_key_len);
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_LR_SETUP, setup);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to setup locking range of length %llu at offset %llu on OPAL device '%s': %s",
+			setup->range_length, setup->range_start, crypt_get_device_name(cd),
+			opal_status_to_string(r));
+		r = -EINVAL;
+	}
+
+	crypt_safe_free(setup);
+
+	return r;
+}
+
 /* requires opal lock */
 int opal_setup_ranges(struct crypt_device *cd,
 		      struct device *dev,
@@ -501,7 +543,6 @@ int opal_setup_ranges(struct crypt_device *cd,
 	struct opal_session_info *user_session = NULL;
 	struct opal_lock_unlock *user_add_to_lr = NULL, *lock = NULL;
 	struct opal_new_pw *new_pw = NULL;
-	struct opal_user_lr_setup *setup = NULL;
 	int r, fd;
 
 	assert(cd);
@@ -621,37 +662,10 @@ int opal_setup_ranges(struct crypt_device *cd,
 		goto out;
 	}
 
-	setup = crypt_safe_alloc(sizeof(struct opal_user_lr_setup));
-	if (!setup) {
-		r = -ENOMEM;
+	r = opal_setup_range(cd, fd, segment_number, range_start_blocks, range_length_blocks,
+			     admin_key, admin_key_len);
+	if (r < 0)
 		goto out;
-	}
-	*setup = (struct opal_user_lr_setup) {
-		.range_start = range_start_blocks,
-		.range_length = range_length_blocks,
-		/* Some drives do not enable Locking Ranges on setup. This have some
-		 * interesting consequences: Lock command called later below will pass,
-		 * but locking range will _not_ be locked at all.
-		 */
-		.RLE = 1,
-		.WLE = 1,
-		.session = {
-			.who = OPAL_ADMIN1,
-			.opal_key = {
-				.key_len = admin_key_len,
-				.lr = segment_number,
-			},
-		},
-	};
-	crypt_safe_memcpy(setup->session.opal_key.key, admin_key, admin_key_len);
-
-	r = opal_ioctl(cd, fd, IOC_OPAL_LR_SETUP, setup);
-	if (r != OPAL_STATUS_SUCCESS) {
-		log_dbg(cd, "Failed to setup locking range of length %llu at offset %llu on OPAL device '%s': %s",
-			setup->range_length, setup->range_start, crypt_get_device_name(cd), opal_status_to_string(r));
-		r = -EINVAL;
-		goto out;
-	}
 
 	/* After setup an OPAL device is unlocked, but the expectation with cryptsetup is that it needs
 	 * to be activated separately, so lock it immediately. */
@@ -690,7 +704,6 @@ out:
 	crypt_safe_free(user_session);
 	crypt_safe_free(user_add_to_lr);
 	crypt_safe_free(new_pw);
-	crypt_safe_free(setup);
 	crypt_safe_free(lock);
 
 	return r;
