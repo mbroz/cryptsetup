@@ -454,6 +454,39 @@ out:
 	return r;
 }
 
+static int opal_reuse_active_lsp(struct crypt_device *cd, int fd,
+			   uint32_t segment_number,
+			   const void *admin_key, size_t admin_key_len)
+{
+	int r;
+	struct opal_session_info *user_session = crypt_safe_alloc(sizeof(*user_session));
+
+	if (!user_session)
+		return -ENOMEM;
+
+	*user_session = (struct opal_session_info) {
+		.who = OPAL_ADMIN1, /* irrelevant in SUM */
+		.opal_key = {
+			.lr = segment_number,
+			.key_len = admin_key_len,
+		},
+	};
+
+	/* If it is already enabled, wipe the locking range first */
+	crypt_safe_memcpy(user_session->opal_key.key, admin_key, admin_key_len);
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_SECURE_ERASE_LR, user_session);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to reset (secure erase) OPAL locking range %u on device '%s': %s",
+			segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+	}
+
+	crypt_safe_free(user_session);
+
+	return r;
+}
+
 /* requires opal lock */
 int opal_setup_ranges(struct crypt_device *cd,
 		      struct device *dev,
@@ -496,32 +529,10 @@ int opal_setup_ranges(struct crypt_device *cd,
 	/* If OPAL has never been enabled, we need to take ownership and do basic setup first */
 	if (r == 0)
 		r = opal_activate_lsp(cd, fd, admin_key, admin_key_len);
-	else {
-		/* If it is already enabled, wipe the locking range first */
-		user_session = crypt_safe_alloc(sizeof(struct opal_session_info));
-		if (!user_session) {
-			r = -ENOMEM;
-			goto out;
-		}
-		*user_session = (struct opal_session_info) {
-			.who = OPAL_ADMIN1,
-			.opal_key = {
-				.lr = segment_number,
-				.key_len = admin_key_len,
-			},
-		};
-		crypt_safe_memcpy(user_session->opal_key.key, admin_key, admin_key_len);
-
-		r = opal_ioctl(cd, fd, IOC_OPAL_SECURE_ERASE_LR, user_session);
-		if (r != OPAL_STATUS_SUCCESS) {
-			log_dbg(cd, "Failed to reset (secure erase) OPAL locking range %u on device '%s': %s",
-				segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
-			r = -EINVAL;
-			goto out;
-		}
-	}
-
-	crypt_safe_free(user_session);
+	else
+		r = opal_reuse_active_lsp(cd, fd, segment_number, admin_key, admin_key_len);
+	if (r < 0)
+		goto out;
 
 	user_session = crypt_safe_alloc(sizeof(struct opal_session_info));
 	if (!user_session) {
