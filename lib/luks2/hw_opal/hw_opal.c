@@ -533,20 +533,11 @@ static int opal_setup_user(struct crypt_device *cd, int fd, uint32_t segment_num
 			   const void *admin_key, size_t admin_key_len)
 {
 	int r;
-	struct opal_session_info *user_session = crypt_safe_alloc(sizeof(*user_session));
 	struct opal_lock_unlock *user_add_to_lr = crypt_safe_alloc(sizeof(*user_add_to_lr));
 
-	if (!user_session || !user_add_to_lr) {
-		r = -ENOMEM;
-		goto out;
-	}
+	if (!user_add_to_lr)
+		return -ENOMEM;
 
-	*user_session = (struct opal_session_info) {
-		.who = segment_number + 1,
-			.opal_key = {
-				.key_len = admin_key_len,
-			},
-	};
 	*user_add_to_lr = (struct opal_lock_unlock) {
 		.session = {
 			.who = segment_number + 1,
@@ -558,10 +549,9 @@ static int opal_setup_user(struct crypt_device *cd, int fd, uint32_t segment_num
 		.l_state = OPAL_RO,
 	};
 
-	crypt_safe_memcpy(user_session->opal_key.key, admin_key, admin_key_len);
 	crypt_safe_memcpy(user_add_to_lr->session.opal_key.key, admin_key, admin_key_len);
 
-	r = opal_ioctl(cd, fd, IOC_OPAL_ACTIVATE_USR, user_session);
+	r = opal_ioctl(cd, fd, IOC_OPAL_ACTIVATE_USR, &user_add_to_lr->session);
 	if (r != OPAL_STATUS_SUCCESS) {
 		log_dbg(cd, "Failed to activate OPAL user on device '%s': %s",
 			crypt_get_device_name(cd), opal_status_to_string(r));
@@ -586,7 +576,6 @@ static int opal_setup_user(struct crypt_device *cd, int fd, uint32_t segment_num
 		r = -EINVAL;
 	}
 out:
-	crypt_safe_free(user_session);
 	crypt_safe_free(user_add_to_lr);
 
 	return r;
