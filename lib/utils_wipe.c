@@ -50,7 +50,7 @@ static void wipeSpecial(char *buffer, size_t buffer_size, unsigned int turn)
 {
 	unsigned int i;
 
-	unsigned char write_modes[][3] = {
+	const unsigned char write_modes[27][4] = {
 		{"\x55\x55\x55"}, {"\xaa\xaa\xaa"}, {"\x92\x49\x24"},
 		{"\x49\x24\x92"}, {"\x24\x92\x49"}, {"\x00\x00\x00"},
 		{"\x11\x11\x11"}, {"\x22\x22\x22"}, {"\x33\x33\x33"},

@@ -19,7 +19,7 @@
 /* https://tools.ietf.org/html/rfc4648#section-4 */
 static char base64char(int x)
 {
-	static const char table[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	static const char table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 				      "abcdefghijklmnopqrstuvwxyz"
 				      "0123456789+/";
 	return table[x & 63];
