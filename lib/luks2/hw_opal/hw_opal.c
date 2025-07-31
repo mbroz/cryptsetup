@@ -415,11 +415,8 @@ static int opal_activate_lsp(struct crypt_device *cd, int fd,
 		.key = {
 			.key_len = admin_key_len,
 		},
-		.num_lrs = 8,
-		/* A max of 9 segments are supported, enable them all as there's no reason not to
-		 * (0 is whole-volume)
-		 */
-		.lr = { 1, 2, 3, 4, 5, 6, 7, 8 },
+		/* useless but due to kernel bug it requires (num_lrs > 0 && num_lrs <= 9) */
+		.num_lrs = 1,
 	};
 	crypt_safe_memcpy(activate->key.key, admin_key, admin_key_len);
 
