@@ -99,6 +99,20 @@ int crypt_cipher_init_kernel(struct crypt_cipher_kernel *ctx, const char *name,
 	return _crypt_cipher_init(ctx, key, key_length, 0, &sa);
 }
 
+/* musl has broken CMSG_NXTHDR macro in system headers */
+static inline struct cmsghdr *_CMSG_NXTHDR(struct msghdr* mhdr, struct cmsghdr* cmsg)
+{
+#if !defined(__GLIBC__) && defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-align"
+#pragma clang diagnostic ignored "-Wsign-compare"
+	return CMSG_NXTHDR(mhdr, cmsg);
+#pragma clang diagnostic pop
+#else
+	return CMSG_NXTHDR(mhdr, cmsg);
+#endif
+}
+
 /* The in/out should be aligned to page boundary */
 /* coverity[ -taint_source : arg-3 ] */
 static int _crypt_cipher_crypt(struct crypt_cipher_kernel *ctx,
@@ -146,7 +160,7 @@ static int _crypt_cipher_crypt(struct crypt_cipher_kernel *ctx,
 
 	/* Set IV */
 	if (iv) {
-		header = CMSG_NXTHDR(&msg, header);
+		header = _CMSG_NXTHDR(&msg, header);
 		if (!header)
 			return -EINVAL;
 
