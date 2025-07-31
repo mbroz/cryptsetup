@@ -402,6 +402,58 @@ static int opal_enabled(struct crypt_device *cd, struct device *dev)
 	return opal_query_status(cd, dev, OPAL_FL_LOCKING_ENABLED);
 }
 
+static int opal_activate_lsp(struct crypt_device *cd, int fd,
+			     const void *admin_key, size_t admin_key_len)
+{
+	int r;
+	struct opal_lr_act *activate = crypt_safe_alloc(sizeof(*activate));
+
+	if (!activate)
+		return -ENOMEM;
+
+	*activate = (struct opal_lr_act) {
+		.key = {
+			.key_len = admin_key_len,
+		},
+		.num_lrs = 8,
+		/* A max of 9 segments are supported, enable them all as there's no reason not to
+		 * (0 is whole-volume)
+		 */
+		.lr = { 1, 2, 3, 4, 5, 6, 7, 8 },
+	};
+	crypt_safe_memcpy(activate->key.key, admin_key, admin_key_len);
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_TAKE_OWNERSHIP, &activate->key);
+	if (r < 0) {
+		r = -ENOTSUP;
+		log_dbg(cd, "OPAL not supported on this kernel version, refusing.");
+		goto out;
+	}
+	if (r == OPAL_STATUS_NOT_AUTHORIZED) /* We'll try again with a different key. */ {
+		r = -EPERM;
+		log_dbg(cd, "Failed to take ownership of OPAL device '%s': permission denied",
+			crypt_get_device_name(cd));
+		goto out;
+	}
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to take ownership of OPAL device '%s': %s",
+			crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_ACTIVATE_LSP, activate);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to activate OPAL device '%s': %s",
+			crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+	}
+out:
+	crypt_safe_free(activate);
+
+	return r;
+}
+
 /* requires opal lock */
 int opal_setup_ranges(struct crypt_device *cd,
 		      struct device *dev,
@@ -413,7 +465,6 @@ int opal_setup_ranges(struct crypt_device *cd,
 		      const void *admin_key,
 		      size_t admin_key_len)
 {
-	struct opal_lr_act *activate = NULL;
 	struct opal_session_info *user_session = NULL;
 	struct opal_lock_unlock *user_add_to_lr = NULL, *lock = NULL;
 	struct opal_new_pw *new_pw = NULL;
@@ -443,51 +494,9 @@ int opal_setup_ranges(struct crypt_device *cd,
 		return r;
 
 	/* If OPAL has never been enabled, we need to take ownership and do basic setup first */
-	if (r == 0) {
-		activate = crypt_safe_alloc(sizeof(struct opal_lr_act));
-		if (!activate) {
-			r = -ENOMEM;
-			goto out;
-		}
-		*activate = (struct opal_lr_act) {
-			.key = {
-				.key_len = admin_key_len,
-			},
-			.num_lrs = 8,
-			/* A max of 9 segments are supported, enable them all as there's no reason not to
-			 * (0 is whole-volume)
-			 */
-			.lr = { 1, 2, 3, 4, 5, 6, 7, 8 },
-		};
-		crypt_safe_memcpy(activate->key.key, admin_key, admin_key_len);
-
-		r = opal_ioctl(cd, fd, IOC_OPAL_TAKE_OWNERSHIP, &activate->key);
-		if (r < 0) {
-			r = -ENOTSUP;
-			log_dbg(cd, "OPAL not supported on this kernel version, refusing.");
-			goto out;
-		}
-		if (r == OPAL_STATUS_NOT_AUTHORIZED) /* We'll try again with a different key. */ {
-			r = -EPERM;
-			log_dbg(cd, "Failed to take ownership of OPAL device '%s': permission denied",
-				crypt_get_device_name(cd));
-			goto out;
-		}
-		if (r != OPAL_STATUS_SUCCESS) {
-			log_dbg(cd, "Failed to take ownership of OPAL device '%s': %s",
-				crypt_get_device_name(cd), opal_status_to_string(r));
-			r = -EINVAL;
-			goto out;
-		}
-
-		r = opal_ioctl(cd, fd, IOC_OPAL_ACTIVATE_LSP, activate);
-		if (r != OPAL_STATUS_SUCCESS) {
-			log_dbg(cd, "Failed to activate OPAL device '%s': %s",
-				crypt_get_device_name(cd), opal_status_to_string(r));
-			r = -EINVAL;
-			goto out;
-		}
-	} else {
+	if (r == 0)
+		r = opal_activate_lsp(cd, fd, admin_key, admin_key_len);
+	else {
 		/* If it is already enabled, wipe the locking range first */
 		user_session = crypt_safe_alloc(sizeof(struct opal_session_info));
 		if (!user_session) {
@@ -667,7 +676,6 @@ int opal_setup_ranges(struct crypt_device *cd,
 					   &(uint64_t) {range_length_blocks * opal_block_bytes / SECTOR_SIZE},
 					   &(bool) {true}, &(bool){true}, NULL, NULL);
 out:
-	crypt_safe_free(activate);
 	crypt_safe_free(user_session);
 	crypt_safe_free(user_add_to_lr);
 	crypt_safe_free(new_pw);
