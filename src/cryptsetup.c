@@ -12,6 +12,7 @@
 
 #include "cryptsetup.h"
 #include "cryptsetup_args.h"
+#include "libcryptsetup.h"
 #include "utils_luks.h"
 
 static char *keyfiles[MAX_KEYFILES];
@@ -1656,6 +1657,8 @@ int luksFormat(struct crypt_device **r_cd, struct crypt_keyslot_context **r_kc)
 
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_PADDING_ID))
 		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING);
+	if (ARG_SET(OPT_DISABLE_SUM_ID))
+		crypt_set_compatibility(cd, CRYPT_COMPAT_DISABLE_HW_OPAL_SUM);
 
 	if (ARG_SET(OPT_HW_OPAL_ID) || ARG_SET(OPT_HW_OPAL_ONLY_ID))
 		r = crypt_format_luks2_opal(cd,
@@ -3410,6 +3413,9 @@ static const char *verify_format(void)
 
 	if (ARG_SET(OPT_USE_RANDOM_ID) && ARG_SET(OPT_USE_URANDOM_ID))
 		return  _("Only one of --use-[u]random options is allowed.");
+
+	if (ARG_SET(OPT_DISABLE_SUM_ID) && !ARG_SET(OPT_HW_OPAL_ID) && !ARG_SET(OPT_HW_OPAL_ONLY_ID))
+		return  _("Option --disable-sum must be used with --hw-opal or --hw-opal-only");
 
 	return NULL;
 }
