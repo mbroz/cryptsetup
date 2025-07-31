@@ -4,6 +4,7 @@ test-gcc-compilation:
   script:
     - export CFLAGS="-Wall -Werror"
     - ./autogen.sh
+    - $CC --version
     - ./configure
     - make -j
     - make -j check-programs
@@ -15,6 +16,7 @@ test-gcc-Wall-script:
     - export CFLAGS="-g -O0"
     - export CC="$CI_PROJECT_DIR/.gitlab/ci/gcc-Wall"
     - ./autogen.sh
+    - $CC --version
     - ./configure
     - make -j CFLAGS="-g -O0 -Werror"
     - make -j CFLAGS="-g -O0 -Werror" check-programs
@@ -24,6 +26,7 @@ test-gcc-fanalyzer:
     - .gitlab-shared-gcc
   script:
     - ./autogen.sh
+    - $CC --version
     - ./configure CFLAGS="-Wall -Werror -g -O0 -fanalyzer -fdiagnostics-path-format=separate-events" --host=x86_64
     - make -j
     - make -j check-programs
@@ -51,6 +54,7 @@ test-gcc-fanalyzer-backends:
     - DEBIAN_FRONTEND=noninteractive apt-get -yq install libgcrypt20-dev libnss3-dev nettle-dev libmbedtls-dev
     - ./autogen.sh
     - echo "Configuring with crypto backend $BACKENDS"
+    - $CC --version
     - ./configure CFLAGS="-Wall -Werror -g -O0 -fanalyzer -fdiagnostics-path-format=separate-events" --host=x86_64 --with-crypto_backend=$BACKENDS
     - make -j
     - make -j check-programs

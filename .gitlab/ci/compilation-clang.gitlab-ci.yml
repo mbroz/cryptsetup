@@ -4,6 +4,7 @@ test-clang-compilation:
   script:
     - export CFLAGS="-Wall -Werror"
     - ./autogen.sh
+    - $CC --version
     - ./configure
     - make -j
     - make -j check-programs
@@ -15,6 +16,7 @@ test-clang-Wall-script:
     - export CFLAGS="-g -O0"
     - export CC="$CI_PROJECT_DIR/.gitlab/ci/clang-Wall"
     - ./autogen.sh
+    - $CC --version
     - ./configure
     - make -j CFLAGS="-g -O0 -Werror"
     - make -j CFLAGS="-g -O0 -Werror" check-programs
@@ -24,6 +26,7 @@ test-scan-build:
     - .gitlab-shared-clang
   script:
     - ./autogen.sh
+    - echo "scan-build${COMPILER_VERSION:+-$COMPILER_VERSION}"
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -V ./configure CFLAGS="-g -O0"
     - make clean
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j
@@ -52,6 +55,7 @@ test-scan-build-backends:
     - DEBIAN_FRONTEND=noninteractive apt-get -yq install libgcrypt20-dev libnss3-dev nettle-dev libmbedtls-dev
     - ./autogen.sh
     - echo "Configuring with crypto backend $BACKENDS"
+    - echo "scan-build${COMPILER_VERSION:+-$COMPILER_VERSION}"
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} -V ./configure CFLAGS="-g -O0" --with-crypto_backend=$BACKENDS
     - make clean
     - scan-build${COMPILER_VERSION:+-$COMPILER_VERSION} --status-bugs -maxloop 10 make -j

@@ -45,11 +45,3 @@ fi
 
 DEBIAN_FRONTEND=noninteractive apt-get -yq install "${PACKAGES[@]}"
 apt-get -y build-dep cryptsetup
-
-echo "====================== VERSIONS ==================="
-if [[ $COMPILER == "clang" ]]; then
-	echo "Using scan-build${COMPILER_VERSION:+-$COMPILER_VERSION}"
-fi
-
-${COMPILER}-$COMPILER_VERSION -v
-echo "====================== END VERSIONS ==================="
