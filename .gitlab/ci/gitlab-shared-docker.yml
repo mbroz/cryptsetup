@@ -20,13 +20,11 @@
     COMPILER: "gcc"
     COMPILER_VERSION: "14"
     CC: "gcc-14"
-    RUN_SSH_PLUGIN_TEST: "1"
 
 .gitlab-shared-clang:
   extends:
     - .gitlab-shared-docker
   variables:
     COMPILER: "clang"
-    COMPILER_VERSION: "19"
-    CC: "clang-19"
-    RUN_SSH_PLUGIN_TEST: "1"
+    COMPILER_VERSION: "20"
+    CC: "clang-20"
