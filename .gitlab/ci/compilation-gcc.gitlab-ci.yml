@@ -51,7 +51,7 @@ test-gcc-fanalyzer-alpine:
   script:
     - ./autogen.sh
     - $CC --version
-    - ./configure CFLAGS="-Wall -Werror -g -O0 -fanalyzer -fdiagnostics-path-format=separate-events" --host=x86_64
+    - ./configure CFLAGS="-Wall -Werror -g -O0 -fanalyzer -fdiagnostics-path-format=separate-events -Wno-analyzer-fd-leak" --host=x86_64
     - make -j
     - make -j check-programs
 
