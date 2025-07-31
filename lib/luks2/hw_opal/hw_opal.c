@@ -58,6 +58,12 @@ typedef enum OpalStatus {
 	_OPAL_STATUS_MAX = 0x13,
 } OpalStatus;
 
+/*
+ * Also defined in TCG Core spec Section 5.1.5 but
+ * do not inflate the opal_status_table below
+ */
+#define  OPAL_STATUS_FAIL 0x3f
+
 static const char* const opal_status_table[_OPAL_STATUS_MAX] = {
 	[OPAL_STATUS_SUCCESS]               = "success",
 	[OPAL_STATUS_NOT_AUTHORIZED]        = "not authorized",
@@ -85,9 +91,9 @@ static const char *opal_status_to_string(int t)
 	if (t < 0)
 		return strerror(-t);
 
-	/* Fail, as defined by specification */
-	if (t == 0x3f)
-		return "unknown failure";
+	/* This will be checked upon 'Reactivate' method */
+	if (t == OPAL_STATUS_FAIL)
+		return "FAIL status";
 
 	if (t >= _OPAL_STATUS_MAX)
 		return "unknown error";
