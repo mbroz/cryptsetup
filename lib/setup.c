@@ -2532,7 +2532,8 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	r = opal_setup_ranges(cd, crypt_data_device(cd), user_key ?: cd->volume_key,
 					range_offset_blocks, range_size_bytes / opal_block_bytes,
 					opal_block_bytes, opal_segment_number,
-					opal_params->admin_key, opal_params->admin_key_size);
+					opal_params->admin_key, opal_params->admin_key_size,
+					!!(cd->compatibility & CRYPT_COMPAT_DISABLE_HW_OPAL_SUM));
 	if (r < 0) {
 		if (r == -EPERM)
 			log_err(cd, _("Incorrect OPAL Admin key."));
