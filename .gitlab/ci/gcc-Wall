@@ -36,7 +36,8 @@ EXTRA="-Wextra \
  -Wmaybe-uninitialized \
  -Wvla \
  -Wformat-overflow \
- -Wformat-truncation"
+ -Wformat-truncation \
+ -Wstringop-overread"
 
 exec $GCC $PEDANTIC $CONVERSION \
 	-Wall $Wuninitialized \
