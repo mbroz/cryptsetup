@@ -711,7 +711,9 @@ if tmpfilesdir == ''
         method: 'pkg-config',
         required: false)
     if systemd.found()
-        tmpfilesdir = systemd.get_variable(pkgconfig: 'tmpfilesdir', default_value: '')
+        tmpfilesdir = systemd.get_variable('tmpfilesdir',
+                        pkgconfig_define: ['prefix', get_option('prefix')],
+                        default_value: '')
     endif
 endif
 
