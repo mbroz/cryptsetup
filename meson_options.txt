@@ -41,6 +41,7 @@ option('fuzz-targets', type : 'boolean', description : 'enable building fuzz tar
 option('gcrypt-pbkdf2', type : 'feature', description : 'enable internal gcrypt PBKDF2', value : 'auto')
 option('gcrypt-argon2', type : 'feature', description : 'enable internal gcrypt Argon2', value : 'auto')
 option('hw-opal', type : 'boolean', description : 'support LUKS2 extension for SED OPAL HW encryption', value : true)
+option('hw-sum-opal', type : 'boolean', description : 'support SED OPAL SUM feature', value : true)
 option('integritysetup', type : 'boolean', description : 'integritysetup Support', value : true)
 option('internal-sse-argon2', type : 'boolean', description : 'use internal SSE implementation of Argon2 PBKDF', value : false)
 option('kernel_crypto', type : 'boolean', description : 'kernel userspace crypto (no benchmark and tcrypt)', value : true)
