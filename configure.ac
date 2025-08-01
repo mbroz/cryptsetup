@@ -681,7 +681,14 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 CFLAGS=$saved_CFLAGS
 
 AC_MSG_CHECKING([for systemd tmpfiles config directory])
-PKG_CHECK_VAR([systemd_tmpfilesdir], [systemd], [tmpfilesdir], [], [systemd_tmpfilesdir=no])
+if test "x$prefix" != "xNONE"; then
+	saved_PKG_CONFIG=$PKG_CONFIG
+	PKG_CONFIG="$PKG_CONFIG --define-variable=prefix='${prefix}'"
+	PKG_CHECK_VAR([systemd_tmpfilesdir], [systemd], [tmpfilesdir], [], [systemd_tmpfilesdir=no])
+	PKG_CONFIG=$saved_PKG_CONFIG
+else
+	PKG_CHECK_VAR([systemd_tmpfilesdir], [systemd], [tmpfilesdir], [], [systemd_tmpfilesdir=no])
+fi
 AC_MSG_RESULT([$systemd_tmpfilesdir])
 
 AC_SUBST([DEVMAPPER_LIBS])
@@ -795,8 +802,9 @@ CS_NUM_WITH([verity-hash-block], [hash block size for verity mode], [4096])
 CS_NUM_WITH([verity-salt-size],  [salt size for verity mode], [32])
 CS_NUM_WITH([verity-fec-roots],  [parity bytes for verity FEC], [2])
 
-CS_STR_WITH([tmpfilesdir], [override default path to directory with systemd temporary files], [])
-test -z "$with_tmpfilesdir" && with_tmpfilesdir=$systemd_tmpfilesdir
+AC_ARG_WITH([tmpfilesdir],
+	AS_HELP_STRING([--with-tmpfilesdir=DIR], [override default path to directory with systemd temporary files]),
+	[], [with_tmpfilesdir=$systemd_tmpfilesdir])
 test "x$with_tmpfilesdir" = "xno" || {
 	CS_ABSPATH([${with_tmpfilesdir}],[with-tmpfilesdir])
 	DEFAULT_TMPFILESDIR=$with_tmpfilesdir
@@ -815,7 +823,9 @@ test -z "$with_luks2_lock_dir_perms" && with_luks2_lock_dir_perms=0700
 DEFAULT_LUKS2_LOCK_DIR_PERMS=$with_luks2_lock_dir_perms
 AC_SUBST(DEFAULT_LUKS2_LOCK_DIR_PERMS)
 
-CS_STR_WITH([luks2-external-tokens-path], [path to directory with LUKSv2 external token handlers (plugins)], [LIBDIR/cryptsetup])
+AC_ARG_WITH([luks2-external-tokens-path],
+	AS_HELP_STRING([--with-luks2-external-tokens-path=DIR], [path to directory with LUKSv2 external token handlers (plugins)]),
+	[], [with_luks2_external_tokens_path=""])
 if test -n "$with_luks2_external_tokens_path"; then
 	CS_ABSPATH([${with_luks2_external_tokens_path}],[with-luks2-external-tokens-path])
 	EXTERNAL_LUKS2_TOKENS_PATH=$with_luks2_external_tokens_path
@@ -823,6 +833,17 @@ else
 	EXTERNAL_LUKS2_TOKENS_PATH="\${libdir}/cryptsetup"
 fi
 AC_SUBST(EXTERNAL_LUKS2_TOKENS_PATH)
+dnl We need to define expanded EXTERNAL_LUKS2_TOKENS_PATH, but some other code can depend on prefix=NONE.
+dnl Pretend you do not see this hack :-)
+saved_prefix=$prefix
+saved_exec_prefix=$exec_prefix
+test "x$prefix" = "xNONE" && prefix="$ac_default_prefix"
+test "x$exec_prefix" = "xNONE" && exec_prefix="$prefix"
+expanded_EXTERNAL_LUKS2_TOKENS_PATH=$(eval echo "$EXTERNAL_LUKS2_TOKENS_PATH")
+expanded_EXTERNAL_LUKS2_TOKENS_PATH=$(eval echo "$expanded_EXTERNAL_LUKS2_TOKENS_PATH")
+AC_DEFINE_UNQUOTED([EXTERNAL_LUKS2_TOKENS_PATH], ["$expanded_EXTERNAL_LUKS2_TOKENS_PATH"], [path to directory with LUKSv2 external token handlers (plugins)])
+prefix=$saved_prefix
+exec_prefix=$saved_exec_prefix
 
 dnl Override default LUKS format version (for cryptsetup or cryptsetup-reencrypt format actions only).
 AC_ARG_WITH([default_luks_format],
