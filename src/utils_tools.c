@@ -424,7 +424,7 @@ void tools_package_version(const char *name, bool use_pwlibs)
 {
 	bool udev = false, blkid = false, keyring = false, fips = false,
 	     kernel_capi = false, pwquality = false, passwdqc = false,
-	     hw_opal = false;
+	     hw_opal = false, hw_sum_opal = false;
 #if USE_UDEV
 	udev = true;
 #endif
@@ -448,7 +448,10 @@ void tools_package_version(const char *name, bool use_pwlibs)
 #if HAVE_HW_OPAL
 	hw_opal = true;
 #endif
-	log_std("%s %s flags: %s%s%s%s%s%s%s%s\n", name, PACKAGE_VERSION,
+#if HAVE_HW_SUM_OPAL
+	hw_sum_opal = true;
+#endif
+	log_std("%s %s flags: %s%s%s%s%s%s%s%s%s\n", name, PACKAGE_VERSION,
 		udev ?	"UDEV " : "",
 		blkid ? "BLKID " : "",
 		keyring ? "KEYRING " : "",
@@ -456,7 +459,8 @@ void tools_package_version(const char *name, bool use_pwlibs)
 		kernel_capi ? "KERNEL_CAPI " : "",
 		pwquality && use_pwlibs ? "PWQUALITY " : "",
 		passwdqc && use_pwlibs ? "PASSWDQC " : "",
-		hw_opal ? "HW_OPAL " : "");
+		hw_opal ? "HW_OPAL " : "",
+		hw_sum_opal ? "HW_SUM_OPAL " : "");
 }
 
 int tools_check_newname(const char *name)
