@@ -21,6 +21,8 @@ struct volume_key;
 #define BITLK_NONCE_SIZE 12
 #define BITLK_SALT_SIZE 16
 #define BITLK_VMK_MAC_TAG_SIZE 16
+#define BITLK_VALIDATION_VMK_HEADER_SIZE 8
+#define BITLK_VALIDATION_VMK_DATA_SIZE 72
 
 #define BITLK_STATE_NORMAL 0x0004
 
@@ -85,6 +87,13 @@ struct bitlk_fvek {
 	struct volume_key *vk;
 };
 
+struct bitlk_validation {
+	uint8_t mac_tag[BITLK_VMK_MAC_TAG_SIZE];
+	uint8_t nonce[BITLK_NONCE_SIZE];
+	/* technically, this is not "VMK", but some sources call it this way */
+	uint8_t enc_datum[BITLK_VALIDATION_VMK_DATA_SIZE];
+};
+
 struct bitlk_metadata {
 	uint16_t sector_size;
 	uint64_t volume_size;
@@ -101,8 +110,10 @@ struct bitlk_metadata {
 	uint32_t metadata_version;
 	uint64_t volume_header_offset;
 	uint64_t volume_header_size;
+	const char *sha256_fve[32];
 	struct bitlk_vmk *vmks;
 	struct bitlk_fvek *fvek;
+	struct bitlk_validation *validation;
 };
 
 int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params);
