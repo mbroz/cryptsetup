@@ -105,6 +105,7 @@ static void *token_dlvsym(struct crypt_device *cd,
 	log_dbg(cd, "Loading symbol %s@%s.", symbol, version);
 	sym = dlvsym(handle, symbol, version);
 #else
+	UNUSED(version);
 	log_dbg(cd, "Loading default version of symbol %s.", symbol);
 	sym = dlsym(handle, symbol);
 #endif
