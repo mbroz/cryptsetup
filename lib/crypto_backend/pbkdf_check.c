@@ -14,6 +14,8 @@
 #include <sys/resource.h>
 #include "crypto_backend.h"
 
+#include <stdint.h>
+
 #ifndef CLOCK_MONOTONIC_RAW
 #define CLOCK_MONOTONIC_RAW CLOCK_MONOTONIC
 #endif
@@ -45,7 +47,7 @@ int crypt_pbkdf_get_limits(const char *kdf, struct crypt_pbkdf_limits *limits)
 		limits->max_iterations = UINT32_MAX;
 		limits->min_memory     = 32;      /* hard limit */
 		limits->min_bench_memory=64*1024; /* 64 MiB minimum for benchmark */
-		limits->max_memory     = 4*1024*1024; /* 4GiB */
+		limits->max_memory     = (UINTPTR_MAX >> 10) + 1 ; /* max KiB */
 		limits->min_parallel   = 1;
 		limits->max_parallel   = 4;
 		return 0;
