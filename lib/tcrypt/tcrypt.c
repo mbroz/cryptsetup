@@ -928,14 +928,16 @@ out:
 
 static bool is_tcrypt_subdev(const char *dm_uuid, const char *base_uuid)
 {
-	assert(base_uuid);
+	const char *base_uuid_name;
 
-	if (!dm_uuid)
+	assert(base_uuid);
+	base_uuid_name = strchr(base_uuid, '-');
+
+	if (!dm_uuid || !base_uuid_name)
 		return false;
 
 	if (!strncmp(dm_uuid, "SUBDEV-", 7))
-		/* dm_uuid + 6 because function requires dm_uuid to contain '-' */
-		return !dm_uuid_cmp(dm_uuid + 6, strchr(base_uuid, '-'));
+		return !strncmp(dm_uuid + 6, base_uuid_name, strlen(base_uuid_name));
 
 	/*
 	 * FIXME: Drop after shift to dependency based deactivation (CRYPT_SUBDEV)
