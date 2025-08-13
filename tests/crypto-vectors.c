@@ -733,11 +733,11 @@ struct cipher_iv_test_vector {
 	const char *iv_name;
 	uint64_t iv_offset;
 	unsigned int data_length;
-	const char in_sha256[32];
+	const char *in_sha256;
 	struct {
 		size_t sector_size;
 		bool large_iv;
-		const char out_sha256[32];
+		const char *out_sha256;
 	} out[7];
 };
 
