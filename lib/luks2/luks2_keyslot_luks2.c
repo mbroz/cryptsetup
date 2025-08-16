@@ -336,6 +336,10 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
+	/* Allow only empty passphrase with null cipher */
+	if (crypt_is_cipher_null(cipher) && passwordLen)
+		return -EPERM;
+
 	if (!json_object_object_get_ex(jobj_area, "key_size", &jobj2))
 		return -EINVAL;
 	keyslot_key_len = json_object_get_int(jobj2);
