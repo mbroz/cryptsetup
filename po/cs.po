@@ -33,10 +33,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 2.8.0-rc1\n"
+"Project-Id-Version: cryptsetup 2.8.1-rc0\n"
 "Report-Msgid-Bugs-To: cryptsetup@lists.linux.dev\n"
-"POT-Creation-Date: 2025-06-16 13:51+0200\n"
-"PO-Revision-Date: 2025-06-17 17:52+02:00\n"
+"POT-Creation-Date: 2025-08-13 13:45+0200\n"
+"PO-Revision-Date: 2025-08-14 21:32+02:00\n"
 "Last-Translator: Petr Pisar <petr.pisar@atlas.cz>\n"
 "Language-Team: Czech <translation-team-cs@lists.sourceforge.net>\n"
 "Language: cs\n"
@@ -183,7 +183,7 @@ msgstr "Chyba zpracování klíče (za použití haše %s)."
 msgid "Cannot determine device type. Incompatible activation of device?"
 msgstr "Druh zařízení nelze určit. Nekompatibilní aktivace zařízení?"
 
-#: lib/setup.c:395 lib/setup.c:4139
+#: lib/setup.c:395 lib/setup.c:4145
 msgid "This operation is supported only for LUKS device."
 msgstr "Tato operace je podporována jen u zařízení LUKS."
 
@@ -205,7 +205,7 @@ msgstr "Pozice klíče %d není platná, prosím, vyberte číslo mezi 0 a %d."
 msgid "Key slot %d is full, please select another one."
 msgstr "Pozice klíče %d je obsazena, prosím, vyberte jinou."
 
-#: lib/setup.c:531 lib/setup.c:3854
+#: lib/setup.c:531 lib/setup.c:3860
 msgid "Device size is not aligned to device logical block size."
 msgstr "Velikost zařízení není zarovnaná na velikost logického sektoru zařízení."
 
@@ -214,7 +214,7 @@ msgstr "Velikost zařízení není zarovnaná na velikost logického sektoru za�
 msgid "Header detected but device %s is too small."
 msgstr "Nalezena hlavička, ale zařízení %s je příliš malé."
 
-#: lib/setup.c:669 lib/setup.c:3739 lib/setup.c:5206
+#: lib/setup.c:669 lib/setup.c:3745 lib/setup.c:5212
 #: lib/luks2/luks2_reencrypt.c:3937 lib/luks2/luks2_reencrypt.c:4425
 msgid "This operation is not supported for this device type."
 msgstr "Tato operace není na zařízení tohoto typu podporována."
@@ -247,8 +247,8 @@ msgstr "Nepodporovaná verze LUKS %d."
 msgid "No known cipher specification pattern detected for active device %s."
 msgstr "Na aktivním zařízení %s nebyl nalezen žádný známý vzorek určující šifrování."
 
-#: lib/setup.c:1515 lib/setup.c:3486 lib/setup.c:3578 lib/setup.c:3590
-#: lib/setup.c:3762 lib/setup.c:5781
+#: lib/setup.c:1515 lib/setup.c:3492 lib/setup.c:3584 lib/setup.c:3596
+#: lib/setup.c:3768 lib/setup.c:5787
 #, c-format
 msgid "Device %s is not active."
 msgstr "Zařízení %s není aktivní."
@@ -279,7 +279,7 @@ msgstr "Zařízení s oddělenými metadaty není na šifře tohoto typu podpor
 msgid "Unsupported encryption sector size."
 msgstr "Nepodporovaná velikost šifrovaného sektoru."
 
-#: lib/setup.c:1647 lib/setup.c:1916 lib/setup.c:3848
+#: lib/setup.c:1647 lib/setup.c:1916 lib/setup.c:3854
 msgid "Device size is not aligned to requested sector size."
 msgstr "Velikost zařízení není zarovnaná na požadovanou velikost sektoru."
 
@@ -390,7 +390,7 @@ msgstr "Požadované zarovnání dat nesplňuje požadavky na zarovnání uzamyk
 msgid "Compensating device size by %<PRIu64> sectors to align it with OPAL alignment granularity."
 msgstr "Velikost zařízení byla dorovnána %<PRIu64> sektory, aby lícovala s granularitou zarovnání Opal."
 
-#: lib/setup.c:2528 lib/setup.c:4222 lib/setup.c:4411 lib/utils_wipe.c:356
+#: lib/setup.c:2528 lib/setup.c:4228 lib/setup.c:4417 lib/utils_wipe.c:356
 #: lib/luks2/luks2_json_metadata.c:2720 lib/luks2/luks2_json_metadata.c:2988
 #, c-format
 msgid "Failed to acquire OPAL lock on device %s."
@@ -464,320 +464,320 @@ msgstr "Velikost klíče integrity neodpovídá."
 msgid "WARNING: Requested tag size %d bytes differs from %s size output (%d bytes).\n"
 msgstr "POZOR: Požadovaná velikost značky %d bajtů se liší od výstupu velikosti %s (%d bajtů).\n"
 
-#: lib/setup.c:3031 lib/setup.c:3129
+#: lib/setup.c:3037 lib/setup.c:3135
 #, c-format
 msgid "Unknown or unsupported device type %s requested."
 msgstr "Požadován neznámý nebo nepodporovaný typ zařízení %s."
 
-#: lib/setup.c:3043
+#: lib/setup.c:3049
 #, c-format
 msgid "Device %s does not provide inline integrity data fields."
 msgstr "Zařízení %s neposkytuje položky pro inline integritu dat."
 
-#: lib/setup.c:3049
+#: lib/setup.c:3055
 #, c-format
 msgid "Inline tag size %<PRIu32> [bytes] is larger than %<PRIu32> provided by device %s."
 msgstr "Velikost inline značky %<PRIu32> bajtů je větší než %<PRIu32> poskytovaných zařízením %s."
 
-#: lib/setup.c:3064
+#: lib/setup.c:3070
 #, c-format
 msgid "Sector must be the same as device hardware sector (%zu bytes)."
 msgstr "Sektor musí být stejný jako hardwarový sektor zařízení (%zu bajtů)."
 
-#: lib/setup.c:3494 lib/setup.c:3583 lib/setup.c:3596
+#: lib/setup.c:3500 lib/setup.c:3589 lib/setup.c:3602
 #, c-format
 msgid "Unsupported parameters on device %s."
 msgstr "Nepodporované parametry na zařízení %s."
 
-#: lib/setup.c:3500 lib/setup.c:3603 lib/luks2/luks2_reencrypt.c:2920
+#: lib/setup.c:3506 lib/setup.c:3609 lib/luks2/luks2_reencrypt.c:2920
 #: lib/luks2/luks2_reencrypt.c:3189 lib/luks2/luks2_reencrypt.c:3583
 #, c-format
 msgid "Mismatching parameters on device %s."
 msgstr "Neodpovídající parametry na zařízení %s."
 
-#: lib/setup.c:3626
+#: lib/setup.c:3632
 msgid "Crypt devices mismatch."
 msgstr "Zařízení dmcryptu si neodpovídají."
 
-#: lib/setup.c:3658 lib/setup.c:3663 lib/luks2/luks2_reencrypt.c:2404
+#: lib/setup.c:3664 lib/setup.c:3669 lib/luks2/luks2_reencrypt.c:2404
 #: lib/luks2/luks2_reencrypt.c:2936 lib/luks2/luks2_reencrypt.c:4224
 #, c-format
 msgid "Failed to reload device %s."
 msgstr "Zařízení %s nebylo možné znovu zavést."
 
-#: lib/setup.c:3669 lib/setup.c:3675 lib/luks2/luks2_reencrypt.c:2375
+#: lib/setup.c:3675 lib/setup.c:3681 lib/luks2/luks2_reencrypt.c:2375
 #: lib/luks2/luks2_reencrypt.c:2382 lib/luks2/luks2_reencrypt.c:2950
 #, c-format
 msgid "Failed to suspend device %s."
 msgstr "Zařízení %s nebylo možné pozastavit."
 
-#: lib/setup.c:3681 lib/luks2/luks2_reencrypt.c:2389
+#: lib/setup.c:3687 lib/luks2/luks2_reencrypt.c:2389
 #: lib/luks2/luks2_reencrypt.c:2971 lib/luks2/luks2_reencrypt.c:4137
 #: lib/luks2/luks2_reencrypt.c:4228
 #, c-format
 msgid "Failed to resume device %s."
 msgstr "Zařízení %s nebylo možné probudit."
 
-#: lib/setup.c:3696
+#: lib/setup.c:3702
 #, c-format
 msgid "Fatal error while reloading device %s (on top of device %s)."
 msgstr "Nepřekonatelná chyba při zavádění zařízení %s (nad zařízením %s)."
 
-#: lib/setup.c:3699 lib/setup.c:3701
+#: lib/setup.c:3705 lib/setup.c:3707
 #, c-format
 msgid "Failed to switch device %s to dm-error."
 msgstr "Zařízení %s nebylo možné přepnout do dm-error."
 
-#: lib/setup.c:3744
+#: lib/setup.c:3750
 msgid "Can not resize LUKS2 device with static size."
 msgstr "Zařízení LUKS2 se statickou velikostí nelze změnit velikost."
 
-#: lib/setup.c:3749
+#: lib/setup.c:3755
 msgid "Resize of LUKS2 device with integrity protection is not supported."
 msgstr "Změna velikosti zařízení LUKS2 s ochranou integrity není podporována."
 
-#: lib/setup.c:3795
+#: lib/setup.c:3801
 msgid "Cannot resize loop device."
 msgstr "Zařízení zpětné smyčky nelze změnit velikost."
 
-#: lib/setup.c:3839
+#: lib/setup.c:3845
 msgid "WARNING: Maximum size already set or kernel doesn't support resize.\n"
 msgstr ""
 "POZOR: Maximální velikost je již nastavena nebo změna velikosti není jádrem\n"
 "podporována.\n"
 
-#: lib/setup.c:3905
+#: lib/setup.c:3911
 msgid "Resize failed, the kernel doesn't support it."
 msgstr "Změna velikosti selhala, jádro ji nepodporuje."
 
-#: lib/setup.c:3937
+#: lib/setup.c:3943
 msgid "Do you really want to change UUID of device?"
 msgstr "Opravdu chcete změnit UUID zařízení?"
 
-#: lib/setup.c:4029
+#: lib/setup.c:4035
 msgid "Header backup file does not contain compatible LUKS header."
 msgstr "Soubor se zálohou hlavičky neobsahuje kompatibilní hlavičku LUKS."
 
-#: lib/setup.c:4122
+#: lib/setup.c:4128
 #, c-format
 msgid "Volume %s is not active."
 msgstr "Svazek %s není aktivní."
 
-#: lib/setup.c:4177
+#: lib/setup.c:4183
 #, c-format
 msgid "Volume %s is already suspended."
 msgstr "Svazek %s je již uspán."
 
-#: lib/setup.c:4203
+#: lib/setup.c:4209
 #, c-format
 msgid "Suspend is not supported for device %s."
 msgstr "Uspání není na zařízení %s podporováno."
 
-#: lib/setup.c:4205 lib/setup.c:4213
+#: lib/setup.c:4211 lib/setup.c:4219
 #, c-format
 msgid "Error during suspending device %s."
 msgstr "Chyba při uspávání zařízení %s."
 
-#: lib/setup.c:4228
+#: lib/setup.c:4234
 #, c-format
 msgid "Device %s was suspended but hardware OPAL device cannot be locked."
 msgstr "Zařízení %s bylo uspáno, ale hardwarové zařízení Opal nelze uzamknout."
 
-#: lib/setup.c:4259 lib/setup.c:4436
+#: lib/setup.c:4265 lib/setup.c:4442
 #, c-format
 msgid "Resume is not supported for device %s."
 msgstr "Probuzení není na zařízení %s podporováno."
 
-#: lib/setup.c:4261 lib/setup.c:4426 lib/setup.c:4438
+#: lib/setup.c:4267 lib/setup.c:4432 lib/setup.c:4444
 #, c-format
 msgid "Error during resuming device %s."
 msgstr "Chyba při probouzení zařízení %s."
 
-#: lib/setup.c:4280
+#: lib/setup.c:4286
 msgid "Failed to unlink volume key from user specified keyring."
 msgstr "Z klíčenky zadané uživatelem se nepodařilo odpojit klíč svazku."
 
-#: lib/setup.c:4402 lib/setup.c:5568
+#: lib/setup.c:4408 lib/setup.c:5574
 msgid "Failed to link volume key in user defined keyring."
 msgstr "Do uživatelem zadané klíčenky se nepodařilo přidat klíč svazku."
 
-#: lib/setup.c:4500 src/cryptsetup.c:2714
+#: lib/setup.c:4506 src/cryptsetup.c:2714
 #, c-format
 msgid "Volume %s is not suspended."
 msgstr "Svazek %s není uspán."
 
-#: lib/setup.c:4601 lib/setup.c:7233 lib/setup.c:7255 lib/setup.c:7309
+#: lib/setup.c:4607 lib/setup.c:7239 lib/setup.c:7261 lib/setup.c:7315
 #: src/cryptsetup.c:1849 src/cryptsetup.c:2253 src/cryptsetup.c:2271
 #: src/utils_reencrypt.c:305 src/utils_reencrypt.c:1965
 msgid "Volume key does not match the volume."
 msgstr "Heslo svazku neodpovídá svazku."
 
-#: lib/setup.c:4755
+#: lib/setup.c:4761
 msgid "Failed to swap new key slot."
 msgstr "Záměna novou pozicí klíče se nezdařila."
 
-#: lib/setup.c:4853
+#: lib/setup.c:4859
 #, c-format
 msgid "Key slot %d is invalid."
 msgstr "Pozice klíče %d je neplatná."
 
-#: lib/setup.c:4859 src/cryptsetup.c:1970 src/cryptsetup.c:2430
+#: lib/setup.c:4865 src/cryptsetup.c:1970 src/cryptsetup.c:2430
 #: src/cryptsetup.c:3114 src/cryptsetup.c:3174
 #, c-format
 msgid "Keyslot %d is not active."
 msgstr "Pozice klíče %d není aktivní."
 
-#: lib/setup.c:4878
+#: lib/setup.c:4884
 msgid "Device header overlaps with data area."
 msgstr "Hlavička zařízení se překrývá s datovou oblastí."
 
-#: lib/setup.c:5099
+#: lib/setup.c:5105
 msgid "Reencryption in-progress. Cannot activate device."
 msgstr "Přešifrování již probíhá. Zařízení nelze aktivovat."
 
-#: lib/setup.c:5101 lib/luks2/luks2_json_metadata.c:2884
+#: lib/setup.c:5107 lib/luks2/luks2_json_metadata.c:2884
 #: lib/luks2/luks2_reencrypt.c:3714
 msgid "Failed to get reencryption lock."
 msgstr "Získání zámku pro přešifrování selhalo."
 
-#: lib/setup.c:5123
+#: lib/setup.c:5129
 msgid "LUKS2 reencryption recovery using volume key(s) failed."
 msgstr "Obnova přešifrování LUKS2 pomocí klíčů svazku selhala."
 
-#: lib/setup.c:5259
+#: lib/setup.c:5265
 #, c-format
 msgid "Device %s already exists."
 msgstr "Zařízení %s již existuje."
 
-#: lib/setup.c:5266
+#: lib/setup.c:5272
 #, c-format
 msgid "Cannot use device %s, name is invalid or still in use."
 msgstr "Zařízení %s nelze použít. Název není platný nebo zařízení se stále používá."
 
-#: lib/setup.c:5278
+#: lib/setup.c:5284
 msgid "Reencryption volume keys do not match the volume."
 msgstr "Klíče pro přešifrování svazku neodpovídají svazku."
 
-#: lib/setup.c:5295
+#: lib/setup.c:5301
 msgid "Incorrect volume key specified for plain device."
 msgstr "Byl zadán neplatný klíč svazku."
 
-#: lib/setup.c:5321 lib/setup.c:5382
+#: lib/setup.c:5327 lib/setup.c:5388
 msgid "Device type is not properly initialized."
 msgstr "Typ zařízení není řádně inicializován."
 
-#: lib/setup.c:5420
+#: lib/setup.c:5426
 msgid "Kernel keyring is not supported by the kernel."
 msgstr "Jaderná klíčenka není jádrem podporována."
 
-#: lib/setup.c:5424
+#: lib/setup.c:5430
 msgid "Kernel keyring missing: required for passing signature to kernel."
 msgstr "Jaderná klíčenka chybí: je potřeba pro předání podpisu do jádra."
 
-#: lib/setup.c:5476
+#: lib/setup.c:5482
 #, c-format
 msgid "Cannot use keyring key %s."
 msgstr "Klíčem klíčenky %s nelze použít."
 
-#: lib/setup.c:5689
+#: lib/setup.c:5695
 msgid "Incorrect root hash specified for verity device."
 msgstr "K zařízení VERITY byl zadán neplatný kořenový haš."
 
-#: lib/setup.c:5730 lib/setup.c:5755
+#: lib/setup.c:5736 lib/setup.c:5761
 msgid "OPAL does not support deferred deactivation."
 msgstr "Opal nepodporuje odloženou deaktivaci."
 
-#: lib/setup.c:5745 lib/setup.c:5776 lib/luks2/luks2_json_metadata.c:2949
+#: lib/setup.c:5751 lib/setup.c:5782 lib/luks2/luks2_json_metadata.c:2949
 #: src/utils_reencrypt.c:89
 #, c-format
 msgid "Device %s is still in use."
 msgstr "Zařízení %s se stále používá."
 
-#: lib/setup.c:5763
+#: lib/setup.c:5769
 #, c-format
 msgid "Could not cancel deferred remove from device %s."
 msgstr "Odložené odebrání zařízení %s nebylo možné zrušit."
 
-#: lib/setup.c:5785
+#: lib/setup.c:5791
 #, c-format
 msgid "Invalid device %s."
 msgstr "Neplatné zařízení %s."
 
-#: lib/setup.c:5926
+#: lib/setup.c:5932
 msgid "Volume key buffer too small."
 msgstr "Vyhrazená paměť pro klíč svazku je příliš malá."
 
-#: lib/setup.c:5937
+#: lib/setup.c:5943
 msgid "Cannot retrieve volume key for LUKS2 device."
 msgstr "Nelze získat klíč svazku pro zařízení LUKS2."
 
-#: lib/setup.c:5946
+#: lib/setup.c:5952
 msgid "Cannot retrieve volume key for LUKS1 device."
 msgstr "Nelze získat klíč svazku pro zařízení LUKS1."
 
-#: lib/setup.c:5960
+#: lib/setup.c:5966
 msgid "Cannot retrieve volume key for plain device."
 msgstr "Nelze získat klíč svazku pro otevřené zařízení."
 
-#: lib/setup.c:5968
+#: lib/setup.c:5974
 msgid "Cannot retrieve root hash for verity device."
 msgstr "K zařízení VERITY nelze získat kořenový otisk."
 
-#: lib/setup.c:5975
+#: lib/setup.c:5981
 msgid "Cannot retrieve volume key for BITLK device."
 msgstr "Nelze získat klíč svazku pro zařízení BITLK."
 
-#: lib/setup.c:5980
+#: lib/setup.c:5986
 msgid "Cannot retrieve volume key for FVAULT2 device."
 msgstr "Nelze získat klíč svazku pro zařízení FVAULT2."
 
-#: lib/setup.c:5982
+#: lib/setup.c:5988
 #, c-format
 msgid "This operation is not supported for %s crypt device."
 msgstr "Na šifrovaném zařízení %s není tato operace podporována."
 
-#: lib/setup.c:6167 lib/setup.c:6178
+#: lib/setup.c:6173 lib/setup.c:6184
 msgid "Dump operation is not supported for this device type."
 msgstr "Operace výpisu není na zařízení tohoto typu podporována."
 
-#: lib/setup.c:6558
+#: lib/setup.c:6564
 #, c-format
 msgid "Data offset is not multiple of %u bytes."
 msgstr "Počátek dat není násobkem %u bajtů."
 
-#: lib/setup.c:6866
+#: lib/setup.c:6872
 #, c-format
 msgid "Cannot convert device %s which is still in use."
 msgstr "Zařízení %s, které se stále používá, nelze konvertovat."
 
-#: lib/setup.c:7174 lib/setup.c:7318
+#: lib/setup.c:7180 lib/setup.c:7324
 #, c-format
 msgid "Failed to assign keyslot %u as the new volume key."
 msgstr "Přiřazení pozice klíče %u jakožto nového klíče svazku se nezdařilo."
 
-#: lib/setup.c:7198
+#: lib/setup.c:7204
 msgid "Failed to initialize default LUKS2 keyslot parameters."
 msgstr "Inicializace parametrů výchozí pozice klíče LUKS2 selhala."
 
-#: lib/setup.c:7204
+#: lib/setup.c:7210
 #, c-format
 msgid "Failed to assign keyslot %d to digest."
 msgstr "Přiřazení pozice klíče %d k otisku se nezdařilo."
 
-#: lib/setup.c:7435
+#: lib/setup.c:7441
 msgid "Cannot add key slot, all slots disabled and no volume key provided."
 msgstr "Nelze přidat pozici klíče, všechny pozice jsou zakázány a klíč svazku nebyl poskytnut."
 
-#: lib/setup.c:7508 lib/verity/verity.c:333
+#: lib/setup.c:7514 lib/verity/verity.c:333
 msgid "Failed to load key in kernel keyring."
 msgstr "Klíč se nepodařilo přidat do jaderné klíčenky."
 
-#: lib/setup.c:7699
+#: lib/setup.c:7705
 #, c-format
 msgid "Could not find keyring described by \"%s\"."
 msgstr "Klíčenku zadanou jako „%s“ nebylo možné nalézt."
 
-#: lib/setup.c:7764
+#: lib/setup.c:7770
 msgid "Failed to acquire global memory-hard access serialization lock."
 msgstr "Získání zámku pro tvrdý přístup do globální paměti selhalo."
 
@@ -919,10 +919,15 @@ msgid "Requested maximum PBKDF memory cannot be zero."
 msgstr "Požadované maximum paměti PBKDF nemůže být nula."
 
 #: lib/utils_pbkdf.c:173
+#, c-format
+msgid "Requested maximum PBKDF parallel cost is too high (maximum is %d)."
+msgstr "Požadovaná maximální cena paralelizace PBKDF je příliš vysoká (maximum je %d)."
+
+#: lib/utils_pbkdf.c:178
 msgid "Requested PBKDF parallel threads cannot be zero."
 msgstr "Požadovaný počet souběžných vláken PBKDF nemůže být nula."
 
-#: lib/utils_pbkdf.c:193
+#: lib/utils_pbkdf.c:198
 msgid "Only PBKDF2 is supported in FIPS mode."
 msgstr "V režimu FIPS je podporován jen PBKDF2."
 
@@ -1281,7 +1286,7 @@ msgstr "Polohu systémového oddílu TCRYPT nelze určit. Zařízení se aktivuj
 msgid "Kernel does not support TCRYPT compatible mapping."
 msgstr "Jádro nepodporuje mapování kompatibilní s TCRYPT."
 
-#: lib/tcrypt/tcrypt.c:1126
+#: lib/tcrypt/tcrypt.c:1144
 msgid "This function is not supported without TCRYPT header load."
 msgstr "Bez dat s hlavičkou TCRYPT není tato funkce podporována."
 
@@ -1369,45 +1374,45 @@ msgstr "Nečekaná velikost metadat BEK %<PRIu32> neodpovídá délce souboru BE
 msgid "Unexpected metadata entry found when parsing startup key."
 msgstr "Při rozboru startovacího klíče byla v metadatech nalezena nečekaná položka."
 
-#: lib/bitlk/bitlk.c:1067
+#: lib/bitlk/bitlk.c:1069
 msgid "This operation is not supported."
 msgstr "Tato operace není podporována."
 
-#: lib/bitlk/bitlk.c:1075
+#: lib/bitlk/bitlk.c:1077
 msgid "Unexpected key data size."
 msgstr "Nečekaná velikost údajů o klíči."
 
-#: lib/bitlk/bitlk.c:1203
+#: lib/bitlk/bitlk.c:1205
 msgid "This BITLK device is in an unsupported state and cannot be activated."
 msgstr "Toto zařízení BITLK je v nepodporovaném stavu a nelze jej aktivovat."
 
-#: lib/bitlk/bitlk.c:1208
+#: lib/bitlk/bitlk.c:1210
 #, c-format
 msgid "BITLK devices with type '%s' cannot be activated."
 msgstr "Zařízení BITLK s typem „%s“ nelze aktivovat."
 
-#: lib/bitlk/bitlk.c:1215
+#: lib/bitlk/bitlk.c:1217
 msgid "Activation of BITLK device with clear key protection is not supported."
 msgstr "Aktivace zařízení BITLK s ochranou pomocí nešifrovaného klíče není podporována."
 
-#: lib/bitlk/bitlk.c:1256
+#: lib/bitlk/bitlk.c:1258
 #, c-format
 msgid "WARNING: BitLocker volume size %<PRIu64> does not match the underlying device size %<PRIu64>"
 msgstr "POZOR: Velikost svazku BitLockeru %<PRIu64> neodpovídá velikosti zařízení ve zpod %<PRIu64>"
 
-#: lib/bitlk/bitlk.c:1383
+#: lib/bitlk/bitlk.c:1385
 msgid "Cannot activate device, kernel dm-crypt is missing support for BITLK IV."
 msgstr "Zařízení nelze aktivovat. Jaderný dm-crypt postrádá podporu inicializačního vektoru BITLK."
 
-#: lib/bitlk/bitlk.c:1387
+#: lib/bitlk/bitlk.c:1389
 msgid "Cannot activate device, kernel dm-crypt is missing support for BITLK Elephant diffuser."
 msgstr "Zařízení nelze aktivovat. Jaderný dm-crypt postrádá podporu difuzéru Elephant BITLK."
 
-#: lib/bitlk/bitlk.c:1391
+#: lib/bitlk/bitlk.c:1393
 msgid "Cannot activate device, kernel dm-crypt is missing support for large sector size."
 msgstr "Zařízení nelze aktivovat. Jaderný dm-crypt postrádá podporu velikostí velkých sektorů."
 
-#: lib/bitlk/bitlk.c:1395
+#: lib/bitlk/bitlk.c:1397
 msgid "Cannot activate device, kernel dm-zero module is missing."
 msgstr "Zařízení nelze aktivovat. Chybí jaderný modul dm-zero."
 
