@@ -1,0 +1,40 @@
+Cryptsetup 2.8.1 Release Notes
+==============================
+Stable bug-fix release with minor extensions.
+
+All users of cryptsetup 2.8.0 must upgrade to this version.
+
+Changes since version 2.8.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix status and deactivation of TCRYPT (VeraCrypt compatible) devices that use chained ciphers.
+
+* Fix unlocking BITLK (BitLocker compatible) devices with multibyte UTF8 characters in the passphrase.
+
+* Do not allow activation of the LUKS2 device if the used keyslot is not encrypted (it uses a null cipher).
+
+  Such a configuration cannot be created by cryptsetup, but can be crafted outside of it.
+  Null cipher is sometimes used to create an empty container for later reencryption.
+  Only an empty passphrase can activate such a container (the same as in LUKS1).
+
+* Do not silently decrease PBKDF parallel cost (threads) if set by an option.
+  The maximum parallel cost is limited to 4 threads.
+
+* Fixes to configuration and installation scripts.
+
+  Meson and autoconf tools now properly support --prefix option for temporary directory installation.
+  Multiple fixes and cleanups to config.h for compatibility between Meson and autoconf.
+  Fix the luks2-external-tokens-path Meson option to work the same as in autoconf.
+  Fix Meson install for tool binaries, install fvault2Open man page and include test/fuzz/meson.build in release.
+
+* Major update to manual pages.
+
+  Try to explain the PBKDF hardcoded limits.
+  Add a better explanation for automatic integrity tag recalculation.
+  Mention crypt/verity/integritytab.
+  Remove or reformulate some misleading warnings present only with old and no longer supported kernels.
+  Clarify that some commands do not wipe data and unify OPAL reset wording.
+  Clarify the --label option.
+  There are also many other grammar and stylistic fixes to unify the man-page style.
+
+* Fixes for false-positive and annoying (optional) warnings added in recent compilers.
