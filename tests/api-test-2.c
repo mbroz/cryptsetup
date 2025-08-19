@@ -3045,7 +3045,7 @@ static void Pbkdf(void)
 	argon2.parallel_threads = 0;
 	FAIL_(crypt_set_pbkdf_type(cd, &argon2), "Parallel threads can't be 0");
 	argon2.parallel_threads = 99;
-	FAIL_(crypt_set_pbkdf_type(cd, &argon2), "Parallel threads can't be higher than maxiimum");
+	FAIL_(crypt_set_pbkdf_type(cd, &argon2), "Parallel threads can't be higher than maximum");
 	argon2.parallel_threads = 1;
 	argon2.max_memory_kb = 0;
 	FAIL_(crypt_set_pbkdf_type(cd, &argon2), "Memory can't be 0");
