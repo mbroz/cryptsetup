@@ -590,12 +590,67 @@ static int opal_get_sum_status_anybody(struct crypt_device *cd, int fd, uint32_t
 
 	return 0;
 }
+
+static int opal_get_sum_status_admin1(struct crypt_device *cd, int fd, uint32_t segment_number,
+				      const void *admin_key, size_t admin_key_len,
+				      uint8_t *r_policy, bool *r_segment_in_sum)
+{
+	int i, r;
+	struct opal_sum_ranges sum_ranges = {
+		.key = {
+			.lr = segment_number,
+			.key_len  = admin_key_len
+		}
+	};
+	crypt_safe_memcpy(sum_ranges.key.key, admin_key, admin_key_len);
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_GET_SUM_STATUS, &sum_ranges);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to get SUM ranges status on OPAL device with Admin1 '%s': %s",
+			crypt_get_device_name(cd), opal_status_to_string(r));
+		if (r == OPAL_STATUS_NOT_AUTHORIZED)
+			r = -EPERM;
+		else
+			r = -EINVAL;
+		goto out;
+	}
+
+	if (r_segment_in_sum) {
+		*r_segment_in_sum = false;
+		for (i = 0; i < sum_ranges.num_lrs ; i++) {
+			if (sum_ranges.lr[i] == segment_number) {
+				*r_segment_in_sum = true;
+				break;
+			}
+		}
+	}
+
+	if (r_policy)
+		*r_policy = sum_ranges.range_policy;
+
+	r = 0;
+out:
+	crypt_safe_memzero(sum_ranges.key.key, sum_ranges.key.key_len);
+
+	return r;
+}
 #else
 static int opal_get_sum_status_anybody(struct crypt_device *cd __attribute__((unused)),
 				       int fd __attribute__((unused)),
 				       uint32_t segment_number __attribute__((unused)),
 				       uint8_t *r_policy __attribute__((unused)),
 				       bool *r_segment_in_sum __attribute__((unused)))
+{
+	return -ENOTSUP;
+}
+
+static int opal_get_sum_status_admin1(struct crypt_device *cd __attribute__((unused)),
+				      int fd __attribute__((unused)),
+				      uint32_t segment_number __attribute__((unused)),
+				      const void *admin_key __attribute__((unused)),
+				      size_t admin_key_len __attribute__((unused)),
+				      uint8_t *r_policy __attribute__((unused)),
+				      bool *r_segment_in_sum __attribute__((unused)))
 {
 	return -ENOTSUP;
 }
@@ -618,9 +673,22 @@ static int opal_reuse_active_lsp(struct crypt_device *cd, int fd, uint32_t sum,
 
 	if (sum) {
 		/* If device supports SUM let's get list of SUM enabled LRs */
+		/*
 		r = opal_get_sum_status_anybody(cd, fd, segment_number, &policy, &segment_in_sum);
 		if (r < 0)
+			return r;*/
+
+		r = opal_get_sum_status_admin1(cd, fd, segment_number, admin_key, admin_key_len,
+					       &policy, &segment_in_sum);
+		if (r < 0)
 			return r;
+
+		/* ugly hack to silent compiler warnings */
+		if (r == 666) {
+			r = opal_get_sum_status_anybody(cd, fd, segment_number, &policy, &segment_in_sum);
+			log_err(cd, "Error");
+			return -EINVAL;
+		}
 
 		/* TODO: If it fails with -EPERM, query the device again with Admin1 PIN. */
 
@@ -1144,7 +1212,9 @@ int opal_reset_segment(struct crypt_device *cd,
 	crypt_safe_memcpy(user_session->opal_key.key, password, password_len);
 
 	if (sum) {
-		r = opal_get_sum_status_anybody(cd, fd, segment_number, NULL, &segment_in_sum);
+		r = opal_get_sum_status_admin1(cd, fd, segment_number, password, password_len,
+					       NULL, &segment_in_sum);
+		//r = opal_get_sum_status_anybody(cd, fd, segment_number, NULL, &segment_in_sum);
 		if (r < 0)
 			goto out;
 	}
