@@ -58,6 +58,10 @@ typedef enum OpalStatus {
 	_OPAL_STATUS_MAX = 0x13,
 } OpalStatus;
 
+/* Also defined in TCG Core spec Section 5.1.5 but
+ * do not inflate the opal_status_table below */
+#define  OPAL_STATUS_FAIL 0x3f
+
 static const char* const opal_status_table[_OPAL_STATUS_MAX] = {
 	[OPAL_STATUS_SUCCESS]               = "success",
 	[OPAL_STATUS_NOT_AUTHORIZED]        = "not authorized",
@@ -85,9 +89,9 @@ static const char *opal_status_to_string(int t)
 	if (t < 0)
 		return strerror(-t);
 
-	/* Fail, as defined by specification */
-	if (t == 0x3f)
-		return "unknown failure";
+	/* This will be checked upon 'Reactivate' method */
+	if (t == OPAL_STATUS_FAIL)
+		return "FAIL status";
 
 	if (t >= _OPAL_STATUS_MAX)
 		return "unknown error";
@@ -112,6 +116,12 @@ static const char *opal_ioctl_to_string(unsigned long rq)
 	case IOC_OPAL_LOCK_UNLOCK:     return "LOCK_UNLOCK";
 	case IOC_OPAL_SAVE:            return "SAVE";
 	case IOC_OPAL_PSID_REVERT_TPR: return "PSID_REVERT_TPR";
+#if HAVE_HW_SUM_OPAL
+	case IOC_OPAL_REACTIVATE_LSP:  return "REACTIVATE_LSP";
+	case IOC_OPAL_LR_SETUP_START_LENGTH: return "LR_SETUP_START_LENGTH";
+	case IOC_OPAL_LR_ENABLE_DISABLE: return "LR_ENABLE_DISABLE";
+	case IOC_OPAL_GET_SUM_STATUS:  return "GET_SUM_STATUS";
+#endif
 	}
 
 	assert(false && "unknown OPAL ioctl");
@@ -151,6 +161,17 @@ static void opal_ioctl_debug(struct crypt_device *cd,
 			lrs->range_start, lrs->range_length, lrs->RLE, lrs->WLE, lrs->l_state);
 		};
 		break;
+#if HAVE_HW_SUM_OPAL
+	case IOC_OPAL_GET_SUM_STATUS: { /* OUT */
+		struct opal_sum_ranges *sr = args;
+		log_dbg(cd, "OPAL %s: lr_plcy: %" PRIu8 ", num_lrs:%" PRIu8 ", lr:"
+			"%"PRIu8"|%"PRIu8"|%"PRIu8"|%"PRIu8"|%"PRIu8"|%"PRIu8"|%"PRIu8"|%"PRIu8"|%"PRIu8,
+			cmd, sr->range_policy, sr->num_lrs,
+			sr->lr[0], sr->lr[1], sr->lr[2], sr->lr[3], sr->lr[4],
+			sr->lr[5], sr->lr[6], sr->lr[7], sr->lr[8]);
+		};
+		break;
+#endif
 	} else switch (rq) {
 	case IOC_OPAL_TAKE_OWNERSHIP: { /* IN */
 		log_dbg(cd, "OPAL %s", cmd);
@@ -227,6 +248,37 @@ static void opal_ioctl_debug(struct crypt_device *cd,
 			cmd, key->lr);
 		};
 		break;
+#if HAVE_HW_SUM_OPAL
+	case IOC_OPAL_REACTIVATE_LSP: { /* IN */
+		struct opal_lr_act *act = args;
+		log_dbg(cd, "OPAL %s: lr:%" PRIu8 ", sum:%" PRIu32 ", num_lrs:%" PRIu8 ", lr:"
+			"%"PRIu8"|%"PRIu8"|%"PRIu8"|%"PRIu8"|%"PRIu8"|%"PRIu8"|%"PRIu8"|%"PRIu8"|%"PRIu8,
+			cmd, act->key.lr, act->sum, act->num_lrs,
+			act->lr[0], act->lr[1], act->lr[2], act->lr[3], act->lr[4],
+			act->lr[5], act->lr[6], act->lr[7], act->lr[8]);
+		};
+		break;
+	case IOC_OPAL_LR_SETUP_START_LENGTH: { /* IN */
+		struct opal_user_lr_setup *lrs = args;
+		log_dbg(cd, "OPAL %s: sum:%" PRIu32 ", who:%" PRIu32 ", lr:%" PRIu8
+			", start:%" PRIu64 ", length:%" PRIu64,
+			cmd, lrs->session.sum, lrs->session.who, lrs->session.opal_key.lr,
+			lrs->range_start, lrs->range_length);
+		};
+		break;
+	case IOC_OPAL_LR_ENABLE_DISABLE: { /* IN */
+		struct opal_user_lr_setup *lrs = args;
+		log_dbg(cd, "OPAL %s: sum:%" PRIu32 ", who:%" PRIu32 ", lr:%" PRIu8
+			", rle:%" PRIu32 ", rwe:%" PRIu32,
+			cmd, lrs->session.sum, lrs->session.who, lrs->session.opal_key.lr,
+			lrs->RLE, lrs->WLE);
+		};
+		break;
+	case IOC_OPAL_GET_SUM_STATUS: { /* IN */
+		log_dbg(cd, "OPAL %s", cmd);
+		};
+		break;
+#endif
 	}
 }
 
@@ -271,6 +323,7 @@ static int opal_geometry_fd(struct crypt_device *cd,
 
 static int opal_range_check_attributes_fd(struct crypt_device *cd,
 	int fd,
+	uint32_t sum,
 	uint32_t segment_number,
 	const struct volume_key *vk,
 	const uint64_t *check_offset_sectors,
@@ -308,7 +361,8 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 
 	*lrs = (struct opal_lr_status) {
 		.session = {
-			.who = segment_number + 1,
+			.sum = sum,
+			.who = segment_number + 1, /* irrelevant in SUM */
 			.opal_key = {
 				.key_len = crypt_volume_key_length(vk),
 				.lr = segment_number
@@ -396,6 +450,431 @@ static int opal_enabled(struct crypt_device *cd, struct device *dev)
 	return opal_query_status(cd, dev, OPAL_FL_LOCKING_ENABLED);
 }
 
+#if HAVE_HW_SUM_OPAL
+static int opal_sum_supported(struct crypt_device *cd, struct device *dev)
+{
+	return opal_query_status(cd, dev, OPAL_FL_SUM_SUPPORTED);
+}
+#else
+static int opal_sum_supported(struct crypt_device *cd __attribute__((unused)),
+			      struct device *dev __attribute__((unused)))
+{
+	return 0;
+}
+#endif
+
+#if HAVE_HW_SUM_OPAL
+static int opal_sum_reactivate(struct crypt_device *cd, int fd,
+			       const void *admin_key, size_t admin_key_len)
+{
+	int r;
+	struct opal_lr_react reactivate = {
+		.key = {
+			.key_len = admin_key_len,
+		},
+		.num_lrs = 8,
+		.lr = { 1, 2, 3, 4, 5, 6, 7, 8 },
+		.sum = 1,
+		.range_policy = 1,
+	};
+
+	crypt_safe_memcpy(reactivate.key.key, admin_key, admin_key_len);
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_REACTIVATE_LSP, &reactivate);
+	if (r == OPAL_STATUS_FAIL)
+		log_dbg(cd, "Failed to reactivate in SUM. There is at least one locking range enabled.");
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to reactivate OPAL device '%s': %s",
+			crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+	}
+
+	crypt_safe_memzero(reactivate.key.key, reactivate.key.key_len);
+
+	return r;
+}
+#else
+static int opal_sum_reactivate(struct crypt_device *cd __attribute__((unused)),
+			       int fd __attribute__((unused)),
+			       const void *admin_key __attribute__((unused)),
+			       size_t admin_key_len __attribute__((unused)))
+{
+	return -ENOTSUP;
+}
+#endif
+
+static int opal_activate_lsp(struct crypt_device *cd, int fd, uint32_t sum,
+			     const void *admin_key, size_t admin_key_len)
+{
+	int r;
+
+	struct opal_lr_act activate = {
+		.key = {
+			.key_len = admin_key_len,
+		},
+		/* useless but due to kernel bug it requires (num_lrs > 0 && num_lrs <= 9) */
+		.num_lrs = 1,
+	};
+	crypt_safe_memcpy(activate.key.key, admin_key, admin_key_len);
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_TAKE_OWNERSHIP, &activate.key);
+	if (r < 0) {
+		r = -ENOTSUP;
+		log_dbg(cd, "OPAL not supported on this kernel version, refusing.");
+		goto out;
+	}
+	if (r == OPAL_STATUS_NOT_AUTHORIZED) /* We'll try again with a different key. */ {
+		r = -EPERM;
+		log_dbg(cd, "Failed to take ownership of OPAL device '%s': permission denied",
+			crypt_get_device_name(cd));
+		goto out;
+	}
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to take ownership of OPAL device '%s': %s",
+			crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_ACTIVATE_LSP, &activate);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to activate OPAL device '%s': %s",
+			crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+		goto out;
+	}
+
+	/*
+	 * We can not activate LSP directly in SUM since kernel does
+	 * not support setting range policy in 'Activate' directly.
+	 *
+	 * TODO: If we fix the 'Activate' in kernel to enable setting
+	 * range policy, we can skip 'Reactivate' call.
+	 */
+	if (sum)
+		r = opal_sum_reactivate(cd, fd, admin_key, admin_key_len);
+out:
+	crypt_safe_memzero(activate.key.key, activate.key.key_len);
+
+	return r;
+}
+
+#if HAVE_HW_SUM_OPAL
+static int opal_get_sum_status_anybody(struct crypt_device *cd, int fd, uint32_t segment_number,
+				       uint8_t *r_policy, bool *r_segment_in_sum)
+{
+	int i, r;
+	struct opal_sum_ranges sum_ranges = {};
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_GET_SUM_STATUS, &sum_ranges);
+	if (r == OPAL_STATUS_NOT_AUTHORIZED)
+		log_dbg(cd, "Can not read Locking table info as Anybody. Retry with Admin1");
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to get SUM ranges status on OPAL device '%s': %s",
+			crypt_get_device_name(cd), opal_status_to_string(r));
+		return (r == OPAL_STATUS_NOT_AUTHORIZED ? -EPERM : -EINVAL);
+	}
+
+	if (r_segment_in_sum) {
+		*r_segment_in_sum = false;
+		for (i = 0; i < sum_ranges.num_lrs ; i++) {
+			if (sum_ranges.lr[i] == segment_number) {
+				*r_segment_in_sum = true;
+				break;
+			}
+		}
+	}
+
+	if (r_policy)
+		*r_policy = sum_ranges.range_policy;
+
+	return 0;
+}
+
+static int opal_get_sum_status_admin1(struct crypt_device *cd, int fd, uint32_t segment_number,
+				      const void *admin_key, size_t admin_key_len,
+				      uint8_t *r_policy, bool *r_segment_in_sum)
+{
+	int i, r;
+	struct opal_sum_ranges sum_ranges = {
+		.key = {
+			.lr = segment_number,
+			.key_len  = admin_key_len
+		}
+	};
+	crypt_safe_memcpy(sum_ranges.key.key, admin_key, admin_key_len);
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_GET_SUM_STATUS, &sum_ranges);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to get SUM ranges status on OPAL device with Admin1 '%s': %s",
+			crypt_get_device_name(cd), opal_status_to_string(r));
+		if (r == OPAL_STATUS_NOT_AUTHORIZED)
+			r = -EPERM;
+		else
+			r = -EINVAL;
+		goto out;
+	}
+
+	if (r_segment_in_sum) {
+		*r_segment_in_sum = false;
+		for (i = 0; i < sum_ranges.num_lrs ; i++) {
+			if (sum_ranges.lr[i] == segment_number) {
+				*r_segment_in_sum = true;
+				break;
+			}
+		}
+	}
+
+	if (r_policy)
+		*r_policy = sum_ranges.range_policy;
+
+	r = 0;
+out:
+	crypt_safe_memzero(sum_ranges.key.key, sum_ranges.key.key_len);
+
+	return r;
+}
+#else
+static int opal_get_sum_status_anybody(struct crypt_device *cd __attribute__((unused)),
+				       int fd __attribute__((unused)),
+				       uint32_t segment_number __attribute__((unused)),
+				       uint8_t *r_policy __attribute__((unused)),
+				       bool *r_segment_in_sum __attribute__((unused)))
+{
+	return -ENOTSUP;
+}
+
+static int opal_get_sum_status_admin1(struct crypt_device *cd __attribute__((unused)),
+				      int fd __attribute__((unused)),
+				      uint32_t segment_number __attribute__((unused)),
+				      const void *admin_key __attribute__((unused)),
+				      size_t admin_key_len __attribute__((unused)),
+				      uint8_t *r_policy __attribute__((unused)),
+				      bool *r_segment_in_sum __attribute__((unused)))
+{
+	return -ENOTSUP;
+}
+#endif
+
+static int opal_reuse_active_lsp(struct crypt_device *cd, int fd, uint32_t sum,
+			   uint32_t segment_number,
+			   const void *admin_key, size_t admin_key_len)
+{
+	int r;
+	uint8_t policy;
+	bool segment_in_sum = false;
+	struct opal_session_info user_session = {
+		.who = OPAL_ADMIN1, /* irrelevant in SUM */
+		.opal_key = {
+			.lr = segment_number,
+			.key_len = admin_key_len,
+		},
+	};
+
+	if (sum) {
+		/* If device supports SUM let's get list of SUM enabled LRs */
+		/*
+		r = opal_get_sum_status_anybody(cd, fd, segment_number, &policy, &segment_in_sum);
+		if (r < 0)
+			return r;*/
+
+		r = opal_get_sum_status_admin1(cd, fd, segment_number, admin_key, admin_key_len,
+					       &policy, &segment_in_sum);
+		if (r < 0)
+			return r;
+
+		/* ugly hack to silent compiler warnings */
+		if (r == 666) {
+			r = opal_get_sum_status_anybody(cd, fd, segment_number, &policy, &segment_in_sum);
+			log_err(cd, "Error");
+			return -EINVAL;
+		}
+
+		/* TODO: If it fails with -EPERM, query the device again with Admin1 PIN. */
+
+		log_dbg(cd, "Locking range %u is %s in SUM.",
+			segment_number, segment_in_sum ? "already" : "not yet");
+	}
+
+	/* If it is already enabled, wipe the locking range first */
+	crypt_safe_memcpy(user_session.opal_key.key, admin_key, admin_key_len);
+
+	if (segment_in_sum) {
+		/* If segment is already in SUM we need to call Erase method */
+		r = opal_ioctl(cd, fd, IOC_OPAL_ERASE_LR, &user_session);
+		if (r != OPAL_STATUS_SUCCESS)
+			log_dbg(cd, "Failed to erase SUM OPAL locking range %u on device '%s': %s",
+				segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
+	} else {
+		r = opal_ioctl(cd, fd, IOC_OPAL_SECURE_ERASE_LR, &user_session);
+		if (r != OPAL_STATUS_SUCCESS)
+			log_dbg(cd, "Failed to reset (secure erase) OPAL locking range %u on device '%s': %s",
+				segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
+	}
+
+	if (r != OPAL_STATUS_SUCCESS) {
+		r = -EINVAL;
+		goto out;
+	}
+
+	/* Reactivate only if policy not set or the locking range is not in SUM list yet */
+	if (sum && (policy == 0 || !segment_in_sum))
+		r = opal_sum_reactivate(cd, fd, admin_key, admin_key_len);
+out:
+	crypt_safe_memzero(user_session.opal_key.key, user_session.opal_key.key_len);
+
+	return r;
+}
+
+#if HAVE_HW_SUM_OPAL
+static int opal_setup_range_sum(struct crypt_device *cd, int fd, struct opal_user_lr_setup *setup,
+				uint32_t segment_number, const struct volume_key *user_vk)
+{
+	int r;
+	/*
+	 * In SUM we set PolicyRange to 1 so that Admin1 authority remains
+	 * in control of where each individual locking range spans. But
+	 * the User authority associated with the locking range set in SUM
+	 * is still the sole owner of RLE, WLE and Lock/Unlock rights.
+	 * Therefore, the Admin1 credentials are used to setup Offset and Length
+	 * and User credentias are used for enabling RLE and WLE fields
+	 */
+
+	/* setup already contains Admin1 key */
+	r = opal_ioctl(cd, fd, IOC_OPAL_LR_SETUP_START_LENGTH, setup);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to setup locking range of length %llu at offset %llu on OPAL device '%s': %s",
+			setup->range_length, setup->range_start, crypt_get_device_name(cd),
+			opal_status_to_string(r));
+		return -EINVAL;
+	}
+
+	/* switch to User authority to enable RLE and WLE */
+	setup->session = (struct opal_session_info) {
+		.sum = 1,
+		.opal_key = {
+			.key_len = crypt_volume_key_length(user_vk),
+			.lr = segment_number
+		}
+	};
+	crypt_safe_memcpy(setup->session.opal_key.key, crypt_volume_key_get_key(user_vk),
+			  crypt_volume_key_length(user_vk));
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_LR_ENABLE_DISABLE, setup);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to enable locking range on OPAL device '%s': %s",
+			crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+	}
+
+	return r;
+}
+#else
+static int opal_setup_range_sum(struct crypt_device *cd __attribute__((unused)),
+				int fd __attribute__((unused)),
+				struct opal_user_lr_setup *setup __attribute__((unused)),
+				uint32_t segment_number __attribute__((unused)),
+				const struct volume_key *user_vk __attribute__((unused)))
+{
+	return -ENOTSUP;
+}
+#endif
+
+static int opal_setup_range(struct crypt_device *cd, int fd, uint32_t sum, uint32_t segment_number,
+			    uint64_t range_start_blocks, uint64_t range_length_blocks,
+			    const struct volume_key *user_vk, const void *admin_key, size_t admin_key_len)
+{
+	int r;
+	struct opal_user_lr_setup setup = {
+		.range_start = range_start_blocks,
+		.range_length = range_length_blocks,
+		/* Some drives do not enable Locking Ranges on setup. This have some
+		 * interesting consequences: Lock command called later below will pass,
+		 * but locking range will _not_ be locked at all.
+		 */
+		.RLE = 1,
+		.WLE = 1,
+		.session = {
+			.who = OPAL_ADMIN1,
+			.opal_key = {
+				.key_len = admin_key_len,
+				.lr = segment_number,
+			},
+		},
+	};
+	crypt_safe_memcpy(setup.session.opal_key.key, admin_key, admin_key_len);
+	if (sum)
+		r = opal_setup_range_sum(cd, fd, &setup, segment_number, user_vk);
+	else {
+		r = opal_ioctl(cd, fd, IOC_OPAL_LR_SETUP, &setup);
+		if (r != OPAL_STATUS_SUCCESS) {
+			log_dbg(cd, "Failed to setup locking range of length %llu at offset %llu on OPAL device '%s': %s",
+				setup.range_length, setup.range_start, crypt_get_device_name(cd),
+				opal_status_to_string(r));
+			r = -EINVAL;
+		}
+	}
+
+	crypt_safe_memzero(setup.session.opal_key.key, sizeof(setup.session.opal_key.key));
+
+	return r;
+}
+
+static int opal_setup_user(struct crypt_device *cd, int fd, uint32_t segment_number,
+			   const void *admin_key, size_t admin_key_len)
+{
+	int r;
+	struct opal_session_info user_session = {
+		.who = segment_number + 1,
+			.opal_key = {
+				.key_len = admin_key_len,
+			},
+	};
+	struct opal_lock_unlock user_add_to_lr = {
+		.session = {
+			.who = segment_number + 1,
+			.opal_key = {
+				.lr = segment_number,
+				.key_len = admin_key_len,
+			},
+		},
+		.l_state = OPAL_RO,
+	};
+
+	crypt_safe_memcpy(user_session.opal_key.key, admin_key, admin_key_len);
+	crypt_safe_memcpy(user_add_to_lr.session.opal_key.key, admin_key, admin_key_len);
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_ACTIVATE_USR, &user_session);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to activate OPAL user on device '%s': %s",
+			crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_ADD_USR_TO_LR, &user_add_to_lr);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to add OPAL user to locking range %u (RO) on device '%s': %s",
+			segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+		goto out;
+	}
+
+	user_add_to_lr.l_state = OPAL_RW;
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_ADD_USR_TO_LR, &user_add_to_lr);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to add OPAL user to locking range %u (RW) on device '%s': %s",
+			segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+	}
+out:
+	crypt_safe_memzero(user_session.opal_key.key, admin_key_len);
+	crypt_safe_memzero(user_add_to_lr.session.opal_key.key, admin_key_len);
+
+	return r;
+}
+
 /* requires opal lock */
 int opal_setup_ranges(struct crypt_device *cd,
 		      struct device *dev,
@@ -407,12 +886,10 @@ int opal_setup_ranges(struct crypt_device *cd,
 		      const void *admin_key,
 		      size_t admin_key_len)
 {
-	struct opal_lr_act *activate = NULL;
-	struct opal_session_info *user_session = NULL;
-	struct opal_lock_unlock *user_add_to_lr = NULL, *lock = NULL;
+	struct opal_lock_unlock *lock = NULL;
 	struct opal_new_pw *new_pw = NULL;
-	struct opal_user_lr_setup *setup = NULL;
 	int r, fd;
+	uint32_t sum;
 
 	assert(cd);
 	assert(dev);
@@ -432,134 +909,29 @@ int opal_setup_ranges(struct crypt_device *cd,
 	if (fd < 0)
 		return -EIO;
 
+	/* Not all drivers support Single User Mode, so query and adjust the setup accordingly */
+	r = opal_sum_supported(cd, dev);
+	if (r < 0)
+		return r;
+	sum = !!r;
+
 	r = opal_enabled(cd, dev);
 	if (r < 0)
 		return r;
 
 	/* If OPAL has never been enabled, we need to take ownership and do basic setup first */
-	if (r == 0) {
-		activate = crypt_safe_alloc(sizeof(struct opal_lr_act));
-		if (!activate) {
-			r = -ENOMEM;
-			goto out;
-		}
-		*activate = (struct opal_lr_act) {
-			.key = {
-				.key_len = admin_key_len,
-			},
-			.num_lrs = 8,
-			/* A max of 9 segments are supported, enable them all as there's no reason not to
-			 * (0 is whole-volume)
-			 */
-			.lr = { 1, 2, 3, 4, 5, 6, 7, 8 },
-		};
-		crypt_safe_memcpy(activate->key.key, admin_key, admin_key_len);
-
-		r = opal_ioctl(cd, fd, IOC_OPAL_TAKE_OWNERSHIP, &activate->key);
-		if (r < 0) {
-			r = -ENOTSUP;
-			log_dbg(cd, "OPAL not supported on this kernel version, refusing.");
-			goto out;
-		}
-		if (r == OPAL_STATUS_NOT_AUTHORIZED) /* We'll try again with a different key. */ {
-			r = -EPERM;
-			log_dbg(cd, "Failed to take ownership of OPAL device '%s': permission denied",
-				crypt_get_device_name(cd));
-			goto out;
-		}
-		if (r != OPAL_STATUS_SUCCESS) {
-			log_dbg(cd, "Failed to take ownership of OPAL device '%s': %s",
-				crypt_get_device_name(cd), opal_status_to_string(r));
-			r = -EINVAL;
-			goto out;
-		}
-
-		r = opal_ioctl(cd, fd, IOC_OPAL_ACTIVATE_LSP, activate);
-		if (r != OPAL_STATUS_SUCCESS) {
-			log_dbg(cd, "Failed to activate OPAL device '%s': %s",
-				crypt_get_device_name(cd), opal_status_to_string(r));
-			r = -EINVAL;
-			goto out;
-		}
-	} else {
-		/* If it is already enabled, wipe the locking range first */
-		user_session = crypt_safe_alloc(sizeof(struct opal_session_info));
-		if (!user_session) {
-			r = -ENOMEM;
-			goto out;
-		}
-		*user_session = (struct opal_session_info) {
-			.who = OPAL_ADMIN1,
-			.opal_key = {
-				.lr = segment_number,
-				.key_len = admin_key_len,
-			},
-		};
-		crypt_safe_memcpy(user_session->opal_key.key, admin_key, admin_key_len);
-
-		r = opal_ioctl(cd, fd, IOC_OPAL_SECURE_ERASE_LR, user_session);
-		if (r != OPAL_STATUS_SUCCESS) {
-			log_dbg(cd, "Failed to reset (secure erase) OPAL locking range %u on device '%s': %s",
-				segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
-			r = -EINVAL;
-			goto out;
-		}
-	}
-
-	crypt_safe_free(user_session);
-
-	user_session = crypt_safe_alloc(sizeof(struct opal_session_info));
-	if (!user_session) {
-		r = -ENOMEM;
+	if (r == 0)
+		r = opal_activate_lsp(cd, fd, sum, admin_key, admin_key_len);
+	else
+		r = opal_reuse_active_lsp(cd, fd, sum, segment_number, admin_key, admin_key_len);
+	if (r < 0)
 		goto out;
-	}
-	*user_session = (struct opal_session_info) {
-		.who = segment_number + 1,
-		.opal_key = {
-			.key_len = admin_key_len,
-		},
-	};
-	crypt_safe_memcpy(user_session->opal_key.key, admin_key, admin_key_len);
 
-	r = opal_ioctl(cd, fd, IOC_OPAL_ACTIVATE_USR, user_session);
-	if (r != OPAL_STATUS_SUCCESS) {
-		log_dbg(cd, "Failed to activate OPAL user on device '%s': %s",
-			crypt_get_device_name(cd), opal_status_to_string(r));
-		r = -EINVAL;
-		goto out;
-	}
-
-	user_add_to_lr = crypt_safe_alloc(sizeof(struct opal_lock_unlock));
-	if (!user_add_to_lr) {
-		r = -ENOMEM;
-		goto out;
-	}
-	*user_add_to_lr = (struct opal_lock_unlock) {
-		.session = {
-			.who = segment_number + 1,
-			.opal_key = {
-				.lr = segment_number,
-				.key_len = admin_key_len,
-			},
-		},
-		.l_state = OPAL_RO,
-	};
-	crypt_safe_memcpy(user_add_to_lr->session.opal_key.key, admin_key, admin_key_len);
-
-	r = opal_ioctl(cd, fd, IOC_OPAL_ADD_USR_TO_LR, user_add_to_lr);
-	if (r != OPAL_STATUS_SUCCESS) {
-		log_dbg(cd, "Failed to add OPAL user to locking range %u (RO) on device '%s': %s",
-			segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
-		r = -EINVAL;
-		goto out;
-	}
-	user_add_to_lr->l_state = OPAL_RW;
-	r = opal_ioctl(cd, fd, IOC_OPAL_ADD_USR_TO_LR, user_add_to_lr);
-	if (r != OPAL_STATUS_SUCCESS) {
-		log_dbg(cd, "Failed to add OPAL user to locking range %u (RW) on device '%s': %s",
-			segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
-		r = -EINVAL;
-		goto out;
+	/* In SUM, user is already active and properly assigned to LR */
+	if (!sum) {
+		r = opal_setup_user(cd, fd, segment_number, admin_key, admin_key_len);
+		if (r < 0)
+			goto out;
 	}
 
 	new_pw = crypt_safe_alloc(sizeof(struct opal_new_pw));
@@ -569,10 +941,11 @@ int opal_setup_ranges(struct crypt_device *cd,
 	}
 	*new_pw = (struct opal_new_pw) {
 		.session = {
-			.who = OPAL_ADMIN1,
+			.sum = sum,
+			.who = sum ? segment_number + 1 : OPAL_ADMIN1,
 			.opal_key = {
 				.lr = segment_number,
-				.key_len = admin_key_len,
+				.key_len = sum ? 0 : admin_key_len,
 			},
 		},
 		.new_user_pw = {
@@ -585,7 +958,8 @@ int opal_setup_ranges(struct crypt_device *cd,
 	};
 	crypt_safe_memcpy(new_pw->new_user_pw.opal_key.key, crypt_volume_key_get_key(vk),
 			  crypt_volume_key_length(vk));
-	crypt_safe_memcpy(new_pw->session.opal_key.key, admin_key, admin_key_len);
+	if (!sum)
+		crypt_safe_memcpy(new_pw->session.opal_key.key, admin_key, admin_key_len);
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_SET_PW, new_pw);
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -595,37 +969,10 @@ int opal_setup_ranges(struct crypt_device *cd,
 		goto out;
 	}
 
-	setup = crypt_safe_alloc(sizeof(struct opal_user_lr_setup));
-	if (!setup) {
-		r = -ENOMEM;
+	r = opal_setup_range(cd, fd, sum, segment_number, range_start_blocks, range_length_blocks,
+			     vk, admin_key, admin_key_len);
+	if (r < 0)
 		goto out;
-	}
-	*setup = (struct opal_user_lr_setup) {
-		.range_start = range_start_blocks,
-		.range_length = range_length_blocks,
-		/* Some drives do not enable Locking Ranges on setup. This have some
-		 * interesting consequences: Lock command called later below will pass,
-		 * but locking range will _not_ be locked at all.
-		 */
-		.RLE = 1,
-		.WLE = 1,
-		.session = {
-			.who = OPAL_ADMIN1,
-			.opal_key = {
-				.key_len = admin_key_len,
-				.lr = segment_number,
-			},
-		},
-	};
-	crypt_safe_memcpy(setup->session.opal_key.key, admin_key, admin_key_len);
-
-	r = opal_ioctl(cd, fd, IOC_OPAL_LR_SETUP, setup);
-	if (r != OPAL_STATUS_SUCCESS) {
-		log_dbg(cd, "Failed to setup locking range of length %llu at offset %llu on OPAL device '%s': %s",
-			setup->range_length, setup->range_start, crypt_get_device_name(cd), opal_status_to_string(r));
-		r = -EINVAL;
-		goto out;
-	}
 
 	/* After setup an OPAL device is unlocked, but the expectation with cryptsetup is that it needs
 	 * to be activated separately, so lock it immediately. */
@@ -637,7 +984,8 @@ int opal_setup_ranges(struct crypt_device *cd,
 	*lock = (struct opal_lock_unlock) {
 		.l_state = OPAL_LK,
 		.session = {
-			.who = segment_number + 1,
+			.sum = sum,
+			.who = segment_number + 1, /* irrelevant in SUM */
 			.opal_key = {
 				.key_len = crypt_volume_key_length(vk),
 				.lr = segment_number,
@@ -656,16 +1004,12 @@ int opal_setup_ranges(struct crypt_device *cd,
 	}
 
 	/* Double check the locking range is locked and the ranges are set up as configured */
-	r = opal_range_check_attributes_fd(cd, fd, segment_number, vk,
+	r = opal_range_check_attributes_fd(cd, fd, sum, segment_number, vk,
 					   &(uint64_t) {range_start_blocks * opal_block_bytes / SECTOR_SIZE},
 					   &(uint64_t) {range_length_blocks * opal_block_bytes / SECTOR_SIZE},
 					   &(bool) {true}, &(bool){true}, NULL, NULL);
 out:
-	crypt_safe_free(activate);
-	crypt_safe_free(user_session);
-	crypt_safe_free(user_add_to_lr);
 	crypt_safe_free(new_pw);
-	crypt_safe_free(setup);
 	crypt_safe_free(lock);
 
 	return r;
@@ -827,9 +1171,11 @@ int opal_reset_segment(struct crypt_device *cd,
 		       const char *password,
 		       size_t password_len)
 {
+	int r, fd;
 	struct opal_session_info *user_session = NULL;
 	struct opal_user_lr_setup *setup = NULL;
-	int r, fd;
+	uint32_t sum;
+	bool segment_in_sum = false;
 
 	assert(cd);
 	assert(dev);
@@ -840,6 +1186,18 @@ int opal_reset_segment(struct crypt_device *cd,
 
 	if (opal_enabled(cd, dev) <= 0)
 		return -EINVAL;
+
+	/* Not all drivers support Single User Mode, so query and adjust the setup accordingly */
+	r = opal_sum_supported(cd, dev);
+	if (r < 0)
+		return r;
+	sum = !!r;
+
+	fd = device_open(cd, dev, O_RDONLY);
+	if (fd < 0) {
+		r = -EIO;
+		goto out;
+	}
 
 	user_session = crypt_safe_alloc(sizeof(struct opal_session_info));
 	if (!user_session)
@@ -853,9 +1211,23 @@ int opal_reset_segment(struct crypt_device *cd,
 	};
 	crypt_safe_memcpy(user_session->opal_key.key, password, password_len);
 
-	fd = device_open(cd, dev, O_RDONLY);
-	if (fd < 0) {
-		r = -EIO;
+	if (sum) {
+		r = opal_get_sum_status_admin1(cd, fd, segment_number, password, password_len,
+					       NULL, &segment_in_sum);
+		//r = opal_get_sum_status_anybody(cd, fd, segment_number, NULL, &segment_in_sum);
+		if (r < 0)
+			goto out;
+	}
+
+	if (segment_in_sum) {
+		r = opal_ioctl(cd, fd, IOC_OPAL_ERASE_LR, user_session);
+		if (r != OPAL_STATUS_SUCCESS) {
+			log_dbg(cd, "Failed to erase SUM OPAL locking range %u on device '%s': %s",
+				segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
+			r = -EINVAL;
+		}
+
+		/* Locking range in SUM is properly disabled after 'Erase' method. Exit early. */
 		goto out;
 	}
 
@@ -874,8 +1246,6 @@ int opal_reset_segment(struct crypt_device *cd,
 		goto out;
 	}
 	*setup = (struct opal_user_lr_setup) {
-		.range_start = 0,
-		.range_length = 0,
 		.session = {
 			.who = OPAL_ADMIN1,
 			.opal_key = user_session->opal_key,
@@ -937,7 +1307,7 @@ int opal_range_check_attributes_and_get_lock_state(struct crypt_device *cd,
 		     bool *ret_read_locked,
 		     bool *ret_write_locked)
 {
-	int fd;
+	int fd, r;
 
 	assert(cd);
 	assert(dev);
@@ -947,7 +1317,11 @@ int opal_range_check_attributes_and_get_lock_state(struct crypt_device *cd,
 	if (fd < 0)
 		return -EIO;
 
-	return opal_range_check_attributes_fd(cd, fd, segment_number, vk,
+	r = opal_sum_supported(cd, dev);
+	if (r < 0)
+		return r;
+
+	return opal_range_check_attributes_fd(cd, fd, !!r /* sum */, segment_number, vk,
 					      check_offset_sectors, check_length_sectors, NULL,
 					      NULL, ret_read_locked, ret_write_locked);
 }

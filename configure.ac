@@ -631,6 +631,28 @@ if test "x$enable_hw_opal" = "xyes"; then
 	fi
 fi
 
+AC_ARG_ENABLE([hw-sum-opal],
+	AS_HELP_STRING([--disable-hw-sum-opal], [disable support of SUM feature in hardware-backed OPAL devices]),
+	[],
+	[enable_hw_sum_opal=yes])
+
+if test "x$enable_hw_opal" = "xyes" && test "x$enable_hw_sum_opal" = "xyes"; then
+	have_sum_opal=yes
+	AC_CHECK_DECLS([ IOC_OPAL_REACTIVATE_LSP,
+			 IOC_OPAL_LR_SETUP_START_LENGTH,
+			 IOC_OPAL_LR_ENABLE_DISABLE,
+			 IOC_OPAL_GET_SUM_STATUS
+		       ],
+		       [],
+		       [have_sum_opal=no],
+		       [#include <linux/sed-opal.h>])
+	if test "x$have_sum_opal" = "xyes"; then
+		AC_DEFINE([HAVE_HW_SUM_OPAL], 1, [Define to 1 to enable SUM OPAL feature.])
+	else
+		AC_MSG_WARN([Can not compile with SUM OPAL feature, kernel headers are too old, requires v6.18.])
+	fi
+fi
+
 dnl Magic for cryptsetup.static build.
 if test "x$enable_static_cryptsetup" = "xyes"; then
 	saved_PKG_CONFIG=$PKG_CONFIG
