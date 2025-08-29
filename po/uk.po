@@ -5,10 +5,10 @@
 # Yuri Chornoivan <yurchor@ukr.net>, 2012-2023, 2024, 2025.
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup 2.8.0-rc1\n"
+"Project-Id-Version: cryptsetup 2.8.1-rc0\n"
 "Report-Msgid-Bugs-To: cryptsetup@lists.linux.dev\n"
-"POT-Creation-Date: 2025-06-16 13:51+0200\n"
-"PO-Revision-Date: 2025-06-16 20:20+0300\n"
+"POT-Creation-Date: 2025-08-13 13:45+0200\n"
+"PO-Revision-Date: 2025-08-14 13:48+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -155,7 +155,7 @@ msgstr "Помилка під час обробки ключа (на основ�
 msgid "Cannot determine device type. Incompatible activation of device?"
 msgstr "Не вдалося визначити тип пристрою. Несумісна дія з активації пристрою?"
 
-#: lib/setup.c:395 lib/setup.c:4139
+#: lib/setup.c:395 lib/setup.c:4145
 msgid "This operation is supported only for LUKS device."
 msgstr "Підтримку цієї дії передбачено лише для пристроїв LUKS."
 
@@ -177,7 +177,7 @@ msgstr "Слот ключа %d є некоректним, будь ласка, �
 msgid "Key slot %d is full, please select another one."
 msgstr "Слот ключа %d заповнено, будь ласка, виберіть інший."
 
-#: lib/setup.c:531 lib/setup.c:3854
+#: lib/setup.c:531 lib/setup.c:3860
 msgid "Device size is not aligned to device logical block size."
 msgstr "Розмір пристрою не вирівняно за розміром логічного блоку пристрою."
 
@@ -186,7 +186,7 @@ msgstr "Розмір пристрою не вирівняно за розмір�
 msgid "Header detected but device %s is too small."
 msgstr "Виявлено заголовок, але об’єм пристрою %s є надто малим."
 
-#: lib/setup.c:669 lib/setup.c:3739 lib/setup.c:5206
+#: lib/setup.c:669 lib/setup.c:3745 lib/setup.c:5212
 #: lib/luks2/luks2_reencrypt.c:3937 lib/luks2/luks2_reencrypt.c:4425
 msgid "This operation is not supported for this device type."
 msgstr "Підтримки цієї дії для цього типу пристроїв не передбачено."
@@ -219,8 +219,8 @@ msgstr "Непідтримувана версія LUKS, %d."
 msgid "No known cipher specification pattern detected for active device %s."
 msgstr "Не виявлено жодного відомого зразка специфікації шифрування для активного пристрою %s."
 
-#: lib/setup.c:1515 lib/setup.c:3486 lib/setup.c:3578 lib/setup.c:3590
-#: lib/setup.c:3762 lib/setup.c:5781
+#: lib/setup.c:1515 lib/setup.c:3492 lib/setup.c:3584 lib/setup.c:3596
+#: lib/setup.c:3768 lib/setup.c:5787
 #, c-format
 msgid "Device %s is not active."
 msgstr "Пристрій %s є неактивним."
@@ -251,7 +251,7 @@ msgstr "Підтримки пристрою від'єднаних метадан
 msgid "Unsupported encryption sector size."
 msgstr "Непідтримуваний розмір сектора шифрування."
 
-#: lib/setup.c:1647 lib/setup.c:1916 lib/setup.c:3848
+#: lib/setup.c:1647 lib/setup.c:1916 lib/setup.c:3854
 msgid "Device size is not aligned to requested sector size."
 msgstr "Розмір пристрою не вирівняно за вказаним розміром сектора."
 
@@ -360,7 +360,7 @@ msgstr "Потрібне вам вирівнювання даних не від�
 msgid "Compensating device size by %<PRIu64> sectors to align it with OPAL alignment granularity."
 msgstr "Компенсуємо розмір пристрою на %<PRIu64> секторів для вирівнювання його за рівнем розбиття вирівнювання OPAL."
 
-#: lib/setup.c:2528 lib/setup.c:4222 lib/setup.c:4411 lib/utils_wipe.c:356
+#: lib/setup.c:2528 lib/setup.c:4228 lib/setup.c:4417 lib/utils_wipe.c:356
 #: lib/luks2/luks2_json_metadata.c:2720 lib/luks2/luks2_json_metadata.c:2988
 #, c-format
 msgid "Failed to acquire OPAL lock on device %s."
@@ -434,318 +434,318 @@ msgstr "Невідповідність розмірів ключів ціліс�
 msgid "WARNING: Requested tag size %d bytes differs from %s size output (%d bytes).\n"
 msgstr "Увага: бажаний розмір мітки у %d байтів відрізняється від розміру у результаті %s (%d байтів).\n"
 
-#: lib/setup.c:3031 lib/setup.c:3129
+#: lib/setup.c:3037 lib/setup.c:3135
 #, c-format
 msgid "Unknown or unsupported device type %s requested."
 msgstr "Надіслано запит щодо невідомого або непідтримуваного типу пристрою %s."
 
-#: lib/setup.c:3043
+#: lib/setup.c:3049
 #, c-format
 msgid "Device %s does not provide inline integrity data fields."
 msgstr "На пристрої %s не надається вбудованих полів даних цілісності."
 
-#: lib/setup.c:3049
+#: lib/setup.c:3055
 #, c-format
 msgid "Inline tag size %<PRIu32> [bytes] is larger than %<PRIu32> provided by device %s."
 msgstr "Розмір вбудованої мітки %<PRIu32> [байтів] перевищує %<PRIu32>, який надано пристроєм %s."
 
-#: lib/setup.c:3064
+#: lib/setup.c:3070
 #, c-format
 msgid "Sector must be the same as device hardware sector (%zu bytes)."
 msgstr "Сектор має збігатися із апаратним сектором пристрою (%zu байтів)."
 
-#: lib/setup.c:3494 lib/setup.c:3583 lib/setup.c:3596
+#: lib/setup.c:3500 lib/setup.c:3589 lib/setup.c:3602
 #, c-format
 msgid "Unsupported parameters on device %s."
 msgstr "Непідтримувані параметри на пристрої %s."
 
-#: lib/setup.c:3500 lib/setup.c:3603 lib/luks2/luks2_reencrypt.c:2920
+#: lib/setup.c:3506 lib/setup.c:3609 lib/luks2/luks2_reencrypt.c:2920
 #: lib/luks2/luks2_reencrypt.c:3189 lib/luks2/luks2_reencrypt.c:3583
 #, c-format
 msgid "Mismatching parameters on device %s."
 msgstr "Невідповідність параметрів на пристрої %s."
 
-#: lib/setup.c:3626
+#: lib/setup.c:3632
 msgid "Crypt devices mismatch."
 msgstr "Невідповідність пристроїв шифрування."
 
-#: lib/setup.c:3658 lib/setup.c:3663 lib/luks2/luks2_reencrypt.c:2404
+#: lib/setup.c:3664 lib/setup.c:3669 lib/luks2/luks2_reencrypt.c:2404
 #: lib/luks2/luks2_reencrypt.c:2936 lib/luks2/luks2_reencrypt.c:4224
 #, c-format
 msgid "Failed to reload device %s."
 msgstr "Не вдалося перезавантажити пристрій %s."
 
-#: lib/setup.c:3669 lib/setup.c:3675 lib/luks2/luks2_reencrypt.c:2375
+#: lib/setup.c:3675 lib/setup.c:3681 lib/luks2/luks2_reencrypt.c:2375
 #: lib/luks2/luks2_reencrypt.c:2382 lib/luks2/luks2_reencrypt.c:2950
 #, c-format
 msgid "Failed to suspend device %s."
 msgstr "Не вдалося приспати пристрій %s."
 
-#: lib/setup.c:3681 lib/luks2/luks2_reencrypt.c:2389
+#: lib/setup.c:3687 lib/luks2/luks2_reencrypt.c:2389
 #: lib/luks2/luks2_reencrypt.c:2971 lib/luks2/luks2_reencrypt.c:4137
 #: lib/luks2/luks2_reencrypt.c:4228
 #, c-format
 msgid "Failed to resume device %s."
 msgstr "Не вдалося відновити роботу пристрою %s."
 
-#: lib/setup.c:3696
+#: lib/setup.c:3702
 #, c-format
 msgid "Fatal error while reloading device %s (on top of device %s)."
 msgstr "Критична помилка під час перезавантаження пристрої %s (над пристроєм %s)."
 
-#: lib/setup.c:3699 lib/setup.c:3701
+#: lib/setup.c:3705 lib/setup.c:3707
 #, c-format
 msgid "Failed to switch device %s to dm-error."
 msgstr "Не вдалося перемкнути пристрій %s у режим dm-error."
 
-#: lib/setup.c:3744
+#: lib/setup.c:3750
 msgid "Can not resize LUKS2 device with static size."
 msgstr "Неможливо змінити розмір пристрою LUKS2 зі статичним розміром."
 
-#: lib/setup.c:3749
+#: lib/setup.c:3755
 msgid "Resize of LUKS2 device with integrity protection is not supported."
 msgstr "Підтримки зміни розмірів пристрою LUKS2 із захистом цілісності не передбачено."
 
-#: lib/setup.c:3795
+#: lib/setup.c:3801
 msgid "Cannot resize loop device."
 msgstr "Неможливо змінити розмір петльового пристрою."
 
-#: lib/setup.c:3839
+#: lib/setup.c:3845
 msgid "WARNING: Maximum size already set or kernel doesn't support resize.\n"
 msgstr "УВАГА: уже вказано максимальний розмір або у ядрі не передбачено можливості зміни розміру.\n"
 
-#: lib/setup.c:3905
+#: lib/setup.c:3911
 msgid "Resize failed, the kernel doesn't support it."
 msgstr "Не вдалося змінити розмір, у ядрі не передбачено підтримки такої дії."
 
-#: lib/setup.c:3937
+#: lib/setup.c:3943
 msgid "Do you really want to change UUID of device?"
 msgstr "Ви справді хочете змінити UUID пристрою?"
 
-#: lib/setup.c:4029
+#: lib/setup.c:4035
 msgid "Header backup file does not contain compatible LUKS header."
 msgstr "Файл резервної копії заголовка не містить сумісного із LUKS заголовка."
 
-#: lib/setup.c:4122
+#: lib/setup.c:4128
 #, c-format
 msgid "Volume %s is not active."
 msgstr "Том %s не є активним."
 
-#: lib/setup.c:4177
+#: lib/setup.c:4183
 #, c-format
 msgid "Volume %s is already suspended."
 msgstr "Том %s вже приспано."
 
-#: lib/setup.c:4203
+#: lib/setup.c:4209
 #, c-format
 msgid "Suspend is not supported for device %s."
 msgstr "Підтримки присипляння для пристрою %s не передбачено."
 
-#: lib/setup.c:4205 lib/setup.c:4213
+#: lib/setup.c:4211 lib/setup.c:4219
 #, c-format
 msgid "Error during suspending device %s."
 msgstr "Помилка під час спроби приспати пристрій %s."
 
-#: lib/setup.c:4228
+#: lib/setup.c:4234
 #, c-format
 msgid "Device %s was suspended but hardware OPAL device cannot be locked."
 msgstr "Роботу пристрою %s було призупинено, але апаратний пристрій OPAL не може бути заблоковано."
 
-#: lib/setup.c:4259 lib/setup.c:4436
+#: lib/setup.c:4265 lib/setup.c:4442
 #, c-format
 msgid "Resume is not supported for device %s."
 msgstr "Підтримки дії з пробудження для пристрою %s не передбачено."
 
-#: lib/setup.c:4261 lib/setup.c:4426 lib/setup.c:4438
+#: lib/setup.c:4267 lib/setup.c:4432 lib/setup.c:4444
 #, c-format
 msgid "Error during resuming device %s."
 msgstr "Помилка під час спроби пробудити пристрій %s."
 
-#: lib/setup.c:4280
+#: lib/setup.c:4286
 msgid "Failed to unlink volume key from user specified keyring."
 msgstr "Не вдалося скасувати прив'язку ключа тому до вказаного користувачем сховища ключів."
 
-#: lib/setup.c:4402 lib/setup.c:5568
+#: lib/setup.c:4408 lib/setup.c:5574
 msgid "Failed to link volume key in user defined keyring."
 msgstr "Не вдалося пов'язати ключ тому із визначеним користувачем сховищем ключів."
 
-#: lib/setup.c:4500 src/cryptsetup.c:2714
+#: lib/setup.c:4506 src/cryptsetup.c:2714
 #, c-format
 msgid "Volume %s is not suspended."
 msgstr "Том %s не приспано."
 
-#: lib/setup.c:4601 lib/setup.c:7233 lib/setup.c:7255 lib/setup.c:7309
+#: lib/setup.c:4607 lib/setup.c:7239 lib/setup.c:7261 lib/setup.c:7315
 #: src/cryptsetup.c:1849 src/cryptsetup.c:2253 src/cryptsetup.c:2271
 #: src/utils_reencrypt.c:305 src/utils_reencrypt.c:1965
 msgid "Volume key does not match the volume."
 msgstr "Ключ тому не відповідає тому."
 
-#: lib/setup.c:4755
+#: lib/setup.c:4761
 msgid "Failed to swap new key slot."
 msgstr "Не вдалося зарезервувати новий слот ключа."
 
-#: lib/setup.c:4853
+#: lib/setup.c:4859
 #, c-format
 msgid "Key slot %d is invalid."
 msgstr "Слот ключа %d є некоректним."
 
-#: lib/setup.c:4859 src/cryptsetup.c:1970 src/cryptsetup.c:2430
+#: lib/setup.c:4865 src/cryptsetup.c:1970 src/cryptsetup.c:2430
 #: src/cryptsetup.c:3114 src/cryptsetup.c:3174
 #, c-format
 msgid "Keyslot %d is not active."
 msgstr "Слот ключа %d не є активним."
 
-#: lib/setup.c:4878
+#: lib/setup.c:4884
 msgid "Device header overlaps with data area."
 msgstr "Заголовок пристрою перекривається із областю даних."
 
-#: lib/setup.c:5099
+#: lib/setup.c:5105
 msgid "Reencryption in-progress. Cannot activate device."
 msgstr "Виконуємо повторне шифрування. Не можна активувати пристрій."
 
-#: lib/setup.c:5101 lib/luks2/luks2_json_metadata.c:2884
+#: lib/setup.c:5107 lib/luks2/luks2_json_metadata.c:2884
 #: lib/luks2/luks2_reencrypt.c:3714
 msgid "Failed to get reencryption lock."
 msgstr "Не вдалося отримати стан блокування для повторного шифрування."
 
-#: lib/setup.c:5123
+#: lib/setup.c:5129
 msgid "LUKS2 reencryption recovery using volume key(s) failed."
 msgstr "Не вдалося виконати відновлення даних повторного шифрування LUKS2 з використанням ключів тому."
 
-#: lib/setup.c:5259
+#: lib/setup.c:5265
 #, c-format
 msgid "Device %s already exists."
 msgstr "Пристрій %s вже існує."
 
-#: lib/setup.c:5266
+#: lib/setup.c:5272
 #, c-format
 msgid "Cannot use device %s, name is invalid or still in use."
 msgstr "Неможливо скористатися пристроєм %s, некоректна назва або пристрій усе ще використовується."
 
-#: lib/setup.c:5278
+#: lib/setup.c:5284
 msgid "Reencryption volume keys do not match the volume."
 msgstr "Ключі повторного шифрування тому не відповідають тому."
 
-#: lib/setup.c:5295
+#: lib/setup.c:5301
 msgid "Incorrect volume key specified for plain device."
 msgstr "Для пристрою зі звичайним шифруванням вказано помилковий ключ тому."
 
-#: lib/setup.c:5321 lib/setup.c:5382
+#: lib/setup.c:5327 lib/setup.c:5388
 msgid "Device type is not properly initialized."
 msgstr "Тип пристрою не ініціалізовано належним чином."
 
-#: lib/setup.c:5420
+#: lib/setup.c:5426
 msgid "Kernel keyring is not supported by the kernel."
 msgstr "У ядрі не передбачено підтримки сховища ключів ядра."
 
-#: lib/setup.c:5424
+#: lib/setup.c:5430
 msgid "Kernel keyring missing: required for passing signature to kernel."
 msgstr "Немає сховища ключів ядра: це сховище потрібне для передавання підпису ядру."
 
-#: lib/setup.c:5476
+#: lib/setup.c:5482
 #, c-format
 msgid "Cannot use keyring key %s."
 msgstr "Не можна використовувати ключ сховища ключів %s."
 
-#: lib/setup.c:5689
+#: lib/setup.c:5695
 msgid "Incorrect root hash specified for verity device."
 msgstr "Для пристрою перевірки вказано помилковий кореневий хеш."
 
-#: lib/setup.c:5730 lib/setup.c:5755
+#: lib/setup.c:5736 lib/setup.c:5761
 msgid "OPAL does not support deferred deactivation."
 msgstr "В OPAL не передбачено підтримки відкладеної деактивації."
 
-#: lib/setup.c:5745 lib/setup.c:5776 lib/luks2/luks2_json_metadata.c:2949
+#: lib/setup.c:5751 lib/setup.c:5782 lib/luks2/luks2_json_metadata.c:2949
 #: src/utils_reencrypt.c:89
 #, c-format
 msgid "Device %s is still in use."
 msgstr "Пристрій %s все ще використовується."
 
-#: lib/setup.c:5763
+#: lib/setup.c:5769
 #, c-format
 msgid "Could not cancel deferred remove from device %s."
 msgstr "Не вдалося скасувати відкладене вилучення з пристрою %s."
 
-#: lib/setup.c:5785
+#: lib/setup.c:5791
 #, c-format
 msgid "Invalid device %s."
 msgstr "Некоректний пристрій %s."
 
-#: lib/setup.c:5926
+#: lib/setup.c:5932
 msgid "Volume key buffer too small."
 msgstr "Буфер ключів тому є занадто малим."
 
-#: lib/setup.c:5937
+#: lib/setup.c:5943
 msgid "Cannot retrieve volume key for LUKS2 device."
 msgstr "Неможливо отримати ключ тому для пристрою із шифруванням LUKS2."
 
-#: lib/setup.c:5946
+#: lib/setup.c:5952
 msgid "Cannot retrieve volume key for LUKS1 device."
 msgstr "Неможливо отримати ключ тому для пристрою із шифруванням LUKS1."
 
-#: lib/setup.c:5960
+#: lib/setup.c:5966
 msgid "Cannot retrieve volume key for plain device."
 msgstr "Неможливо отримати ключ тому для пристрою зі звичайним шифруванням."
 
-#: lib/setup.c:5968
+#: lib/setup.c:5974
 msgid "Cannot retrieve root hash for verity device."
 msgstr "Не вдалося отримати кореневий хеш для пристрою VERITY."
 
-#: lib/setup.c:5975
+#: lib/setup.c:5981
 msgid "Cannot retrieve volume key for BITLK device."
 msgstr "Неможливо отримати ключ тому для пристрою BITLK."
 
-#: lib/setup.c:5980
+#: lib/setup.c:5986
 msgid "Cannot retrieve volume key for FVAULT2 device."
 msgstr "Неможливо отримати ключ тому для пристрою FVAULT2."
 
-#: lib/setup.c:5982
+#: lib/setup.c:5988
 #, c-format
 msgid "This operation is not supported for %s crypt device."
 msgstr "Підтримки цієї дії для шифрованого пристрою %s не передбачено."
 
-#: lib/setup.c:6167 lib/setup.c:6178
+#: lib/setup.c:6173 lib/setup.c:6184
 msgid "Dump operation is not supported for this device type."
 msgstr "Підтримки дії зі створення дампу для цього типу пристроїв не передбачено."
 
-#: lib/setup.c:6558
+#: lib/setup.c:6564
 #, c-format
 msgid "Data offset is not multiple of %u bytes."
 msgstr "Зсув у даних не є кратним до %u байтів."
 
-#: lib/setup.c:6866
+#: lib/setup.c:6872
 #, c-format
 msgid "Cannot convert device %s which is still in use."
 msgstr "Не можна перетворити пристрій %s, який перебуває у користуванні."
 
-#: lib/setup.c:7174 lib/setup.c:7318
+#: lib/setup.c:7180 lib/setup.c:7324
 #, c-format
 msgid "Failed to assign keyslot %u as the new volume key."
 msgstr "Не вдалося прив'язати слот ключа %u як новий ключ тому."
 
-#: lib/setup.c:7198
+#: lib/setup.c:7204
 msgid "Failed to initialize default LUKS2 keyslot parameters."
 msgstr "Не вдалося ініціалізувати типові параметри слоту ключів LUKS2."
 
-#: lib/setup.c:7204
+#: lib/setup.c:7210
 #, c-format
 msgid "Failed to assign keyslot %d to digest."
 msgstr "Не вдалося прив'язати слот ключа %d до контрольної суми."
 
-#: lib/setup.c:7435
+#: lib/setup.c:7441
 msgid "Cannot add key slot, all slots disabled and no volume key provided."
 msgstr "Не вдалося додати слот ключа, всі слоти вимкнено і не вказано ключа тому."
 
-#: lib/setup.c:7508 lib/verity/verity.c:333
+#: lib/setup.c:7514 lib/verity/verity.c:333
 msgid "Failed to load key in kernel keyring."
 msgstr "Не вдалося завантажити ключ до сховища ключів ядра."
 
-#: lib/setup.c:7699
+#: lib/setup.c:7705
 #, c-format
 msgid "Could not find keyring described by \"%s\"."
 msgstr "Не вдалося знайти сховище ключів, яке описано «%s»."
 
-#: lib/setup.c:7764
+#: lib/setup.c:7770
 msgid "Failed to acquire global memory-hard access serialization lock."
 msgstr "Не вдалося створити загальне блокування серіалізації доступу до пам'яті."
 
@@ -886,10 +886,15 @@ msgid "Requested maximum PBKDF memory cannot be zero."
 msgstr "Бажаний максимальний обсяг пам'яті PBKDF не може бути нульовим."
 
 #: lib/utils_pbkdf.c:173
+#, c-format
+msgid "Requested maximum PBKDF parallel cost is too high (maximum is %d)."
+msgstr "Бажана максимальна вартість паралельних обчислень PBKDF є надто високою (максимальною є %d)."
+
+#: lib/utils_pbkdf.c:178
 msgid "Requested PBKDF parallel threads cannot be zero."
 msgstr "Вказана кількість паралельних потоків обробки PBKDF не може бути нульовою."
 
-#: lib/utils_pbkdf.c:193
+#: lib/utils_pbkdf.c:198
 msgid "Only PBKDF2 is supported in FIPS mode."
 msgstr "У режимі FIPS передбачено підтримку лише PBKDF2."
 
@@ -1247,7 +1252,7 @@ msgstr "Не вдалося визначити зсу розділу систе�
 msgid "Kernel does not support TCRYPT compatible mapping."
 msgstr "У ядрі не передбачено підтримки призначення, сумісного з TCRYPT."
 
-#: lib/tcrypt/tcrypt.c:1126
+#: lib/tcrypt/tcrypt.c:1144
 msgid "This function is not supported without TCRYPT header load."
 msgstr "Підтримки цієї дії без завантаження заголовка TCRYPT."
 
@@ -1335,45 +1340,45 @@ msgstr "Неочікуваний розмір метаданих BEK, %<PRIu32>,
 msgid "Unexpected metadata entry found when parsing startup key."
 msgstr "Під час обробки ключа запуску виявлено неочікуваний запис метаданих."
 
-#: lib/bitlk/bitlk.c:1067
+#: lib/bitlk/bitlk.c:1069
 msgid "This operation is not supported."
 msgstr "Підтримки цієї дії не передбачено."
 
-#: lib/bitlk/bitlk.c:1075
+#: lib/bitlk/bitlk.c:1077
 msgid "Unexpected key data size."
 msgstr "Неочікуваний розмір даних ключа."
 
-#: lib/bitlk/bitlk.c:1203
+#: lib/bitlk/bitlk.c:1205
 msgid "This BITLK device is in an unsupported state and cannot be activated."
 msgstr "Цей пристрій BITLK перебуває у непідтримуваному стані — його неможливо активувати."
 
-#: lib/bitlk/bitlk.c:1208
+#: lib/bitlk/bitlk.c:1210
 #, c-format
 msgid "BITLK devices with type '%s' cannot be activated."
 msgstr "Пристрої BITLK типу «%s» неможливо активувати."
 
-#: lib/bitlk/bitlk.c:1215
+#: lib/bitlk/bitlk.c:1217
 msgid "Activation of BITLK device with clear key protection is not supported."
 msgstr "Підтримки активації пристрою BITLK із прозорим захистом ключем не передбачено."
 
-#: lib/bitlk/bitlk.c:1256
+#: lib/bitlk/bitlk.c:1258
 #, c-format
 msgid "WARNING: BitLocker volume size %<PRIu64> does not match the underlying device size %<PRIu64>"
 msgstr "УВАГА: розмір тому BitLocker %<PRIu64> не відповідає розміру базового пристрою %<PRIu64>"
 
-#: lib/bitlk/bitlk.c:1383
+#: lib/bitlk/bitlk.c:1385
 msgid "Cannot activate device, kernel dm-crypt is missing support for BITLK IV."
 msgstr "Не вдалося активувати пристрій — у dm-crypt ядра немає підтримки BITLK IV."
 
-#: lib/bitlk/bitlk.c:1387
+#: lib/bitlk/bitlk.c:1389
 msgid "Cannot activate device, kernel dm-crypt is missing support for BITLK Elephant diffuser."
 msgstr "Не вдалося активувати пристрій — у dm-crypt ядра немає підтримки дифузера Elephant BITLK."
 
-#: lib/bitlk/bitlk.c:1391
+#: lib/bitlk/bitlk.c:1393
 msgid "Cannot activate device, kernel dm-crypt is missing support for large sector size."
 msgstr "Не вдалося активувати пристрій — у dm-crypt ядра немає підтримки великого розміру секторів."
 
-#: lib/bitlk/bitlk.c:1395
+#: lib/bitlk/bitlk.c:1397
 msgid "Cannot activate device, kernel dm-zero module is missing."
 msgstr "Не вдалося активувати пристрій — немає модуля ядра dm-zero."
 

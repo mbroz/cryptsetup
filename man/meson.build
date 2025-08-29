@@ -23,6 +23,7 @@ cryptsetup_manpages = [
             'cryptsetup-loopaesOpen.8',
             'cryptsetup-tcryptOpen.8',
             'cryptsetup-bitlkOpen.8',
+            'cryptsetup-fvault2Open.8',
         ],
     ],
     [

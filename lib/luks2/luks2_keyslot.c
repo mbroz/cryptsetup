@@ -165,7 +165,7 @@ int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd, const char *ciphe
 {
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 
-	if (!cipher_spec || crypt_is_cipher_null(cipher_spec))
+	if (!cipher_spec)
 		return 1;
 
 	/*

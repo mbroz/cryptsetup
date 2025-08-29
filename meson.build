@@ -2,7 +2,7 @@ project('cryptsetup',
     'c',
     default_options: [ 'prefix=/usr' ],
     meson_version: '>=0.64',
-    version: '2.8.1-git')
+    version: '2.8.1')
 
 libcryptsetup_version = '12.11.0'
 
@@ -31,7 +31,6 @@ default_string_options = [
     'default-luks1-cipher',
     'default-luks1-hash',
     'default-luks1-mode',
-    'default-luks2-external-tokens-path',
     'default-luks2-keyslot-cipher',
     'default-luks2-lock-path',
     'default-luks2-pbkdf',
@@ -712,7 +711,9 @@ if tmpfilesdir == ''
         method: 'pkg-config',
         required: false)
     if systemd.found()
-        tmpfilesdir = systemd.get_variable(pkgconfig: 'tmpfilesdir', default_value: '')
+        tmpfilesdir = systemd.get_variable('tmpfilesdir',
+                        pkgconfig_define: ['prefix', get_option('prefix')],
+                        default_value: '')
     endif
 endif
 
@@ -731,12 +732,12 @@ endif
 assert(get_option('default-luks2-lock-path').startswith('/'),
     'default-luks2-lock-path has to be an absolute path')
 
-luks2_external_tokens_path = get_option('default-luks2-external-tokens-path')
-if luks2_external_tokens_path == 'LIBDIR/cryptsetup'
+luks2_external_tokens_path = get_option('luks2-external-tokens-path')
+if luks2_external_tokens_path == ''
     luks2_external_tokens_path = join_paths(get_option('prefix'), get_option('libdir'), 'cryptsetup')
 endif
 assert(luks2_external_tokens_path.startswith('/'),
-    'default-luks2-external-tokens-path has to be an absolute path')
+    'luks2-external-tokens-path has to be an absolute path')
 conf.set_quoted('EXTERNAL_LUKS2_TOKENS_PATH', luks2_external_tokens_path,
     description: 'path to directory with LUKSv2 external token handlers (plugins)')
 
