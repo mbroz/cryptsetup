@@ -4059,6 +4059,7 @@ static void Luks2Refresh(void)
 static void Luks2Flags(void)
 {
 	uint32_t flags = 42;
+	const char *longlabel = "0123456789abcedf0123456789abcedf0123456789abcedf";
 
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
@@ -4088,6 +4089,9 @@ static void Luks2Flags(void)
 	OK_(crypt_set_label(cd, NULL, NULL));
 	OK_(strcmp("", crypt_get_label(cd)));
 	OK_(strcmp("", crypt_get_subsystem(cd)));
+
+	FAIL_(crypt_set_label(cd, longlabel, NULL), "long label");
+	FAIL_(crypt_set_label(cd, NULL, longlabel), "long subsystem");
 
 	CRYPT_FREE(cd);
 }
