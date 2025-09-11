@@ -9,11 +9,9 @@
 
 #define ATTR_NOINLINE __attribute__ ((noinline))
 #define ATTR_ZERO_REGS
-#if defined __has_attribute
-#  if __has_attribute (zero_call_used_regs)
+#if HAVE_ATTRIBUTE_ZEROCALLUSEDREGS
 #    undef ATTR_ZERO_REGS
 #    define ATTR_ZERO_REGS __attribute__ ((zero_call_used_regs("used")))
-#  endif
 #endif
 
 /* Workaround for https://github.com/google/sanitizers/issues/1507 */

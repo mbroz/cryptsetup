@@ -698,6 +698,21 @@ if cc.links(
 endif
 
 # ==========================================================================
+# Check compiler support for zero_called_used_regs("used") function attribute
+if cc.links(
+        '''void _test_fn(void);
+
+        __attribute__((zero_call_used_regs("used"))) void _test_fn(void) {
+		volatile int *i; volatile int j = 0; if (j) *i = 0;
+        }
+        int main(void) { _test_fn(); return 0; }''',
+        args: ['-O0', '-Werror' ],
+        name: 'for zero_call_used_regs("used") attribute support')
+    conf.set10('HAVE_ATTRIBUTE_ZEROCALLUSEDREGS', true,
+        description: 'Define to 1 to use __attribute__((zero_call_used_regs("used")))')
+endif
+
+# ==========================================================================
 
 if get_option('dev-random')
     conf.set_quoted('DEFAULT_RNG', '/dev/random')
