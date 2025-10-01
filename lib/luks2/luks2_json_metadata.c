@@ -1272,7 +1272,11 @@ int LUKS2_hdr_uuid(struct crypt_device *cd, struct luks2_hdr *hdr, const char *u
 int LUKS2_hdr_labels(struct crypt_device *cd, struct luks2_hdr *hdr,
 		     const char *label, const char *subsystem, int commit)
 {
-	//FIXME: check if the labels are the same and skip this.
+	if ((label && strlen(label) >= LUKS2_LABEL_L) ||
+	    (subsystem && strlen(subsystem) >= LUKS2_LABEL_L)) {
+		log_err(cd, _("Label is too long."));
+		return -EINVAL;
+	}
 
 	memset(hdr->label, 0, LUKS2_LABEL_L);
 	if (label)

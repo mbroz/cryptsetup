@@ -1278,6 +1278,8 @@ $CRYPTSETUP luksDump $LOOPDEV | grep "Label:" | grep -q "(no label)" || fail
 $CRYPTSETUP config $LOOPDEV --subsystem SatelliteThree --label TheLabel
 $CRYPTSETUP luksDump $LOOPDEV | grep "Subsystem:" | grep -q "SatelliteThree" || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep "Label:" | grep -q "TheLabel" || fail
+$CRYPTSETUP config $LOOPDEV --label 0123456789abcdef0123456789abcdef0123456789abcdef 2>/dev/null && fail
+$CRYPTSETUP config $LOOPDEV --subsystem 0123456789abcdef0123456789abcdef0123456789abcdef 2>/dev/null && fail
 
 prepare "[36] LUKS PBKDF setting" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --pbkdf bla $LOOPDEV >/dev/null 2>&1 && fail
