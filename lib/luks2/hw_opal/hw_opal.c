@@ -529,6 +529,69 @@ static int opal_setup_range(struct crypt_device *cd, int fd, uint32_t segment_nu
 	return r;
 }
 
+static int opal_setup_user(struct crypt_device *cd, int fd, uint32_t segment_number,
+			   const void *admin_key, size_t admin_key_len)
+{
+	int r;
+	struct opal_session_info *user_session = crypt_safe_alloc(sizeof(*user_session));
+	struct opal_lock_unlock *user_add_to_lr = crypt_safe_alloc(sizeof(*user_add_to_lr));
+
+	if (!user_session || !user_add_to_lr) {
+		r = -ENOMEM;
+		goto out;
+	}
+
+	*user_session = (struct opal_session_info) {
+		.who = segment_number + 1,
+			.opal_key = {
+				.key_len = admin_key_len,
+			},
+	};
+	*user_add_to_lr = (struct opal_lock_unlock) {
+		.session = {
+			.who = segment_number + 1,
+			.opal_key = {
+				.lr = segment_number,
+				.key_len = admin_key_len,
+			},
+		},
+		.l_state = OPAL_RO,
+	};
+
+	crypt_safe_memcpy(user_session->opal_key.key, admin_key, admin_key_len);
+	crypt_safe_memcpy(user_add_to_lr->session.opal_key.key, admin_key, admin_key_len);
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_ACTIVATE_USR, user_session);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to activate OPAL user on device '%s': %s",
+			crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_ADD_USR_TO_LR, user_add_to_lr);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to add OPAL user to locking range %u (RO) on device '%s': %s",
+			segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+		goto out;
+	}
+
+	user_add_to_lr->l_state = OPAL_RW;
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_ADD_USR_TO_LR, user_add_to_lr);
+	if (r != OPAL_STATUS_SUCCESS) {
+		log_dbg(cd, "Failed to add OPAL user to locking range %u (RW) on device '%s': %s",
+			segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
+		r = -EINVAL;
+	}
+out:
+	crypt_safe_free(user_session);
+	crypt_safe_free(user_add_to_lr);
+
+	return r;
+}
+
 /* requires opal lock */
 int opal_setup_ranges(struct crypt_device *cd,
 		      struct device *dev,
@@ -540,8 +603,7 @@ int opal_setup_ranges(struct crypt_device *cd,
 		      const void *admin_key,
 		      size_t admin_key_len)
 {
-	struct opal_session_info *user_session = NULL;
-	struct opal_lock_unlock *user_add_to_lr = NULL, *lock = NULL;
+	struct opal_lock_unlock *lock = NULL;
 	struct opal_new_pw *new_pw = NULL;
 	int r, fd;
 
@@ -575,59 +637,9 @@ int opal_setup_ranges(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	user_session = crypt_safe_alloc(sizeof(struct opal_session_info));
-	if (!user_session) {
-		r = -ENOMEM;
+	r = opal_setup_user(cd, fd, segment_number, admin_key, admin_key_len);
+	if (r < 0)
 		goto out;
-	}
-	*user_session = (struct opal_session_info) {
-		.who = segment_number + 1,
-		.opal_key = {
-			.key_len = admin_key_len,
-		},
-	};
-	crypt_safe_memcpy(user_session->opal_key.key, admin_key, admin_key_len);
-
-	r = opal_ioctl(cd, fd, IOC_OPAL_ACTIVATE_USR, user_session);
-	if (r != OPAL_STATUS_SUCCESS) {
-		log_dbg(cd, "Failed to activate OPAL user on device '%s': %s",
-			crypt_get_device_name(cd), opal_status_to_string(r));
-		r = -EINVAL;
-		goto out;
-	}
-
-	user_add_to_lr = crypt_safe_alloc(sizeof(struct opal_lock_unlock));
-	if (!user_add_to_lr) {
-		r = -ENOMEM;
-		goto out;
-	}
-	*user_add_to_lr = (struct opal_lock_unlock) {
-		.session = {
-			.who = segment_number + 1,
-			.opal_key = {
-				.lr = segment_number,
-				.key_len = admin_key_len,
-			},
-		},
-		.l_state = OPAL_RO,
-	};
-	crypt_safe_memcpy(user_add_to_lr->session.opal_key.key, admin_key, admin_key_len);
-
-	r = opal_ioctl(cd, fd, IOC_OPAL_ADD_USR_TO_LR, user_add_to_lr);
-	if (r != OPAL_STATUS_SUCCESS) {
-		log_dbg(cd, "Failed to add OPAL user to locking range %u (RO) on device '%s': %s",
-			segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
-		r = -EINVAL;
-		goto out;
-	}
-	user_add_to_lr->l_state = OPAL_RW;
-	r = opal_ioctl(cd, fd, IOC_OPAL_ADD_USR_TO_LR, user_add_to_lr);
-	if (r != OPAL_STATUS_SUCCESS) {
-		log_dbg(cd, "Failed to add OPAL user to locking range %u (RW) on device '%s': %s",
-			segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
-		r = -EINVAL;
-		goto out;
-	}
 
 	new_pw = crypt_safe_alloc(sizeof(struct opal_new_pw));
 	if (!new_pw) {
@@ -701,8 +713,6 @@ int opal_setup_ranges(struct crypt_device *cd,
 					   &(uint64_t) {range_length_blocks * opal_block_bytes / SECTOR_SIZE},
 					   &(bool) {true}, &(bool){true}, NULL, NULL);
 out:
-	crypt_safe_free(user_session);
-	crypt_safe_free(user_add_to_lr);
 	crypt_safe_free(new_pw);
 	crypt_safe_free(lock);
 
