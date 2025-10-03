@@ -5707,6 +5707,20 @@ int crypt_activate_by_signed_key(struct crypt_device *cd,
 	return r;
 }
 
+int crypt_activate_by_clearkey(struct crypt_device *cd,
+	const char *name,
+	uint32_t flags)
+{
+	int r;
+	struct crypt_keyslot_context kc = {};
+
+	crypt_keyslot_context_init_by_clearkey_internal(&kc);
+	r = crypt_activate_by_keyslot_context(cd, name, CRYPT_ANY_SLOT /* unused */, &kc, CRYPT_ANY_SLOT, &kc, flags);
+	crypt_keyslot_context_destroy_internal(&kc);
+
+	return r;
+}
+
 int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t flags)
 {
 	struct crypt_device *fake_cd = NULL;
@@ -5917,7 +5931,7 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 	struct volume_key *vk = NULL;
 
 	if (!cd || !volume_key || !volume_key_size ||
-	    (!kc && !isLUKS(cd->type) && !isTCRYPT(cd->type) && !isVERITY(cd->type)))
+	    (!kc && !isLUKS(cd->type) && !isTCRYPT(cd->type) && !isVERITY(cd->type) && !isBITLK(cd->type)))
 		return -EINVAL;
 
 	if (isLUKS2(cd->type) && keyslot != CRYPT_ANY_SLOT)
@@ -5977,6 +5991,14 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 	} else if (isBITLK(cd->type)) {
 		if (kc && kc->get_bitlk_volume_key)
 			r = kc->get_bitlk_volume_key(cd, kc, &cd->u.bitlk.params, &vk);
+		else if (!kc) {
+			struct crypt_keyslot_context *kc_clearkey = NULL;
+			r = crypt_keyslot_context_init_by_clearkey(cd, &kc_clearkey);
+			if (r >= 0) {
+				r = kc_clearkey->get_bitlk_volume_key(cd, kc_clearkey, &cd->u.bitlk.params, &vk);
+			}
+			crypt_keyslot_context_free(kc_clearkey);
+		}
 		if (r < 0)
 			log_err(cd, _("Cannot retrieve volume key for BITLK device."));
 	} else if (isFVAULT2(cd->type)) {

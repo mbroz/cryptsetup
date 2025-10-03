@@ -20,6 +20,7 @@
 #define OPT_CANCEL_DEFERRED		"cancel-deferred"
 #define OPT_CHECK_AT_MOST_ONCE		"check-at-most-once"
 #define OPT_CIPHER			"cipher"
+#define OPT_CLEARKEY			"clearkey"
 #define OPT_DATA_BLOCK_SIZE		"data-block-size"
 #define OPT_DATA_BLOCKS			"data-blocks"
 #define OPT_DATA_DEVICE			"data-device"

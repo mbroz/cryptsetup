@@ -1353,6 +1353,17 @@ int crypt_keyslot_context_init_by_vk_in_keyring(struct crypt_device *cd,
 	struct crypt_keyslot_context **kc);
 
 /**
+ * Initialize keyslot context for clear key.
+ *
+ * @param cd crypt device handle initialized to LUKS device context
+ * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_KEY
+ *
+ * @return zero on success or negative errno otherwise.
+ */
+int crypt_keyslot_context_init_by_clearkey(struct crypt_device *cd,
+	struct crypt_keyslot_context **kc);
+
+/**
  * Get error code per keyslot context from last failed call.
  *
  * @note If @link crypt_keyslot_add_by_keyslot_context @endlink passed with
@@ -1821,6 +1832,19 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
 	const char *name,
 	const char *key_description,
 	int keyslot,
+	uint32_t flags);
+
+/**
+ * Activate BITLK device using clearkey.
+ *
+ * @param cd crypt device handle
+ * @param name name of device to create
+ * @param flags activation flags
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_activate_by_clearkey(struct crypt_device *cd,
+	const char *name,
 	uint32_t flags);
 
 /** lazy deactivation - remove once last user releases it */
