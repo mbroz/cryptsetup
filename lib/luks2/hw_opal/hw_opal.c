@@ -790,7 +790,11 @@ int opal_factory_reset(struct crypt_device *cd,
 	if (password_len > OPAL_KEY_MAX)
 		return -EINVAL;
 
-	fd = device_open(cd, dev, O_RDONLY);
+	/*
+	 * Submit PSID reset on R/W file descriptor so it
+	 * triggers blkid rescan after we close it.
+	 */
+	fd = device_open(cd, dev, O_RDWR);
 	if (fd < 0)
 		return -EIO;
 
