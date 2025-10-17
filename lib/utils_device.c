@@ -1004,12 +1004,26 @@ int device_is_zoned(struct device *device)
 
 int device_is_nop_dif(struct device *device, uint32_t *tag_size)
 {
+	char *base_device_path;
+	int r;
 	struct stat st;
 
 	if (!device)
 		return -EINVAL;
 
-	if (stat(device_path(device), &st) < 0)
+	/*
+	 * For partition devices, check integrity profile on the base device.
+	 * Partition device nodes don't advertise integrity profile directly
+	 * via sysfs attributes.
+	 */
+	base_device_path = crypt_get_base_device(device_path(device));
+	if (base_device_path) {
+		r = stat(base_device_path, &st);
+		free(base_device_path);
+	} else
+		r = stat(device_path(device), &st);
+
+	if (r < 0)
 		return -EINVAL;
 
 	if (!S_ISBLK(st.st_mode))
