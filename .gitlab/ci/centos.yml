@@ -1,6 +1,4 @@
 .centos-openssl-backend:
-  variables:
-    DISTRO: cryptsetup-centos-stream-9
   extends:
     - .fail_if_coredump_generated
   before_script:
@@ -29,6 +27,7 @@ test-main-commit-centos-stream9:
   stage: test
   interruptible: true
   variables:
+    DISTRO: cryptsetup-centos-stream-9
     RUN_SSH_PLUGIN_TEST: "1"
     RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
@@ -51,6 +50,53 @@ test-mergerq-centos-stream9:
   stage: test
   interruptible: true
   variables:
+    DISTRO: cryptsetup-centos-stream-9
+    RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
+  rules:
+    - if: $RUN_SYSTEMD_PLUGIN_TEST != null
+      when: never
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+test-main-commit-centos-stream10:
+  extends:
+    - .centos-openssl-backend
+  tags:
+    - libvirt
+    - cryptsetup-centos-stream-10
+  stage: test
+  interruptible: true
+  variables:
+    DISTRO: cryptsetup-centos-stream-10
+    RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
+  rules:
+    - if: $RUN_SYSTEMD_PLUGIN_TEST != null
+      when: never
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+test-mergerq-centos-stream10:
+  extends:
+    - .centos-openssl-backend
+  tags:
+    - libvirt
+    - cryptsetup-centos-stream-10
+  stage: test
+  interruptible: true
+  variables:
+    DISTRO: cryptsetup-centos-stream-10
     RUN_SSH_PLUGIN_TEST: "1"
     RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
