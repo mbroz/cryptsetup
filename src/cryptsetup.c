@@ -508,6 +508,11 @@ static int action_open_bitlk(void)
 			goto out;
 		r = crypt_activate_by_volume_key(cd, activated_name,
 						 key, keysize, activate_flags);
+	} else if (ARG_SET(OPT_CLEARKEY_ID)) {
+		/* For clearkey, we don't need a passphrase - pass NULL to activate_by_passphrase */
+		r = crypt_activate_by_clearkey(cd, activated_name, activate_flags);
+		if (r < 0)
+			log_err(_("No clearkey protection found on BITLK device."));
 	} else {
 		tries = set_tries_tty(false);
 		do {
@@ -617,14 +622,17 @@ static int bitlkDump_with_volume_key(struct crypt_device *cd)
 	if (!vk)
 		return -ENOMEM;
 
-	r = tools_get_key(NULL, &password, &passwordLen,
-			  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-			  ARG_UINT32(OPT_TIMEOUT_ID), 0, 0, cd);
-	if (r < 0)
-		goto out;
+	if (!ARG_SET(OPT_CLEARKEY_ID)) {
+		r = tools_get_key(NULL, &password, &passwordLen,
+				  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
+				  ARG_UINT32(OPT_TIMEOUT_ID), 0, 0, cd);
+		if (r < 0)
+			goto out;
+	}		
 
 	r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, vk, &vk_size,
-				 password, passwordLen);
+					password, passwordLen);
+
 	tools_passphrase_msg(r);
 	check_signal(&r);
 	if (r < 0)

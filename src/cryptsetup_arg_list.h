@@ -241,6 +241,8 @@ ARG(OPT_USE_DIRECTIO, '\0', POPT_ARG_NONE, N_("Use direct-io when accessing devi
 ARG(OPT_USE_FSYNC, '\0', POPT_ARG_NONE, N_("Use fsync after each block"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_WRITE_LOG, '\0', POPT_ARG_NONE, N_("Update log file after every block"), NULL, CRYPT_ARG_BOOL, {}, {})
+ 
+ARG(OPT_CLEARKEY, '\0', POPT_ARG_NONE, N_("Open BITLK device using only clearkey protection"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 /* aliases */
 

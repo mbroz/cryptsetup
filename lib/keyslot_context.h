@@ -175,6 +175,8 @@ void crypt_keyslot_context_init_by_token_internal(struct crypt_keyslot_context *
 void crypt_keyslot_context_init_by_keyring_internal(struct crypt_keyslot_context *kc,
 	const char *key_description);
 
+void crypt_keyslot_context_init_by_clearkey_internal(struct crypt_keyslot_context *kc);
+
 const char *keyslot_context_type_string(const struct crypt_keyslot_context *kc);
 
 #endif /* KEYSLOT_CONTEXT_H */

@@ -304,6 +304,68 @@ static int get_fvault2_volume_key_by_key(struct crypt_device *cd,
 	return get_key_by_key(cd, kc, -2 /* unused */, -2 /* unused */, r_vk);
 }
 
+/* Clearkey-specific functions */
+static int get_luks1_volume_key_by_clearkey(struct crypt_device *cd __attribute__((unused)),
+	struct crypt_keyslot_context *kc __attribute__((unused)),
+	int keyslot __attribute__((unused)),
+	struct volume_key **r_vk __attribute__((unused)))
+{
+	/* LUKS1 does not support clearkey protection */
+	return -ENOTSUP;
+}
+
+static int get_luks2_volume_key_by_clearkey(struct crypt_device *cd __attribute__((unused)),
+	struct crypt_keyslot_context *kc __attribute__((unused)),
+	int keyslot __attribute__((unused)),
+	struct volume_key **r_vk __attribute__((unused)))
+{
+	/* LUKS2 does not support clearkey protection */
+	return -ENOTSUP;
+}
+
+static int get_plain_volume_key_by_clearkey(struct crypt_device *cd __attribute__((unused)),
+	struct crypt_keyslot_context *kc __attribute__((unused)),
+	struct volume_key **r_vk __attribute__((unused)))
+{
+	/* Plain does not support clearkey protection */
+	return -ENOTSUP;
+}
+
+static int get_bitlk_volume_key_by_clearkey(struct crypt_device *cd,
+	struct crypt_keyslot_context *kc __attribute__((unused)),
+	const struct bitlk_metadata *params,
+	struct volume_key **r_vk)
+{
+	/* For BitLocker clearkey, call BITLK_get_volume_key without passphrase */
+	return BITLK_get_volume_key(cd, NULL, 0, params, r_vk);
+}
+
+static int get_fvault2_volume_key_by_clearkey(struct crypt_device *cd __attribute__((unused)),
+	struct crypt_keyslot_context *kc __attribute__((unused)),
+	const struct fvault2_params *params __attribute__((unused)),
+	struct volume_key **r_vk __attribute__((unused)))
+{
+	/* FVAULT2 does not support clearkey protection */
+	return -ENOTSUP;
+}
+
+static int get_verity_volume_key_by_clearkey(struct crypt_device *cd __attribute__((unused)),
+	struct crypt_keyslot_context *kc __attribute__((unused)),
+	struct volume_key **r_vk __attribute__((unused)),
+	struct volume_key **r_signature __attribute__((unused)))
+{
+	/* Verity does not support clearkey protection */
+	return -ENOTSUP;
+}
+
+static int get_integrity_volume_key_by_clearkey(struct crypt_device *cd __attribute__((unused)),
+	struct crypt_keyslot_context *kc __attribute__((unused)),
+	struct volume_key **r_vk __attribute__((unused)))
+{
+	/* Integrity does not support clearkey protection */
+	return -ENOTSUP;
+}
+
 static int get_generic_signed_key_by_key(struct crypt_device *cd,
 	struct crypt_keyslot_context *kc,
 	struct volume_key **r_vk,
@@ -628,6 +690,26 @@ void crypt_keyslot_context_init_by_key_internal(struct crypt_keyslot_context *kc
 	kc->context_free = key_context_free;
 	crypt_keyslot_context_init_common(kc);
 }
+
+void crypt_keyslot_context_init_by_clearkey_internal(struct crypt_keyslot_context *kc)
+{
+	assert(kc);
+
+	kc->type = CRYPT_KC_TYPE_KEY;
+
+	kc->get_luks1_volume_key = get_luks1_volume_key_by_clearkey;
+	kc->get_luks2_volume_key = get_luks2_volume_key_by_clearkey;
+	kc->get_plain_volume_key = get_plain_volume_key_by_clearkey;
+	kc->get_bitlk_volume_key = get_bitlk_volume_key_by_clearkey;
+	kc->get_fvault2_volume_key = get_fvault2_volume_key_by_clearkey;
+	kc->get_verity_volume_key = get_verity_volume_key_by_clearkey;
+	kc->get_integrity_volume_key = get_integrity_volume_key_by_clearkey;
+	
+	kc->get_key_size = key_get_key_size;
+	kc->context_free = key_context_free;
+	crypt_keyslot_context_init_common(kc);
+}
+
 
 static void signed_key_context_free(struct crypt_keyslot_context *kc)
 {
@@ -1194,6 +1276,22 @@ CRYPT_SYMBOL_EXPORT_OLD(int, crypt_keyslot_context_init_by_vk_in_keyring, 2, 7,
 	struct crypt_keyslot_context **kc)
 {
 	return _crypt_keyslot_context_init_by_vk_in_keyring(key_description, kc, false);
+}
+
+CRYPT_SYMBOL_EXPORT_NEW(int, crypt_keyslot_context_init_by_clearkey, 2, 8,
+	struct crypt_device *cd __attribute__((unused)),
+	struct crypt_keyslot_context **kc)
+{
+	if (!kc)
+		return -EINVAL;
+
+	*kc = crypt_zalloc(sizeof(**kc));
+	if (!*kc)
+		return -ENOMEM;
+
+	crypt_keyslot_context_init_by_clearkey_internal(*kc);
+
+	return 0;
 }
 
 int crypt_keyslot_context_get_error(struct crypt_keyslot_context *kc)
