@@ -3045,7 +3045,11 @@ int crypt_format_inline(struct crypt_device *cd,
 	    iparams->journal_integrity_key_size))
 		return -EINVAL;
 
-	if (!device_is_nop_dif(idevice, &device_tag_size)) {
+	r = device_is_nop_dif(idevice, &device_tag_size);
+	if (r < 0)
+		return r;
+
+	if (!r) {
 		log_err(cd, _("Device %s does not provide inline integrity data fields."), mdata_device_path(cd));
 		return -EINVAL;
 	}
