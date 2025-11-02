@@ -509,6 +509,10 @@ static int action_open_bitlk(void)
 		r = crypt_activate_by_volume_key(cd, activated_name,
 						 key, keysize, activate_flags);
 	} else {
+		r = crypt_activate_by_passphrase(cd, activated_name, CRYPT_ANY_SLOT, NULL, 0, activate_flags);
+		if (r != -EPERM)
+			goto out;
+
 		tries = set_tries_tty(false);
 		do {
 			r = tools_get_key(NULL, &password, &passwordLen,
@@ -617,14 +621,19 @@ static int bitlkDump_with_volume_key(struct crypt_device *cd)
 	if (!vk)
 		return -ENOMEM;
 
-	r = tools_get_key(NULL, &password, &passwordLen,
-			  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-			  ARG_UINT32(OPT_TIMEOUT_ID), 0, 0, cd);
-	if (r < 0)
-		goto out;
-
 	r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, vk, &vk_size,
-				 password, passwordLen);
+					password, passwordLen);
+	if (r < 0) {
+		r = tools_get_key(NULL, &password, &passwordLen,
+					ARG_UINT64(OPT_KEYFILE_OFFSET_ID), ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
+					ARG_UINT32(OPT_TIMEOUT_ID), 0, 0, cd);
+		if (r < 0)
+			goto out;
+
+		r = crypt_volume_key_get(cd, CRYPT_ANY_SLOT, vk, &vk_size,
+						password, passwordLen);
+	}
+
 	tools_passphrase_msg(r);
 	check_signal(&r);
 	if (r < 0)
