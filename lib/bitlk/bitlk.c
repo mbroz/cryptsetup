@@ -1132,6 +1132,9 @@ static int bitlk_kdf(const char *password,
 	int i = 0;
 	int r = 0;
 
+	if (!password)
+		return -EINVAL;
+
 	memcpy(kdf.salt, salt, 16);
 
 	r = crypt_hash_init(&hd, BITLK_KDF_HASH);
