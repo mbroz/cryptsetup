@@ -246,4 +246,4 @@ ARG(OPT_WRITE_LOG, '\0', POPT_ARG_NONE, N_("Update log file after every block"),
 
 ARG(OPT_DUMP_MASTER_KEY, '\0', POPT_ARG_NONE, N_("Alias for --dump-volume-key"), NULL, CRYPT_ARG_ALIAS, { .o.id = OPT_DUMP_VOLUME_KEY_ID}, {})
 
-ARG(OPT_MASTER_KEY_FILE, '\0', POPT_ARG_STRING, N_("Alias for --dump-volume-key-file"), NULL, CRYPT_ARG_ALIAS, { .o.id = OPT_VOLUME_KEY_FILE_ID}, {})
+ARG(OPT_MASTER_KEY_FILE, '\0', POPT_ARG_STRING, N_("Alias for --volume-key-file"), NULL, CRYPT_ARG_ALIAS, { .o.id = OPT_VOLUME_KEY_FILE_ID}, {})
