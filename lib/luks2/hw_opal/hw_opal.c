@@ -236,6 +236,8 @@ static int opal_ioctl(struct crypt_device *cd, int fd, unsigned long rq, void *a
 
 	opal_ioctl_debug(cd, rq, args, false, 0);
 	r = ioctl(fd, rq, args);
+	if (r < 0)
+		r = -errno;
 	opal_ioctl_debug(cd, rq, args, true, r);
 
 	return r;
