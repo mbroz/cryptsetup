@@ -2118,6 +2118,18 @@ int crypt_get_verity_info(struct crypt_device *cd,
 	struct crypt_params_verity *vp);
 
 /**
+ * Get FEC repaired block count for VERITY device.
+ *
+ * @param cd crypt device handle
+ * @param name verity device name
+ * @param repaired FEC repaired blocks
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ */
+int crypt_get_verity_repaired(struct crypt_device *cd, const char *name,
+			      uint64_t *repaired);
+
+/**
  * Get device parameters for INTEGRITY device.
  *
  * @param cd crypt device handle

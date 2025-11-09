@@ -241,6 +241,7 @@ corrupt_device() # $1 device, $2 device_size(in bytes), $3 #{corrupted_bytes}
 # $1 data_device, $2 hash_device, $3 fec_device, $4 data/hash_block_size(in bytes),
 # $5 data_size(in blocks), $6 device_size(in blocks), $7 hash_offset(in bytes),
 # $8 fec_offset(in bytes), $9 fec_roots, ${10} corrupted_bytes, [${11} superblock(y/n), ${12} salt]
+# NOTE: do not use fail() in this function, use RET code
 check_fec()
 {
 	INDEX=25
@@ -292,18 +293,32 @@ check_fec()
 	dd if=/dev/mapper/$DEV_NAME of=$IMG_TMP > /dev/null 2>&1
 	HASH_REPAIRED=$(sha256sum $IMG_TMP | cut -d' ' -f 1)
 
+	# If empty, status not supported
+	REPAIRED=$(dmsetup status $DEV_NAME |sed -e s/.*verity\ \[VC\]\ *//)
+	if [ -n "$REPAIRED" -a "$REPAIRED" != "-" ] ; then
+		echo -n "[EC events: $REPAIRED]"
+	else
+		REPAIRED=""
+	fi
+
 	$VERITYSETUP close $DEV_NAME
 
 	if [ "$HASH_ORIG" != "$HASH_REPAIRED" ]; then
-		echo -n "[kernel correction failed]"
-		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 && fail "Userspace verify should fail"
-		echo -n "[userspace verify failed]"
 		RET=1
+		if [ -n "$REPAIRED" ]; then
+			[ "$REPAIRED" -eq 0 ] || { RET=4; echo "FEC repaired events should be 0."; }
+		fi
+		echo -n "[kernel correction failed]"
+		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 &&  { RET=5; echo "Userspace verify should fail"; }
+		echo -n "[userspace verify failed]"
 	else
-		echo -n "[repaired in kernel]"
-		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 || fail "Userspace verify failed"
-		echo "[userspace verify][OK]"
 		RET=0
+		echo -n "[repaired in kernel]"
+		if [ -n "$REPAIRED" ]; then
+			[ "$REPAIRED" -gt 0 ] || { RET=4; echo "FEC repaired events should be greater than 0."; }
+		fi
+		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 ||  { RET=5; echo "Userspace verify failed"; }
+		echo "[userspace verify][OK]"
 	fi
 	rm $1 $2 $3 $IMG_TMP > /dev/null 2>&1
 	return $RET
@@ -531,10 +546,10 @@ if check_version 1 3; then
 	echo "Veritysetup [FEC tests]"
 	for INDEX in  {1..4}; do
 	  # in the first iteration check if we can use FEC (it can be compiled-out)
-	  (check_fec $IMG $IMG $IMG 4096 30 150 163840 409600 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) )
+	  (check_fec $IMG $IMG $IMG 4096 30 150 163840 409600 $(($RANDOM % 23 + 2)) $(($INDEX * 4)))
 	  RET=$?
-	  [ "$RET" -eq "3" ] && break
-	  [ "$RET" -eq "0" ] || fail "FEC repair failed"
+	  [ "$RET" -eq 3 ] && break
+	  [ "$RET" -eq 0 ] || fail "FEC repair failed"
 
 	  (check_fec $IMG $IMG $IMG 512  500 50000 2457600 4915200 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
 	  (check_fec $IMG $IMG $IMG 512  500 50000 2457600 4915200 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'y' $SALT) || fail "FEC repair failed"
@@ -546,7 +561,9 @@ if check_version 1 3; then
 	  (check_fec $IMG $IMG_HASH $FEC_DEV 512 2000 2000 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
 	  (check_fec $IMG $IMG_HASH $FEC_DEV 1024 2000 2000 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
 	  # this test should fail
-	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $(($RANDOM % 23 + 2)) $(($RANDOM % 200 + 200))) && fail "FEC repair must fail"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $(($RANDOM % 23 + 2)) $(($RANDOM % 200 + 200)))
+	  RET=$?
+	  [ "$RET" -eq 1 ] || fail "FEC repair must fail"
 	  echo "[OK]"
 	done
 fi

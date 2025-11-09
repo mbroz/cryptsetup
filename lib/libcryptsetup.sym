@@ -195,3 +195,8 @@ CRYPTSETUP_2.8 {
 		crypt_get_old_volume_key_size;
 		crypt_format_inline;
 } CRYPTSETUP_2.7;
+
+CRYPTSETUP_2.9 {
+	global:
+		crypt_get_verity_repaired;
+} CRYPTSETUP_2.8;

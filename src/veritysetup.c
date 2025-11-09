@@ -333,6 +333,7 @@ static int action_status(void)
 	size_t root_hash_size;
 	unsigned path = 0;
 	int r = 0;
+	uint64_t repaired;
 
 	/* perhaps a path, not a dm device name */
 	if (strchr(action_argv[0], '/') && !stat(action_argv[0], &st))
@@ -415,6 +416,8 @@ static int action_status(void)
 			log_std("  FEC offset:  %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n",
 				vp.fec_area_offset * vp.hash_block_size / SECTOR_SIZE, vp.fec_area_offset * vp.hash_block_size);
 			log_std("  FEC roots:   %u\n", vp.fec_roots);
+			if (!crypt_get_verity_repaired(cd, action_argv[0], &repaired))
+				log_std("  FEC repaired: %" PRIu64 " [events]\n", repaired);
 		}
 
 		root_hash_size = crypt_get_volume_key_size(cd);
