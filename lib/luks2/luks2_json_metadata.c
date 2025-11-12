@@ -49,9 +49,9 @@ void JSON_DBG(struct crypt_device *cd, json_object *jobj, const char *desc)
 /*
  * JSON array helpers
  */
-struct json_object *LUKS2_array_jobj(struct json_object *array, const char *num)
+json_object *LUKS2_array_jobj(json_object *array, const char *num)
 {
-	struct json_object *jobj1;
+	json_object *jobj1;
 	int i;
 
 	for (i = 0; i < (int) json_object_array_length(array); i++) {
@@ -63,9 +63,9 @@ struct json_object *LUKS2_array_jobj(struct json_object *array, const char *num)
 	return NULL;
 }
 
-struct json_object *LUKS2_array_remove(struct json_object *array, const char *num)
+json_object *LUKS2_array_remove(json_object *array, const char *num)
 {
-	struct json_object *jobj1, *jobj_removing = NULL, *array_new;
+	json_object *jobj1, *jobj_removing = NULL, *array_new;
 	int i;
 
 	jobj_removing = LUKS2_array_jobj(array, num);

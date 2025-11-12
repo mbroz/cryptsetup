@@ -45,11 +45,11 @@ out:
 	return r;
 }
 
-static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, struct json_object **keyslot_object)
+static int json_luks1_keyslot(const struct luks_phdr *hdr_v1, int keyslot, json_object **keyslot_object)
 {
 	char *base64_str, cipher[LUKS_CIPHERNAME_L+LUKS_CIPHERMODE_L];
 	size_t base64_len;
-	struct json_object *keyslot_obj, *field, *jobj_kdf, *jobj_af, *jobj_area;
+	json_object *keyslot_obj, *field, *jobj_kdf, *jobj_af, *jobj_area;
 	uint64_t offset, area_size, length;
 	int r;
 
@@ -136,10 +136,10 @@ err:
 	return r;
 }
 
-static int json_luks1_keyslots(const struct luks_phdr *hdr_v1, struct json_object **keyslots_object)
+static int json_luks1_keyslots(const struct luks_phdr *hdr_v1, json_object **keyslots_object)
 {
 	int keyslot, r;
-	struct json_object *keyslot_obj, *field;
+	json_object *keyslot_obj, *field;
 
 	keyslot_obj = json_object_new_object();
 	if (!keyslot_obj)
@@ -165,11 +165,11 @@ static int json_luks1_keyslots(const struct luks_phdr *hdr_v1, struct json_objec
 	return 0;
 }
 
-static int json_luks1_segment(const struct luks_phdr *hdr_v1, struct json_object **segment_object)
+static int json_luks1_segment(const struct luks_phdr *hdr_v1, json_object **segment_object)
 {
 	const char *c;
 	char cipher[LUKS_CIPHERNAME_L+LUKS_CIPHERMODE_L];
-	struct json_object *segment_obj, *field;
+	json_object *segment_obj, *field;
 	uint64_t number;
 
 	segment_obj = json_object_new_object();
@@ -239,10 +239,10 @@ static int json_luks1_segment(const struct luks_phdr *hdr_v1, struct json_object
 	return 0;
 }
 
-static int json_luks1_segments(const struct luks_phdr *hdr_v1, struct json_object **segments_object)
+static int json_luks1_segments(const struct luks_phdr *hdr_v1, json_object **segments_object)
 {
 	int r;
-	struct json_object *segments_obj, *field;
+	json_object *segments_obj, *field;
 
 	segments_obj = json_object_new_object();
 	if (!segments_obj)
@@ -264,12 +264,12 @@ static int json_luks1_segments(const struct luks_phdr *hdr_v1, struct json_objec
 	return 0;
 }
 
-static int json_luks1_digest(const struct luks_phdr *hdr_v1, struct json_object **digest_object)
+static int json_luks1_digest(const struct luks_phdr *hdr_v1, json_object **digest_object)
 {
 	char keyslot_str[16], *base64_str;
 	int r, ks;
 	size_t base64_len;
-	struct json_object *digest_obj, *array, *field;
+	json_object *digest_obj, *array, *field;
 
 	digest_obj = json_object_new_object();
 	if (!digest_obj)
@@ -380,10 +380,10 @@ static int json_luks1_digest(const struct luks_phdr *hdr_v1, struct json_object 
 	return 0;
 }
 
-static int json_luks1_digests(const struct luks_phdr *hdr_v1, struct json_object **digests_object)
+static int json_luks1_digests(const struct luks_phdr *hdr_v1, json_object **digests_object)
 {
 	int r;
-	struct json_object *digests_obj, *field;
+	json_object *digests_obj, *field;
 
 	digests_obj = json_object_new_object();
 	if (!digests_obj)
@@ -400,10 +400,10 @@ static int json_luks1_digests(const struct luks_phdr *hdr_v1, struct json_object
 	return 0;
 }
 
-static int json_luks1_object(struct luks_phdr *hdr_v1, struct json_object **luks1_object, uint64_t keyslots_size)
+static int json_luks1_object(struct luks_phdr *hdr_v1, json_object **luks1_object, uint64_t keyslots_size)
 {
 	int r;
-	struct json_object *luks1_obj, *field;
+	json_object *luks1_obj, *field;
 	uint64_t json_size;
 
 	luks1_obj = json_object_new_object();
