@@ -34,7 +34,7 @@ struct luks2_reencrypt {
 
 	/* already running reencryption */
 	json_object *jobj_segs_hot;
-	struct json_object *jobj_segs_post;
+	json_object *jobj_segs_post;
 
 	/* backup segments */
 	json_object *jobj_segment_new;

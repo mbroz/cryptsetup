@@ -15,7 +15,7 @@ static json_object *parse_json_len(struct crypt_device *cd, const char *json_are
 			    uint64_t max_length, int *json_len)
 {
 	json_object *jobj;
-	struct json_tokener *jtok;
+	json_tokener *jtok;
 
 	 /* INT32_MAX is internal (json-c) json_tokener_parse_ex() limit */
 	if (!json_area || max_length > INT32_MAX)

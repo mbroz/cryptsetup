@@ -203,7 +203,7 @@ int LUKS2_generate_hdr(
 	uint32_t opal_segment_number,
 	uint32_t opal_key_size)
 {
-	struct json_object *jobj_segment, *jobj_keyslots, *jobj_segments, *jobj_config;
+	json_object *jobj_segment, *jobj_keyslots, *jobj_segments, *jobj_config;
 	uuid_t partitionUuid;
 	int r, digest;
 
