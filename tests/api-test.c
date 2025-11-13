@@ -64,6 +64,7 @@
 #define LUKS_PHDR_SIZE_B 1024
 
 static int _fips_mode = 0;
+static int _fips_mode_kernel = 0;
 
 static char *DEVICE_1 = NULL;
 static char *DEVICE_2 = NULL;
@@ -293,8 +294,9 @@ static int _setup(void)
 		return 1;
 
 	_fips_mode = fips_mode();
+	_fips_mode_kernel = fips_mode_kernel();
 	if (_debug)
-		printf("FIPS MODE: %d\n", _fips_mode);
+		printf("FIPS MODE: LIB %d, KERNEL %d\n", _fips_mode, _fips_mode_kernel);
 
 	/* Use default log callback */
 	crypt_set_log_callback(NULL, &global_log_callback, NULL);
@@ -1833,7 +1835,7 @@ static void TcryptTest(void)
 	CRYPT_FREE(cd);
 
 	// Following test uses non-FIPS algorithms in the cipher chain
-	if(_fips_mode)
+	if(_fips_mode || _fips_mode_kernel)
 		return;
 
 	OK_(crypt_init(&cd, tcrypt_dev2));

@@ -33,8 +33,6 @@ else
 	CRYPTSETUP_LIB_VALGRIND=../.libs
 fi
 
-FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
-
 remove_mapping()
 {
 	[ -b /dev/mapper/$NAME ] && dmsetup remove --retry $NAME
@@ -115,9 +113,9 @@ test_and_prepare_keyring() {
 	load_key "$HEXKEY_16" user test_key "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
 }
 
-fips_mode()
+fips_mode_kernel()
 {
-	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
+	./crypto-check fips_mode_kernel
 }
 
 add_device() {
@@ -205,7 +203,7 @@ diff $CHKS_DMCRYPT $CHKS_KEYRING || fail "Plaintext checksums mismatch (corrupti
 echo "OK"
 
 #test serpent cipher, cbc mode, tcw IV
-fips_mode || {
+fips_mode_kernel || {
 echo -n "Testing $CIPHER_CBC_TCW..."
 dmsetup create $NAME --table "0 $DEVSECTORS crypt $CIPHER_CBC_TCW $HEXKEY_64 0 $DEV 0" || fail
 sha256sum /dev/mapper/$NAME > $CHKS_DMCRYPT || fail

@@ -31,6 +31,7 @@ int t_dm_capi_string_supported(void);
 int t_set_readahead(const char *device, unsigned value);
 
 int fips_mode(void);
+int fips_mode_kernel(void);
 
 int create_dmdevice_over_device(const char *dm_name, const char *device, uint64_t size, uint64_t offset);
 

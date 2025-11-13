@@ -54,8 +54,6 @@ HAVE_KEYRING=0
 JSON_MSIZE=16384
 IMG_JSON=luks2-digest-1.json
 
-FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
-
 dm_crypt_features()
 {
 	VER_STR=$(dmsetup targets | grep crypt | cut -f2 -dv)
@@ -163,7 +161,7 @@ skip()
 
 fips_mode()
 {
-	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
+	./crypto-check fips_mode || ./crypto-check fips_mode_kernel
 }
 
 add_scsi_device() {

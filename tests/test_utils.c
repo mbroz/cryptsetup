@@ -165,20 +165,12 @@ int t_set_readahead(const char *device, unsigned value)
 
 int fips_mode(void)
 {
-	int fd;
-	char buf = 0;
+	return _system("./crypto-check fips_mode", 1) == 0;
+}
 
-	fd = open("/proc/sys/crypto/fips_enabled", O_RDONLY);
-
-	if (fd < 0)
-		return 0;
-
-	if (read(fd, &buf, 1) != 1)
-		buf = '0';
-
-	close(fd);
-
-	return (buf == '1');
+int fips_mode_kernel(void)
+{
+	return _system("./crypto-check fips_mode_kernel", 1) == 0;
 }
 
 /*
