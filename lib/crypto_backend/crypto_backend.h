@@ -148,6 +148,9 @@ int crypt_backend_memeq(const void *m1, const void *m2, size_t n);
 /* crypto backend running in FIPS mode */
 bool crypt_fips_mode(void);
 
+/* kernel running in FIPS mode */
+bool crypt_fips_mode_kernel(void);
+
 # ifdef __cplusplus
 }
 # endif

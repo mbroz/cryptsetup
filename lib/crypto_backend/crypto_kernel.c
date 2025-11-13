@@ -408,5 +408,5 @@ int crypt_backend_memeq(const void *m1, const void *m2, size_t n)
 
 bool crypt_fips_mode(void)
 {
-	return false;
+	return crypt_fips_mode_kernel();
 }
