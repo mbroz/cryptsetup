@@ -80,7 +80,7 @@ static void crypt_hash_test_whirlpool_bug(void)
 		crypto_backend_whirlpool_bug = 1;
 }
 
-int crypt_backend_init(bool fips __attribute__((unused)))
+int crypt_backend_init(void)
 {
 	int r;
 
@@ -684,7 +684,7 @@ bool crypt_fips_mode(void)
 	if (fips_checked)
 		return fips_mode;
 
-	if (crypt_backend_init(false /* ignored */))
+	if (crypt_backend_init())
 		return false;
 
 	fips_mode = gcry_fips_mode_active();

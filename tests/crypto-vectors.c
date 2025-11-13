@@ -1582,7 +1582,7 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 
 	fips_active = fips_mode();
 
-	if (crypt_backend_init(fips_active))
+	if (crypt_backend_init())
 		exit_test("Crypto backend init error.", EXIT_FAILURE);
 
 	printf("Test vectors using %s crypto backend.\n", crypt_backend_version());

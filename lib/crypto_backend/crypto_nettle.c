@@ -200,7 +200,7 @@ static struct hash_alg *_get_alg(const char *name)
 	return NULL;
 }
 
-int crypt_backend_init(bool fips __attribute__((unused)))
+int crypt_backend_init(void)
 {
 	return 0;
 }

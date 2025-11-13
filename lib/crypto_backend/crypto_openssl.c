@@ -205,12 +205,12 @@ static const char *openssl_backend_version(void)
 }
 #endif
 
-int crypt_backend_init(bool fips)
+int crypt_backend_init(void)
 {
 	if (crypto_backend_initialised)
 		return 0;
 
-	if (openssl_backend_init(fips))
+	if (openssl_backend_init(crypt_fips_mode()))
 		return -EINVAL;
 
 	crypto_backend_initialised = 1;

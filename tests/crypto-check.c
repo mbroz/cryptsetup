@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 	if (!strcmp(argv[1], "fips_mode_kernel"))
 		return crypt_fips_mode_kernel() ? EXIT_SUCCESS : EXIT_FAILURE;
 
-	if (crypt_backend_init(crypt_fips_mode())) {
+	if (crypt_backend_init()) {
 		printf("Crypto backend init error.");
 		return EXIT_FAILURE;
 	}

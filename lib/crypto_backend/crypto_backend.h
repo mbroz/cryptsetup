@@ -30,7 +30,7 @@ struct crypt_hmac;
 struct crypt_cipher;
 struct crypt_storage;
 
-int crypt_backend_init(bool fips);
+int crypt_backend_init(void);
 void crypt_backend_destroy(void);
 
 #define CRYPT_BACKEND_KERNEL     (1 << 0) /* Crypto uses kernel part, for benchmark */
