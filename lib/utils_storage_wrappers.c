@@ -327,24 +327,6 @@ ssize_t crypt_storage_wrapper_encrypt_write(struct crypt_storage_wrapper *cw,
 			cw->data_offset + offset);
 }
 
-ssize_t crypt_storage_wrapper_encrypt(struct crypt_storage_wrapper *cw,
-		off_t offset, void *buffer, size_t buffer_length)
-{
-	if (cw->type == NONE)
-		return 0;
-
-	if (cw->type == DMCRYPT)
-		return -ENOTSUP;
-
-	if (crypt_storage_encrypt(cw->u.cb.s,
-			cw->u.cb.iv_start + (offset >> SECTOR_SHIFT),
-			buffer_length,
-			buffer))
-		return -EINVAL;
-
-	return 0;
-}
-
 void crypt_storage_wrapper_destroy(struct crypt_storage_wrapper *cw)
 {
 	if (!cw)
