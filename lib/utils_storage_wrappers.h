@@ -53,8 +53,6 @@ ssize_t crypt_storage_wrapper_write(struct crypt_storage_wrapper *cw,
 		off_t offset, void *buffer, size_t buffer_length);
 ssize_t crypt_storage_wrapper_encrypt_write(struct crypt_storage_wrapper *cw,
 		off_t offset, void *buffer, size_t buffer_length);
-ssize_t crypt_storage_wrapper_encrypt(struct crypt_storage_wrapper *cw,
-		off_t offset, void *buffer, size_t buffer_length);
 
 int crypt_storage_wrapper_datasync(const struct crypt_storage_wrapper *cw);
 
