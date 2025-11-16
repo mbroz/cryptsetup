@@ -14,7 +14,7 @@ cifuzz:
     DOCKER_DRIVER: overlay2
     DOCKER_TLS_CERTDIR: ""
   image:
-    name: gcr.io/oss-fuzz-base/cifuzz-base
+    name: gcr.io/oss-fuzz-base/base-builder
     entrypoint: [""]
   services:
     - docker:dind
@@ -30,7 +30,7 @@ cifuzz:
     #     MODE: "code-change"
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
-    - if: $BUILD_AND_RUN_FUZZERS != null
+    - if: $BUILD_AND_RUN_FUZZERS == null
   before_script:
     # Get gitlab's container id.
     - export CFL_CONTAINER_ID=`cut -c9- < /proc/1/cpuset`
