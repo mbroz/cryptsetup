@@ -54,6 +54,8 @@ struct luks2_reencrypt {
 	uint32_t wflags1;
 	uint32_t wflags2;
 
+	struct device *hotzone_device;
+
 	struct crypt_lock_handle *reenc_lock;
 };
 #if USE_LUKS2_REENCRYPTION
@@ -882,6 +884,8 @@ void LUKS2_reencrypt_free(struct crypt_device *cd, struct luks2_reencrypt *rh)
 	rh->cw1 = NULL;
 	crypt_storage_wrapper_destroy(rh->cw2);
 	rh->cw2 = NULL;
+	device_free(cd, rh->hotzone_device);
+	rh->hotzone_device = NULL;
 
 	free(rh->device_name);
 	free(rh->overlay_name);
@@ -2142,34 +2146,22 @@ static int reencrypt_make_targets(struct crypt_device *cd,
  * 	2) can't we derive hotzone device name from crypt context? (unlocked name, device uuid, etc?)
  */
 static int reencrypt_load_overlay_device(struct crypt_device *cd, struct luks2_hdr *hdr,
-	const char *overlay, const char *hotzone, struct volume_key *vks, uint64_t size,
+	const char *overlay, struct device *hotzone_device, struct volume_key *vks, uint64_t size,
 	uint32_t flags)
 {
-	char hz_path[PATH_MAX];
 	int r;
 
-	struct device *hz_dev = NULL;
 	struct crypt_dm_active_device dmd = {
 		.flags = flags,
 	};
 
 	log_dbg(cd, "Loading new table for overlay device %s.", overlay);
 
-	r = snprintf(hz_path, PATH_MAX, "%s/%s", dm_get_dir(), hotzone);
-	if (r < 0 || r >= PATH_MAX) {
-		r = -EINVAL;
-		goto out;
-	}
-
-	r = device_alloc(cd, &hz_dev, hz_path);
-	if (r)
-		goto out;
-
 	r = dm_targets_allocate(&dmd.segment, LUKS2_segments_count(hdr));
 	if (r)
 		goto out;
 
-	r = reencrypt_make_targets(cd, hdr, hz_dev, vks, &dmd.segment, size);
+	r = reencrypt_make_targets(cd, hdr, hotzone_device, vks, &dmd.segment, size);
 	if (r < 0)
 		goto out;
 
@@ -2178,7 +2170,6 @@ static int reencrypt_load_overlay_device(struct crypt_device *cd, struct luks2_h
 	/* what else on error here ? */
 out:
 	dm_targets_free(cd, &dmd);
-	device_free(cd, hz_dev);
 
 	return r;
 }
@@ -2305,15 +2296,31 @@ out:
 }
 
 static int reencrypt_init_device_stack(struct crypt_device *cd,
-		                     const struct luks2_reencrypt *rh)
+		                     struct luks2_reencrypt *rh)
 {
 	int r;
+	char hz_path[PATH_MAX];
+
+	assert(rh);
+	assert(!rh->hotzone_device);
 
 	/* Activate hotzone device 1:1 linear mapping to data_device */
 	r = reencrypt_activate_hotzone_device(cd, rh->hotzone_name, rh->device_size, CRYPT_ACTIVATE_PRIVATE);
 	if (r) {
 		log_err(cd, _("Failed to activate hotzone device %s."), rh->hotzone_name);
 		return r;
+	}
+
+	r = snprintf(hz_path, PATH_MAX, "%s/%s", dm_get_dir(), rh->hotzone_name);
+	if (r < 0 || r >= PATH_MAX) {
+		r = -EINVAL;
+		goto err;
+	}
+
+	r = device_alloc(cd, &rh->hotzone_device, hz_path);
+	if (r) {
+		log_err(cd, _("Failed to allocate hotzone device %s."), rh->hotzone_name);
+		goto err;
 	}
 
 	/*
@@ -2395,11 +2402,12 @@ static int reencrypt_refresh_overlay_devices(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
 		const char *overlay,
 		const char *hotzone,
+		struct device *hotzone_device,
 		struct volume_key *vks,
 		uint64_t device_size,
 		uint32_t flags)
 {
-	int r = reencrypt_load_overlay_device(cd, hdr, overlay, hotzone, vks, device_size, flags);
+	int r = reencrypt_load_overlay_device(cd, hdr, overlay, hotzone_device, vks, device_size, flags);
 	if (r) {
 		log_err(cd, _("Failed to reload device %s."), overlay);
 		return REENC_ERR;
@@ -4083,7 +4091,8 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	}
 
 	if (online) {
-		r = reencrypt_refresh_overlay_devices(cd, hdr, rh->overlay_name, rh->hotzone_name, rh->vks, rh->device_size, rh->flags);
+		r = reencrypt_refresh_overlay_devices(cd, hdr, rh->overlay_name, rh->hotzone_name,
+						      rh->hotzone_device, rh->vks, rh->device_size, rh->flags);
 		/* Teardown overlay devices with dm-error. None bio shall pass! */
 		if (r != REENC_OK)
 			return r;
