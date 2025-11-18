@@ -32,10 +32,10 @@
 #ifndef LOOP_CONFIGURE
 #define LOOP_CONFIGURE 0x4C0A
 struct loop_config {
-  __u32 fd;
-  __u32 block_size;
-  struct loop_info64 info;
-  __u64 __reserved[8];
+	__u32 fd;
+	__u32 block_size;
+	struct loop_info64 info;
+	__u64 __reserved[8];
 };
 #endif
 
@@ -897,7 +897,7 @@ int loop_detach(const char *loop)
 
 	loop_fd = open(loop, O_RDONLY);
 	if (loop_fd < 0)
-                return 1;
+		return 1;
 
 	if (!ioctl(loop_fd, LOOP_CLR_FD, 0))
 		r = 0;
@@ -926,32 +926,31 @@ int t_get_devno(const char *name, dev_t *devno)
 
 static int _read_uint64(const char *sysfs_path, uint64_t *value)
 {
-        char tmp[64] = {0};
-        int fd, r;
+	char tmp[64] = {0};
+	int fd, r;
 
-        if ((fd = open(sysfs_path, O_RDONLY)) < 0)
-                return 0;
-        r = read(fd, tmp, sizeof(tmp));
-        close(fd);
+	if ((fd = open(sysfs_path, O_RDONLY)) < 0)
+		return 0;
+	r = read(fd, tmp, sizeof(tmp));
+	close(fd);
 
-        if (r <= 0)
-                return 0;
+	if (r <= 0)
+		return 0;
 
-        if (sscanf(tmp, "%" PRIu64, value) != 1)
-                return 0;
+	if (sscanf(tmp, "%" PRIu64, value) != 1)
+		return 0;
 
-        return 1;
+	return 1;
 }
 
 static int _sysfs_get_uint64(int major, int minor, uint64_t *value, const char *attr)
 {
-        char path[PATH_MAX];
+	char path[PATH_MAX];
 
-        if (snprintf(path, sizeof(path), "/sys/dev/block/%d:%d/%s",
-                     major, minor, attr) < 0)
-                return 0;
+	if (snprintf(path, sizeof(path), "/sys/dev/block/%d:%d/%s", major, minor, attr) < 0)
+		return 0;
 
-        return _read_uint64(path, value);
+	return _read_uint64(path, value);
 }
 
 int t_device_size_by_devno(dev_t devno, uint64_t *retval)
