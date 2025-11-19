@@ -51,4 +51,16 @@ dmsetup version
 echo "Device mapper targets:"
 dmsetup targets
 
+echo "---------------------------"
+pwd
+lsblk
+lsblk -S
+lsblk -N
+lsblk -D
+lsblk -t
+nvme list
+mount
+time $CRYPTSETUP_PATH/cryptsetup benchmark
+echo "---------------------------"
+
 exit 0
