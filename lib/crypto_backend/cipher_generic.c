@@ -8,6 +8,8 @@
 
 #include <errno.h>
 #include <strings.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "crypto_backend.h"
 
 struct cipher_alg {
@@ -76,4 +78,22 @@ int crypt_cipher_wrapped_key(const char *name, const char *mode)
 	const struct cipher_alg *ca = _get_alg(name, mode);
 
 	return ca ? (int)ca->wrapped_key : 0;
+}
+
+bool crypt_fips_mode_kernel(void)
+{
+	int fd;
+	char buf = 0;
+
+	fd = open("/proc/sys/crypto/fips_enabled", O_RDONLY);
+
+	if (fd < 0)
+		return false;
+
+	if (read(fd, &buf, 1) != 1)
+		buf = '0';
+
+	close(fd);
+
+	return (buf == '1');
 }

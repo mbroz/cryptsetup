@@ -10,8 +10,6 @@ PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
 FAST_PBKDF="--pbkdf-force-iterations 1000"
 
-FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
-
 if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 	CRYPTSETUP_VALGRIND=$CRYPTSETUP
 else
@@ -22,7 +20,7 @@ fi
 
 fips_mode()
 {
-	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
+	./crypto-check fips_mode
 }
 
 cleanup() {

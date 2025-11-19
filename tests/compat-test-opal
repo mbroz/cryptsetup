@@ -42,8 +42,6 @@ FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
 TEST_UUID="12345678-1234-1234-1234-123456789abc"
 
-FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
-
 remove_mapping()
 {
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
@@ -73,7 +71,7 @@ trap _sigchld CHLD
 
 fips_mode()
 {
-	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
+	./crypto-check fips_mode
 }
 
 can_fail_fips()

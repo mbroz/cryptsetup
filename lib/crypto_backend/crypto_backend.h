@@ -30,7 +30,7 @@ struct crypt_hmac;
 struct crypt_cipher;
 struct crypt_storage;
 
-int crypt_backend_init(bool fips);
+int crypt_backend_init(void);
 void crypt_backend_destroy(void);
 
 #define CRYPT_BACKEND_KERNEL     (1 << 0) /* Crypto uses kernel part, for benchmark */
@@ -147,6 +147,9 @@ int crypt_backend_memeq(const void *m1, const void *m2, size_t n);
 
 /* crypto backend running in FIPS mode */
 bool crypt_fips_mode(void);
+
+/* kernel running in FIPS mode */
+bool crypt_fips_mode_kernel(void);
 
 # ifdef __cplusplus
 }

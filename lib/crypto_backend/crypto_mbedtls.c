@@ -69,15 +69,12 @@ static const mbedtls_md_info_t *crypt_get_hash(const char *name)
 	return NULL;
 }
 
-int crypt_backend_init(bool fips)
+int crypt_backend_init(void)
 {
 	int ret;
 
 	if (g_initialized)
 		return 0;
-
-	if (fips)
-		return -ENOTSUP;
 
 	mbedtls_version_get_string_full(g_backend_version);
 

@@ -30,11 +30,10 @@ LUKS1_DECRYPT="LUKS-$LUKS1_DECRYPT_UUID"
 
 MNT_DIR=./mnt_luks
 START_DIR=$(pwd)
-FIPS_MODE=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
 
 fips_mode()
 {
-	[ -n "$FIPS_MODE" ] && [ "$FIPS_MODE" -gt 0 ]
+	./crypto-check fips_mode || ./crypto-check fips_mode_kernel
 }
 
 del_scsi_device()

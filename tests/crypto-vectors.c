@@ -18,8 +18,6 @@
 # define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
-static bool fips_active = false;
-
 static void printhex(const char *s, const char *buf, size_t len)
 {
 	size_t i;
@@ -29,24 +27,6 @@ static void printhex(const char *s, const char *buf, size_t len)
 		printf(" %02x", (unsigned char)buf[i]);
 	printf("\n");
 	fflush(stdout);
-}
-
-static bool fips_mode(void)
-{
-	int fd;
-	char buf = 0;
-
-	fd = open("/proc/sys/crypto/fips_enabled", O_RDONLY);
-
-	if (fd < 0)
-		return false;
-
-	if (read(fd, &buf, 1) != 1)
-		buf = '0';
-
-	close(fd);
-
-	return (buf == '1');
 }
 
 /*
@@ -1043,7 +1023,7 @@ static int pbkdf_test_vectors(void)
 		    vec->salt, vec->salt_length,
 		    result, vec->output_length,
 		    vec->iterations, vec->memory, vec->parallelism) < 0) {
-			if (vec->can_fail_fips && fips_mode()) {
+			if (vec->can_fail_fips && crypt_fips_mode()) {
 				printf("[API FAILED, IGNORED (FIPS mode)]\n");
 				continue;
 			}
@@ -1552,7 +1532,7 @@ static int kernel_capi_check_test(void)
 		if (!r)
 			printf("[OK]\n");
 		else if (r == -ENOENT || r == -ENOTSUP ||
-			(fips_active && !capi_test_vectors[i].fips))
+			(crypt_fips_mode_kernel() && !capi_test_vectors[i].fips))
 			printf("[N/A]\n");
 		else
 			return EXIT_FAILURE;
@@ -1580,9 +1560,7 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 	}
 #endif
 
-	fips_active = fips_mode();
-
-	if (crypt_backend_init(fips_active))
+	if (crypt_backend_init())
 		exit_test("Crypto backend init error.", EXIT_FAILURE);
 
 	printf("Test vectors using %s crypto backend.\n", crypt_backend_version());
@@ -1615,7 +1593,7 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 		exit_test("Kernel CAPI test failed.", EXIT_FAILURE);
 
 	if (default_alg_test()) {
-		if (fips_mode())
+		if (crypt_fips_mode())
 			printf("\nDefault compiled-in algorithms test ignored (FIPS mode on).\n");
 		else
 			exit_test("\nDefault compiled-in algorithms test failed.", EXIT_FAILURE);

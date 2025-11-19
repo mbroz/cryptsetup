@@ -12,24 +12,6 @@
 
 #include "crypto_backend/crypto_backend.h"
 
-static bool fips_mode(void)
-{
-	int fd;
-	char buf = 0;
-
-	fd = open("/proc/sys/crypto/fips_enabled", O_RDONLY);
-
-	if (fd < 0)
-		return false;
-
-	if (read(fd, &buf, 1) != 1)
-		buf = '0';
-
-	close(fd);
-
-	return (buf == '1');
-}
-
 static int check_cipher(const char *alg, const char *mode, unsigned long key_bits)
 {
 	struct crypt_cipher *cipher;
@@ -67,7 +49,7 @@ static int check_hash(const char *hash)
 
 static void __attribute__((noreturn)) exit_help(bool destroy_backend)
 {
-	printf("Use: crypto_check version | hash <alg> | cipher <alg> <mode> [key_bits]\n");
+	printf("Use: crypto_check version | fips_mode | fips_mode_kernel | hash <alg> | cipher <alg> <mode> [key_bits]\n");
 	if (destroy_backend)
 		crypt_backend_destroy();
 	exit(EXIT_FAILURE);
@@ -80,13 +62,21 @@ int main(int argc, char *argv[])
 	if (argc < 2)
 		exit_help(false);
 
-        if (crypt_backend_init(fips_mode())) {
+	if (!strcmp(argv[1], "fips_mode"))
+		return crypt_fips_mode() ? EXIT_SUCCESS : EXIT_FAILURE;
+
+	if (!strcmp(argv[1], "fips_mode_kernel"))
+		return crypt_fips_mode_kernel() ? EXIT_SUCCESS : EXIT_FAILURE;
+
+	if (crypt_backend_init()) {
 		printf("Crypto backend init error.");
 		return EXIT_FAILURE;
 	}
 
 	if (!strcmp(argv[1], "version")) {
-		printf("%s%s\n", crypt_backend_version(), fips_mode() ? " (FIPS mode)" : "" );
+		printf("%s%s%s\n", crypt_backend_version(),
+		       crypt_fips_mode() ? " (FIPS mode)" : "",
+		       crypt_fips_mode_kernel() ? " (FIPS kernel)" : "");
 	} else if (!strcmp(argv[1], "hash")) {
 		if (argc != 3)
 			exit_help(true);
