@@ -144,9 +144,9 @@ This option is available since the Linux kernel version 6.11.
 *--integrity-key-file* _file_::
 The file with the integrity key.
 
-*--integrity-key-size* _bytes_::
+*--integrity-key-size* _bits_::
 The size of the data integrity key.
-Maximum is 4096 bytes.
+Maximum is 4096 bits.
 
 *--integrity-no-journal*, *-D*::
 Disable the journal for the integrity device.
@@ -186,9 +186,9 @@ Using journal encryption does not make sense without encryption of the data.
 *--journal-crypt-key-file* _file_::
 The file with the journal encryption key.
 
-*--journal-crypt-key-size* _bytes_::
+*--journal-crypt-key-size* _bits_::
 The size of the journal encryption key.
-Maximum is 4096 bytes.
+Maximum is 4096 bits.
 
 *--journal-integrity* _algorithm_::
 Integrity algorithm for the journal area.
@@ -197,9 +197,9 @@ See --integrity option for detailed specification.
 *--journal-integrity-key-file* _file_::
 The file with the integrity key.
 
-*--journal-integrity-key-size* _bytes_::
+*--journal-integrity-key-size* _bits_::
 The size of the journal integrity key.
-Maximum is 4096 bytes.
+Maximum is 4096 bits.
 
 *--journal-size*, *-j* _bytes_::
 Size of the journal.
@@ -289,11 +289,11 @@ Open the device with default parameters:
 
 Format the device in standalone mode for use with HMAC(SHA256):
 
-*integritysetup format <device> --tag-size 32 --integrity hmac-sha256 --integrity-key-file <keyfile> --integrity-key-size <key_bytes>*
+*integritysetup format <device> --tag-size 32 --integrity hmac-sha256 --integrity-key-file <keyfile> --integrity-key-size <key_bits>*
 
 Open (activate) the device with HMAC(SHA256) and HMAC key in file:
 
-*integritysetup open <device> test --integrity hmac-sha256 --integrity-key-file <keyfile> --integrity-key-size <key_bytes>*
+*integritysetup open <device> test --integrity hmac-sha256 --integrity-key-file <keyfile> --integrity-key-size <key_bits>*
 
 Dump dm-integrity superblock information:
 
