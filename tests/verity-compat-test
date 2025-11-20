@@ -458,6 +458,8 @@ check_concurrent() # $1 hash
 	wait
 	grep -q "Command failed with code .* (wrong or missing parameters)" $DEV_OUT && fail
 	grep -q "Command failed with code .* (wrong device or file specified)." $DEV_OUT && fail
+	# Some distros have strange udev rules, settle here seems to be necessary
+	udevadm settle >/dev/null 2>&1
 	check_exists
 	rm $DEV_OUT
 	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
