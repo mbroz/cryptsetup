@@ -980,7 +980,7 @@ int crypt_resume_by_keyfile(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param name name of device to resume
  * @param volume_key provided volume key
- * @param volume_key_size size of volume_key
+ * @param volume_key_size size of volume_key in bytes
  *
  * @return @e 0 on success or negative errno value otherwise.
  */
@@ -1152,7 +1152,7 @@ int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param keyslot requested keyslot or CRYPT_ANY_SLOT
  * @param volume_key provided volume key or @e NULL if used after crypt_format
- * @param volume_key_size size of volume_key
+ * @param volume_key_size size of volume_key in bytes
  * @param passphrase passphrase for new keyslot
  * @param passphrase_size size of passphrase
  *
@@ -1182,7 +1182,7 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param keyslot requested keyslot or CRYPT_ANY_SLOT
  * @param volume_key provided volume key or @e NULL (see note below)
- * @param volume_key_size size of volume_key
+ * @param volume_key_size size of volume_key in bytes
  * @param passphrase passphrase for new keyslot
  * @param passphrase_size size of passphrase
  * @param flags key flags to set
@@ -1289,7 +1289,7 @@ int crypt_keyslot_context_init_by_token(struct crypt_device *cd,
  *
  * @param volume_key provided volume key or @e NULL if used after crypt_format
  *        or with CRYPT_VOLUME_KEY_NO_SEGMENT flag
- * @param volume_key_size size of volume_key
+ * @param volume_key_size size of volume_key in bytes
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_KEY
  *
  * @return zero on success or negative errno otherwise.
@@ -1305,9 +1305,9 @@ int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd,
  * @param cd crypt device handle initialized to device context
  *
  * @param volume_key provided volume key
- * @param volume_key_size size of volume_key
+ * @param volume_key_size size of volume_key in bytes
  * @param signature buffer with signature for the key
- * @param signature_size bsize of signature buffer
+ * @param signature_size size of signature buffer
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_SIGNED_KEY
  *
  * @return zero on success or negative errno otherwise.
@@ -1753,7 +1753,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param name name of device to create, if @e NULL only check volume key
  * @param volume_key provided volume key (or @e NULL to use internal)
- * @param volume_key_size size of volume_key
+ * @param volume_key_size size of volume_key in bytes
  * @param flags activation flags
  *
  * @return @e 0 on success or negative errno value otherwise.
@@ -1782,9 +1782,9 @@ int crypt_activate_by_volume_key(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param name name of device to create
  * @param volume_key provided volume key
- * @param volume_key_size size of volume_key
+ * @param volume_key_size size of volume_key in bytes
  * @param signature buffer with signature for the key
- * @param signature_size bsize of signature buffer
+ * @param signature_size size of signature buffer
  * @param flags activation flags
  *
  * @return @e 0 on success or negative errno value otherwise.
@@ -1865,7 +1865,7 @@ int crypt_deactivate(struct crypt_device *cd, const char *name);
  * @param keyslot use this keyslot or @e CRYPT_ANY_SLOT
  * @param volume_key buffer for volume key
  * @param volume_key_size on input, size of buffer @e volume_key,
- *        on output size of @e volume_key
+ *        on output size of @e volume_key in bytes
  * @param passphrase passphrase used to unlock volume key
  * @param passphrase_size size of @e passphrase
  *
@@ -1892,7 +1892,7 @@ int crypt_volume_key_get(struct crypt_device *cd,
  * @param keyslot use this keyslot or @e CRYPT_ANY_SLOT
  * @param volume_key buffer for volume key
  * @param volume_key_size on input, size of buffer @e volume_key,
- *        on output size of @e volume_key
+ *        on output size of @e volume_key in bytes
  * @param kc keyslot context used to unlock volume key
  *
  * @return unlocked key slot number or negative errno otherwise.
@@ -1925,7 +1925,7 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
  *
  * @param cd crypt device handle
  * @param volume_key provided volume key
- * @param volume_key_size size of @e volume_key
+ * @param volume_key_size size of @e volume_key in bytes
  *
  * @return @e 0 on success or negative errno value otherwise.
  *
@@ -2184,7 +2184,7 @@ int crypt_benchmark(struct crypt_device *cd,
  * @param password_size size of password
  * @param salt salt for benchmark
  * @param salt_size size of salt
- * @param volume_key_size output volume key size
+ * @param volume_key_size output volume key size in bytes
  * @param progress callback function
  * @param usrptr provided identification in callback
  *
@@ -2421,8 +2421,8 @@ void crypt_set_debug_level(int level);
  * @param cd crypt device handle
  * @param keyfile keyfile to read
  * @param key buffer for key
- * @param key_size_read size of read key
- * @param keyfile_offset key offset in keyfile
+ * @param key_size_read size of read key in bytes
+ * @param keyfile_offset key offset in bytes in keyfile
  * @param key_size exact key length to read from file or 0
  * @param flags keyfile read flags
  *
