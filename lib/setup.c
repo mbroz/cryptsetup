@@ -6790,6 +6790,16 @@ int crypt_get_verity_info(struct crypt_device *cd,
 	return 0;
 }
 
+int crypt_get_verity_repaired(struct crypt_device *cd, const char *name,
+			      uint64_t *repaired)
+
+{
+	if (!cd || !isVERITY(cd->type) || !name || !repaired)
+		return -EINVAL;
+
+	return dm_status_verity_repaired(cd, name, repaired);
+}
+
 int crypt_get_integrity_info(struct crypt_device *cd,
 	struct crypt_params_integrity *ip)
 {

@@ -1992,6 +1992,40 @@ int dm_status_verity_ok(struct crypt_device *cd, const char *name)
 	return r;
 }
 
+int dm_status_verity_repaired(struct crypt_device *cd, const char *name, uint64_t *repaired)
+{
+	int r;
+	struct dm_info dmi;
+	char *status_line = NULL, *p;
+	uint64_t val64;
+
+	if (dm_init_context(cd, DM_VERITY))
+		return -ENOTSUP;
+
+	r = dm_status_dmi(name, &dmi, DM_VERITY_TARGET, &status_line);
+	dm_exit_context();
+	if (r < 0 || !status_line || !*status_line) {
+		free(status_line);
+		return r;
+	}
+	p = status_line + 1;
+	while (*p == ' ')
+		p++;
+
+	if (!*p || *p == '-' || sscanf(p, "%" PRIu64, &val64) != 1) {
+		free(status_line);
+		return -ENOTSUP;
+	}
+
+	log_dbg(cd, "Verity volume %s status is %s.", name, status_line ?: "");
+
+	if (repaired)
+		*repaired = val64;
+
+	free(status_line);
+	return 0;
+}
+
 int dm_status_integrity_failures(struct crypt_device *cd, const char *name, uint64_t *count)
 {
 	int r;
