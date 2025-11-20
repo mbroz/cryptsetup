@@ -367,8 +367,9 @@ This option is available since the Linux kernel version 6.11.
 endif::[]
 
 ifdef::ACTION_LUKSFORMAT[]
-*--integrity-key-size* _bytes_::
+*--integrity-key-size* _bits_::
 The size of the data integrity key.
+The argument has to be a multiple of 8.
 Configurable only for HMAC integrity.
 The default integrity key size is set to the same as the hash output length.
 endif::[]
