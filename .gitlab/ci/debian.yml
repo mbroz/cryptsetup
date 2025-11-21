@@ -21,6 +21,48 @@ test-mergerq-job-debian:
     - .debian-prep
   tags:
     - libvirt
+    - cryptsetup-debian-unstable
+  stage: test
+  interruptible: true
+  variables:
+    DISTRO: cryptsetup-debian-unstable
+    RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+test-main-commit-job-debian:
+  extends:
+    - .debian-prep
+  tags:
+    - libvirt
+    - cryptsetup-debian-unstable
+  stage: test
+  interruptible: true
+  variables:
+    DISTRO: cryptsetup-debian-unstable
+    RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  script:
+    - make -j
+    - make -j -C tests check-programs
+    - sudo -E make check
+
+test-mergerq-job-debian12:
+  extends:
+    - .debian-prep
+  tags:
+    - libvirt
     - cryptsetup-debian-12
   stage: test
   interruptible: true
@@ -37,7 +79,7 @@ test-mergerq-job-debian:
     - make -j -C tests check-programs
     - sudo -E make check
 
-test-main-commit-job-debian:
+test-main-commit-job-debian12:
   extends:
     - .debian-prep
   tags:
@@ -64,6 +106,50 @@ test-mergerq-job-debian-meson:
     - .debian-prep
   tags:
     - libvirt
+    - cryptsetup-debian-unstable
+  stage: test
+  interruptible: true
+  variables:
+    DISTRO: cryptsetup-debian-unstable
+    RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - sudo apt-get -y install -y -qq meson ninja-build
+    - meson setup build
+    - ninja -C build
+    - cd build && sudo -E meson test --verbose --print-errorlogs
+
+test-main-commit-job-debian-meson:
+  extends:
+    - .debian-prep
+  tags:
+    - libvirt
+    - cryptsetup-debian-unstable
+  stage: test
+  interruptible: true
+  variables:
+    DISTRO: cryptsetup-debian-unstable
+    RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+  script:
+    - sudo apt-get -y install -y -qq meson ninja-build
+    - meson setup build
+    - ninja -C build
+    - cd build && sudo -E meson test --verbose --print-errorlogs
+
+test-mergerq-job-debian12-meson:
+  extends:
+    - .debian-prep
+  tags:
+    - libvirt
     - cryptsetup-debian-12
   stage: test
   interruptible: true
@@ -81,7 +167,7 @@ test-mergerq-job-debian-meson:
     - ninja -C build
     - cd build && sudo -E meson test --verbose --print-errorlogs
 
-test-main-commit-job-debian-meson:
+test-main-commit-job-debian12-meson:
   extends:
     - .debian-prep
   tags:
