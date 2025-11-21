@@ -264,10 +264,11 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 	bool supported = false;
 	int r = 0;
 
-	/* only passphrase or recovery passphrase vmks are supported (can be used to activate) */
+	/* only passphrase, recovery passphrase, startup key and clearkey vmks are supported (can be used to activate) */
 	supported = (*vmk)->protection == BITLK_PROTECTION_PASSPHRASE ||
 		    (*vmk)->protection == BITLK_PROTECTION_RECOVERY_PASSPHRASE ||
-		    (*vmk)->protection == BITLK_PROTECTION_STARTUP_KEY;
+		    (*vmk)->protection == BITLK_PROTECTION_STARTUP_KEY ||
+		    (*vmk)->protection == BITLK_PROTECTION_CLEAR_KEY;
 
 	while ((end - start) >= (ssize_t)(sizeof(key_entry_size) + sizeof(key_entry_type) + sizeof(key_entry_value))) {
 		/* size of this entry */
@@ -324,17 +325,13 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 			crypt_volume_key_add_next(&((*vmk)->vk), vk);
 		/* clear key for a partially decrypted volume */
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_KEY) {
-			/* We currently don't want to support opening a partially decrypted
-			 * device so we don't need to store this key.
-			 *
-			 * key_size = key_entry_size - (BITLK_ENTRY_HEADER_LEN + 4);
-			 * key = (const char *) data + start + BITLK_ENTRY_HEADER_LEN + 4;
-			 * vk = crypt_alloc_volume_key(key_size, key);
-			 * if (vk == NULL)
-			 * 	return -ENOMEM;
-			 * crypt_volume_key_add_next(&((*vmk)->vk), vk);
-			 */
-			log_dbg(cd, "Skipping clear key metadata entry.");
+			/* For clearkey protection, we need to store this key */
+			key_size = key_entry_size - (BITLK_ENTRY_HEADER_LEN + 4);
+			key = (const char *) data + start + BITLK_ENTRY_HEADER_LEN + 4;
+			vk = crypt_alloc_volume_key(key_size, key);
+			if (vk == NULL)
+				return -ENOMEM;
+			crypt_volume_key_add_next(&((*vmk)->vk), vk);
 		/* unknown timestamps in recovery protected VMK */
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_RECOVERY_TIME) {
 			;
@@ -1135,6 +1132,9 @@ static int bitlk_kdf(const char *password,
 	int i = 0;
 	int r = 0;
 
+	if (!password)
+		return -EINVAL;
+
 	memcpy(kdf.salt, salt, 16);
 
 	r = crypt_hash_init(&hd, BITLK_KDF_HASH);
@@ -1249,6 +1249,41 @@ out:
 	return r;
 }
 
+static int get_clear_key(struct crypt_device *cd, const struct bitlk_vmk *vmk, struct volume_key **vmk_dec_key)
+{
+	struct volume_key *nested_key = vmk->vk;
+
+	if (!nested_key) {
+		log_dbg(cd, "Clearkey VMK structure incomplete - missing nested key");
+		return -ENOTSUP;
+	}
+
+	struct volume_key *encrypted_vmk = crypt_volume_key_next(nested_key);
+
+	if (!encrypted_vmk) {
+		log_dbg(cd, "Clearkey VMK structure incomplete - missing encrypted VMK");
+		return -ENOTSUP;
+	}
+
+	/**
+	 *  For clearkey protection, we need to decrypt the encrypted VMK using the nested key
+	 *  and return the decrypted VMK as vmk_dec_key
+	 */
+	struct volume_key *decrypted_vmk = NULL;
+	int r = decrypt_key(cd, &decrypted_vmk, encrypted_vmk, nested_key,
+			vmk->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
+			vmk->nonce, BITLK_NONCE_SIZE, false);
+
+	if (r == 0 && decrypted_vmk) {
+		log_dbg(cd, "Successfully decrypted VMK using nested key");
+		*vmk_dec_key = decrypted_vmk;
+		return 0;
+	} else {
+		log_dbg(cd, "Failed to decrypt VMK using nested key (error: %d)", r);
+		return r;
+	}
+}
+
 int BITLK_get_volume_key(struct crypt_device *cd,
 			 const char *password,
 			 size_t passwordLen,
@@ -1264,6 +1299,7 @@ int BITLK_get_volume_key(struct crypt_device *cd,
 
 	next_vmk = params->vmks;
 	while (next_vmk) {
+		bool is_decrypted = false;
 		if (next_vmk->protection == BITLK_PROTECTION_PASSPHRASE) {
 			r = bitlk_kdf(password, passwordLen, false, next_vmk->salt, &vmk_dec_key);
 			if (r) {
@@ -1298,8 +1334,18 @@ int BITLK_get_volume_key(struct crypt_device *cd,
 				continue;
 			}
 			log_dbg(cd, "Trying to use external key found in provided password.");
+		} else if (next_vmk->protection == BITLK_PROTECTION_CLEAR_KEY) {
+			r = get_clear_key(cd, next_vmk, &vmk_dec_key);
+			if (r) {
+				/* something wrong happened, but we still want to check other key slots */
+				next_vmk = next_vmk->next;
+				continue;
+			}
+			is_decrypted = true;
+			open_vmk_key = vmk_dec_key;
+			log_dbg(cd, "Extracted VMK using clearkey.");
 		} else {
-			/* only passphrase, recovery passphrase and startup key VMKs supported right now */
+			/* only passphrase, recovery passphrase, startup key and clearkey VMKs supported right now */
 			log_dbg(cd, "Skipping %s", get_vmk_protection_string(next_vmk->protection));
 			next_vmk = next_vmk->next;
 			if (r == 0)
@@ -1308,19 +1354,21 @@ int BITLK_get_volume_key(struct crypt_device *cd,
 			continue;
 		}
 
-		log_dbg(cd, "Trying to decrypt %s.", get_vmk_protection_string(next_vmk->protection));
-		r = decrypt_key(cd, &open_vmk_key, next_vmk->vk, vmk_dec_key,
-				next_vmk->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
-				next_vmk->nonce, BITLK_NONCE_SIZE, false);
+		if (!is_decrypted) {
+			r = decrypt_key(cd, &open_vmk_key, next_vmk->vk, vmk_dec_key,
+					next_vmk->mac_tag, BITLK_VMK_MAC_TAG_SIZE,
+					next_vmk->nonce, BITLK_NONCE_SIZE, false);
+
+			crypt_free_volume_key(vmk_dec_key);
+		}
 		if (r < 0) {
 			log_dbg(cd, "Failed to decrypt VMK using provided passphrase.");
-			crypt_free_volume_key(vmk_dec_key);
+
 			if (r == -ENOTSUP)
 				return r;
 			next_vmk = next_vmk->next;
 			continue;
 		}
-		crypt_free_volume_key(vmk_dec_key);
 
 		log_dbg(cd, "Trying to decrypt validation metadata using VMK.");
 		r = crypt_bitlk_decrypt_key(crypt_volume_key_get_key(open_vmk_key),
@@ -1379,8 +1427,6 @@ int BITLK_get_volume_key(struct crypt_device *cd,
 static int _activate_check(struct crypt_device *cd,
 		           const struct bitlk_metadata *params)
 {
-	const struct bitlk_vmk *next_vmk = NULL;
-
 	if (!params->state) {
 		log_err(cd, _("This BITLK device is in an unsupported state and cannot be activated."));
 		return -ENOTSUP;
@@ -1389,15 +1435,6 @@ static int _activate_check(struct crypt_device *cd,
 	if (params->type != BITLK_ENCRYPTION_TYPE_NORMAL) {
 		log_err(cd, _("BITLK devices with type '%s' cannot be activated."), get_bitlk_type_string(params->type));
 		return -ENOTSUP;
-	}
-
-	next_vmk = params->vmks;
-	while (next_vmk) {
-		if (next_vmk->protection == BITLK_PROTECTION_CLEAR_KEY) {
-			log_err(cd, _("Activation of BITLK device with clear key protection is not supported."));
-			return -ENOTSUP;
-		}
-		next_vmk = next_vmk->next;
 	}
 
 	return 0;

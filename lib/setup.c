@@ -5921,7 +5921,7 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 	struct volume_key *vk = NULL;
 
 	if (!cd || !volume_key || !volume_key_size ||
-	    (!kc && !isLUKS(cd->type) && !isTCRYPT(cd->type) && !isVERITY(cd->type)))
+	    (!kc && !isLUKS(cd->type) && !isTCRYPT(cd->type) && !isVERITY(cd->type) && !isBITLK(cd->type)))
 		return -EINVAL;
 
 	if (isLUKS2(cd->type) && keyslot != CRYPT_ANY_SLOT)
@@ -5981,6 +5981,8 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 	} else if (isBITLK(cd->type)) {
 		if (kc && kc->get_bitlk_volume_key)
 			r = kc->get_bitlk_volume_key(cd, kc, &cd->u.bitlk.params, &vk);
+		else if (!kc)
+			r = BITLK_get_volume_key(cd, NULL, 0, &cd->u.bitlk.params, &vk);
 		if (r < 0)
 			log_err(cd, _("Cannot retrieve volume key for BITLK device."));
 	} else if (isFVAULT2(cd->type)) {

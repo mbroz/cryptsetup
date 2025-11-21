@@ -49,6 +49,9 @@ load_vars()
 	if echo "$1" | grep -q -e "two-recovery"; then
 		# 2 extra variables for image with 2 recovery passphrases
 		num_vars=10
+	elif echo "$1" | grep -q -e "clearkey"; then
+		# 1 extra variable for image with clearkey
+		num_vars=9
 	else
 		num_vars=8
 	fi
@@ -67,7 +70,7 @@ check_dump()
 
 	# volume size
 	dump_size=$(echo "$dump" | grep "Volume size:" | cut -d: -f2 | tr -d "\t\n ")
-	[ "$dump_size" = "104857600[bytes]" -o "$dump_size" = "134217728[bytes]" -o "$dump_size" = "105906176[bytes]"  ] || fail " volume size check from dump failed."
+	[ "$dump_size" = "104857600[bytes]" -o "$dump_size" = "134217728[bytes]" -o "$dump_size" = "105906176[bytes]" ] || fail " volume size check from dump failed."
 
 	# description
 	dump_desc=$(echo "$dump" | grep Description: | cut -d: -f2 | tr -d "\t\n ")
@@ -95,6 +98,11 @@ check_dump()
 		# second recovery passphrase protected VMK GUID
 		dump_rp2_vmk=$(echo "$dump" | grep "VMK protected with recovery passphrase" -B 1 | tail -2 | head -1 | cut -d: -f2 | tr -d "\t ")
 		[ ! -z "$RP2_VMK_GUID" -a "$dump_rp2_vmk" = "$RP2_VMK_GUID" ] || fail " second recovery passphrase protected VMK GUID check from dump failed."
+	elif echo "$file" | grep -q -e "clearkey"; then
+		# clearkey protected VMK GUID
+		dump_clearkey_guid=$(echo "$dump" | grep "VMK protected with clear key" -B 1 | tail -2 | head -1 | cut -d: -f2 | tr -d "\t ")
+		[ ! -z "$CLEARKEY_VMK_GUID" -a "$dump_clearkey_guid" = "$CLEARKEY_VMK_GUID" ] || fail " clear key protected VMK GUID check from dump failed."
+		return
 	else
 		# password protected VMK GUID
 		dump_pw_vmk=$(echo "$dump" | grep "VMK protected with passphrase" -B 1 | head -1 | cut -d: -f2 | tr -d "\t ")
@@ -157,7 +165,7 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 		ret=$?
 		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "aes-cbc" ) && echo " [N/A]" && continue
 		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "aes-cbc-elephant" ) && echo " [N/A]" && continue
-		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "clearkey" ) && echo " [N/A]" && continue
+		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "partially-encrypted" ) && echo " [N/A]" && continue
 		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "eow" ) && echo " [N/A]" && continue
 		[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "-4k.img" ) && echo " [N/A]" && continue
 		[ $ret -eq 0 ] || fail " failed to open $file ($ret)"
@@ -184,7 +192,7 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 	ret=$?
 	[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "aes-cbc" ) && echo " [N/A]" && continue
 	[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "aes-cbc-elephant" ) && echo " [N/A]" && continue
-	[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "clearkey" ) && echo " [N/A]" && continue
+	[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "partially-encrypted" ) && echo " [N/A]" && continue
 	[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "eow" ) && echo " [N/A]" && continue
 	[ $ret -eq 1 ] && ( echo "$file" | grep -q -e "-4k.img" ) && echo " [N/A]" && continue
 	[ $ret -eq 0 ] || fail " failed to open $file using volume key ($ret)"
@@ -236,8 +244,27 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 		[ "$uuid" = "$UUID" ] || fail " UUID check failed."
 		[ "$sha256sum" = "$SHA256SUM" ] || fail " SHA256 sum check failed."
 		echo " [OK]"
-
 	fi
+
+	# clear key
+	if echo "$file" | grep -q -e "clearkey"; then
+		echo -n " $file"
+		echo $CRYPTSETUP bitlkOpen -r $file --test-passphrase >/dev/null 2>&1
+		ret=$?
+		[ $ret -eq 1 ] && echo " [N/A]" && continue
+		$CRYPTSETUP bitlkOpen -r $file $MAP >/dev/null 2>&1
+		ret=$?
+		[ $ret -eq 0 ] || fail " failed to open $file ($ret)"
+		$CRYPTSETUP status $MAP >/dev/null || fail
+		$CRYPTSETUP status /dev/mapper/$MAP >/dev/null || fail
+		uuid=$(blkid -p -o value -s UUID /dev/mapper/$MAP)
+		sha256sum=$(sha256sum /dev/mapper/$MAP | cut -d" " -f1)
+		$CRYPTSETUP remove $MAP || fail
+		[ "$uuid" = "$UUID" ] || fail " UUID check failed."
+		[ "$sha256sum" = "$SHA256SUM" ] || fail " SHA256 sum check failed."
+		echo " [OK]"
+	fi
+
 done
 
 remove_mapping
