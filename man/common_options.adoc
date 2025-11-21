@@ -156,6 +156,14 @@ endif::[]
 *WARNING:* Do not use this option unless you run cryptsetup in a restricted environment where locking is impossible to perform (where /run directory cannot be used).
 endif::[]
 
+ifdef::ACTION_LUKSFORMAT[]
+*--disable-sum*::
+Disable SUM (Single User Mode) OPAL2 extension during luksFormat with HW encryption profile (OPAL2).
+The option affects only devices not yet enabled for OPAL2 encryption (in factory settings). For devices
+with already activated OPAL2 HW encryption profile the option is ignored. The option must be combined
+with --hw-opal or --hw-opal-only options.
+endif::[]
+
 ifdef::ACTION_OPEN,ACTION_TCRYPTDUMP[]
 *--disable-veracrypt*::
 This option can be used to disable VeraCrypt compatible mode (only TrueCrypt devices are recognized).
