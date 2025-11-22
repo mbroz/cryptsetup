@@ -137,7 +137,7 @@ void crypt_set_confirm_callback(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param device path to device
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return 0 on success or negative errno value otherwise.
  */
 int crypt_set_data_device(struct crypt_device *cd, const char *device);
 
@@ -151,7 +151,7 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device);
  * @param cd crypt device handle
  * @param data_offset data offset in bytes
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return 0 on success or negative errno value otherwise.
  *
  * @note Data offset must be aligned to multiple of 8 (alignment to 4096-byte sectors)
  * and must be big enough to accommodate the whole LUKS header with all keyslots.
@@ -337,7 +337,7 @@ void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_m
  * @param cd crypt device handle, can be @e NULL
  * @param lock 0 to unlock otherwise lock memory
  *
- * @returns Value indicating whether the memory is locked (function can be called multiple times).
+ * @return Value indicating whether the memory is locked (function can be called multiple times).
  *
  * @note Only root can do this.
  * @note It locks/unlocks all process memory, not only crypt context.
@@ -350,7 +350,7 @@ int crypt_memory_lock(struct crypt_device *cd, int lock) __attribute__((deprecat
  * @param cd crypt device handle, can be @e NULL
  * @param enable 0 to disable locking otherwise enable it (default)
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Locking applied only for some metadata formats (LUKS2).
  * @note The switch is global on the library level.
@@ -366,7 +366,7 @@ int crypt_metadata_locking(struct crypt_device *cd, int enable);
  * @param metadata_size size in bytes of JSON area + 4k binary header
  * @param keyslots_size size in bytes of binary keyslots area
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note The metadata area is stored twice and both copies contain 4k binary header.
  * Only 16,32,64,128,256,512,1024,2048 and 4096 kB value is allowed (see LUKS2 specification).
@@ -384,7 +384,7 @@ int crypt_set_metadata_size(struct crypt_device *cd,
  * @param metadata_size size in bytes of JSON area + 4k binary header
  * @param keyslots_size size in bytes of binary keyslots area
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  */
 int crypt_get_metadata_size(struct crypt_device *cd,
 	uint64_t *metadata_size,
@@ -659,7 +659,7 @@ struct crypt_params_hw_opal {
  * @param volume_key_size size of volume key in bytes.
  * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Note that crypt_format does not create LUKS keyslot (any version). To create keyslot
  *	 call any crypt_keyslot_add_* function.
@@ -689,7 +689,7 @@ int crypt_format(struct crypt_device *cd,
  * @param params LUKS2 crypt type specific parameters (see @link crypt-type @endlink)
  * @param opal_params OPAL specific parameters
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Note that crypt_format_luks2_opal does not create LUKS keyslot.
  *       To create keyslot call any crypt_keyslot_add_* function.
@@ -718,7 +718,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
  * @param volume_key_size size of volume/integrity key in bytes.
  * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Journal parameters must be set to zero in integrity part of @e params.
  * 	Only tag_size, sector_size, buffer_sectors, integrity options should be set.
@@ -745,7 +745,7 @@ void crypt_set_compatibility(struct crypt_device *cd, uint32_t flags);
  *
  * @param cd crypt device handle
  *
- * @returns compatibility flags
+ * @return compatibility flags
  */
 uint32_t crypt_get_compatibility(struct crypt_device *cd);
 
@@ -763,7 +763,7 @@ uint32_t crypt_get_compatibility(struct crypt_device *cd);
  * @param type type of device (optional params struct must be of this type)
  * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return 0 on success or negative errno value otherwise.
  *
  * @note Currently, only LUKS1->LUKS2 and LUKS2->LUKS1 conversions are supported.
  *	 Not all LUKS2 devices may be converted back to LUKS1. To make such a conversion
@@ -784,7 +784,7 @@ int crypt_convert(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param uuid requested UUID or @e NULL if it should be generated
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return 0 on success or negative errno value otherwise.
  *
  * @note Currently, only LUKS device type are supported
  */
@@ -798,7 +798,7 @@ int crypt_set_uuid(struct crypt_device *cd,
  * @param label requested label or @e NULL
  * @param subsystem requested subsystem label or @e NULL
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return 0 on success or negative errno value otherwise.
  *
  * @note Currently, only LUKS2 device type is supported
  */
@@ -835,7 +835,7 @@ const char *crypt_get_subsystem(struct crypt_device *cd);
  * @param enable 0 to disable loading of volume keys via kernel keyring
  * 	  (classical method) otherwise enable it (default)
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Currently loading of volume keys via kernel keyring is supported
  * 	 (and enabled by default) only for LUKS2 devices.
@@ -850,7 +850,7 @@ int crypt_volume_key_keyring(struct crypt_device *cd, int enable);
  * @param requested_type @link crypt-type @endlink or @e NULL for all known
  * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return 0 on success or negative errno value otherwise.
  *
  * @post In case LUKS header is read successfully but payload device is too small
  * error is returned and device type in context is set to @e NULL
@@ -870,7 +870,7 @@ int crypt_load(struct crypt_device *cd,
  * @param requested_type @link crypt-type @endlink or @e NULL for all known
  * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return 0 on success or negative errno value otherwise.
  *
  * @note For LUKS2 device crypt_repair bypass blkid checks and
  * 	 perform auto-recovery even though there're third party device
