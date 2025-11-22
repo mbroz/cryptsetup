@@ -454,7 +454,7 @@ const char *crypt_get_default_type(void);
  * Get HW encryption type
  *
  * @return HW encryption type (see @link crypt-hw-encryption-types @endlink)
- *         or negative errno otherwise.
+ *         or negative errno value otherwise.
  */
 int crypt_get_hw_encryption_type(struct crypt_device *cd);
 
@@ -927,7 +927,7 @@ int crypt_suspend(struct crypt_device *cd,
  * @param passphrase passphrase used to unlock volume key
  * @param passphrase_size size of @e passphrase (binary data)
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  *
  * @note Only LUKS device type is supported
  */
@@ -947,7 +947,7 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
  * @param keyfile_size number of bytes to read from keyfile, 0 is unlimited
  * @param keyfile_offset number of bytes to skip at start of keyfile
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  */
 int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
 	const char *name,
@@ -998,7 +998,7 @@ int crypt_resume_by_volume_key(struct crypt_device *cd,
  * @param pin_size size of @e pin
  * @param usrptr provided identification in callback
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  *
  * @note EPERM errno means token provided passphrase successfully, but
  *       passphrase did not unlock any keyslot associated with the token.
@@ -1036,7 +1036,7 @@ int crypt_resume_by_token_pin(struct crypt_device *cd,
  * @param kc keyslot context providing volume key or passphrase.
  *
  * @return unlocked key slot number for passphrase-based unlock, zero for other
- *         unlock methods (e.g. volume key context) or negative errno on error.
+ *         unlock methods (e.g. volume key context) or negative errno value on error.
  */
 int crypt_resume_by_keyslot_context(struct crypt_device *cd,
 			       const char *name,
@@ -1065,7 +1065,7 @@ int crypt_resume_by_keyslot_context(struct crypt_device *cd,
  * @param new_passphrase passphrase for new keyslot
  * @param new_passphrase_size size of @e new_passphrase (binary data)
  *
- * @return allocated key slot number or negative errno otherwise.
+ * @return allocated key slot number or negative errno value otherwise.
  */
 int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	int keyslot,
@@ -1087,7 +1087,7 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
  * @param new_passphrase passphrase for new keyslot
  * @param new_passphrase_size size of @e new_passphrase (binary data)
  *
- * @return allocated key slot number or negative errno otherwise.
+ * @return allocated key slot number or negative errno value otherwise.
  */
 int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	int keyslot_old,
@@ -1111,7 +1111,7 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
  * @param new_keyfile_size number of bytes to read from @e new_keyfile, @e 0 is unlimited
  * @param new_keyfile_offset number of bytes to skip at start of new_keyfile
  *
- * @return allocated key slot number or negative errno otherwise.
+ * @return allocated key slot number or negative errno value otherwise.
  */
 int crypt_keyslot_add_by_keyfile_device_offset(struct crypt_device *cd,
 	int keyslot,
@@ -1156,7 +1156,7 @@ int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
  * @param passphrase passphrase for new keyslot
  * @param passphrase_size size of passphrase
  *
- * @return allocated key slot number or negative errno otherwise.
+ * @return allocated key slot number or negative errno value otherwise.
  */
 int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 	int keyslot,
@@ -1187,7 +1187,7 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
  * @param passphrase_size size of passphrase
  * @param flags key flags to set
  *
- * @return allocated key slot number or negative errno otherwise.
+ * @return allocated key slot number or negative errno value otherwise.
  *
  * @note in case volume_key is @e NULL following first matching rule will apply:
  * @li if cd is device handle used in crypt_format() by current process, the volume
@@ -1232,7 +1232,7 @@ void crypt_keyslot_context_free(struct crypt_keyslot_context *kc);
  * @param passphrase_size size of passphrase
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_PASSPHRASE
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  *
  * @note The original buffer containing passphrase passed in parameters does
  * 	 not have to be valid after context initialization. The context
@@ -1253,7 +1253,7 @@ int crypt_keyslot_context_init_by_passphrase(struct crypt_device *cd,
  * @param keyfile_offset number of bytes to skip at start of keyfile
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_KEYFILE
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  */
 int crypt_keyslot_context_init_by_keyfile(struct crypt_device *cd,
 	const char *keyfile,
@@ -1273,7 +1273,7 @@ int crypt_keyslot_context_init_by_keyfile(struct crypt_device *cd,
  * @param usrptr provided identification in callback
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_TOKEN
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  */
 int crypt_keyslot_context_init_by_token(struct crypt_device *cd,
 	int token,
@@ -1292,7 +1292,7 @@ int crypt_keyslot_context_init_by_token(struct crypt_device *cd,
  * @param volume_key_size size of volume_key in bytes
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_KEY
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  */
 int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd,
 	const char *volume_key,
@@ -1310,7 +1310,7 @@ int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd,
  * @param signature_size size of signature buffer
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_SIGNED_KEY
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  *
  * @note currently supported only with VERITY devices.
  */
@@ -1330,7 +1330,7 @@ int crypt_keyslot_context_init_by_signed_key(struct crypt_device *cd,
  *        for passphrase in
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_KEYRING
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  */
 int crypt_keyslot_context_init_by_keyring(struct crypt_device *cd,
 	const char *key_description,
@@ -1346,7 +1346,7 @@ int crypt_keyslot_context_init_by_keyring(struct crypt_device *cd,
  *        or a text representation in the form "%<key_type>:<key_name>"
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_KEYRING
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  */
 int crypt_keyslot_context_init_by_vk_in_keyring(struct crypt_device *cd,
 	const char *key_description,
@@ -1376,7 +1376,7 @@ int crypt_keyslot_context_get_error(struct crypt_keyslot_context *kc);
  * @param pin_size size of @e pin
  * @param kc LUKS2 keyslot context (only @link CRYPT_KC_TYPE_TOKEN @endlink is allowed)
  *
- * @return zero on success or negative errno otherwise
+ * @return zero on success or negative errno value otherwise
  */
 int crypt_keyslot_context_set_pin(struct crypt_device *cd,
 	const char *pin, size_t pin_size,
@@ -1412,7 +1412,7 @@ int crypt_keyslot_context_set_pin(struct crypt_device *cd,
  *
  * @param kc keyslot context
  *
- * @return crypt keyslot context type id (see @link crypt-keyslot-context-types @endlink) or negative errno otherwise.
+ * @return crypt keyslot context type id (see @link crypt-keyslot-context-types @endlink) or negative errno value otherwise.
  */
 int crypt_keyslot_context_get_type(const struct crypt_keyslot_context *kc);
 /** @} */
@@ -1431,7 +1431,7 @@ int crypt_keyslot_context_get_type(const struct crypt_keyslot_context *kc);
  * @param new_kc keyslot context providing passphrase for new keyslot.
  * @param flags key flags to set
  *
- * @return allocated key slot number or negative errno otherwise.
+ * @return allocated key slot number or negative errno value otherwise.
  *
  * @note new_kc can not be @e CRYPT_KC_TYPE_KEY type keyslot context.
  *
@@ -1676,7 +1676,7 @@ int crypt_persistent_flags_get(struct crypt_device *cd,
  * @param flags activation flags
  *
  * @return unlocked key slot number for passphrase-based unlock, zero for other
- *         unlock methods (e.g. volume key context) or negative errno on error.
+ *         unlock methods (e.g. volume key context) or negative errno value on error.
  */
 int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	const char *name,
@@ -1696,7 +1696,7 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
  * @param passphrase_size size of @e passphrase
  * @param flags activation flags
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  */
 int crypt_activate_by_passphrase(struct crypt_device *cd,
 	const char *name,
@@ -1716,7 +1716,7 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
  * @param keyfile_offset number of bytes to skip at start of keyfile
  * @param flags activation flags
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  */
 int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
 	const char *name,
@@ -1869,7 +1869,7 @@ int crypt_deactivate(struct crypt_device *cd, const char *name);
  * @param passphrase passphrase used to unlock volume key
  * @param passphrase_size size of @e passphrase
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  *
  * @note For TCRYPT cipher chain is the volume key concatenated
  * 	 for all ciphers in chain.
@@ -1895,7 +1895,7 @@ int crypt_volume_key_get(struct crypt_device *cd,
  *        on output size of @e volume_key in bytes
  * @param kc keyslot context used to unlock volume key
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  *
  * @note See @link crypt-keyslot-context-types @endlink for info on keyslot
  * 	 context initialization.
@@ -2254,7 +2254,7 @@ int crypt_keyslot_set_priority(struct crypt_device *cd, int keyslot, crypt_keysl
  *
  * @param type crypt device type
  *
- * @return slot count or negative errno otherwise if device
+ * @return slot count or negative errno value otherwise if device
  * doesn't not support keyslots.
  */
 int crypt_keyslot_max(const char *type);
@@ -2537,7 +2537,7 @@ int crypt_wipe_hw_opal(struct crypt_device *cd,
  *
  * @param type crypt device type
  *
- * @return token count or negative errno otherwise if device
+ * @return token count or negative errno value otherwise if device
  * doesn't not support tokens.
  *
  * @note Real number of supported tokens for a particular device depends
@@ -2555,7 +2555,7 @@ int crypt_token_max(const char *type);
  * @param token token id
  * @param json buffer with JSON
  *
- * @return allocated token id or negative errno otherwise.
+ * @return allocated token id or negative errno value otherwise.
  */
 int crypt_token_json_get(struct crypt_device *cd,
 	int token,
@@ -2568,7 +2568,7 @@ int crypt_token_json_get(struct crypt_device *cd,
  * @param token token id or @e CRYPT_ANY_TOKEN to allocate new one
  * @param json buffer with JSON or @e NULL to remove token
  *
- * @return allocated token id or negative errno otherwise.
+ * @return allocated token id or negative errno value otherwise.
  *
  * @note The buffer must be in proper JSON format and must contain at least
  *       string "type" with slot type and an array of string names "keyslots".
@@ -2623,7 +2623,7 @@ struct crypt_token_params_luks2_keyring {
  * @param token token id or @e CRYPT_ANY_TOKEN to allocate new one
  * @param params luks2 keyring token params
  *
- * @return allocated token id or negative errno otherwise.
+ * @return allocated token id or negative errno value otherwise.
  *
  */
 int crypt_token_luks2_keyring_set(struct crypt_device *cd,
@@ -2637,7 +2637,7 @@ int crypt_token_luks2_keyring_set(struct crypt_device *cd,
  * @param token existing luks2 keyring token id
  * @param params returned luks2 keyring token params
  *
- * @return allocated token id or negative errno otherwise.
+ * @return allocated token id or negative errno value otherwise.
  *
  * @note do not call free() on params members. Members are valid only
  * 	 until next libcryptsetup function is called.
@@ -2655,7 +2655,7 @@ int crypt_token_luks2_keyring_get(struct crypt_device *cd,
  * @param keyslot keyslot to be assigned to token (CRYPT_ANY SLOT
  * 	  assigns all active keyslots to token)
  *
- * @return requested token id to be assigned or negative errno otherwise.
+ * @return requested token id to be assigned or negative errno value otherwise.
  */
 int crypt_token_assign_keyslot(struct crypt_device *cd,
 	int token,
@@ -2670,7 +2670,7 @@ int crypt_token_assign_keyslot(struct crypt_device *cd,
  * @param keyslot keyslot to be unassigned from token (CRYPT_ANY SLOT
  * 	  unassigns all active keyslots from token)
  *
- * @return requested token id to be unassigned or negative errno otherwise.
+ * @return requested token id to be unassigned or negative errno value otherwise.
  */
 int crypt_token_unassign_keyslot(struct crypt_device *cd,
 	int token,
@@ -2685,7 +2685,7 @@ int crypt_token_unassign_keyslot(struct crypt_device *cd,
  *
  * @return 0 on success (token exists and is assigned to the keyslot),
  *	   -ENOENT if token is not assigned to a keyslot (token, keyslot
- *	   or both may be inactive) or other negative errno otherwise.
+ *	   or both may be inactive) or other negative errno value otherwise.
  */
 int crypt_token_is_assigned(struct crypt_device *cd,
 	int token,
@@ -2704,7 +2704,7 @@ int crypt_token_is_assigned(struct crypt_device *cd,
  * @param usrptr user data in @link crypt_activate_by_token @endlink
  *
  * @return 0 on success (token passed LUKS2 keyslot passphrase in buffer) or
- *         negative errno otherwise.
+ *         negative errno value otherwise.
  *
  * @note Negative ENOANO errno means that token is PIN protected and caller should
  *       use @link crypt_activate_by_token_pin @endlink with PIN provided.
@@ -2734,7 +2734,7 @@ typedef int (*crypt_token_open_func) (
  * @param usrptr user data in @link crypt_activate_by_token @endlink
  *
  * @return 0 on success (token passed LUKS2 keyslot passphrase in buffer) or
- *         negative errno otherwise.
+ *         negative errno value otherwise.
  *
  * @note Negative ENOANO errno means that token is PIN protected and PIN was
  *       missing or wrong.
@@ -2867,7 +2867,7 @@ void crypt_token_external_disable(void);
  * @param usrptr provided identification in callback
  * @param flags activation flags
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  *
  * @note EPERM errno means token provided passphrase successfully, but
  *       passphrase did not unlock any keyslot associated with the token.
@@ -2884,7 +2884,7 @@ void crypt_token_external_disable(void);
  * @note with @e token set to CRYPT_ANY_TOKEN libcryptsetup runs best effort loop
  *       to unlock device using any available token. It may happen that various token handlers
  *       return different error codes. At the end loop returns error codes in the following
- *       order (from the most significant to the least) any negative errno except those
+ *       order (from the most significant to the least) any negative errno value except those
  *       listed below, non negative token id (success), -ENOANO, -EAGAIN, -EPERM, -ENOENT.
  */
 int crypt_activate_by_token(struct crypt_device *cd,
@@ -2905,7 +2905,7 @@ int crypt_activate_by_token(struct crypt_device *cd,
  * @param usrptr provided identification in callback
  * @param flags activation flags
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  *
  * @note EPERM errno means token provided passphrase successfully, but
  *       passphrase did not unlock any keyslot associated with the token.
@@ -2922,7 +2922,7 @@ int crypt_activate_by_token(struct crypt_device *cd,
  * @note with @e token set to CRYPT_ANY_TOKEN libcryptsetup runs best effort loop
  *       to unlock device using any available token. It may happen that various token handlers
  *       return different error codes. At the end loop returns error codes in the following
- *       order (from the most significant to the least) any negative errno except those
+ *       order (from the most significant to the least) any negative errno value except those
  *       listed below, non negative token id (success), -ENOANO, -EAGAIN, -EPERM, -ENOENT.
  */
 int crypt_activate_by_token_pin(struct crypt_device *cd,
@@ -3017,7 +3017,7 @@ struct crypt_params_reencrypt {
  * @param cipher_mode cipher mode and IV (e.g. "xts-plain64")
  * @param params reencryption parameters @link crypt_params_reencrypt @endlink.
  *
- * @return reencryption key slot number or negative errno otherwise.
+ * @return reencryption key slot number or negative errno value otherwise.
  */
 int crypt_reencrypt_init_by_passphrase(struct crypt_device *cd,
 	const char *name,
@@ -3046,7 +3046,7 @@ int crypt_reencrypt_init_by_passphrase(struct crypt_device *cd,
  * @param cipher_mode cipher mode and IV (e.g. "xts-plain64")
  * @param params reencryption parameters @link crypt_params_reencrypt @endlink.
  *
- * @return reencryption key slot number or negative errno otherwise.
+ * @return reencryption key slot number or negative errno value otherwise.
  */
 int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
 	const char *name,
@@ -3098,7 +3098,7 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
  * 	  Relevant only during metadata initialization.
  * @param params reencryption parameters @link crypt_params_reencrypt @endlink.
  *
- * @return reencryption key slot number or negative errno otherwise.
+ * @return reencryption key slot number or negative errno value otherwise.
  *
  * @note Only after successful reencryption initialization you may run the operation with
  * 	 @link crypt_reencrypt_run @endlink.
