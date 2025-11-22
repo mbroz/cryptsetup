@@ -290,7 +290,7 @@ int crypt_set_pbkdf_type(struct crypt_device *cd,
  *
  * @param pbkdf_type type of PBKDF
  *
- * @return struct on success or NULL value otherwise.
+ * @return struct on success or @e NULL value otherwise.
  *
  */
 const struct crypt_pbkdf_type *crypt_get_pbkdf_type_params(const char *pbkdf_type);
@@ -301,7 +301,7 @@ const struct crypt_pbkdf_type *crypt_get_pbkdf_type_params(const char *pbkdf_typ
  *
  * @param type type of device (see @link crypt-type @endlink)
  *
- * @return struct on success or NULL value otherwise.
+ * @return struct on success or @e NULL value otherwise.
  *
  */
 const struct crypt_pbkdf_type *crypt_get_pbkdf_default(const char *type);
@@ -312,7 +312,7 @@ const struct crypt_pbkdf_type *crypt_get_pbkdf_default(const char *type);
  *
  * @param cd crypt device handle
  *
- * @return struct on success or NULL value otherwise.
+ * @return struct on success or @e NULL value otherwise.
  *
  */
 const struct crypt_pbkdf_type *crypt_get_pbkdf_type(struct crypt_device *cd);
@@ -593,7 +593,7 @@ struct crypt_params_integrity {
 	uint32_t tag_size;                   /**< tag size per-sector in bytes */
 	uint32_t sector_size;                /**< sector size in bytes */
 	uint32_t buffer_sectors;             /**< number of sectors in one buffer */
-	const char *integrity;               /**< integrity algorithm, NULL for LUKS2 */
+	const char *integrity;               /**< integrity algorithm, @e NULL for LUKS2 */
 	uint32_t integrity_key_size;         /**< integrity key size in bytes, info only */
 
 	const char *journal_integrity;       /**< journal integrity algorithm */
@@ -681,8 +681,8 @@ int crypt_format(struct crypt_device *cd,
  * @pre @e cd contains initialized and not formatted device context (device type must @b not be set)
  *
  * @param cd crypt device handle
- * @param cipher for SW encryption (e.g. "aes") or NULL for HW encryption only
- * @param cipher_mode including IV specification (e.g. "xts-plain") or NULL for HW encryption only
+ * @param cipher for SW encryption (e.g. "aes") or @e NULL for HW encryption only
+ * @param cipher_mode including IV specification (e.g. "xts-plain") or @e NULL for HW encryption only
  * @param uuid requested UUID or @e NULL if it should be generated
  * @param volume_keys pre-generated volume keys or @e NULL if it should be generated (only for LUKS2 SW encryption)
  * @param volume_keys_size size of volume keys in bytes (only for SW encryption).
@@ -1007,7 +1007,7 @@ int crypt_resume_by_volume_key(struct crypt_device *cd,
  *       eligible to resume LUKS2 device.
  *
  * @note ENOANO errno means that token is PIN protected and was either missing
- *       (NULL) or wrong.
+ *       (@e NULL) or wrong.
  *
  * @note Negative EAGAIN errno means token handler requires additional hardware
  *       not present in the system to unlock keyslot.
@@ -1764,7 +1764,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
  * @note For VERITY the volume key means root hash required for activation.
  * 	 Because kernel dm-verity is always read only, you have to provide
  * 	 CRYPT_ACTIVATE_READONLY flag always.
- * @note For TCRYPT the volume key should be always NULL
+ * @note For TCRYPT the volume key should be always @e NULL
  * 	 the key from decrypted header is used instead.
  * @note For BITLK the name cannot be @e NULL checking volume key is not
  * 	 supported for BITLK, the device will be activated even if the
@@ -1900,9 +1900,9 @@ int crypt_volume_key_get(struct crypt_device *cd,
  * @note See @link crypt-keyslot-context-types @endlink for info on keyslot
  * 	 context initialization.
  * @note For TCRYPT cipher chain is the volume key concatenated
- * 	 for all ciphers in chain (kc may be NULL).
+ * 	 for all ciphers in chain (kc may be @e NULL).
  * @note For VERITY the volume key means root hash used for activation
- * 	 (kc may be NULL).
+ * 	 (kc may be @e NULL).
  * @note For LUKS devices, if kc is @e NULL and volume key is cached in
  * 	 device context it returns the volume key generated in preceding
  * 	 @link crypt_format @endlink call.
@@ -1978,7 +1978,7 @@ int crypt_dump(struct crypt_device *cd);
  * Dump JSON-formatted information about LUKS2 device
  *
  * @param cd crypt device handle (only LUKS2 format supported)
- * @param json buffer with JSON, if NULL use log callback for output
+ * @param json buffer with JSON, if @e NULL use log callback for output
  * @param flags dump flags (reserved)
  *
  * @return @e 0 on success or negative errno value otherwise.
@@ -2325,7 +2325,7 @@ int crypt_keyslot_get_pbkdf(struct crypt_device *cd, int keyslot, struct crypt_p
  * @return @e 0 on success or negative errno value otherwise.
  *
  * @note To reset to default keyslot encryption (the same as for data)
- *       set cipher to NULL and key size to 0.
+ *       set cipher to @e NULL and key size to 0.
  */
 int crypt_keyslot_set_encryption(struct crypt_device *cd,
 	const char *cipher,
@@ -2598,7 +2598,7 @@ typedef enum {
  * @param type pointer for returned type string
  *
  * @return token status info. For any returned status (besides CRYPT_TOKEN_INVALID
- * 	   and CRYPT_TOKEN_INACTIVE) and if type parameter is not NULL it will
+ * 	   and CRYPT_TOKEN_INACTIVE) and if type parameter is not @e NULL it will
  * 	   contain address of type string.
  *
  * @note if required, create a copy of string referenced in *type before calling next
@@ -2914,7 +2914,7 @@ int crypt_activate_by_token(struct crypt_device *cd,
  *       eligible to unlock device.
  *
  * @note ENOANO errno means that token is PIN protected and was either missing
- *       (NULL) or wrong.
+ *       (@e NULL) or wrong.
  *
  * @note Negative EAGAIN errno means token handler requires additional hardware
  *       not present in the system.
@@ -3243,7 +3243,7 @@ void *crypt_safe_memcpy(void *dst, const void *src, size_t size);
  *
  * The @e old_key_description argument is required only for
  * devices that are in re-encryption and have two volume keys at the same time
- * (old and new). You can set the @e old_key_description to NULL,
+ * (old and new). You can set the @e old_key_description to @e NULL,
  * but if you supply number of keys less than required, the function will
  * return -ESRCH.  In that case you need to call the function again and set
  * the missing key description. When supplying just one key description, make
