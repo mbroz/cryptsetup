@@ -66,6 +66,10 @@ struct opal_sum_ranges {
 
 #endif
 
+/* supported opal requirement versions */
+#define LUKS2_OPAL_BASE_REQ_VERSION         UINT8_C(1)
+#define LUKS2_OPAL_SUM_REQ_VERSION          UINT8_C(2) /* Device is configured with SUM */
+
 /* Error codes are defined in the specification:
  * TCG_Storage_Architecture_Core_Spec_v2.01_r1.00
  * Section 5.1.5: Method Status Codes
@@ -1040,7 +1044,8 @@ int opal_setup_ranges(struct crypt_device *cd,
 		      uint32_t segment_number,
 		      const void *admin_key,
 		      size_t admin_key_len,
-		      bool disable_sum)
+		      bool disable_sum,
+		      uint8_t *r_opal_req_version)
 {
 	struct opal_lock_unlock *lock = NULL;
 	struct opal_new_pw *new_pw = NULL;
@@ -1053,6 +1058,7 @@ int opal_setup_ranges(struct crypt_device *cd,
 	assert(admin_key);
 	assert(crypt_volume_key_length(vk) <= OPAL_KEY_MAX);
 	assert(opal_block_bytes >= SECTOR_SIZE);
+	assert(r_opal_req_version);
 
 	if (admin_key_len > OPAL_KEY_MAX)
 		return -EINVAL;
@@ -1183,6 +1189,9 @@ int opal_setup_ranges(struct crypt_device *cd,
 					   &(uint64_t) {range_start_blocks * opal_block_bytes / SECTOR_SIZE},
 					   &(uint64_t) {range_length_blocks * opal_block_bytes / SECTOR_SIZE},
 					   &(bool) {true}, &(bool){true}, NULL, NULL);
+
+	/* Only if SUM was configured successfully add explicit SUM LUKS2 requirement flag */
+	*r_opal_req_version = segment_in_sum ? LUKS2_OPAL_SUM_REQ_VERSION : LUKS2_OPAL_BASE_REQ_VERSION;
 out:
 	crypt_safe_free(new_pw);
 	crypt_safe_free(lock);
@@ -1563,7 +1572,8 @@ int opal_setup_ranges(struct crypt_device *cd,
 		      uint32_t segment_number,
 		      const void *admin_key,
 		      size_t admin_key_len,
-		      bool disable_sum)
+		      bool disable_sum,
+		      uint8_t *r_opal_req_version)
 {
 	return -ENOTSUP;
 }
