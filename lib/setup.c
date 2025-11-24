@@ -2295,6 +2295,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	const char *integrity = params ? params->integrity : NULL;
 	size_t integrity_key_size = 0; /* only for independent, separate key in HMAC */
 	struct volume_key *integrity_key = NULL;
+	uint8_t opal_requirement_version;
 	uint32_t sector_size, opal_block_bytes, opal_segment_number = 1; /* We'll use the partition number if available later */
 	uint64_t alignment_offset_bytes, data_offset_bytes, device_size_bytes, opal_alignment_granularity_blocks,
 		 partition_offset_sectors, range_offset_blocks, range_size_bytes,
@@ -2498,11 +2499,6 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	log_dbg(cd, "Adding LUKS2 OPAL requirement flag.");
-	r = LUKS2_config_set_requirement_version(cd, &cd->u.luks2.hdr, CRYPT_REQUIREMENT_OPAL, 1, false);
-	if (r < 0)
-		goto out;
-
 	if (params->label || params->subsystem) {
 		r = LUKS2_hdr_labels(cd, &cd->u.luks2.hdr,
 				     params->label, params->subsystem, 0);
@@ -2533,7 +2529,8 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 					range_offset_blocks, range_size_bytes / opal_block_bytes,
 					opal_block_bytes, opal_segment_number,
 					opal_params->admin_key, opal_params->admin_key_size,
-					!!(cd->compatibility & CRYPT_COMPAT_DISABLE_HW_OPAL_SUM));
+					!!(cd->compatibility & CRYPT_COMPAT_DISABLE_HW_OPAL_SUM),
+					&opal_requirement_version);
 	if (r < 0) {
 		if (r == -EPERM)
 			log_err(cd, _("Incorrect OPAL Admin key."));
@@ -2543,6 +2540,12 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	}
 
 	opal_range_reset = true;
+
+	log_dbg(cd, "Adding LUKS2 OPAL requirement flag (version: %u).", opal_requirement_version);
+	r = LUKS2_config_set_requirement_version(cd, &cd->u.luks2.hdr, CRYPT_REQUIREMENT_OPAL,
+						 opal_requirement_version, false);
+	if (r < 0)
+		goto out;
 
 	/* integrity metadata goes in unlocked OPAL locking range */
 	if (crypt_get_integrity_tag_size(cd)) {
