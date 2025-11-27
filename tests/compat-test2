@@ -45,6 +45,14 @@ KEY_FILE1=test-key-file1
 
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
+# 32 MiB + 1KiB to bypass minimal memory check (hardocoded)
+FAST_PBKDF_ARGON_OPT="--pbkdf argon2id --pbkdf-force-iterations 4 --pbkdf-memory 32769 --pbkdf-parallel 1"
+
+# TODO: this is configurable
+LUKS2_LOCKING_DIR=/run/cryptsetup
+# hardcoded value
+MEMORY_HARD_LOCK_FILE=LN_memory-hard-access
+
 TEST_UUID="12345678-1234-1234-1234-123456789abc"
 
 LOOPDEV=$(losetup -f 2>/dev/null)
@@ -1697,6 +1705,15 @@ DM_LONG_NAME=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
 echo $PWD1 | $CRYPTSETUP luksFormat -q $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DM_BAD_NAME 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DM_LONG_NAME 2>/dev/null && fail
+
+if ! fips_mode -a -d $LUKS2_LOCKING_DIR; then
+	touch $LUKS2_LOCKING_DIR/$MEMORY_HARD_LOCK_FILE
+	prepare "[52] Test pbkdf serialization flag." wipe
+	echo $PWD1 | $CRYPTSETUP luksFormat -q $FAST_PBKDF_ARGON_OPT --type luks2 $LOOPDEV || fail
+	test -f $LUKS2_LOCKING_DIR/$MEMORY_HARD_LOCK_FILE || fail "The locking file disappeared unexpectedly"
+	echo $PWD1 | $CRYPTSETUP open --serialize-memory-hard-pbkdf --test-passphrase $LOOPDEV || fail
+	test -f $LUKS2_LOCKING_DIR/$MEMORY_HARD_LOCK_FILE && fail "The --serialize-memory-hard-pbkdf option did not remove the locking file (did not use the file)."
+fi
 
 remove_mapping
 exit 0
