@@ -5450,6 +5450,9 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 		return _activate_loopaes(cd, name, passphrase, passphrase_size, flags);
 	}
 
+	if (flags & CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF)
+		cd->memory_hard_pbkdf_lock_enabled = true;
+
 	/* acquire the volume key(s) */
 	r = -EINVAL;
 	if (isLUKS1(cd->type)) {
