@@ -1,46 +1,25 @@
 cifuzz:
-  variables:
-    OSS_FUZZ_PROJECT_NAME: cryptsetup
-    CFL_PLATFORM: gitlab
-    CIFUZZ_DEBUG: "True"
-    FUZZ_SECONDS: 300 # 5 minutes per fuzzer
-    ARCHITECTURE: "x86_64"
-    DRY_RUN: "False"
-    LOW_DISK_SPACE: "True"
-    BAD_BUILD_CHECK: "True"
-    LANGUAGE: "c"
-    DOCKER_HOST: "tcp://docker:2375"
-    DOCKER_IN_DOCKER: "true"
-    DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: ""
-  image:
-    name: gcr.io/oss-fuzz-base/cifuzz-base
-    entrypoint: [""]
-  services:
-    - docker:dind
-
+  image: ubuntu:noble
+  tags:
+    - gitlab-org-docker
   stage: test
-  parallel:
-    matrix:
-      - SANITIZER: [address, undefined, memory]
+  interruptible: true
   rules:
-    # Default code change.
-    # - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    #   variables:
-    #     MODE: "code-change"
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
     - if: $BUILD_AND_RUN_FUZZERS != null
   before_script:
-    # Get gitlab's container id.
-    - export CFL_CONTAINER_ID=`cut -c9- < /proc/1/cpuset`
+    - apt-get -y update
+    - >
+      apt-get -y install -y -qq git clang make autoconf automake autopoint
+      pkgconf libtool libtool-bin gettext libssl-dev libdevmapper-dev
+      libpopt-dev uuid-dev libsepol-dev libjson-c-dev libssh-dev libblkid-dev
+      flex bison cmake ninja-build
+  parallel:
+    matrix:
+      # memory does not work for now
+      - SANITIZER: [address, undefined]
   script:
-    # Will build and run the fuzzers.
-    # We use a hack to override CI_JOB_ID, because otherwise a bad path is used
-    # in GitLab CI environment
-    - CI_JOB_ID="$CI_PROJECT_NAMESPACE/$CI_PROJECT_TITLE" python3 "/opt/oss-fuzz/infra/cifuzz/cifuzz_combined_entrypoint.py"
-  artifacts:
-    # Upload artifacts when a crash makes the job fail.
-    when: always
-    paths:
-      - artifacts/
+    - cd tests/fuzz
+    - ./oss-fuzz-build.sh
+    - ls -l out
