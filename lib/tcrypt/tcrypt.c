@@ -1002,8 +1002,10 @@ static int TCRYPT_status_one(struct crypt_device *cd, const char *name,
 {
 	struct crypt_dm_active_device dmd;
 	struct dm_target *tgt = &dmd.segment;
-	char dm_name[PATH_MAX], *c;
+	const char *c;
+	char dm_name[PATH_MAX];
 	int r;
+	size_t cipher_len = MAX_CIPHER_LEN;
 
 	if (snprintf(dm_name, sizeof(dm_name), "%s_%d", name, index) < 0)
 		return -ENOMEM;
@@ -1027,9 +1029,9 @@ static int TCRYPT_status_one(struct crypt_device *cd, const char *name,
 
 	if (is_tcrypt_subdev(dmd.uuid, base_uuid)) {
 		if ((c = strchr(tgt->u.crypt.cipher, '-')))
-			*c = '\0';
+			cipher_len = c - tgt->u.crypt.cipher;
 		strcat(cipher, "-");
-		strncat(cipher, tgt->u.crypt.cipher, MAX_CIPHER_LEN);
+		strncat(cipher, tgt->u.crypt.cipher, cipher_len);
 		*key_size += crypt_volume_key_length(tgt->u.crypt.vk);
 		tcrypt_hdr->d.mk_offset = tgt->u.crypt.offset * SECTOR_SIZE;
 		device_free(cd, *device);

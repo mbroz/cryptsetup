@@ -18,7 +18,8 @@
 static void _error_hint(struct crypt_device *ctx, const char *device,
 			const char *cipher, const char *mode, size_t keyLength)
 {
-	char *c, cipher_spec[MAX_CIPHER_LEN * 3];
+	const char *c;
+	char cipher_spec[MAX_CIPHER_LEN * 3];
 
 	if (snprintf(cipher_spec, sizeof(cipher_spec), "%s-%s", cipher, mode) < 0)
 		return;

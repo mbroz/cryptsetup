@@ -3287,7 +3287,7 @@ int dm_is_dm_kernel_name(const char *name)
 int dm_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
 {
 	int i, j;
-	char *str;
+	const char *str;
 
 	if (!dm_uuid || !hdr_uuid)
 		return -EINVAL;
@@ -3322,7 +3322,7 @@ int dm_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
 int dm_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid)
 {
 	int i;
-	char *str, *stri;
+	const char *str, *stri;
 
 	if (!dm_uuid || !dmi_uuid)
 		return -EINVAL;
