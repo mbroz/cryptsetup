@@ -4110,6 +4110,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	rh->read = crypt_storage_wrapper_read(rh->cw1, rh->offset, rh->reenc_buffer, rh->length);
 	if (rh->read < 0) {
 		/* severity normal */
+		log_dbg(cd, _("Read failed %" PRIu64 ", length: %" PRIu64 "."), rh->offset, rh->length);
 		log_err(cd, _("Failed to read hotzone area starting at %" PRIu64 "."), rh->offset);
 		return REENC_ERR_ROLLBACK_MEMORY;
 	}
@@ -4140,6 +4141,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	}
 	if (rh->read != crypt_storage_wrapper_encrypt_write(rh->cw2, rh->offset, rh->reenc_buffer, rh->read)) {
 		/* severity fatal */
+		log_dbg(cd, _("Write failed %" PRIu64 ", length: %" PRIi64 "."), rh->offset, rh->read);
 		log_err(cd, _("Failed to write hotzone area starting at %" PRIu64 "."), rh->offset);
 		return REENC_ERR_FATAL;
 	}
