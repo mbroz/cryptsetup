@@ -840,7 +840,22 @@ static crypt_reencrypt_direction_info reencrypt_direction(struct luks2_hdr *hdr)
 	return di;
 }
 
-typedef enum { REENC_OK = 0, REENC_ERR, REENC_ROLLBACK, REENC_FATAL } reenc_status_t;
+typedef enum { REENC_OK = 0,
+	       /* to be removed in next commit */
+	       REENC_ERR,
+		/*
+		 * The state not requiring LUKS2 reencryption recovery. We can rollback
+		 * to last known safe state (hold in memory since last metadata write)
+		 * and teardown reencryption device stack (if used).
+		 * The reencryption fails but does not require recovery
+		 */
+	       REENC_ROLLBACK,
+	       /*
+		* Error while writing hotzone (short write or sync fail) or failed metadata
+		* update post hotzone write.
+		*/
+	       REENC_FATAL
+} reenc_status_t;
 
 void LUKS2_reencrypt_protection_erase(struct reenc_protection *rp)
 {
