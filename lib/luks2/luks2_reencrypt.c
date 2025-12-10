@@ -841,8 +841,6 @@ static crypt_reencrypt_direction_info reencrypt_direction(struct luks2_hdr *hdr)
 }
 
 typedef enum { REENC_OK = 0,
-	       /* to be removed in next commit */
-	       REENC_ERR,
 		/*
 		 * The state not requiring LUKS2 reencryption recovery. We can rollback
 		 * to last known safe state (hold in memory since last metadata write)
@@ -2381,7 +2379,8 @@ err:
  * 	   usually it would hint some collision with another userspace process touching
  * 	   dm devices directly.
  */
-static int reenc_refresh_helper_devices(struct crypt_device *cd, const char *overlay, const char *hotzone)
+static reenc_status_t reenc_refresh_helper_devices(struct crypt_device *cd, const char *overlay,
+		const char *hotzone)
 {
 	int r;
 
@@ -2395,25 +2394,27 @@ static int reenc_refresh_helper_devices(struct crypt_device *cd, const char *ove
 	r = dm_suspend_device(cd, overlay, DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH);
 	if (r) {
 		log_err(cd, _("Failed to suspend device %s."), overlay);
-		return r;
+		return REENC_ROLLBACK;
 	}
 
 	/* suspend HZ device */
 	r = dm_suspend_device(cd, hotzone, DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH);
 	if (r) {
 		log_err(cd, _("Failed to suspend device %s."), hotzone);
-		return r;
+		return REENC_ROLLBACK;
 	}
 
 	/* resume overlay device: inactive table (with hotozne) -> live */
 	r = dm_resume_device(cd, overlay, DM_RESUME_PRIVATE);
-	if (r)
+	if (r) {
 		log_err(cd, _("Failed to resume device %s."), overlay);
+		return REENC_ROLLBACK;
+	}
 
-	return r;
+	return REENC_OK;
 }
 
-static int reencrypt_refresh_overlay_devices(struct crypt_device *cd,
+static reenc_status_t reencrypt_refresh_overlay_devices(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
 		const char *overlay,
 		const char *hotzone,
@@ -2425,16 +2426,14 @@ static int reencrypt_refresh_overlay_devices(struct crypt_device *cd,
 	int r = reencrypt_load_overlay_device(cd, hdr, overlay, hotzone_device, vks, device_size, flags);
 	if (r) {
 		log_err(cd, _("Failed to reload device %s."), overlay);
-		return REENC_ERR;
-	}
-
-	r = reenc_refresh_helper_devices(cd, overlay, hotzone);
-	if (r) {
-		log_err(cd, _("Failed to refresh reencryption devices stack."));
 		return REENC_ROLLBACK;
 	}
 
-	return REENC_OK;
+	r = reenc_refresh_helper_devices(cd, overlay, hotzone);
+	if (r != REENC_OK)
+		log_err(cd, _("Failed to refresh reencryption devices stack."));
+
+	return r;
 }
 
 static int reencrypt_move_data(struct crypt_device *cd,
@@ -4067,12 +4066,12 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	/* in memory only */
 	r = reencrypt_make_segments(cd, hdr, rh, device_size);
 	if (r)
-		return REENC_ERR;
+		return REENC_ROLLBACK;
 
 	r = reencrypt_assign_segments(cd, hdr, rh, 1, 0);
 	if (r) {
 		log_err(cd, _("Failed to set device segments for next reencryption hotzone."));
-		return REENC_ERR;
+		return REENC_ROLLBACK;
 	}
 
 	log_dbg(cd, "Reencrypting chunk starting at offset: %" PRIu64 ", size :%" PRIu64 ".", rh->offset, rh->length);
@@ -4159,7 +4158,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 		r = dm_resume_device(cd, rh->hotzone_name, DM_RESUME_PRIVATE);
 		if (r) {
 			log_err(cd, _("Failed to resume device %s."), rh->hotzone_name);
-			return REENC_ERR;
+			return REENC_ROLLBACK;
 		}
 	}
 
@@ -4389,7 +4388,7 @@ int crypt_reencrypt_run(
 		r = reencrypt_context_update(cd, rh);
 		if (r) {
 			log_err(cd, _("Failed to update reencryption context."));
-			rs = REENC_ERR;
+			rs = REENC_ROLLBACK;
 			break;
 		}
 
