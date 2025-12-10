@@ -847,12 +847,12 @@ typedef enum { REENC_OK = 0,
 		 * and teardown reencryption device stack (if used).
 		 * The reencryption fails but does not require recovery
 		 */
-	       REENC_ROLLBACK,
+	       REENC_ERR_ROLLBACK_MEMORY,
 	       /*
 		* Error while writing hotzone (short write or sync fail) or failed metadata
 		* update post hotzone write.
 		*/
-	       REENC_FATAL
+	       REENC_ERR_FATAL
 } reenc_status_t;
 
 void LUKS2_reencrypt_protection_erase(struct reenc_protection *rp)
@@ -2394,21 +2394,21 @@ static reenc_status_t reenc_refresh_helper_devices(struct crypt_device *cd, cons
 	r = dm_suspend_device(cd, overlay, DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH);
 	if (r) {
 		log_err(cd, _("Failed to suspend device %s."), overlay);
-		return REENC_ROLLBACK;
+		return REENC_ERR_ROLLBACK_MEMORY;
 	}
 
 	/* suspend HZ device */
 	r = dm_suspend_device(cd, hotzone, DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH);
 	if (r) {
 		log_err(cd, _("Failed to suspend device %s."), hotzone);
-		return REENC_ROLLBACK;
+		return REENC_ERR_ROLLBACK_MEMORY;
 	}
 
 	/* resume overlay device: inactive table (with hotozne) -> live */
 	r = dm_resume_device(cd, overlay, DM_RESUME_PRIVATE);
 	if (r) {
 		log_err(cd, _("Failed to resume device %s."), overlay);
-		return REENC_ROLLBACK;
+		return REENC_ERR_ROLLBACK_MEMORY;
 	}
 
 	return REENC_OK;
@@ -2426,7 +2426,7 @@ static reenc_status_t reencrypt_refresh_overlay_devices(struct crypt_device *cd,
 	int r = reencrypt_load_overlay_device(cd, hdr, overlay, hotzone_device, vks, device_size, flags);
 	if (r) {
 		log_err(cd, _("Failed to reload device %s."), overlay);
-		return REENC_ROLLBACK;
+		return REENC_ERR_ROLLBACK_MEMORY;
 	}
 
 	r = reenc_refresh_helper_devices(cd, overlay, hotzone);
@@ -4066,12 +4066,12 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	/* in memory only */
 	r = reencrypt_make_segments(cd, hdr, rh, device_size);
 	if (r)
-		return REENC_ROLLBACK;
+		return REENC_ERR_ROLLBACK_MEMORY;
 
 	r = reencrypt_assign_segments(cd, hdr, rh, 1, 0);
 	if (r) {
 		log_err(cd, _("Failed to set device segments for next reencryption hotzone."));
-		return REENC_ROLLBACK;
+		return REENC_ERR_ROLLBACK_MEMORY;
 	}
 
 	log_dbg(cd, "Reencrypting chunk starting at offset: %" PRIu64 ", size :%" PRIu64 ".", rh->offset, rh->length);
@@ -4089,7 +4089,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 				rh->wflags1);
 		if (r) {
 			log_err(cd, _("Failed to initialize old segment storage wrapper."));
-			return REENC_ROLLBACK;
+			return REENC_ERR_ROLLBACK_MEMORY;
 		}
 
 		if (rh->rp_moved_segment.type != REENC_PROTECTION_NOT_SET) {
@@ -4101,7 +4101,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	r = reencrypt_hotzone_protect_ready(cd, rp);
 	if (r) {
 		log_err(cd, _("Failed to initialize hotzone protection."));
-		return REENC_ROLLBACK;
+		return REENC_ERR_ROLLBACK_MEMORY;
 	}
 
 	if (online) {
@@ -4116,7 +4116,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	if (rh->read < 0) {
 		/* severity normal */
 		log_err(cd, _("Failed to read hotzone area starting at %" PRIu64 "."), rh->offset);
-		return REENC_ROLLBACK;
+		return REENC_ERR_ROLLBACK_MEMORY;
 	}
 
 	/* metadata commit point */
@@ -4124,24 +4124,24 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	if (r < 0) {
 		/* severity normal */
 		log_err(cd, _("Failed to write reencryption resilience metadata."));
-		return REENC_ROLLBACK;
+		return REENC_ERR_ROLLBACK_MEMORY;
 	}
 
 	r = crypt_storage_wrapper_decrypt(rh->cw1, rh->offset, rh->reenc_buffer, rh->read);
 	if (r) {
 		/* severity normal */
 		log_err(cd, _("Decryption failed."));
-		return REENC_ROLLBACK;
+		return REENC_ERR_ROLLBACK_MEMORY;
 	}
 	if (rh->read != crypt_storage_wrapper_encrypt_write(rh->cw2, rh->offset, rh->reenc_buffer, rh->read)) {
 		/* severity fatal */
 		log_err(cd, _("Failed to write hotzone area starting at %" PRIu64 "."), rh->offset);
-		return REENC_FATAL;
+		return REENC_ERR_FATAL;
 	}
 
 	if (rp->type != REENC_PROTECTION_NONE && crypt_storage_wrapper_datasync(rh->cw2)) {
 		log_err(cd, _("Failed to sync data."));
-		return REENC_FATAL;
+		return REENC_ERR_FATAL;
 	}
 
 	/* metadata commit safe point */
@@ -4149,7 +4149,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	if (r) {
 		/* severity fatal */
 		log_err(cd, _("Failed to update metadata after current reencryption hotzone completed."));
-		return REENC_FATAL;
+		return REENC_ERR_FATAL;
 	}
 
 	if (online) {
@@ -4158,7 +4158,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 		r = dm_resume_device(cd, rh->hotzone_name, DM_RESUME_PRIVATE);
 		if (r) {
 			log_err(cd, _("Failed to resume device %s."), rh->hotzone_name);
-			return REENC_ROLLBACK;
+			return REENC_ERR_ROLLBACK_MEMORY;
 		}
 	}
 
@@ -4314,7 +4314,7 @@ static int reencrypt_teardown(struct crypt_device *cd, struct luks2_hdr *hdr,
 			progress(rh->device_size, rh->progress, usrptr);
 		r = reencrypt_teardown_ok(cd, hdr, rh);
 		break;
-	case REENC_FATAL:
+	case REENC_ERR_FATAL:
 		reencrypt_teardown_fatal(cd, rh);
 		/* fall-through */
 	default:
@@ -4388,7 +4388,7 @@ int crypt_reencrypt_run(
 		r = reencrypt_context_update(cd, rh);
 		if (r) {
 			log_err(cd, _("Failed to update reencryption context."));
-			rs = REENC_ROLLBACK;
+			rs = REENC_ERR_ROLLBACK_MEMORY;
 			break;
 		}
 
