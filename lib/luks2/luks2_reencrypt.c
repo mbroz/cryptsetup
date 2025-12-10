@@ -2374,11 +2374,6 @@ err:
 	return r;
 }
 
-/* TODO:
- * 	1) audit error path. any error in this routine is fatal and should be unlikely.
- * 	   usually it would hint some collision with another userspace process touching
- * 	   dm devices directly.
- */
 static reenc_status_t reenc_refresh_helper_devices(struct crypt_device *cd, const char *overlay,
 		const char *hotzone)
 {
@@ -4122,14 +4117,24 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	/* metadata commit point */
 	r = reencrypt_hotzone_protect_final(cd, hdr, rh->reenc_keyslot, rp, rh->reenc_buffer, rh->read);
 	if (r < 0) {
-		/* severity normal */
+		/*
+		 * Nothing was written in hotzone area yet. Even if metadata write failed the previous
+		 * state is still valid. If the metadata write passed and there was another
+		 * error it's harmless to do recovery. Recovery may be run several times with no
+		 * negative side effect.
+		 */
 		log_err(cd, _("Failed to write reencryption resilience metadata."));
 		return REENC_ERR_ROLLBACK_MEMORY;
 	}
 
 	r = crypt_storage_wrapper_decrypt(rh->cw1, rh->offset, rh->reenc_buffer, rh->read);
 	if (r) {
-		/* severity normal */
+		/*
+		 * Ideally, this would be specific error (REENC_ERR_ROLLBACK_METADATA) case where
+		 * it would rollback on-disk metadata to the last valid state (still no write in
+		 * hotzone area). But it's not worth the effort. This will trigger full LUKS2
+		 * reencryption recovery despite not being necessary.
+		 */
 		log_err(cd, _("Decryption failed."));
 		return REENC_ERR_ROLLBACK_MEMORY;
 	}
@@ -4153,7 +4158,6 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 	}
 
 	if (online) {
-		/* severity normal */
 		log_dbg(cd, "Resuming device %s", rh->hotzone_name);
 		r = dm_resume_device(cd, rh->hotzone_name, DM_RESUME_PRIVATE);
 		if (r) {
@@ -4243,6 +4247,7 @@ static int replace_hotzone_device_with_error(struct crypt_device *cd, struct luk
 
 static int teardown_overlay_devices(struct crypt_device *cd, struct luks2_reencrypt *rh)
 {
+	bool overlay_suspended, hotzone_suspended;
 	int r;
 
 	/* Reload device with current LUKS2 segments */
@@ -4250,6 +4255,44 @@ static int teardown_overlay_devices(struct crypt_device *cd, struct luks2_reencr
 	if (r) {
 		log_err(cd, _("Failed to reload device %s."), rh->device_name);
 		return r;
+	}
+
+	overlay_suspended = dm_status_suspended(cd, rh->overlay_name) > 0;
+	hotzone_suspended = dm_status_suspended(cd, rh->hotzone_name) > 0;
+
+	/*
+	 * The overlay (if suspended) may hold already queued I/Os.
+	 * Reload the overlay device with the table identical to the one
+	 * loaded to the top level device. The overlay device will dropped
+	 * shortly after successful top level device resume.
+	 */
+	if (overlay_suspended) {
+		log_dbg(cd, "Reverting suspended device %s to previous metadata segments", rh->overlay_name);
+		r = LUKS2_reload(cd, rh->overlay_name, rh->vks, rh->device_size, rh->flags);
+		if (r) {
+			log_err(cd, _("Failed to reload device %s."), rh->overlay_name);
+			return r;
+		}
+	}
+
+	/*
+	 * if the hotzone is suspended we must error all pending I/O waiting in the device. The
+	 * reencryption step was not completed and the pending I/O would corrupt the data on data
+	 * device.
+	 *
+	 * If the hotzone table replacement fails we must abort!
+	 */
+	if (hotzone_suspended && (r = replace_hotzone_device_with_error(cd, rh)))
+		return r;
+
+	if (overlay_suspended) {
+		/* Resume will pass since the hotzone (if previously suspended) is now
+		 * replaced with live dm-error table */
+		r = dm_resume_device(cd, rh->overlay_name, DM_RESUME_PRIVATE);
+		if (r) {
+			log_err(cd, _("Failed to resume device %s."), rh->overlay_name);
+			return r;
+		}
 	}
 
 	/* Now we can switch original top level device away from overlay device */
@@ -4319,6 +4362,29 @@ static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr,
 	return 0;
 }
 
+static void reencrypt_teardown_rollback(struct crypt_device *cd, struct luks2_hdr *hdr,
+		struct luks2_reencrypt *rh)
+{
+	/*
+	 * We cannot rollback for REENC_PROTECTION_NONE. It does not commit metadata as
+	 * it progresses. In this case, the device stack is intentionally left as-is.
+	 */
+	if (rh->rp.type <= REENC_PROTECTION_NONE)
+		return;
+
+	/*
+	 * If metadata rollback fails, we cannot proceed with device teardown
+	 * as we do not have proper metadata snapshot for LUKS2_reload().
+	 */
+	if (LUKS2_hdr_rollback(cd, hdr))
+		return;
+
+	if (!rh->online)
+		return;
+
+	teardown_overlay_devices(cd, rh);
+}
+
 static void reencrypt_teardown_fatal(struct crypt_device *cd, struct luks2_reencrypt *rh)
 {
 	log_err(cd, _("Fatal error while reencrypting chunk starting at %" PRIu64 ", %" PRIu64 " sectors long."),
@@ -4343,6 +4409,10 @@ static int reencrypt_teardown(struct crypt_device *cd, struct luks2_hdr *hdr,
 		if (progress && !interrupted)
 			progress(rh->device_size, rh->progress, usrptr);
 		r = reencrypt_teardown_ok(cd, hdr, rh);
+		break;
+	case REENC_ERR_ROLLBACK_MEMORY:
+		reencrypt_teardown_rollback(cd, hdr, rh);
+		r = -EINVAL;
 		break;
 	case REENC_ERR_FATAL:
 		reencrypt_teardown_fatal(cd, rh);
