@@ -299,7 +299,8 @@ const char *key_type_name(key_type_t type)
 
 key_type_t keyring_type_and_name(const char *key_name, const char **name)
 {
-	char type[16], *name_tmp;
+	const char *name_tmp;
+	char type[16];
 	size_t type_len;
 
 	if (!key_name || key_name[0] != '%')

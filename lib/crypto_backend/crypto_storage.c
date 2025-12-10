@@ -77,7 +77,7 @@ static int crypt_sector_iv_init(struct crypt_sector_iv *ctx,
 		ctx->type = IV_PLAIN;
 	} else if (!strncasecmp(iv_name, "essiv:", 6)) {
 		struct crypt_hash *h = NULL;
-		char *hash_name = strchr(iv_name, ':');
+		const char *hash_name = strchr(iv_name, ':');
 		int hash_size;
 		char tmp[256];
 
