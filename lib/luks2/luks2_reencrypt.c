@@ -4229,6 +4229,48 @@ static int reencrypt_wipe_unused_device_area(struct crypt_device *cd, struct luk
 	return r;
 }
 
+static int replace_hotzone_device_with_error(struct crypt_device *cd, struct luks2_reencrypt *rh)
+{
+	log_dbg(cd, "Replacing device %s with dm-error.", rh->hotzone_name);
+	if (dm_error_device(cd, rh->hotzone_name)) {
+		log_err(cd, _("Failed to replace suspended device %s with dm-error target."), rh->hotzone_name);
+		log_err(cd, _("Do not resume the device unless replaced with error target manually."));
+		return -EIO;
+	}
+
+	return 0;
+}
+
+static int teardown_overlay_devices(struct crypt_device *cd, struct luks2_reencrypt *rh)
+{
+	int r;
+
+	/* Reload device with current LUKS2 segments */
+	r = LUKS2_reload(cd, rh->device_name, rh->vks, rh->device_size, rh->flags);
+	if (r) {
+		log_err(cd, _("Failed to reload device %s."), rh->device_name);
+		return r;
+	}
+
+	/* Now we can switch original top level device away from overlay device */
+	r = dm_resume_device(cd, rh->device_name, DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH);
+	if (r) {
+		log_err(cd, _("Failed to resume device %s."), rh->device_name);
+		return r;
+	}
+
+	/*
+	 * This should not affect teardown return value. There may be other processes
+	 * touching those devices despite being private.
+	 */
+	if (dm_remove_device(cd, rh->overlay_name, 0))
+		log_dbg(cd, "Failed to remove unused device %s", rh->overlay_name);
+	if (dm_remove_device(cd, rh->hotzone_name, 0))
+		log_dbg(cd, "Failed to remove unused device %s", rh->hotzone_name);
+
+	return 0;
+}
+
 static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr, struct luks2_reencrypt *rh)
 {
 	int i, r;
@@ -4242,18 +4284,11 @@ static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr,
 	}
 
 	if (rh->online) {
-		r = LUKS2_reload(cd, rh->device_name, rh->vks, rh->device_size, rh->flags);
+		r = teardown_overlay_devices(cd, rh);
 		if (r)
-			log_err(cd, _("Failed to reload device %s."), rh->device_name);
-		if (!r) {
-			r = dm_resume_device(cd, rh->device_name, DM_SUSPEND_SKIP_LOCKFS | DM_SUSPEND_NOFLUSH);
-			if (r)
-				log_err(cd, _("Failed to resume device %s."), rh->device_name);
-		}
-		dm_remove_device(cd, rh->overlay_name, 0);
-		dm_remove_device(cd, rh->hotzone_name, 0);
+			return r;
 
-		if (!r && finished && rh->mode == CRYPT_REENCRYPT_DECRYPT &&
+		if (finished && rh->mode == CRYPT_REENCRYPT_DECRYPT &&
 		    !dm_flags(cd, DM_LINEAR, &dmt_flags) && (dmt_flags & DM_DEFERRED_SUPPORTED))
 		    dm_remove_device(cd, rh->device_name, CRYPT_DEACTIVATE_DEFERRED);
 	}
@@ -4291,13 +4326,8 @@ static void reencrypt_teardown_fatal(struct crypt_device *cd, struct luks2_reenc
 
 	if (rh->online) {
 		log_err(cd, _("Online reencryption failed."));
-		if (dm_status_suspended(cd, rh->hotzone_name) > 0) {
-			log_dbg(cd, "Hotzone device %s suspended, replacing with dm-error.", rh->hotzone_name);
-			if (dm_error_device(cd, rh->hotzone_name)) {
-				log_err(cd, _("Failed to replace suspended device %s with dm-error target."), rh->hotzone_name);
-				log_err(cd, _("Do not resume the device unless replaced with error target manually."));
-			}
-		}
+		if (dm_status_suspended(cd, rh->hotzone_name) > 0)
+			replace_hotzone_device_with_error(cd, rh);
 	}
 }
 
