@@ -3026,6 +3026,17 @@ int crypt_format_inline(struct crypt_device *cd,
 	} else if (isLUKS2(type)) {
 		lparams = params;
 		iparams = lparams->integrity_params;
+
+		if (lparams->data_device) {
+			if (!cd->metadata_device)
+				cd->metadata_device = cd->device;
+			else
+				device_free(cd, cd->device);
+			cd->device = NULL;
+			if (device_alloc(cd, &cd->device, lparams->data_device) < 0)
+				return -ENOMEM;
+		}
+
 		idevice = crypt_data_device(cd);
 		required_sector_size = lparams->sector_size;
 
