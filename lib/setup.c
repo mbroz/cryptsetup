@@ -5843,11 +5843,13 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 	 * we need flags from underlying dm-integrity device.
 	 * This check must be skipped for non-LUKS2 integrity device.
 	 */
-	if ((isLUKS2(cd->type) || !cd->type) && crypt_get_integrity_tag_size(cd) &&
-		(iname = dm_get_active_iname(cd, name))) {
-		if (dm_query_device(cd, iname, 0, &dmdi) >= 0)
-			dmd.flags |= dmdi.flags;
-		free(iname);
+	if ((isLUKS2(cd->type) || !cd->type) && crypt_get_integrity_tag_size(cd)) {
+	    if ((iname = dm_get_active_iname(cd, name))) {
+	        if (dm_query_device(cd, iname, 0, &dmdi) >= 0)
+	            dmd.flags |= dmdi.flags;
+	        free(iname);
+	    } else
+	        dmd.flags |= (CRYPT_ACTIVATE_NO_JOURNAL | CRYPT_ACTIVATE_INLINE_MODE);
 	}
 
 	if (cd && isTCRYPT(cd->type)) {

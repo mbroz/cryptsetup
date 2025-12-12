@@ -194,6 +194,7 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 	else
 		# this hw-inline device must not be suspended
 		dmsetup info "$DEV_NAME2" | grep -q ACTIVE || fail
+		$CRYPTSETUP status $DEV_NAME | grep -q "(inline HW tags)" || fail "(inline hw tags) missing."
 	fi
 	echo -n "[RESUME]"
 	$CRYPTSETUP luksResume -d $KEY_FILE $DEV_NAME || fail "Cannot resume device."
@@ -225,6 +226,9 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 		status_check "keysize:" $(($4 + $5))
 		[ -n "$LO_DEV" ] && status_check "device:" $LO_DEV
 		[ $5 -gt 0 ] && status_check "integrity keysize:" $5
+		if [ -n "$INLINE_PARAMS" ]; then
+		    $CRYPTSETUP status $DEV_NAME --header $HEADER_IMG | grep -q "(inline HW tags)" || fail "(inline hw tags) missing."
+		fi
 		$CRYPTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 		[ -b /dev/mapper/"$DEV_NAME"_dif ] && fail
 		$CRYPTSETUP luksHeaderRestore -q --header-backup-file $HEADER_IMG $IDEV || fail
