@@ -74,12 +74,12 @@ int crypt_init_data_device(struct crypt_device **cd,
  * and, optionally, from separate metadata (header) device
  * and check if provided device exists.
  *
- * @return @e 0 on success or negative errno value otherwise.
- *
  * @param cd returns crypt device handle for active device
  * @param name name of active crypt device
  * @param header_device optional device containing on-disk header
  * 	  (@e NULL if it the same as underlying device on there is no on-disk header)
+ *
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @post In case @e device points to active LUKS device but header load fails,
  * context device type is set to @e NULL and @e 0 is returned as if it were successful.
@@ -137,7 +137,7 @@ void crypt_set_confirm_callback(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param device path to device
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  */
 int crypt_set_data_device(struct crypt_device *cd, const char *device);
 
@@ -145,13 +145,13 @@ int crypt_set_data_device(struct crypt_device *cd, const char *device);
  * Set data device offset in 512-byte sectors.
  * Used for LUKS.
  * This function is replacement for data alignment fields in LUKS param struct.
- * If set to 0 (default), old behaviour is preserved.
+ * If set to @e 0 (default), old behaviour is preserved.
  * This value is reset on @link crypt_load @endlink.
  *
  * @param cd crypt device handle
  * @param data_offset data offset in bytes
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Data offset must be aligned to multiple of 8 (alignment to 4096-byte sectors)
  * and must be big enough to accommodate the whole LUKS header with all keyslots.
@@ -232,7 +232,6 @@ void crypt_logf(struct crypt_device *cd, int level, const char *format, ...);
  *
  * @param cd crypt device handle
  * @param rng_type kernel random number generator to use
- *
  */
 void crypt_set_rng_type(struct crypt_device *cd, int rng_type);
 
@@ -240,8 +239,8 @@ void crypt_set_rng_type(struct crypt_device *cd, int rng_type);
  * Get which RNG (random number generator) is used for generating long term key.
  *
  * @param cd crypt device handle
- * @return RNG type on success or negative errno value otherwise.
  *
+ * @return RNG type on success or negative errno value otherwise.
  */
 int crypt_get_rng_type(struct crypt_device *cd);
 
@@ -252,7 +251,7 @@ struct crypt_pbkdf_type {
 	const char *type;         /**< PBKDF algorithm  */
 	const char *hash;         /**< Hash algorithm */
 	uint32_t time_ms;         /**< Requested time cost [milliseconds] */
-	uint32_t iterations;      /**< Iterations, 0 or benchmarked value. */
+	uint32_t iterations;      /**< Iterations, @e 0 or benchmarked value. */
 	uint32_t max_memory_kb;   /**< Requested or benchmarked  memory cost [kilobytes] */
 	uint32_t parallel_threads;/**< Requested parallel cost [threads] */
 	uint32_t flags;           /**< CRYPT_PBKDF* flags */
@@ -277,7 +276,7 @@ struct crypt_pbkdf_type {
  * @param cd crypt device handle
  * @param pbkdf PBKDF parameters
  *
- * @return 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note For LUKS1, only PBKDF2 is supported, other settings will be rejected.
  * @note For non-LUKS context types the call succeeds, but PBKDF is not used.
@@ -290,8 +289,7 @@ int crypt_set_pbkdf_type(struct crypt_device *cd,
  *
  * @param pbkdf_type type of PBKDF
  *
- * @return struct on success or NULL value otherwise.
- *
+ * @return struct on success or @e NULL value otherwise.
  */
 const struct crypt_pbkdf_type *crypt_get_pbkdf_type_params(const char *pbkdf_type);
 
@@ -301,8 +299,7 @@ const struct crypt_pbkdf_type *crypt_get_pbkdf_type_params(const char *pbkdf_typ
  *
  * @param type type of device (see @link crypt-type @endlink)
  *
- * @return struct on success or NULL value otherwise.
- *
+ * @return struct on success or @e NULL value otherwise.
  */
 const struct crypt_pbkdf_type *crypt_get_pbkdf_default(const char *type);
 
@@ -312,8 +309,7 @@ const struct crypt_pbkdf_type *crypt_get_pbkdf_default(const char *type);
  *
  * @param cd crypt device handle
  *
- * @return struct on success or NULL value otherwise.
- *
+ * @return struct on success or @e NULL value otherwise.
  */
 const struct crypt_pbkdf_type *crypt_get_pbkdf_type(struct crypt_device *cd);
 
@@ -335,9 +331,9 @@ void crypt_set_iteration_time(struct crypt_device *cd, uint64_t iteration_time_m
  * \b Deprecated, only for backward compatibility. Memory with keys are locked automatically.
  *
  * @param cd crypt device handle, can be @e NULL
- * @param lock 0 to unlock otherwise lock memory
+ * @param lock @e 0 to unlock otherwise lock memory
  *
- * @returns Value indicating whether the memory is locked (function can be called multiple times).
+ * @return Value indicating whether the memory is locked (function can be called multiple times).
  *
  * @note Only root can do this.
  * @note It locks/unlocks all process memory, not only crypt context.
@@ -348,9 +344,9 @@ int crypt_memory_lock(struct crypt_device *cd, int lock) __attribute__((deprecat
  * Set global lock protection for on-disk metadata (file-based locking).
  *
  * @param cd crypt device handle, can be @e NULL
- * @param enable 0 to disable locking otherwise enable it (default)
+ * @param enable @e 0 to disable locking otherwise enable it (default)
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Locking applied only for some metadata formats (LUKS2).
  * @note The switch is global on the library level.
@@ -366,7 +362,7 @@ int crypt_metadata_locking(struct crypt_device *cd, int enable);
  * @param metadata_size size in bytes of JSON area + 4k binary header
  * @param keyslots_size size in bytes of binary keyslots area
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note The metadata area is stored twice and both copies contain 4k binary header.
  * Only 16,32,64,128,256,512,1024,2048 and 4096 kB value is allowed (see LUKS2 specification).
@@ -384,7 +380,7 @@ int crypt_set_metadata_size(struct crypt_device *cd,
  * @param metadata_size size in bytes of JSON area + 4k binary header
  * @param keyslots_size size in bytes of binary keyslots area
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  */
 int crypt_get_metadata_size(struct crypt_device *cd,
 	uint64_t *metadata_size,
@@ -426,6 +422,7 @@ int crypt_get_metadata_size(struct crypt_device *cd,
  * Get device type
  *
  * @param cd crypt device handle
+ *
  * @return string according to device type or @e NULL if not known.
  */
 const char *crypt_get_type(struct crypt_device *cd);
@@ -454,14 +451,14 @@ const char *crypt_get_default_type(void);
  * Get HW encryption type
  *
  * @return HW encryption type (see @link crypt-hw-encryption-types @endlink)
- *         or negative errno otherwise.
+ *         or negative errno value otherwise.
  */
 int crypt_get_hw_encryption_type(struct crypt_device *cd);
 
 /**
  * Get HW encryption (like OPAL) key size (in bytes)
  *
- * @return key size or 0 if no HW encryption is used.
+ * @return key size or @e 0 if no HW encryption is used.
  */
 int crypt_get_hw_encryption_key_size(struct crypt_device *cd);
 
@@ -499,7 +496,6 @@ struct crypt_params_luks1 {
  * Structure used as parameter for loop-AES device type.
  *
  * @see crypt_format
- *
  */
 struct crypt_params_loopaes {
 	const char *hash; /**< key hash function */
@@ -512,7 +508,6 @@ struct crypt_params_loopaes {
  * Structure used as parameter for dm-verity device type.
  *
  * @see crypt_format, crypt_load
- *
  */
 struct crypt_params_verity {
 	const char *hash_name;     /**< hash function */
@@ -545,7 +540,6 @@ struct crypt_params_verity {
  * Structure used as parameter for TCRYPT device type.
  *
  * @see crypt_load
- *
  */
 struct crypt_params_tcrypt {
 	const char *passphrase;    /**< passphrase to unlock header (input only) */
@@ -593,7 +587,7 @@ struct crypt_params_integrity {
 	uint32_t tag_size;                   /**< tag size per-sector in bytes */
 	uint32_t sector_size;                /**< sector size in bytes */
 	uint32_t buffer_sectors;             /**< number of sectors in one buffer */
-	const char *integrity;               /**< integrity algorithm, NULL for LUKS2 */
+	const char *integrity;               /**< integrity algorithm, @e NULL for LUKS2 */
 	uint32_t integrity_key_size;         /**< integrity key size in bytes, info only */
 
 	const char *journal_integrity;       /**< journal integrity algorithm */
@@ -612,7 +606,6 @@ struct crypt_params_integrity {
  *
  * @note during crypt_format @e data_device attribute determines
  * 	 if the LUKS2 header is separated from encrypted payload device
- *
  */
 struct crypt_params_luks2 {
 	const struct crypt_pbkdf_type *pbkdf; /**< PBKDF (and hash) parameters or @e NULL*/
@@ -620,7 +613,7 @@ struct crypt_params_luks2 {
 	const struct crypt_params_integrity *integrity_params; /**< Data integrity parameters or @e NULL*/
 	size_t data_alignment;   /**< data area alignment in 512B sectors, data offset is multiple of this */
 	const char *data_device; /**< detached encrypted data device or @e NULL */
-	uint32_t sector_size;    /**< encryption sector size, 0 triggers auto-detection for optimal encryption sector size */
+	uint32_t sector_size;    /**< encryption sector size, @e 0 triggers auto-detection for optimal encryption sector size */
 	const char *label;       /**< header label or @e NULL*/
 	const char *subsystem;   /**< header subsystem label or @e NULL*/
 };
@@ -629,7 +622,6 @@ struct crypt_params_luks2 {
  * Structure used as parameter for OPAL (HW encrypted) device type.
  *
  * @see crypt_format_luks2_opal
- *
  */
 struct crypt_params_hw_opal {
 	const char *admin_key;   /**< admin key */
@@ -659,7 +651,7 @@ struct crypt_params_hw_opal {
  * @param volume_key_size size of volume key in bytes.
  * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Note that crypt_format does not create LUKS keyslot (any version). To create keyslot
  *	 call any crypt_keyslot_add_* function.
@@ -681,15 +673,15 @@ int crypt_format(struct crypt_device *cd,
  * @pre @e cd contains initialized and not formatted device context (device type must @b not be set)
  *
  * @param cd crypt device handle
- * @param cipher for SW encryption (e.g. "aes") or NULL for HW encryption only
- * @param cipher_mode including IV specification (e.g. "xts-plain") or NULL for HW encryption only
+ * @param cipher for SW encryption (e.g. "aes") or @e NULL for HW encryption only
+ * @param cipher_mode including IV specification (e.g. "xts-plain") or @e NULL for HW encryption only
  * @param uuid requested UUID or @e NULL if it should be generated
  * @param volume_keys pre-generated volume keys or @e NULL if it should be generated (only for LUKS2 SW encryption)
  * @param volume_keys_size size of volume keys in bytes (only for SW encryption).
  * @param params LUKS2 crypt type specific parameters (see @link crypt-type @endlink)
  * @param opal_params OPAL specific parameters
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Note that crypt_format_luks2_opal does not create LUKS keyslot.
  *       To create keyslot call any crypt_keyslot_add_* function.
@@ -718,7 +710,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
  * @param volume_key_size size of volume/integrity key in bytes.
  * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Journal parameters must be set to zero in integrity part of @e params.
  * 	Only tag_size, sector_size, buffer_sectors, integrity options should be set.
@@ -745,7 +737,7 @@ void crypt_set_compatibility(struct crypt_device *cd, uint32_t flags);
  *
  * @param cd crypt device handle
  *
- * @returns compatibility flags
+ * @return compatibility flags
  */
 uint32_t crypt_get_compatibility(struct crypt_device *cd);
 
@@ -763,7 +755,7 @@ uint32_t crypt_get_compatibility(struct crypt_device *cd);
  * @param type type of device (optional params struct must be of this type)
  * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Currently, only LUKS1->LUKS2 and LUKS2->LUKS1 conversions are supported.
  *	 Not all LUKS2 devices may be converted back to LUKS1. To make such a conversion
@@ -784,7 +776,7 @@ int crypt_convert(struct crypt_device *cd,
  * @param cd crypt device handle
  * @param uuid requested UUID or @e NULL if it should be generated
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Currently, only LUKS device type are supported
  */
@@ -798,7 +790,7 @@ int crypt_set_uuid(struct crypt_device *cd,
  * @param label requested label or @e NULL
  * @param subsystem requested subsystem label or @e NULL
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Currently, only LUKS2 device type is supported
  */
@@ -832,10 +824,10 @@ const char *crypt_get_subsystem(struct crypt_device *cd);
  * dm-crypt target.
  *
  * @param cd crypt device handle, can be @e NULL
- * @param enable 0 to disable loading of volume keys via kernel keyring
+ * @param enable @e 0 to disable loading of volume keys via kernel keyring
  * 	  (classical method) otherwise enable it (default)
  *
- * @returns @e 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Currently loading of volume keys via kernel keyring is supported
  * 	 (and enabled by default) only for LUKS2 devices.
@@ -850,14 +842,13 @@ int crypt_volume_key_keyring(struct crypt_device *cd, int enable);
  * @param requested_type @link crypt-type @endlink or @e NULL for all known
  * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @post In case LUKS header is read successfully but payload device is too small
  * error is returned and device type in context is set to @e NULL
  *
  * @note Note that load works only for device types with on-disk metadata.
  * @note Function does not print visible error message if metadata is not present.
- *
  */
 int crypt_load(struct crypt_device *cd,
 	const char *requested_type,
@@ -870,7 +861,7 @@ int crypt_load(struct crypt_device *cd,
  * @param requested_type @link crypt-type @endlink or @e NULL for all known
  * @param params crypt type specific parameters (see @link crypt-type @endlink)
  *
- * @returns 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note For LUKS2 device crypt_repair bypass blkid checks and
  * 	 perform auto-recovery even though there're third party device
@@ -909,10 +900,9 @@ int crypt_resize(struct crypt_device *cd,
  * @param cd crypt device handle, can be @e NULL
  * @param name name of device to suspend
  *
- * @return 0 on success or negative errno value otherwise.
+ * @return @e 0 on success or negative errno value otherwise.
  *
  * @note Only LUKS device type is supported
- *
  */
 int crypt_suspend(struct crypt_device *cd,
 	const char *name);
@@ -927,7 +917,7 @@ int crypt_suspend(struct crypt_device *cd,
  * @param passphrase passphrase used to unlock volume key
  * @param passphrase_size size of @e passphrase (binary data)
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  *
  * @note Only LUKS device type is supported
  */
@@ -944,10 +934,10 @@ int crypt_resume_by_passphrase(struct crypt_device *cd,
  * @param name name of device to resume
  * @param keyslot requested keyslot or CRYPT_ANY_SLOT
  * @param keyfile key file used to unlock volume key
- * @param keyfile_size number of bytes to read from keyfile, 0 is unlimited
+ * @param keyfile_size number of bytes to read from keyfile, @e 0 is unlimited
  * @param keyfile_offset number of bytes to skip at start of keyfile
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  */
 int crypt_resume_by_keyfile_device_offset(struct crypt_device *cd,
 	const char *name,
@@ -998,7 +988,7 @@ int crypt_resume_by_volume_key(struct crypt_device *cd,
  * @param pin_size size of @e pin
  * @param usrptr provided identification in callback
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  *
  * @note EPERM errno means token provided passphrase successfully, but
  *       passphrase did not unlock any keyslot associated with the token.
@@ -1007,7 +997,7 @@ int crypt_resume_by_volume_key(struct crypt_device *cd,
  *       eligible to resume LUKS2 device.
  *
  * @note ENOANO errno means that token is PIN protected and was either missing
- *       (NULL) or wrong.
+ *       (@e NULL) or wrong.
  *
  * @note Negative EAGAIN errno means token handler requires additional hardware
  *       not present in the system to unlock keyslot.
@@ -1036,7 +1026,7 @@ int crypt_resume_by_token_pin(struct crypt_device *cd,
  * @param kc keyslot context providing volume key or passphrase.
  *
  * @return unlocked key slot number for passphrase-based unlock, zero for other
- *         unlock methods (e.g. volume key context) or negative errno on error.
+ *         unlock methods (e.g. volume key context) or negative errno value on error.
  */
 int crypt_resume_by_keyslot_context(struct crypt_device *cd,
 			       const char *name,
@@ -1065,7 +1055,7 @@ int crypt_resume_by_keyslot_context(struct crypt_device *cd,
  * @param new_passphrase passphrase for new keyslot
  * @param new_passphrase_size size of @e new_passphrase (binary data)
  *
- * @return allocated key slot number or negative errno otherwise.
+ * @return allocated key slot number or negative errno value otherwise.
  */
 int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
 	int keyslot,
@@ -1087,7 +1077,7 @@ int crypt_keyslot_add_by_passphrase(struct crypt_device *cd,
  * @param new_passphrase passphrase for new keyslot
  * @param new_passphrase_size size of @e new_passphrase (binary data)
  *
- * @return allocated key slot number or negative errno otherwise.
+ * @return allocated key slot number or negative errno value otherwise.
  */
 int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
 	int keyslot_old,
@@ -1111,7 +1101,7 @@ int crypt_keyslot_change_by_passphrase(struct crypt_device *cd,
  * @param new_keyfile_size number of bytes to read from @e new_keyfile, @e 0 is unlimited
  * @param new_keyfile_offset number of bytes to skip at start of new_keyfile
  *
- * @return allocated key slot number or negative errno otherwise.
+ * @return allocated key slot number or negative errno value otherwise.
  */
 int crypt_keyslot_add_by_keyfile_device_offset(struct crypt_device *cd,
 	int keyslot,
@@ -1156,7 +1146,7 @@ int crypt_keyslot_add_by_keyfile(struct crypt_device *cd,
  * @param passphrase passphrase for new keyslot
  * @param passphrase_size size of passphrase
  *
- * @return allocated key slot number or negative errno otherwise.
+ * @return allocated key slot number or negative errno value otherwise.
  */
 int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 	int keyslot,
@@ -1187,7 +1177,7 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
  * @param passphrase_size size of passphrase
  * @param flags key flags to set
  *
- * @return allocated key slot number or negative errno otherwise.
+ * @return allocated key slot number or negative errno value otherwise.
  *
  * @note in case volume_key is @e NULL following first matching rule will apply:
  * @li if cd is device handle used in crypt_format() by current process, the volume
@@ -1232,7 +1222,7 @@ void crypt_keyslot_context_free(struct crypt_keyslot_context *kc);
  * @param passphrase_size size of passphrase
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_PASSPHRASE
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  *
  * @note The original buffer containing passphrase passed in parameters does
  * 	 not have to be valid after context initialization. The context
@@ -1253,7 +1243,7 @@ int crypt_keyslot_context_init_by_passphrase(struct crypt_device *cd,
  * @param keyfile_offset number of bytes to skip at start of keyfile
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_KEYFILE
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  */
 int crypt_keyslot_context_init_by_keyfile(struct crypt_device *cd,
 	const char *keyfile,
@@ -1273,7 +1263,7 @@ int crypt_keyslot_context_init_by_keyfile(struct crypt_device *cd,
  * @param usrptr provided identification in callback
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_TOKEN
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  */
 int crypt_keyslot_context_init_by_token(struct crypt_device *cd,
 	int token,
@@ -1292,7 +1282,7 @@ int crypt_keyslot_context_init_by_token(struct crypt_device *cd,
  * @param volume_key_size size of volume_key in bytes
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_KEY
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  */
 int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd,
 	const char *volume_key,
@@ -1310,7 +1300,7 @@ int crypt_keyslot_context_init_by_volume_key(struct crypt_device *cd,
  * @param signature_size size of signature buffer
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_SIGNED_KEY
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  *
  * @note currently supported only with VERITY devices.
  */
@@ -1330,7 +1320,7 @@ int crypt_keyslot_context_init_by_signed_key(struct crypt_device *cd,
  *        for passphrase in
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_KEYRING
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  */
 int crypt_keyslot_context_init_by_keyring(struct crypt_device *cd,
 	const char *key_description,
@@ -1346,7 +1336,7 @@ int crypt_keyslot_context_init_by_keyring(struct crypt_device *cd,
  *        or a text representation in the form "%<key_type>:<key_name>"
  * @param kc returns crypt keyslot context handle type CRYPT_KC_TYPE_KEYRING
  *
- * @return zero on success or negative errno otherwise.
+ * @return zero on success or negative errno value otherwise.
  */
 int crypt_keyslot_context_init_by_vk_in_keyring(struct crypt_device *cd,
 	const char *key_description,
@@ -1376,7 +1366,7 @@ int crypt_keyslot_context_get_error(struct crypt_keyslot_context *kc);
  * @param pin_size size of @e pin
  * @param kc LUKS2 keyslot context (only @link CRYPT_KC_TYPE_TOKEN @endlink is allowed)
  *
- * @return zero on success or negative errno otherwise
+ * @return zero on success or negative errno value otherwise
  */
 int crypt_keyslot_context_set_pin(struct crypt_device *cd,
 	const char *pin, size_t pin_size,
@@ -1412,7 +1402,7 @@ int crypt_keyslot_context_set_pin(struct crypt_device *cd,
  *
  * @param kc keyslot context
  *
- * @return crypt keyslot context type id (see @link crypt-keyslot-context-types @endlink) or negative errno otherwise.
+ * @return crypt keyslot context type id (see @link crypt-keyslot-context-types @endlink) or negative errno value otherwise.
  */
 int crypt_keyslot_context_get_type(const struct crypt_keyslot_context *kc);
 /** @} */
@@ -1431,7 +1421,7 @@ int crypt_keyslot_context_get_type(const struct crypt_keyslot_context *kc);
  * @param new_kc keyslot context providing passphrase for new keyslot.
  * @param flags key flags to set
  *
- * @return allocated key slot number or negative errno otherwise.
+ * @return allocated key slot number or negative errno value otherwise.
  *
  * @note new_kc can not be @e CRYPT_KC_TYPE_KEY type keyslot context.
  *
@@ -1562,7 +1552,6 @@ struct crypt_active_device {
  * @param cad preallocated active device attributes to fill
  *
  * @return @e 0 on success or negative errno value otherwise
- *
  */
 int crypt_get_active_device(struct crypt_device *cd,
 	const char *name,
@@ -1575,7 +1564,6 @@ int crypt_get_active_device(struct crypt_device *cd,
  * @param name name of active device
  *
  * @return number of integrity failures or @e 0 otherwise
- *
  */
 uint64_t crypt_get_active_integrity_failures(struct crypt_device *cd,
 	const char *name);
@@ -1676,7 +1664,7 @@ int crypt_persistent_flags_get(struct crypt_device *cd,
  * @param flags activation flags
  *
  * @return unlocked key slot number for passphrase-based unlock, zero for other
- *         unlock methods (e.g. volume key context) or negative errno on error.
+ *         unlock methods (e.g. volume key context) or negative errno value on error.
  */
 int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 	const char *name,
@@ -1696,7 +1684,7 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
  * @param passphrase_size size of @e passphrase
  * @param flags activation flags
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  */
 int crypt_activate_by_passphrase(struct crypt_device *cd,
 	const char *name,
@@ -1712,11 +1700,11 @@ int crypt_activate_by_passphrase(struct crypt_device *cd,
  * @param name name of device to create, if @e NULL only check keyfile
  * @param keyslot requested keyslot to check or CRYPT_ANY_SLOT
  * @param keyfile key file used to unlock volume key
- * @param keyfile_size number of bytes to read from keyfile, 0 is unlimited
+ * @param keyfile_size number of bytes to read from keyfile, @e 0 is unlimited
  * @param keyfile_offset number of bytes to skip at start of keyfile
  * @param flags activation flags
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  */
 int crypt_activate_by_keyfile_device_offset(struct crypt_device *cd,
 	const char *name,
@@ -1764,7 +1752,7 @@ int crypt_activate_by_keyfile(struct crypt_device *cd,
  * @note For VERITY the volume key means root hash required for activation.
  * 	 Because kernel dm-verity is always read only, you have to provide
  * 	 CRYPT_ACTIVATE_READONLY flag always.
- * @note For TCRYPT the volume key should be always NULL
+ * @note For TCRYPT the volume key should be always @e NULL
  * 	 the key from decrypted header is used instead.
  * @note For BITLK the name cannot be @e NULL checking volume key is not
  * 	 supported for BITLK, the device will be activated even if the
@@ -1840,7 +1828,6 @@ int crypt_activate_by_keyring(struct crypt_device *cd,
  * @param flags deactivation flags
  *
  * @return @e 0 on success or negative errno value otherwise.
- *
  */
 int crypt_deactivate_by_name(struct crypt_device *cd,
 	const char *name,
@@ -1869,7 +1856,7 @@ int crypt_deactivate(struct crypt_device *cd, const char *name);
  * @param passphrase passphrase used to unlock volume key
  * @param passphrase_size size of @e passphrase
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  *
  * @note For TCRYPT cipher chain is the volume key concatenated
  * 	 for all ciphers in chain.
@@ -1895,14 +1882,14 @@ int crypt_volume_key_get(struct crypt_device *cd,
  *        on output size of @e volume_key in bytes
  * @param kc keyslot context used to unlock volume key
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  *
  * @note See @link crypt-keyslot-context-types @endlink for info on keyslot
  * 	 context initialization.
  * @note For TCRYPT cipher chain is the volume key concatenated
- * 	 for all ciphers in chain (kc may be NULL).
+ * 	 for all ciphers in chain (kc may be @e NULL).
  * @note For VERITY the volume key means root hash used for activation
- * 	 (kc may be NULL).
+ * 	 (kc may be @e NULL).
  * @note For LUKS devices, if kc is @e NULL and volume key is cached in
  * 	 device context it returns the volume key generated in preceding
  * 	 @link crypt_format @endlink call.
@@ -1961,7 +1948,6 @@ typedef enum {
  * @param name crypt device name
  *
  * @return value defined by crypt_status_info.
- *
  */
 crypt_status_info crypt_status(struct crypt_device *cd, const char *name);
 
@@ -1978,7 +1964,7 @@ int crypt_dump(struct crypt_device *cd);
  * Dump JSON-formatted information about LUKS2 device
  *
  * @param cd crypt device handle (only LUKS2 format supported)
- * @param json buffer with JSON, if NULL use log callback for output
+ * @param json buffer with JSON, if @e NULL use log callback for output
  * @param flags dump flags (reserved)
  *
  * @return @e 0 on success or negative errno value otherwise.
@@ -1991,7 +1977,6 @@ int crypt_dump_json(struct crypt_device *cd, const char **json, uint32_t flags);
  * @param cd crypt device handle
  *
  * @return used cipher, e.g. "aes" or @e NULL otherwise
- *
  */
 const char *crypt_get_cipher(struct crypt_device *cd);
 
@@ -2001,7 +1986,6 @@ const char *crypt_get_cipher(struct crypt_device *cd);
  * @param cd crypt device handle
  *
  * @return used cipher mode e.g. "xts-plain" or @e otherwise
- *
  */
 const char *crypt_get_cipher_mode(struct crypt_device *cd);
 
@@ -2011,7 +1995,6 @@ const char *crypt_get_cipher_mode(struct crypt_device *cd);
  * @param cd crypt device handle
  *
  * @return device UUID or @e NULL if not set
- *
  */
 const char *crypt_get_uuid(struct crypt_device *cd);
 
@@ -2021,7 +2004,6 @@ const char *crypt_get_uuid(struct crypt_device *cd);
  * @param cd crypt device handle
  *
  * @return path to underlying device name
- *
  */
 const char *crypt_get_device_name(struct crypt_device *cd);
 
@@ -2031,7 +2013,6 @@ const char *crypt_get_device_name(struct crypt_device *cd);
  * @param cd crypt device handle
  *
  * @return path to underlying device name
- *
  */
 const char *crypt_get_metadata_device_name(struct crypt_device *cd);
 
@@ -2041,7 +2022,6 @@ const char *crypt_get_metadata_device_name(struct crypt_device *cd);
  * @param cd crypt device handle
  *
  * @return device offset in sectors
- *
  */
 uint64_t crypt_get_data_offset(struct crypt_device *cd);
 
@@ -2051,7 +2031,6 @@ uint64_t crypt_get_data_offset(struct crypt_device *cd);
  * @param cd crypt device handle
  *
  * @return IV offset
- *
  */
 uint64_t crypt_get_iv_offset(struct crypt_device *cd);
 
@@ -2086,7 +2065,6 @@ int crypt_get_old_volume_key_size(struct crypt_device *cd);
  * @param cd crypt device handle
  *
  * @return sector size
- *
  */
 int crypt_get_sector_size(struct crypt_device *cd);
 
@@ -2112,7 +2090,6 @@ int crypt_header_is_detached(struct crypt_device *cd);
  * @param vp verity device info
  *
  * @e 0 on success or negative errno value otherwise.
- *
  */
 int crypt_get_verity_info(struct crypt_device *cd,
 	struct crypt_params_verity *vp);
@@ -2136,7 +2113,6 @@ int crypt_get_verity_repaired(struct crypt_device *cd, const char *name,
  * @param ip verity device info
  *
  * @e 0 on success or negative errno value otherwise.
- *
  */
 int crypt_get_integrity_info(struct crypt_device *cd,
 	struct crypt_params_integrity *ip);
@@ -2226,7 +2202,6 @@ typedef enum {
  * @param keyslot requested keyslot to check or CRYPT_ANY_SLOT
  *
  * @return value defined by crypt_keyslot_info
- *
  */
 crypt_keyslot_info crypt_keyslot_status(struct crypt_device *cd, int keyslot);
 
@@ -2266,7 +2241,7 @@ int crypt_keyslot_set_priority(struct crypt_device *cd, int keyslot, crypt_keysl
  *
  * @param type crypt device type
  *
- * @return slot count or negative errno otherwise if device
+ * @return slot count or negative errno value otherwise if device
  * doesn't not support keyslots.
  */
 int crypt_keyslot_max(const char *type);
@@ -2280,7 +2255,6 @@ int crypt_keyslot_max(const char *type);
  * @param length length of keyslot area (in bytes)
  *
  * @return @e 0 on success or negative errno value otherwise.
- *
  */
 int crypt_keyslot_area(struct crypt_device *cd,
 	int keyslot,
@@ -2337,7 +2311,7 @@ int crypt_keyslot_get_pbkdf(struct crypt_device *cd, int keyslot, struct crypt_p
  * @return @e 0 on success or negative errno value otherwise.
  *
  * @note To reset to default keyslot encryption (the same as for data)
- *       set cipher to NULL and key size to 0.
+ *       set cipher to @e NULL and key size to 0.
  */
 int crypt_keyslot_set_encryption(struct crypt_device *cd,
 	const char *cipher,
@@ -2365,7 +2339,6 @@ const char *crypt_get_dir(void);
  * @param backup_file file to backup header to
  *
  * @return @e 0 on success or negative errno value otherwise.
- *
  */
 int crypt_header_backup(struct crypt_device *cd,
 	const char *requested_type,
@@ -2404,7 +2377,6 @@ int crypt_header_restore(struct crypt_device *cd,
  * Set the debug level for library
  *
  * @param level debug level
- *
  */
 void crypt_set_debug_level(int level);
 /** @} */
@@ -2549,7 +2521,7 @@ int crypt_wipe_hw_opal(struct crypt_device *cd,
  *
  * @param type crypt device type
  *
- * @return token count or negative errno otherwise if device
+ * @return token count or negative errno value otherwise if device
  * doesn't not support tokens.
  *
  * @note Real number of supported tokens for a particular device depends
@@ -2567,7 +2539,7 @@ int crypt_token_max(const char *type);
  * @param token token id
  * @param json buffer with JSON
  *
- * @return allocated token id or negative errno otherwise.
+ * @return allocated token id or negative errno value otherwise.
  */
 int crypt_token_json_get(struct crypt_device *cd,
 	int token,
@@ -2580,7 +2552,7 @@ int crypt_token_json_get(struct crypt_device *cd,
  * @param token token id or @e CRYPT_ANY_TOKEN to allocate new one
  * @param json buffer with JSON or @e NULL to remove token
  *
- * @return allocated token id or negative errno otherwise.
+ * @return allocated token id or negative errno value otherwise.
  *
  * @note The buffer must be in proper JSON format and must contain at least
  *       string "type" with slot type and an array of string names "keyslots".
@@ -2610,7 +2582,7 @@ typedef enum {
  * @param type pointer for returned type string
  *
  * @return token status info. For any returned status (besides CRYPT_TOKEN_INVALID
- * 	   and CRYPT_TOKEN_INACTIVE) and if type parameter is not NULL it will
+ * 	   and CRYPT_TOKEN_INACTIVE) and if type parameter is not @e NULL it will
  * 	   contain address of type string.
  *
  * @note if required, create a copy of string referenced in *type before calling next
@@ -2622,7 +2594,6 @@ crypt_token_info crypt_token_status(struct crypt_device *cd, int token, const ch
  * LUKS2 keyring token parameters.
  *
  * @see crypt_token_builtin_set
- *
  */
 struct crypt_token_params_luks2_keyring {
 	const char *key_description; /**< Reference in keyring */
@@ -2635,8 +2606,7 @@ struct crypt_token_params_luks2_keyring {
  * @param token token id or @e CRYPT_ANY_TOKEN to allocate new one
  * @param params luks2 keyring token params
  *
- * @return allocated token id or negative errno otherwise.
- *
+ * @return allocated token id or negative errno value otherwise.
  */
 int crypt_token_luks2_keyring_set(struct crypt_device *cd,
 	int token,
@@ -2649,7 +2619,7 @@ int crypt_token_luks2_keyring_set(struct crypt_device *cd,
  * @param token existing luks2 keyring token id
  * @param params returned luks2 keyring token params
  *
- * @return allocated token id or negative errno otherwise.
+ * @return allocated token id or negative errno value otherwise.
  *
  * @note do not call free() on params members. Members are valid only
  * 	 until next libcryptsetup function is called.
@@ -2667,7 +2637,7 @@ int crypt_token_luks2_keyring_get(struct crypt_device *cd,
  * @param keyslot keyslot to be assigned to token (CRYPT_ANY SLOT
  * 	  assigns all active keyslots to token)
  *
- * @return requested token id to be assigned or negative errno otherwise.
+ * @return requested token id to be assigned or negative errno value otherwise.
  */
 int crypt_token_assign_keyslot(struct crypt_device *cd,
 	int token,
@@ -2682,7 +2652,7 @@ int crypt_token_assign_keyslot(struct crypt_device *cd,
  * @param keyslot keyslot to be unassigned from token (CRYPT_ANY SLOT
  * 	  unassigns all active keyslots from token)
  *
- * @return requested token id to be unassigned or negative errno otherwise.
+ * @return requested token id to be unassigned or negative errno value otherwise.
  */
 int crypt_token_unassign_keyslot(struct crypt_device *cd,
 	int token,
@@ -2695,9 +2665,9 @@ int crypt_token_unassign_keyslot(struct crypt_device *cd,
  * @param token token id
  * @param keyslot keyslot
  *
- * @return 0 on success (token exists and is assigned to the keyslot),
+ * @return @e 0 on success (token exists and is assigned to the keyslot),
  *	   -ENOENT if token is not assigned to a keyslot (token, keyslot
- *	   or both may be inactive) or other negative errno otherwise.
+ *	   or both may be inactive) or other negative errno value otherwise.
  */
 int crypt_token_is_assigned(struct crypt_device *cd,
 	int token,
@@ -2715,8 +2685,8 @@ int crypt_token_is_assigned(struct crypt_device *cd,
  * @param buffer_len length of the buffer
  * @param usrptr user data in @link crypt_activate_by_token @endlink
  *
- * @return 0 on success (token passed LUKS2 keyslot passphrase in buffer) or
- *         negative errno otherwise.
+ * @return @e 0 on success (token passed LUKS2 keyslot passphrase in buffer) or
+ *         negative errno value otherwise.
  *
  * @note Negative ENOANO errno means that token is PIN protected and caller should
  *       use @link crypt_activate_by_token_pin @endlink with PIN provided.
@@ -2745,8 +2715,8 @@ typedef int (*crypt_token_open_func) (
  * @param buffer_len length of the buffer
  * @param usrptr user data in @link crypt_activate_by_token @endlink
  *
- * @return 0 on success (token passed LUKS2 keyslot passphrase in buffer) or
- *         negative errno otherwise.
+ * @return @e 0 on success (token passed LUKS2 keyslot passphrase in buffer) or
+ *         negative errno value otherwise.
  *
  * @note Negative ENOANO errno means that token is PIN protected and PIN was
  *       missing or wrong.
@@ -2806,7 +2776,6 @@ typedef void (*crypt_token_dump_func) (struct crypt_device *cd, const char *json
  *
  * @note The returned string is advised to contain only version.
  *	 For example '1.0.0' or 'v1.2.3.4'.
- *
  */
 typedef const char * (*crypt_token_version_func) (void);
 
@@ -2879,7 +2848,7 @@ void crypt_token_external_disable(void);
  * @param usrptr provided identification in callback
  * @param flags activation flags
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  *
  * @note EPERM errno means token provided passphrase successfully, but
  *       passphrase did not unlock any keyslot associated with the token.
@@ -2896,7 +2865,7 @@ void crypt_token_external_disable(void);
  * @note with @e token set to CRYPT_ANY_TOKEN libcryptsetup runs best effort loop
  *       to unlock device using any available token. It may happen that various token handlers
  *       return different error codes. At the end loop returns error codes in the following
- *       order (from the most significant to the least) any negative errno except those
+ *       order (from the most significant to the least) any negative errno value except those
  *       listed below, non negative token id (success), -ENOANO, -EAGAIN, -EPERM, -ENOENT.
  */
 int crypt_activate_by_token(struct crypt_device *cd,
@@ -2917,7 +2886,7 @@ int crypt_activate_by_token(struct crypt_device *cd,
  * @param usrptr provided identification in callback
  * @param flags activation flags
  *
- * @return unlocked key slot number or negative errno otherwise.
+ * @return unlocked key slot number or negative errno value otherwise.
  *
  * @note EPERM errno means token provided passphrase successfully, but
  *       passphrase did not unlock any keyslot associated with the token.
@@ -2926,7 +2895,7 @@ int crypt_activate_by_token(struct crypt_device *cd,
  *       eligible to unlock device.
  *
  * @note ENOANO errno means that token is PIN protected and was either missing
- *       (NULL) or wrong.
+ *       (@e NULL) or wrong.
  *
  * @note Negative EAGAIN errno means token handler requires additional hardware
  *       not present in the system.
@@ -2934,7 +2903,7 @@ int crypt_activate_by_token(struct crypt_device *cd,
  * @note with @e token set to CRYPT_ANY_TOKEN libcryptsetup runs best effort loop
  *       to unlock device using any available token. It may happen that various token handlers
  *       return different error codes. At the end loop returns error codes in the following
- *       order (from the most significant to the least) any negative errno except those
+ *       order (from the most significant to the least) any negative errno value except those
  *       listed below, non negative token id (success), -ENOANO, -EAGAIN, -EPERM, -ENOENT.
  */
 int crypt_activate_by_token_pin(struct crypt_device *cd,
@@ -3029,7 +2998,7 @@ struct crypt_params_reencrypt {
  * @param cipher_mode cipher mode and IV (e.g. "xts-plain64")
  * @param params reencryption parameters @link crypt_params_reencrypt @endlink.
  *
- * @return reencryption key slot number or negative errno otherwise.
+ * @return reencryption key slot number or negative errno value otherwise.
  */
 int crypt_reencrypt_init_by_passphrase(struct crypt_device *cd,
 	const char *name,
@@ -3058,7 +3027,7 @@ int crypt_reencrypt_init_by_passphrase(struct crypt_device *cd,
  * @param cipher_mode cipher mode and IV (e.g. "xts-plain64")
  * @param params reencryption parameters @link crypt_params_reencrypt @endlink.
  *
- * @return reencryption key slot number or negative errno otherwise.
+ * @return reencryption key slot number or negative errno value otherwise.
  */
 int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
 	const char *name,
@@ -3110,7 +3079,7 @@ int crypt_reencrypt_init_by_keyring(struct crypt_device *cd,
  * 	  Relevant only during metadata initialization.
  * @param params reencryption parameters @link crypt_params_reencrypt @endlink.
  *
- * @return reencryption key slot number or negative errno otherwise.
+ * @return reencryption key slot number or negative errno value otherwise.
  *
  * @note Only after successful reencryption initialization you may run the operation with
  * 	 @link crypt_reencrypt_run @endlink.
@@ -3255,7 +3224,7 @@ void *crypt_safe_memcpy(void *dst, const void *src, size_t size);
  *
  * The @e old_key_description argument is required only for
  * devices that are in re-encryption and have two volume keys at the same time
- * (old and new). You can set the @e old_key_description to NULL,
+ * (old and new). You can set the @e old_key_description to @e NULL,
  * but if you supply number of keys less than required, the function will
  * return -ESRCH.  In that case you need to call the function again and set
  * the missing key description. When supplying just one key description, make
