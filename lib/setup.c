@@ -3026,6 +3026,17 @@ int crypt_format_inline(struct crypt_device *cd,
 	} else if (isLUKS2(type)) {
 		lparams = params;
 		iparams = lparams->integrity_params;
+
+		if (lparams->data_device) {
+			if (!cd->metadata_device)
+				cd->metadata_device = cd->device;
+			else
+				device_free(cd, cd->device);
+			cd->device = NULL;
+			if (device_alloc(cd, &cd->device, lparams->data_device) < 0)
+				return -ENOMEM;
+		}
+
 		idevice = crypt_data_device(cd);
 		required_sector_size = lparams->sector_size;
 
@@ -5827,8 +5838,12 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 	if (r < 0)
 		return r;
 
-	/* For LUKS2 with integrity we need flags from underlying dm-integrity */
-	if (isLUKS2(cd->type) && crypt_get_integrity_tag_size(cd) &&
+	/*
+	 * For integrity and LUKS2 (and detached header where context is NULL)
+	 * we need flags from underlying dm-integrity device.
+	 * This check must be skipped for non-LUKS2 integrity device.
+	 */
+	if ((isLUKS2(cd->type) || !cd->type) && crypt_get_integrity_tag_size(cd) &&
 		(iname = dm_get_active_iname(cd, name))) {
 		if (dm_query_device(cd, iname, 0, &dmdi) >= 0)
 			dmd.flags |= dmdi.flags;
