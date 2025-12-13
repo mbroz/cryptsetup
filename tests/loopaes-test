@@ -71,7 +71,6 @@ prepare()
 {
 	remove_mapping
 	dd if=/dev/zero of=$IMG $LOOP_DD_PARAM >/dev/null 2>&1
-	sync
 	losetup $LOOPDEV $IMG
 
 	# Prepare raw key: v1 - one key, v2 - 64 keys, v3 - 64 + one IV

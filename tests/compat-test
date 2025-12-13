@@ -107,12 +107,10 @@ prepare()
 	file)
 		remove_mapping
 		dd if=/dev/zero of=$IMG bs=1k count=10000 >/dev/null 2>&1
-		sync
 		;;
 	wipe)
 		remove_mapping
 		dd if=/dev/zero of=$IMG bs=1k count=10000 >/dev/null 2>&1
-		sync
 		losetup $LOOPDEV $IMG
 		;;
 	new)
@@ -157,7 +155,6 @@ prepare()
 
 check()
 {
-	sync
 	[ -z "$1" ] && return
 	$DIFFER $ORIG_IMG $IMG $1 || fail
 }

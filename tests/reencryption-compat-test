@@ -158,7 +158,6 @@ check_hash() # $1 pwd, $2 hash, $3 hdr
 
 backup_orig()
 {
-	sync
 	losetup -d $LOOPDEV1
 	udevadm settle >/dev/null 2>&1
 	cp $IMG $ORIG_IMG
@@ -167,7 +166,6 @@ backup_orig()
 
 rollback()
 {
-	sync
 	losetup -d $LOOPDEV1
 	udevadm settle >/dev/null 2>&1
 	cp $ORIG_IMG $IMG
