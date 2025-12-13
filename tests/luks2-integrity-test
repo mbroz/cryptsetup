@@ -113,8 +113,6 @@ status_check() # name value [detached]
 		PARAMS="$DEV_NAME"
 	fi
 
-#	$CRYPTSETUP status $PARAMS
-
 	X=$($CRYPTSETUP status $PARAMS | grep -m1 "$1" | sed -e 's/.*:[ \t]\+//' | cut -d' ' -f1)
 	if [ "$X" != "$2" ] ; then
 		echo "[status FAIL]"
@@ -145,11 +143,15 @@ int_check_sum() # alg checksum
 	fi
 }
 
-int_error_detection() # alg int sector_size
+int_error_detection() # [test_hdr]
 {
 	echo -n "[DETECT_CORRUPTION]"
 	echo -n "XXXXX" | dd of=$IDEV bs=1M seek=8 count=1 conv=notrunc >/dev/null 2>&1 || fail "Cannot write to device."
-	$CRYPTSETUP open -d $KEY_FILE $IDEV $DEV_NAME || fail "Cannot activate device."
+	if [ -n "$1" ] ; then
+		$CRYPTSETUP open -d $KEY_FILE $IDEV --header $1 $DEV_NAME || fail "Cannot activate device."
+	else
+		$CRYPTSETUP open -d $KEY_FILE $IDEV $DEV_NAME || fail "Cannot activate device."
+	fi
 	dd if=/dev/mapper/$DEV_NAME  of=/dev/null >/dev/null 2>&1 && fail "Error detection failed."
 	$CRYPTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 }
@@ -205,11 +207,14 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 	echo -n "[REMOVE]"
 	$CRYPTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	[ -b /dev/mapper/"$DEV_NAME"_dif ] && fail
+	int_error_detection
+
 	# check detached header activation
 	if [ -n "$8" ] ; then
 		echo -n "[DETACHED_HDR]"
-		$CRYPTSETUP luksHeaderBackup -q --header-backup-file $HEADER_IMG $IDEV || fail
 		wipefs -a $IDEV >/dev/null 2>&1  || fail
+		$CRYPTSETUP luksFormat --type luks2 -q -c $1 $INT_PARAMS $INLINE_PARAMS --sector-size $6 -s $4 \
+			$FAST_PBKDF_OPT -d $KEY_FILE $IDEV --header $HEADER_IMG --offset 8192 >/dev/null 2>&1
 		$CRYPTSETUP open --header $HEADER_IMG -d $KEY_FILE $IDEV $DEV_NAME || fail "Cannot activate device."
 		set_LO_DEV $IDEV
 		status_check "cipher" $1 1
@@ -231,11 +236,10 @@ intformat() # alg integrity integrity_out key_size int_key_size sector_size csum
 		fi
 		$CRYPTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 		[ -b /dev/mapper/"$DEV_NAME"_dif ] && fail
-		$CRYPTSETUP luksHeaderRestore -q --header-backup-file $HEADER_IMG $IDEV || fail
+		int_error_detection $HEADER_IMG
 		rm -f $HEADER_IMG
 	fi
 
-	int_error_detection
 	echo "[OK]"
 }
 
