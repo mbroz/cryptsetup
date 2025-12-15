@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cryptsetup-2.8.0-rc1\n"
+"Project-Id-Version: cryptsetup-2.8.1-rc0\n"
 "Report-Msgid-Bugs-To: cryptsetup@lists.linux.dev\n"
-"POT-Creation-Date: 2025-06-16 13:51+0200\n"
-"PO-Revision-Date: 2025-07-18 07:49+0200\n"
+"POT-Creation-Date: 2025-08-13 13:45+0200\n"
+"PO-Revision-Date: 2025-08-31 08:03+0200\n"
 "Last-Translator: Мирослав Николић <miroslavnikolic@rocketmail.com>\n"
 "Language-Team: Serbian <(nothing)>\n"
 "Language: sr\n"
@@ -155,7 +155,7 @@ msgstr "Грешка обраде кључа (користим хеш %s)."
 msgid "Cannot determine device type. Incompatible activation of device?"
 msgstr "Не могу да одредим врсту уређаја. Несагласно покретање уређаја?"
 
-#: lib/setup.c:395 lib/setup.c:4139
+#: lib/setup.c:395 lib/setup.c:4145
 msgid "This operation is supported only for LUKS device."
 msgstr "Ова радња је подржана само за ЛУКС уређај."
 
@@ -177,7 +177,7 @@ msgstr "Утор кључа %d није исправан, изаберите и�
 msgid "Key slot %d is full, please select another one."
 msgstr "Утор кључа %d је пун, изаберите неки други."
 
-#: lib/setup.c:531 lib/setup.c:3854
+#: lib/setup.c:531 lib/setup.c:3860
 msgid "Device size is not aligned to device logical block size."
 msgstr "Величина уређаја није поравната на величину логичког блока уређаја."
 
@@ -186,7 +186,7 @@ msgstr "Величина уређаја није поравната на вел�
 msgid "Header detected but device %s is too small."
 msgstr "Заглавље је откривено али уређај „%s“ је премали."
 
-#: lib/setup.c:669 lib/setup.c:3739 lib/setup.c:5206
+#: lib/setup.c:669 lib/setup.c:3745 lib/setup.c:5212
 #: lib/luks2/luks2_reencrypt.c:3937 lib/luks2/luks2_reencrypt.c:4425
 msgid "This operation is not supported for this device type."
 msgstr "Ова радња није подржана за ову врсту уређаја."
@@ -219,8 +219,8 @@ msgstr "Неподржано ЛУКС издање %d."
 msgid "No known cipher specification pattern detected for active device %s."
 msgstr "Није откривен познат образац одреднице шифрера за активан уређај „%s“."
 
-#: lib/setup.c:1515 lib/setup.c:3486 lib/setup.c:3578 lib/setup.c:3590
-#: lib/setup.c:3762 lib/setup.c:5781
+#: lib/setup.c:1515 lib/setup.c:3492 lib/setup.c:3584 lib/setup.c:3596
+#: lib/setup.c:3768 lib/setup.c:5787
 #, c-format
 msgid "Device %s is not active."
 msgstr "Уређај „%s“ није радан."
@@ -251,7 +251,7 @@ msgstr "Откачени уређај метаподатака није подр
 msgid "Unsupported encryption sector size."
 msgstr "Неподржана величина одељка шифровања."
 
-#: lib/setup.c:1647 lib/setup.c:1916 lib/setup.c:3848
+#: lib/setup.c:1647 lib/setup.c:1916 lib/setup.c:3854
 msgid "Device size is not aligned to requested sector size."
 msgstr "Величина уређаја није поравната на затражену величину одељка."
 
@@ -360,7 +360,7 @@ msgstr "Затражено поравнање података не задово
 msgid "Compensating device size by %<PRIu64> sectors to align it with OPAL alignment granularity."
 msgstr "Ндокнађујем величину уређаја за %<PRIu64> сектора да га поравнам са ситношћу OPAL поравнања."
 
-#: lib/setup.c:2528 lib/setup.c:4222 lib/setup.c:4411 lib/utils_wipe.c:356
+#: lib/setup.c:2528 lib/setup.c:4228 lib/setup.c:4417 lib/utils_wipe.c:356
 #: lib/luks2/luks2_json_metadata.c:2720 lib/luks2/luks2_json_metadata.c:2988
 #, c-format
 msgid "Failed to acquire OPAL lock on device %s."
@@ -434,320 +434,320 @@ msgstr "Величина кључа целовитости није одгова
 msgid "WARNING: Requested tag size %d bytes differs from %s size output (%d bytes).\n"
 msgstr "УПОЗОРЕЊЕ: Затражена величина ознаке %d бајта се разликује од излаза величине „%s“ (%d бајта).\n"
 
-#: lib/setup.c:3031 lib/setup.c:3129
+#: lib/setup.c:3037 lib/setup.c:3135
 #, c-format
 msgid "Unknown or unsupported device type %s requested."
 msgstr "Затражена је непозната или неподржана врста уређаја „%s“."
 
-#: lib/setup.c:3043
+#: lib/setup.c:3049
 #, c-format
 msgid "Device %s does not provide inline integrity data fields."
 msgstr "Уређај „%s“ не обезбеђује унутарња поља података целовитости."
 
-#: lib/setup.c:3049
+#: lib/setup.c:3055
 #, c-format
 msgid "Inline tag size %<PRIu32> [bytes] is larger than %<PRIu32> provided by device %s."
 msgstr "Унутарња величина ознаке %<PRIu32> [бајта] је већа од %<PRIu32> коју доставља уређај „%s“."
 
-#: lib/setup.c:3064
+#: lib/setup.c:3070
 #, c-format
 msgid "Sector must be the same as device hardware sector (%zu bytes)."
 msgstr "Сектор мора бити исти као сектор хардвера уређаја (%zu бајта)."
 
-#: lib/setup.c:3494 lib/setup.c:3583 lib/setup.c:3596
+#: lib/setup.c:3500 lib/setup.c:3589 lib/setup.c:3602
 #, c-format
 msgid "Unsupported parameters on device %s."
 msgstr "Неподржани параметри на уређају „%s“."
 
-#: lib/setup.c:3500 lib/setup.c:3603 lib/luks2/luks2_reencrypt.c:2920
+#: lib/setup.c:3506 lib/setup.c:3609 lib/luks2/luks2_reencrypt.c:2920
 #: lib/luks2/luks2_reencrypt.c:3189 lib/luks2/luks2_reencrypt.c:3583
 #, c-format
 msgid "Mismatching parameters on device %s."
 msgstr "Неодговарајући параметри на уређају „%s“."
 
-#: lib/setup.c:3626
+#: lib/setup.c:3632
 msgid "Crypt devices mismatch."
 msgstr "Криптографски уређаји се не поклапају."
 
-#: lib/setup.c:3658 lib/setup.c:3663 lib/luks2/luks2_reencrypt.c:2404
+#: lib/setup.c:3664 lib/setup.c:3669 lib/luks2/luks2_reencrypt.c:2404
 #: lib/luks2/luks2_reencrypt.c:2936 lib/luks2/luks2_reencrypt.c:4224
 #, c-format
 msgid "Failed to reload device %s."
 msgstr "Нисам успео поново да учитам уређај „%s“."
 
-#: lib/setup.c:3669 lib/setup.c:3675 lib/luks2/luks2_reencrypt.c:2375
+#: lib/setup.c:3675 lib/setup.c:3681 lib/luks2/luks2_reencrypt.c:2375
 #: lib/luks2/luks2_reencrypt.c:2382 lib/luks2/luks2_reencrypt.c:2950
 #, c-format
 msgid "Failed to suspend device %s."
 msgstr "Нисам успео да обуставим уређај „%s“."
 
-#: lib/setup.c:3681 lib/luks2/luks2_reencrypt.c:2389
+#: lib/setup.c:3687 lib/luks2/luks2_reencrypt.c:2389
 #: lib/luks2/luks2_reencrypt.c:2971 lib/luks2/luks2_reencrypt.c:4137
 #: lib/luks2/luks2_reencrypt.c:4228
 #, c-format
 msgid "Failed to resume device %s."
 msgstr "Нисам успео да наставим са уређајем „%s“."
 
-#: lib/setup.c:3696
+#: lib/setup.c:3702
 #, c-format
 msgid "Fatal error while reloading device %s (on top of device %s)."
 msgstr "Кобна грешка приликом поновног учитавања уређаја „%s“ (на врху уређаја „%s“)."
 
-#: lib/setup.c:3699 lib/setup.c:3701
+#: lib/setup.c:3705 lib/setup.c:3707
 #, c-format
 msgid "Failed to switch device %s to dm-error."
 msgstr "Нисам успео да променим уређај „%s“ на дм-грешку."
 
-#: lib/setup.c:3744
+#: lib/setup.c:3750
 msgid "Can not resize LUKS2 device with static size."
 msgstr "Не могу да променим величину LUKS2 уређаја са статичком величином."
 
-#: lib/setup.c:3749
+#: lib/setup.c:3755
 msgid "Resize of LUKS2 device with integrity protection is not supported."
 msgstr "Промена величине LUKS2 уређаја са заштитом целовитости није подржана."
 
-#: lib/setup.c:3795
+#: lib/setup.c:3801
 msgid "Cannot resize loop device."
 msgstr "Не могу да променим величину уређаја петље."
 
-#: lib/setup.c:3839
+#: lib/setup.c:3845
 msgid "WARNING: Maximum size already set or kernel doesn't support resize.\n"
 msgstr ""
 "УПОЗОРЕЊЕ: Највећа величина је већ постављена или кернел не подржава промену величине.\n"
 "\n"
 
-#: lib/setup.c:3905
+#: lib/setup.c:3911
 msgid "Resize failed, the kernel doesn't support it."
 msgstr "Промена величине није успела, кернел је не подржава."
 
-#: lib/setup.c:3937
+#: lib/setup.c:3943
 msgid "Do you really want to change UUID of device?"
 msgstr "Да ли стварно желите да измените УЈИБ уређаја?"
 
-#: lib/setup.c:4029
+#: lib/setup.c:4035
 msgid "Header backup file does not contain compatible LUKS header."
 msgstr "Датотека резерве заглавља не садржи сагласно ЛУКС заглавље."
 
-#: lib/setup.c:4122
+#: lib/setup.c:4128
 #, c-format
 msgid "Volume %s is not active."
 msgstr "Волумен „%s“ није радан."
 
-#: lib/setup.c:4177
+#: lib/setup.c:4183
 #, c-format
 msgid "Volume %s is already suspended."
 msgstr "Волумен „%s“ је већ обустављен."
 
-#: lib/setup.c:4203
+#: lib/setup.c:4209
 #, c-format
 msgid "Suspend is not supported for device %s."
 msgstr "Обустављање није подржано за уређај „%s“."
 
-#: lib/setup.c:4205 lib/setup.c:4213
+#: lib/setup.c:4211 lib/setup.c:4219
 #, c-format
 msgid "Error during suspending device %s."
 msgstr "Грешка за време обустављања уређаја „%s“."
 
-#: lib/setup.c:4228
+#: lib/setup.c:4234
 #, c-format
 msgid "Device %s was suspended but hardware OPAL device cannot be locked."
 msgstr "Уређај „%s“ је обустављен али хардверски OPAL уређај се не може закључати."
 
-#: lib/setup.c:4259 lib/setup.c:4436
+#: lib/setup.c:4265 lib/setup.c:4442
 #, c-format
 msgid "Resume is not supported for device %s."
 msgstr "Настављање није подржано за уређај „%s“."
 
-#: lib/setup.c:4261 lib/setup.c:4426 lib/setup.c:4438
+#: lib/setup.c:4267 lib/setup.c:4432 lib/setup.c:4444
 #, c-format
 msgid "Error during resuming device %s."
 msgstr "Грешка за време настављања уређаја „%s“."
 
-#: lib/setup.c:4280
+#: lib/setup.c:4286
 msgid "Failed to unlink volume key from user specified keyring."
 msgstr "Нисам успео да развежем кључ волумена од привеска кључева које је навео корисник."
 
-#: lib/setup.c:4402 lib/setup.c:5568
+#: lib/setup.c:4408 lib/setup.c:5574
 msgid "Failed to link volume key in user defined keyring."
 msgstr "Нисам успео да свежем кључ волумена у привезак кључева који је корисник одредио."
 
-#: lib/setup.c:4500 src/cryptsetup.c:2714
+#: lib/setup.c:4506 src/cryptsetup.c:2714
 #, c-format
 msgid "Volume %s is not suspended."
 msgstr "Волумен „%s“ није обустављен."
 
-#: lib/setup.c:4601 lib/setup.c:7233 lib/setup.c:7255 lib/setup.c:7309
+#: lib/setup.c:4607 lib/setup.c:7239 lib/setup.c:7261 lib/setup.c:7315
 #: src/cryptsetup.c:1849 src/cryptsetup.c:2253 src/cryptsetup.c:2271
 #: src/utils_reencrypt.c:305 src/utils_reencrypt.c:1965
 msgid "Volume key does not match the volume."
 msgstr "Кључ волумена не одговара волумену."
 
-#: lib/setup.c:4755
+#: lib/setup.c:4761
 msgid "Failed to swap new key slot."
 msgstr "Нисам успео да разменим нови утор кључа."
 
-#: lib/setup.c:4853
+#: lib/setup.c:4859
 #, c-format
 msgid "Key slot %d is invalid."
 msgstr "Утор кључа „%d“ није исправан."
 
-#: lib/setup.c:4859 src/cryptsetup.c:1970 src/cryptsetup.c:2430
+#: lib/setup.c:4865 src/cryptsetup.c:1970 src/cryptsetup.c:2430
 #: src/cryptsetup.c:3114 src/cryptsetup.c:3174
 #, c-format
 msgid "Keyslot %d is not active."
 msgstr "Утор кључа „%d“ није радан."
 
-#: lib/setup.c:4878
+#: lib/setup.c:4884
 msgid "Device header overlaps with data area."
 msgstr "Заглавље уређаја се преклапа са облашћу података."
 
-#: lib/setup.c:5099
+#: lib/setup.c:5105
 msgid "Reencryption in-progress. Cannot activate device."
 msgstr "Поновно шифровање је у току. Не могу да активирам уређај."
 
-#: lib/setup.c:5101 lib/luks2/luks2_json_metadata.c:2884
+#: lib/setup.c:5107 lib/luks2/luks2_json_metadata.c:2884
 #: lib/luks2/luks2_reencrypt.c:3714
 msgid "Failed to get reencryption lock."
 msgstr "Нисам успео да добавим закључавање поновног шифровања."
 
-#: lib/setup.c:5123
+#: lib/setup.c:5129
 msgid "LUKS2 reencryption recovery using volume key(s) failed."
 msgstr "Опоравак LUKS2 поновног шифровања коришћењем кључ(ев)а није успело."
 
-#: lib/setup.c:5259
+#: lib/setup.c:5265
 #, c-format
 msgid "Device %s already exists."
 msgstr "Већ постоји уређај „%s“."
 
-#: lib/setup.c:5266
+#: lib/setup.c:5272
 #, c-format
 msgid "Cannot use device %s, name is invalid or still in use."
 msgstr "Не могу да користим уређај „%s“, назив није исправан или је још у употреби."
 
-#: lib/setup.c:5278
+#: lib/setup.c:5284
 msgid "Reencryption volume keys do not match the volume."
 msgstr "Кључ волумена поновног шифровања не одговара волумену."
 
-#: lib/setup.c:5295
+#: lib/setup.c:5301
 msgid "Incorrect volume key specified for plain device."
 msgstr "Наведен је неисправан кључ волумена за обичан уређај."
 
-#: lib/setup.c:5321 lib/setup.c:5382
+#: lib/setup.c:5327 lib/setup.c:5388
 msgid "Device type is not properly initialized."
 msgstr "Врста уређаја није исправно покренута."
 
-#: lib/setup.c:5420
+#: lib/setup.c:5426
 msgid "Kernel keyring is not supported by the kernel."
 msgstr "Привезак кључева кернела није подржан кернелом."
 
-#: lib/setup.c:5424
+#: lib/setup.c:5430
 msgid "Kernel keyring missing: required for passing signature to kernel."
 msgstr "Привезак кључева кернела недостаје: потребан је за прослеђивање потписа кернелу."
 
-#: lib/setup.c:5476
+#: lib/setup.c:5482
 #, c-format
 msgid "Cannot use keyring key %s."
 msgstr "Не могу да користим кључ привеска „%s“."
 
-#: lib/setup.c:5689
+#: lib/setup.c:5695
 msgid "Incorrect root hash specified for verity device."
 msgstr "Наведен је неисправан хеш корена за уређај тачности."
 
-#: lib/setup.c:5730 lib/setup.c:5755
+#: lib/setup.c:5736 lib/setup.c:5761
 msgid "OPAL does not support deferred deactivation."
 msgstr "OPAL не подржава опцију одложену деактивацију."
 
-#: lib/setup.c:5745 lib/setup.c:5776 lib/luks2/luks2_json_metadata.c:2949
+#: lib/setup.c:5751 lib/setup.c:5782 lib/luks2/luks2_json_metadata.c:2949
 #: src/utils_reencrypt.c:89
 #, c-format
 msgid "Device %s is still in use."
 msgstr "Уређај „%s“ је још увеку употреби."
 
-#: lib/setup.c:5763
+#: lib/setup.c:5769
 #, c-format
 msgid "Could not cancel deferred remove from device %s."
 msgstr "Не могу да откажем различно уклањање из уређаја „%s“."
 
-#: lib/setup.c:5785
+#: lib/setup.c:5791
 #, c-format
 msgid "Invalid device %s."
 msgstr "Неисправан уређај „%s“."
 
-#: lib/setup.c:5926
+#: lib/setup.c:5932
 msgid "Volume key buffer too small."
 msgstr "Међумеморија кључа волумена је премала."
 
-#: lib/setup.c:5937
+#: lib/setup.c:5943
 msgid "Cannot retrieve volume key for LUKS2 device."
 msgstr "Не могу да довучем кључ волумена за ЛУКС2 уређај."
 
-#: lib/setup.c:5946
+#: lib/setup.c:5952
 msgid "Cannot retrieve volume key for LUKS1 device."
 msgstr "Не могу да довучем кључ волумена за ЛУКС1 уређај."
 
-#: lib/setup.c:5960
+#: lib/setup.c:5966
 msgid "Cannot retrieve volume key for plain device."
 msgstr "Не могу да довучем кључ волумена за обичан уређај."
 
-#: lib/setup.c:5968
+#: lib/setup.c:5974
 msgid "Cannot retrieve root hash for verity device."
 msgstr "Не могу да довучем хеш корена за уређај тачности."
 
-#: lib/setup.c:5975
+#: lib/setup.c:5981
 msgid "Cannot retrieve volume key for BITLK device."
 msgstr "Не могу да довучем кључ волумена за BITLK уређај."
 
-#: lib/setup.c:5980
+#: lib/setup.c:5986
 msgid "Cannot retrieve volume key for FVAULT2 device."
 msgstr "Не могу да довучем кључ волумена за FVAULT2 уређај."
 
-#: lib/setup.c:5982
+#: lib/setup.c:5988
 #, c-format
 msgid "This operation is not supported for %s crypt device."
 msgstr "Ова радња није подржана за криптографски уређај „%s“."
 
-#: lib/setup.c:6167 lib/setup.c:6178
+#: lib/setup.c:6173 lib/setup.c:6184
 msgid "Dump operation is not supported for this device type."
 msgstr "Радња исписа није подржана за ову врсту уређаја."
 
-#: lib/setup.c:6558
+#: lib/setup.c:6564
 #, c-format
 msgid "Data offset is not multiple of %u bytes."
 msgstr "Померај података није умножак %u бајта."
 
-#: lib/setup.c:6866
+#: lib/setup.c:6872
 #, c-format
 msgid "Cannot convert device %s which is still in use."
 msgstr "Не могу да преобратим уређај „%s“ који је још увек у употреби."
 
-#: lib/setup.c:7174 lib/setup.c:7318
+#: lib/setup.c:7180 lib/setup.c:7324
 #, c-format
 msgid "Failed to assign keyslot %u as the new volume key."
 msgstr "Нисам успео да доделим утор кључа „%u“ као нови кључ волумена."
 
-#: lib/setup.c:7198
+#: lib/setup.c:7204
 msgid "Failed to initialize default LUKS2 keyslot parameters."
 msgstr "Нисам успео да покренем основне параметре ЛУКС2 утора кључа."
 
-#: lib/setup.c:7204
+#: lib/setup.c:7210
 #, c-format
 msgid "Failed to assign keyslot %d to digest."
 msgstr "Нисам успео да доделим утор кључа „%d“ за преглед."
 
-#: lib/setup.c:7435
+#: lib/setup.c:7441
 msgid "Cannot add key slot, all slots disabled and no volume key provided."
 msgstr "Не могу да додам утор кључа, сви утори су искључени а није обезбеђен ниједан кључ волумена."
 
-#: lib/setup.c:7508 lib/verity/verity.c:333
+#: lib/setup.c:7514 lib/verity/verity.c:333
 msgid "Failed to load key in kernel keyring."
 msgstr "Нисам успео да учитам кључ у привеску кључева кернела."
 
-#: lib/setup.c:7699
+#: lib/setup.c:7705
 #, c-format
 msgid "Could not find keyring described by \"%s\"."
 msgstr "Не могу да нађем привезак описан са „%s“."
 
-#: lib/setup.c:7764
+#: lib/setup.c:7770
 msgid "Failed to acquire global memory-hard access serialization lock."
 msgstr "Нисам успео да остварим опште закључавање серијализације приступа чврстој меморији."
 
@@ -888,10 +888,15 @@ msgid "Requested maximum PBKDF memory cannot be zero."
 msgstr "Затражени максимум „PBKDF“ меморије не може бити нула."
 
 #: lib/utils_pbkdf.c:173
+#, c-format
+msgid "Requested maximum PBKDF parallel cost is too high (maximum is %d)."
+msgstr "Затражени највећи „PBKDF“ паралелни трошак је превисок (максимум је %d)."
+
+#: lib/utils_pbkdf.c:178
 msgid "Requested PBKDF parallel threads cannot be zero."
 msgstr "Затражене „PBKDF“ паралелне нити не могу бити нула."
 
-#: lib/utils_pbkdf.c:193
+#: lib/utils_pbkdf.c:198
 msgid "Only PBKDF2 is supported in FIPS mode."
 msgstr "Само „PBKDF2“ је подржано у „FIPS“ режиму."
 
@@ -1249,7 +1254,7 @@ msgstr "Не могу да одредим померај TCRYPT системск
 msgid "Kernel does not support TCRYPT compatible mapping."
 msgstr "Кернел не подржава мапирање сагласно са „TCRYPT“-ом."
 
-#: lib/tcrypt/tcrypt.c:1126
+#: lib/tcrypt/tcrypt.c:1144
 msgid "This function is not supported without TCRYPT header load."
 msgstr "Ова функција није подржана без учитавања „TCRYPT“ заглавља."
 
@@ -1337,45 +1342,45 @@ msgstr "Неочекивана величина „BEK“ метаподатак
 msgid "Unexpected metadata entry found when parsing startup key."
 msgstr "Нађох неочекивану врсту уноса метаподатака приликом обраде кључа почретања."
 
-#: lib/bitlk/bitlk.c:1067
+#: lib/bitlk/bitlk.c:1069
 msgid "This operation is not supported."
 msgstr "Радња није подржана."
 
-#: lib/bitlk/bitlk.c:1075
+#: lib/bitlk/bitlk.c:1077
 msgid "Unexpected key data size."
 msgstr "Неочекивана величина података кључа."
 
-#: lib/bitlk/bitlk.c:1203
+#: lib/bitlk/bitlk.c:1205
 msgid "This BITLK device is in an unsupported state and cannot be activated."
 msgstr "Овај „BITLK“ уређај је у неподржаном стању и не може бити активиран."
 
-#: lib/bitlk/bitlk.c:1208
+#: lib/bitlk/bitlk.c:1210
 #, c-format
 msgid "BITLK devices with type '%s' cannot be activated."
 msgstr "„BITLK“ уређај са врстом „%s“ се не може активирати."
 
-#: lib/bitlk/bitlk.c:1215
+#: lib/bitlk/bitlk.c:1217
 msgid "Activation of BITLK device with clear key protection is not supported."
 msgstr "Активирање BITLK уређаја са јасном заштитом тастера није подржано."
 
-#: lib/bitlk/bitlk.c:1256
+#: lib/bitlk/bitlk.c:1258
 #, c-format
 msgid "WARNING: BitLocker volume size %<PRIu64> does not match the underlying device size %<PRIu64>"
 msgstr "УПОЗОРЕЊЕ: Величина волумена закључавача бита %<PRIu64> не одговара величини садржаног уређаја %<PRIu64>"
 
-#: lib/bitlk/bitlk.c:1383
+#: lib/bitlk/bitlk.c:1385
 msgid "Cannot activate device, kernel dm-crypt is missing support for BITLK IV."
 msgstr "Не могу да активирам уређај, „dm-crypt“-у кернела недостаје подршка за „BITLK IV“."
 
-#: lib/bitlk/bitlk.c:1387
+#: lib/bitlk/bitlk.c:1389
 msgid "Cannot activate device, kernel dm-crypt is missing support for BITLK Elephant diffuser."
 msgstr "Не могу да активирам уређај, „dm-crypt“-у кернела недостаје подршка за „BITLK Elephant“ дифузера."
 
-#: lib/bitlk/bitlk.c:1391
+#: lib/bitlk/bitlk.c:1393
 msgid "Cannot activate device, kernel dm-crypt is missing support for large sector size."
 msgstr "Не могу да активирам уређај, „dm-crypt“-у кернела недостаје подршка за велику величину сектора."
 
-#: lib/bitlk/bitlk.c:1395
+#: lib/bitlk/bitlk.c:1397
 msgid "Cannot activate device, kernel dm-zero module is missing."
 msgstr "Не могу да активирам уређај, недостаје „dm-zero“ модул кернела."
 
