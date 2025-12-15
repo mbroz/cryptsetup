@@ -133,10 +133,10 @@ prepare() # $1 dev1_siz
 {
 	remove_mapping
 
-	dd if=/dev/zero of=$IMG      bs=1k count=$1 >/dev/null 2>&1
+	dd if=/dev/zero of=$IMG bs=1k count=$1 >/dev/null 2>&1
 	LOOPDEV1=$(losetup -f 2>/dev/null)
 	[ -z "$LOOPDEV1" ] && fail "No free loop device"
-	losetup $LOOPDEV1 $IMG
+	losetup $LOOPDEV1 $IMG || fail
 
 	if [ ! -e $KEY1 ]; then
 		dd if=/dev/urandom of=$KEY1 count=1 bs=32 >/dev/null 2>&1
@@ -158,18 +158,18 @@ check_hash() # $1 pwd, $2 hash, $3 hdr
 
 backup_orig()
 {
-	sync
 	losetup -d $LOOPDEV1
+	udevadm settle >/dev/null 2>&1
 	cp $IMG $ORIG_IMG
-	losetup $LOOPDEV1 $IMG
+	losetup $LOOPDEV1 $IMG || fail
 }
 
 rollback()
 {
-	sync
 	losetup -d $LOOPDEV1
+	udevadm settle >/dev/null 2>&1
 	cp $ORIG_IMG $IMG
-	losetup $LOOPDEV1 $IMG
+	losetup $LOOPDEV1 $IMG || fail
 }
 
 check_slot() #space separated list of ENABLED key slots

@@ -91,7 +91,6 @@ valgrind_run()
 add_device() {
 	cleanup
 	dd if=/dev/zero of=$HEADER_IMG bs=1M count=6 >/dev/null 2>&1
-	sync
 	losetup $LOOPDEV $HEADER_IMG >/dev/null 2>&1
 	dmsetup create $DEV_NAME --table "0 10240 linear $LOOPDEV 8" >/dev/null 2>&1
 }
@@ -124,7 +123,6 @@ dmcrypt_check_sum() # cipher device
 	EXPSUM="c036cbb7553a909f8b8877d4461924307f27ecb66cff928eeeafd569c3887e29"
 	# Fill device with zeroes and reopen it
 	dd if=/dev/zero of=/dev/mapper/$2 bs=1M count=6 >/dev/null 2>&1
-	sync
 	dmremove $2
 
 	echo $PASSWORD | $CRYPTSETUP create -h sha256 -c $1 -s 256 $2 /dev/mapper/$DEV_NAME >/dev/null 2>&1
