@@ -39,11 +39,11 @@ Download
 Release notes and tarballs are available at
 [kernel.org](https://cdn.kernel.org/pub/linux/utils/cryptsetup/).
 
-**The latest stable cryptsetup release version is 2.8.1**
-  * [cryptsetup-2.8.1.tar.xz](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v2.8/cryptsetup-2.8.1.tar.xz)
-  * Signature [cryptsetup-2.8.1.tar.sign](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v2.8/cryptsetup-2.8.1.tar.sign)
+**The latest stable cryptsetup release version is 2.8.2**
+  * [cryptsetup-2.8.2.tar.xz](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v2.8/cryptsetup-2.8.2.tar.xz)
+  * Signature [cryptsetup-2.8.2.tar.sign](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v2.8/cryptsetup-2.8.2.tar.sign)
     _(You need to decompress file first to check signature.)_
-  * [Cryptsetup 2.8.1 Release Notes](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v2.8/v2.8.1-ReleaseNotes).
+  * [Cryptsetup 2.8.2 Release Notes](https://cdn.kernel.org/pub/linux/utils/cryptsetup/v2.8/v2.8.2-ReleaseNotes).
 
 [Previous versions](https://cdn.kernel.org/pub/linux/utils/cryptsetup)
 

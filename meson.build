@@ -2,7 +2,7 @@ project('cryptsetup',
     'c',
     default_options: [ 'prefix=/usr' ],
     meson_version: '>=0.64',
-    version: '2.8.2-rc0')
+    version: '2.8.2')
 
 libcryptsetup_version = '12.11.0'
 
