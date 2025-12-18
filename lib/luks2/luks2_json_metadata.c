@@ -1647,6 +1647,7 @@ static const struct requirement_flag requirements_flags[] = {
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 3, "online-reencrypt-v3" },
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 1, "online-reencrypt" },
 	{ CRYPT_REQUIREMENT_INLINE_HW_TAGS,   1, "inline-hw-tags" },
+	{ CRYPT_REQUIREMENT_OPAL,	      2, "opal-v2" },
 	{ CRYPT_REQUIREMENT_OPAL,	      1, "opal" },
 	{ 0, 0, NULL }
 };
