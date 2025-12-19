@@ -1,0 +1,63 @@
+Cryptsetup 2.8.3 Release Notes
+==============================
+Stable bug-fix release with minor extensions.
+
+All users of cryptsetup 2.8.x must upgrade to this version.
+
+Changes since version 2.8.2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* BITLK: Fix for BitLocker metadata validation on big-endian systems.
+
+Changes since version 2.8.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix cryptsetup LUKS2 status for HW inline integrity device.
+  Cryptsetup status did not print the inline flag if the underlying device with
+  HW integrity tags was used.
+
+* Fix LUKS2 format with detached header and data device with HW integrity tags.
+
+* Fix PBKDF serialization flag during device activation.
+  The --serialize-memory-hard-pbkdf and CRYPT_ACTIVATE_SERIALIZE_MEMORY_HARD_PBKDF API flag
+  is now properly supported again. This option is an optional workaround for situations where
+  multiple devices are activated in parallel (e.g., systemd crypttab activation).
+
+* BITLK: Add support for opening devices with Clear Key in BitLocker compatible mode.
+  BitLocker devices that are not yet encrypted can contain a Clear Key that is not protected
+  by a password. Cryptsetup can now map such devices and allow the user to access data on them.
+  Note that while such a device is detected as BitLocker, it must be treated as an unencrypted
+  device. Cryptsetup still does not allow mapping of partially encrypted BitLocker devices
+  (those in the middle of the encryption process).
+
+* BITLK: Harden metadata check by properly validating BitLocker metadata.
+  BitLocker metadata store checksums and authentication tags to detect random or malicious
+  manipulation. BITLK code now properly validates these and uses a backup metadata block
+  if validation fails. Previously, only the first metadata block was used.
+
+* Fix documentation to explicitly mention units for various API functions and in help messages.
+  Note that due to compatibility reasons, cryptsetup arguments use key sizes in bits while
+  integritysetup uses bytes.
+
+* Fix handling of too-long labels and subsystem fields.
+  LUKS2 labels are stored in the binary header area, which has a limited size.
+  Cryptsetup no longer silently truncates too-long labels; it prints an error instead.
+
+* Optimize reencryption to not repeatedly test access to the device.
+
+* Allow to use PHMAC (protected HMAC) with integritysetup and cryptsetup.
+  PHMAC is used by S390 mainframes. Support was added in Linux kernel 6.17. Configuration requires
+  steps using s390-tools; once that's done, it can be handled as a common LUKS2 or integrity device.
+
+* Opal2 SED: Fix misleading error messages during the self-encrypting drives format.
+  Cryptsetup misinterpreted some error codes when the kernel interface was not available
+  or the system call failed.
+
+* Opal2 SED: Ensure the system tries to rescan the device after the PSID reset.
+  Udev should now receive change events, allowing rescan of partition table after PSID reset.
+
+* Fix typos in volume-key-file help and integritysetup man page.
+
+* Fix detection of supported compiler attributes on PPC64 architecture.
+
+* Fix const compilation warnings with new gcc and glibc headers.
