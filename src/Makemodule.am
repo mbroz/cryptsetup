@@ -30,7 +30,11 @@ cryptsetup_LDADD = $(LDADD)	\
 	@PWQUALITY_LIBS@	\
 	@PASSWDQC_LIBS@		\
 	@UUID_LIBS@		\
-	@BLKID_LIBS@
+	@BLKID_LIBS@		\
+	@LIBCRYPTO_LIBS@
+
+cryptsetup_CFLAGS = $(CFLAGS)	\
+	@LIBCRYPTO_CFLAGS@
 
 sbin_PROGRAMS += cryptsetup
 
@@ -66,7 +70,11 @@ veritysetup_SOURCES =		\
 veritysetup_LDADD = $(LDADD)	\
 	libcryptsetup.la	\
 	@POPT_LIBS@		\
-	@BLKID_LIBS@
+	@BLKID_LIBS@		\
+	@LIBCRYPTO_LIBS@
+
+veritysetup_CFLAGS = $(CFLAGS)	\
+	@LIBCRYPTO_CFLAGS@
 
 sbin_PROGRAMS += veritysetup
 
@@ -104,7 +112,11 @@ integritysetup_LDADD = $(LDADD)	\
 	libcryptsetup.la	\
 	@POPT_LIBS@		\
 	@UUID_LIBS@		\
-	@BLKID_LIBS@
+	@BLKID_LIBS@		\
+	@LIBCRYPTO_LIBS@
+
+integritysetup_CFLAGS = $(CFLAGS)	\
+	@LIBCRYPTO_CFLAGS@
 
 sbin_PROGRAMS += integritysetup
 
