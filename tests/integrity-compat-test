@@ -230,7 +230,13 @@ intformat() # alg alg_out tagsize outtagsize sector_size csum [keyfile keysize]
 	status_check "tag size" "$4 [bytes]"
 	status_check "integrity" $2
 	status_check "sector size" "$5 [bytes]"
+
+	SIZE_BYTES=$(blockdev --getsize64 /dev/mapper/$DEV_NAME)
+	SIZE_512S=$(( $SIZE_BYTES / 512 ))
+	status_check "  size" "$SIZE_512S [512-byte units] ($SIZE_BYTES [bytes])"
+
 	int_check_sum $1 $6 $7 $8
+
 	echo -n "[REMOVE]"
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo "[OK]"

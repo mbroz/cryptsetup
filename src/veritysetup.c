@@ -395,7 +395,7 @@ static int action_status(void)
 			log_std("  data loop:   %s\n", backing_file);
 			free(backing_file);
 		}
-		log_std("  size:        %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.size, cad.size * (uint64_t)SECTOR_SIZE);
+		log_std("  size:        %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.size, cad.size * SECTOR_SIZE);
 		log_std("  mode:        %s\n", cad.flags & CRYPT_ACTIVATE_READONLY ?
 					   "readonly" : "read/write");
 
