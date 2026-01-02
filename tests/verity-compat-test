@@ -188,6 +188,9 @@ check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6 offset]
 
 	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH  >>$DEV_OUT 2>&1 || fail
 	check_exists
+	SIZE_BYTES=$(blockdev --getsize64 /dev/mapper/$DEV_NAME)
+	SIZE_512S=$(( $SIZE_BYTES / 512 ))
+	$VERITYSETUP status $DEV_NAME 2>/dev/null | grep " size:" | grep -q -F "$SIZE_512S [512-byte units] ($SIZE_BYTES [bytes])" || fail
 	echo -n "[activate]"
 
 	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=$1 2>/dev/null
@@ -474,6 +477,7 @@ export LANG=C
 [ -n "$VALG" ] && valgrind_setup && VERITYSETUP=valgrind_run
 modprobe dm-verity >/dev/null 2>&1
 dmsetup targets | grep verity >/dev/null 2>&1 || skip "Cannot find dm-verity target, test skipped."
+command -v blockdev >/dev/null || skip "Cannot find blockdev utility, test skipped."
 
 # VERITYSETUP tests
 

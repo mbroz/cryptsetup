@@ -936,7 +936,6 @@ static int action_status(void)
 	char *backing_file;
 	const char *device;
 	int path = 0, r = 0, hw_enc;
-	uint64_t sector_size;
 
 	/* perhaps a path, not a dm device name */
 	if (strchr(action_argv[0], '/'))
@@ -1019,10 +1018,9 @@ static int action_status(void)
 			log_std("  loop:    %s\n", backing_file);
 			free(backing_file);
 		}
-		sector_size = (uint64_t)crypt_get_sector_size(cd) ?: SECTOR_SIZE;
-		log_std("  sector size:  %" PRIu64 " [bytes]\n", sector_size);
-		log_std("  offset:  %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.offset, cad.offset * sector_size);
-		log_std("  size:    %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.size, cad.size * sector_size);
+		log_std("  sector size:  %" PRIu64 " [bytes]\n", (uint64_t)crypt_get_sector_size(cd) ?: SECTOR_SIZE);
+		log_std("  offset:  %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.offset, cad.offset * SECTOR_SIZE);
+		log_std("  size:    %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.size, cad.size * SECTOR_SIZE);
 		if (cad.iv_offset)
 			log_std("  skipped: %" PRIu64 " [512-byte units]\n", cad.iv_offset);
 		log_std("  mode:    %s%s\n", cad.flags & CRYPT_ACTIVATE_READONLY ?

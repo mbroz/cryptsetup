@@ -424,7 +424,6 @@ static int action_status(void)
 	char *backing_file;
 	const char *device, *metadata_device;
 	int path = 0, r = 0;
-	uint64_t sector_size;
 
 	/* perhaps a path, not a dm device name */
 	if (strchr(action_argv[0], '/'))
@@ -482,10 +481,9 @@ static int action_status(void)
 				free(backing_file);
 			}
 		}
-		sector_size = (uint64_t)crypt_get_sector_size(cd) ?: SECTOR_SIZE;
-		log_std("  sector size:  %" PRIu64 " [bytes]\n", sector_size);
+		log_std("  sector size:  %" PRIu64 " [bytes]\n", (uint64_t)crypt_get_sector_size(cd) ?: SECTOR_SIZE);
 		log_std("  interleave sectors: %u\n", ip.interleave_sectors);
-		log_std("  size:    %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.size, cad.size * sector_size);
+		log_std("  size:    %" PRIu64 " [512-byte units] (%" PRIu64 " [bytes])\n", cad.size, cad.size * SECTOR_SIZE);
 		log_std("  mode:    %s%s\n",
 			cad.flags & CRYPT_ACTIVATE_READONLY ? "readonly" : "read/write",
 			cad.flags & CRYPT_ACTIVATE_RECOVERY ? " recovery" : "");

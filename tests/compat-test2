@@ -816,9 +816,11 @@ if dm_crypt_sector_size_support; then
 	echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 	echo $PWD1 | $CRYPTSETUP -q resize --device-size 1M $DEV_NAME || fail
 	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 \[512-byte units\]" || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "1048576 \[bytes\]" || fail
 	echo $PWD1 | $CRYPTSETUP -q resize --device-size 2049s $DEV_NAME > /dev/null 2>&1 && fail
 	echo $PWD1 | $CRYPTSETUP -q resize --size 2049 $DEV_NAME > /dev/null 2>&1 && fail
 	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "2048 \[512-byte units\]" || fail
+	$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "1048576 \[bytes\]" || fail
 fi
 $CRYPTSETUP close $DEV_NAME || fail
 # Resize not aligned to logical block size
