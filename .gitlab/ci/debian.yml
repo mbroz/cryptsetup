@@ -58,16 +58,16 @@ test-main-commit-job-debian:
     - make -j -C tests check-programs
     - sudo -E make check
 
-test-mergerq-job-debian12:
+test-mergerq-job-debian-13:
   extends:
     - .debian-prep
   tags:
     - libvirt
-    - cryptsetup-debian-12
+    - cryptsetup-debian-13
   stage: test
   interruptible: true
   variables:
-    DISTRO: cryptsetup-debian-12
+    DISTRO: cryptsetup-debian-13
     RUN_SSH_PLUGIN_TEST: "1"
     RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
@@ -79,16 +79,16 @@ test-mergerq-job-debian12:
     - make -j -C tests check-programs
     - sudo -E make check
 
-test-main-commit-job-debian12:
+test-main-commit-job-debian-13:
   extends:
     - .debian-prep
   tags:
     - libvirt
-    - cryptsetup-debian-12
+    - cryptsetup-debian-13
   stage: test
   interruptible: true
   variables:
-    DISTRO: cryptsetup-debian-12
+    DISTRO: cryptsetup-debian-13
     RUN_SSH_PLUGIN_TEST: "1"
     RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
@@ -145,16 +145,16 @@ test-main-commit-job-debian-meson:
     - ninja -C build
     - cd build && sudo -E meson test --verbose --print-errorlogs
 
-test-mergerq-job-debian12-meson:
+test-mergerq-job-debian-13-meson:
   extends:
     - .debian-prep
   tags:
     - libvirt
-    - cryptsetup-debian-12
+    - cryptsetup-debian-13
   stage: test
   interruptible: true
   variables:
-    DISTRO: cryptsetup-debian-12
+    DISTRO: cryptsetup-debian-13
     RUN_SSH_PLUGIN_TEST: "1"
     RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
@@ -167,16 +167,16 @@ test-mergerq-job-debian12-meson:
     - ninja -C build
     - cd build && sudo -E meson test --verbose --print-errorlogs
 
-test-main-commit-job-debian12-meson:
+test-main-commit-job-debian-13-meson:
   extends:
     - .debian-prep
   tags:
     - libvirt
-    - cryptsetup-debian-12
+    - cryptsetup-debian-13
   stage: test
   interruptible: true
   variables:
-    DISTRO: cryptsetup-debian-12
+    DISTRO: cryptsetup-debian-13
     RUN_SSH_PLUGIN_TEST: "1"
     RUN_KEYRING_TRUSTED_TEST: "1"
   rules:
