@@ -1300,6 +1300,17 @@ int BITLK_get_volume_key(struct crypt_device *cd,
 	next_vmk = params->vmks;
 	while (next_vmk) {
 		bool is_decrypted = false;
+
+		if (password == NULL && next_vmk->protection != BITLK_PROTECTION_CLEAR_KEY) {
+			/*
+			 * Clearkey is the only slot that doesn't require password so no password
+			 * means we are trying to use clearkey and we can skip all other key slots.
+			 */
+			r = -EPERM;
+			next_vmk = next_vmk->next;
+			continue;
+		}
+
 		if (next_vmk->protection == BITLK_PROTECTION_PASSPHRASE) {
 			r = bitlk_kdf(password, passwordLen, false, next_vmk->salt, &vmk_dec_key);
 			if (r) {
