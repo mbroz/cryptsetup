@@ -270,7 +270,13 @@ static int action_resize(void)
 	if (r)
 		goto out;
 
-	reactivate_flags = CRYPT_ACTIVATE_REFRESH | (cad.flags & CRYPT_ACTIVATE_INLINE_MODE);
+	/*
+	 * We have to preserve CRYPT_ACTIVATE_NO_JOURNAL_BITMAP flag, otherwise overloaded
+	 * 'journal_watermark' parameter in device context would fail the DM_TABLE_LOAD
+	 * operation.
+	 */
+	reactivate_flags = CRYPT_ACTIVATE_REFRESH |
+		(cad.flags & (CRYPT_ACTIVATE_INLINE_MODE | CRYPT_ACTIVATE_NO_JOURNAL_BITMAP));
 
 	if (!new_dev_size)
 		new_dev_size = cad.size;

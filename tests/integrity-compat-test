@@ -732,6 +732,9 @@ test_resize "[INTEGRITY RESIZE NOKEY]" 0 0 "--integrity crc32"
 test_resize "[INTEGRITY RESIZE NOKEY]" 0 1 "--integrity crc32"
 test_resize "[INTEGRITY RESIZE NOKEY DETACHED]" 1 0 "--integrity crc32"
 test_resize "[INTEGRITY RESIZE NOKEY DETACHED]" 1 1 "--integrity crc32"
+test_resize "[INTEGRITY RESIZE NOKEY BITMAP]" 0 1 "--integrity crc32 -B"
+# FIXME: Enable following test when kernel patch "dm-integrity: fix recalculation in bitmap mode" reaches mainline kernel
+# test_resize "[INTEGRITY RESIZE NOKEY BITMAP]" 0 0 "--integrity crc32 -B"
 if [ -n "$DM_INTEGRITY_HMAC_FIX" ] ; then
 	test_resize "[INTEGRITY RESIZE KEY]" 0 0 "--integrity hmac-sha256 --integrity-key-size 128 --integrity-key-file $KEY_FILE --journal-integrity hmac-sha256 --journal-integrity-key-file $KEY_FILE --journal-integrity-key-size 128 --journal-crypt ctr-aes --journal-crypt-key-size 16 --journal-crypt-key-file $KEY_FILE"
 	test_resize "[INTEGRITY RESIZE KEY]" 0 1 "--integrity hmac-sha256 --integrity-key-size 128 --integrity-key-file $KEY_FILE --journal-integrity hmac-sha256 --journal-integrity-key-file $KEY_FILE --journal-integrity-key-size 128 --journal-crypt ctr-aes --journal-crypt-key-size 16 --journal-crypt-key-file $KEY_FILE"
