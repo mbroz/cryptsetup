@@ -12,3 +12,59 @@
    fun:init_crypto
    ...
 }
+
+# OpenSSL globals
+{
+   reachable_globals_in_openssl
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:*lib*/libcrypto.so.*
+}
+
+# libc library load
+{
+   reachable_libc_dl_map_new_object
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:malloc
+   fun:strdup
+   fun:_dl_map_new_object
+   fun:dl_open_worker_begin
+   ...
+   obj:*lib*/libc.so.*
+}
+{
+   reachable_libc_dl_map_object
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:strdup
+   fun:_dl_map_object
+   fun:dl_open_worker_begin
+   ...
+   obj:*lib*/libc.so.*
+}
+{
+   reachable_libc_dl_new_object
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+#  calloc/malloc
+   fun:_dl_new_object
+   fun:_dl_map_object_from_fd
+   ...
+   obj:*lib*/libc.so.*
+}
+{
+   reachable_libc_dl_check_map_versions
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:calloc
+   fun:_dl_check_map_versions
+   fun:dl_open_worker_begin
+   ...
+   obj:*lib*/libc.so.*
+}

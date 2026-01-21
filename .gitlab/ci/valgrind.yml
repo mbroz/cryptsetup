@@ -1,10 +1,10 @@
-.dnf-csmock:
+.dnf-valgrind:
   variables:
     DISTRO: cryptsetup-fedora-rawhide
     DISK_SIZE: 20
   extends:
     - .fail_if_coredump_generated
-  timeout: 2 hours
+  timeout: 24 hours
   before_script:
     - >
       sudo dnf -y -q install
@@ -12,26 +12,34 @@
       libblkid-devel libpwquality-devel libselinux-devel
       libssh-devel libtool libuuid-devel make popt-devel
       libsepol-devel.x86_64 pkgconfig tar uuid-devel git
-      openssl-devel asciidoctor meson ninja-build
-      rpm-build csmock
+      openssl-devel asciidoctor valgrind
+    - sudo -E git clean -xdf
+    - ./autogen.sh
+    - ./configure --enable-fips --enable-pwquality
 
-test-commit-job-csmock:
+test-commit-job-valgrind:
   extends:
-    - .dnf-csmock
+    - .dnf-valgrind
   tags:
     - libvirt
     - cryptsetup-fedora-rawhide
+    - valgrind
   stage: test
   interruptible: true
   allow_failure: true
+  variables:
+    RUN_SSH_PLUGIN_TEST: "1"
+    RUN_KEYRING_TRUSTED_TEST: "1"
+    RUN_SYSTEMD_PLUGIN_TEST: "1"
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/ || $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
   script:
-    - .gitlab/ci/build_srpm
-    - .gitlab/ci/run_csmock
+   - make -j
+   - make -j -C tests check-programs
+   - sudo -E make -C tests valgrind-check
   artifacts:
     when: always
     paths:
-      - cryptsetup-csmock-results.tar.xz
+      - tests/valglog*

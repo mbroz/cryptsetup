@@ -1,6 +1,7 @@
 .centos-openssl-backend:
   extends:
     - .fail_if_coredump_generated
+  timeout: 2 hours
   before_script:
     - sudo dnf clean all
     - >
