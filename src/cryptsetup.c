@@ -38,7 +38,7 @@ static int total_keyfiles = 0;
 
 static struct tools_log_params log_parms;
 
-struct tools_arg tool_core_args[] = { { NULL, false, CRYPT_ARG_BOOL }, /* leave unused due to popt library */
+struct tools_arg tool_core_args[] = {  { NULL, false, CRYPT_ARG_BOOL, {}, {} }, /* leave unused due to popt library */
 #define ARG(A, B, C, D, E, F, G, H) { A, false, F, G, H },
 #include "cryptsetup_arg_list.h"
 #undef ARG

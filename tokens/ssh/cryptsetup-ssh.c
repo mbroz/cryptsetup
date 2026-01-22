@@ -138,20 +138,20 @@ static char doc[] = N_("Experimental cryptsetup plugin for unlocking LUKS2 devic
 static char args_doc[] = N_("<action> <device>");
 
 static struct argp_option options[] = {
-	{0,		0,		0,	  0, N_("Options for the 'add' action:")},
-	{"ssh-server",	OPT_SSH_SERVER, "STRING", 0, N_("IP address/URL of the remote server for this token")},
-	{"ssh-user",	OPT_SSH_USER, 	"STRING", 0, N_("Username used for the remote server")},
-	{"ssh-path",	OPT_SSH_PATH,	"STRING", 0, N_("Path to the key file on the remote server")},
-	{"ssh-keypath",	OPT_KEY_PATH, 	"STRING", 0, N_("Path to the SSH key for connecting to the remote server")},
+	{0,		0,		0,	  0, N_("Options for the 'add' action:"), 0},
+	{"ssh-server",	OPT_SSH_SERVER, "STRING", 0, N_("IP address/URL of the remote server for this token"), 0},
+	{"ssh-user",	OPT_SSH_USER, 	"STRING", 0, N_("Username used for the remote server"), 0},
+	{"ssh-path",	OPT_SSH_PATH,	"STRING", 0, N_("Path to the key file on the remote server"), 0},
+	{"ssh-keypath",	OPT_KEY_PATH, 	"STRING", 0, N_("Path to the SSH key for connecting to the remote server"), 0},
 	{"external-tokens-path",
-			OPT_TOKENS_PATH,"STRING", 0, N_("Path to directory containinig libcryptsetup external tokens")},
+			OPT_TOKENS_PATH,"STRING", 0, N_("Path to directory containinig libcryptsetup external tokens"), 0},
 	{"key-slot",	OPT_KEY_SLOT,	"NUM",	  0, N_("Keyslot to assign the token to. If not specified, token will "\
-						        "be assigned to the first keyslot matching provided passphrase.")},
-	{0,		0,		0,	  0, N_("Generic options:")},
-	{"verbose",	'v',		0,	  0, N_("Shows more detailed error messages")},
-	{"debug",	OPT_DEBUG,	0,	  0, N_("Show debug messages")},
-	{"debug-json",  OPT_DEBUG_JSON, 0,	  0, N_("Show debug messages including JSON metadata")},
-	{ NULL,		0, 		0, 0, NULL }
+						        "be assigned to the first keyslot matching provided passphrase."), 0},
+	{0,		0,		0,	  0, N_("Generic options:"), 0},
+	{"verbose",	'v',		0,	  0, N_("Shows more detailed error messages"), 0},
+	{"debug",	OPT_DEBUG,	0,	  0, N_("Show debug messages"), 0},
+	{"debug-json",  OPT_DEBUG_JSON, 0,	  0, N_("Show debug messages including JSON metadata"), 0},
+	{ NULL,		0, 		0, 0, NULL, 0 }
 };
 
 struct arguments {
@@ -216,7 +216,7 @@ parse_opt (int key, char *arg, struct argp_state *state) {
 	return 0;
 }
 
-static struct argp argp = { options, parse_opt, args_doc, doc };
+static struct argp ssh_argp = { options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 
 static void _log(int level, const char *msg, void *usrptr)
@@ -358,7 +358,7 @@ int main(int argc, char *argv[])
 	bindtextdomain(PACKAGE, LOCALEDIR);
 	textdomain(PACKAGE);
 
-	ret = argp_parse (&argp, argc, argv, 0, 0, &arguments);
+	ret = argp_parse (&ssh_argp, argc, argv, 0, 0, &arguments);
 	if (ret != 0) {
 		printf(_("Failed to parse arguments.\n"));
 		return EXIT_FAILURE;
