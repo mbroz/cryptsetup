@@ -41,7 +41,7 @@ OPT_UNUSED_ID = 0,
 #undef ARG
 };
 
-static struct tools_arg tool_core_args[] = { { NULL, false, CRYPT_ARG_BOOL }, // UNUSED
+static struct tools_arg tool_core_args[] = { { NULL, false, CRYPT_ARG_BOOL, {}, {} }, // UNUSED
 #define ARG(A, B, C, D, E, F, G, H) { A, false, F, G, H },
 #include "integritysetup_arg_list.h"
 #undef ARG
