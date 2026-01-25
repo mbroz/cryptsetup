@@ -590,7 +590,7 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			params->metadata_offset[i]) != fve_size_real ||
 			(crypt_crc32(~0, fve_validated_block, fve_size_real) ^ ~0) != le32_to_cpu(validation.fve_crc32)) {
 			/* found an invalid FVE metadata copy, log and skip */
-			log_dbg(cd, _("Failed to read or validate BITLK FVE metadata copy #%d from %s."), i, device_path(device));
+			log_dbg(cd, "Failed to read or validate BITLK FVE metadata copy #%d from %s.", i, device_path(device));
 		} else {
 			/* found a valid FVE metadata copy, use it */
 			valid_fve_metadata_idx = i;
