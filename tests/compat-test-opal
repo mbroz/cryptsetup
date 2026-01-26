@@ -215,7 +215,7 @@ load_key()
 }
 
 setup_luks2_env() {
-	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $OPAL2_DEV || fail
+	echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 --hw-opal $FAST_PBKDF_OPT $OPAL2_DEV || fail
 	$CRYPTSETUP luksDump $OPAL2_DEV >/dev/null || fail
 	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
 	HAVE_KEYRING=$($CRYPTSETUP status $DEV_NAME | grep "keyring")
@@ -230,6 +230,12 @@ setup_luks2_env() {
 		HAVE_BLKID=0
 	fi
 	$CRYPTSETUP close $DEV_NAME || fail
+	HAVE_SUM=$($CRYPTSETUP luksDump $OPAL2_DEV | grep "opal-v2")
+	if [ -n "$HAVE_SUM" ]; then
+		HAVE_SUM=1
+	else
+		HAVE_SUM=0
+	fi
 }
 
 # $1 key name
@@ -489,6 +495,8 @@ export LANG=C
 
 prepare "[0] Detect LUKS2 environment" reset
 setup_luks2_env
+
+test $HAVE_SUM -eq 1 && echo "Device $OPAL2_DEV is SUM compatible in LUKS2"
 
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 

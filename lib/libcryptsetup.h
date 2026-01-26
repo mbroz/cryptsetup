@@ -747,6 +747,8 @@ uint32_t crypt_get_compatibility(struct crypt_device *cd);
 #define CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC (UINT32_C(1) << 1)
 /** dm-integrity allow recalculating of volumes with HMAC keys (old kernels) */
 #define CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC (UINT32_C(1) << 2)
+/** disable SUM (Single User Mode) when formatting LUKS2 device w/ HW encryption (OPAL2) */
+#define CRYPT_COMPAT_DISABLE_HW_OPAL_SUM (UINT32_C(1) << 3)
 
 /**
  * Convert to new type for already existing device.
