@@ -1,0 +1,20 @@
+Cryptsetup 2.8.4 Release Notes
+==============================
+Stable bug-fix release.
+
+All users of cryptsetup 2.8.x must upgrade to this version.
+
+Changes since version 2.8.3
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix integritysetup resize (grow) of the device if integrity bitmap mode is used.
+  Increasing the integrity device in bitmap mode did not work as integritysetup
+  incorrectly used journal settings that were not applicable.
+
+* Fix device size status reports in cryptsetup and integritysetup.
+  If the device uses a sector size larger than 512 bytes, the newly reported byte
+  sizes (introduced in 2.8.0) in the status report were incorrectly displayed.
+
+* BITLK: Fix unlocking BitLocker device with recovery passphrase.
+  If the recovery passphrase was present in the first keyslot, the device failed
+  to unlock. This bug was introduced in 2.8.2 with Clear Key support.
