@@ -7,17 +7,11 @@ stages:
     - '[ "$(ls -A /var/coredumps)" ] && exit 1 || true'
 
 include:
-  - local: .gitlab/ci/debian.yml
-  - local: .gitlab/ci/fedora.yml
-  - local: .gitlab/ci/fedora-opal.yml
-  - local: .gitlab/ci/centos.yml
-  - local: .gitlab/ci/csmock.yml
-  - local: .gitlab/ci/gitlab-shared-docker.yml
-  - local: .gitlab/ci/compilation-various-disables.yml
-  - local: .gitlab/ci/compilation-gcc.gitlab-ci.yml
-  - local: .gitlab/ci/compilation-clang.gitlab-ci.yml
-  - local: .gitlab/ci/compilation-spellcheck.yml
-  - local: .gitlab/ci/alpinelinux.yml
-  - local: .gitlab/ci/debian-i686.yml
-  - local: .gitlab/ci/cifuzz.yml
+  - local: .gitlab/ci/default_test_suite.yml
+    rules:
+      - if: $TEST_VALGRIND != "true"
   - local: .gitlab/ci/valgrind.yml
+    rules:
+      # the variable TEST_VALGRIND needs to be set in gitlab UI - either when
+      # running a new pipeline or in a pipeline schedule
+      - if: $TEST_VALGRIND == "true"
