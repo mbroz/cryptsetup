@@ -20,6 +20,9 @@ OVRDEV="123reenc321"
 DEVBIG="reenc2134"
 DEV_NAME=reenc9768
 DEV_NAME2=reenc97682
+DEV_HOTZONE_FORWARD="$DEV_NAME-hotzone-forward"
+DEV_HOTZONE_BACKWARD="$DEV_NAME-hotzone-backward"
+DEV_OVERLAY=$DEV_NAME-overlay
 IMG=reenc-data
 IMG_HDR=$IMG.hdr
 HEADER_LUKS2_PV=blkid-luks2-pv.img
@@ -317,6 +320,31 @@ error_io() { # $1 dmdev, $2 data dev, $3 offset, $4 size
 	blockdev --setra 0 /dev/mapper/$1
 }
 
+error_reads() { # $1 dmdev, $2 data dev, $3 offset, $4 size
+	local _dev_size=$(blockdev --getsz /dev/mapper/$1)
+	local _offset=$(($3+$4))
+	local _size=$((_dev_size-_offset))
+	local _err=$1-err
+	local _table=
+	dmsetup create $_err --table "0 $_dev_size error" || fail
+
+	if [ $3 -ne 0 ]; then
+		_table="0 $3 linear $2 0\n"
+	fi
+
+	#_table=$_table"$3 $4 delay $2 $3 0 /dev/mapper/$_err $3 0"
+	_table=$_table"$3 $4 delay /dev/mapper/$_err $3 0 $2 $3 0"
+
+	if [ $_size -ne 0 ]; then
+		_table="$_table\n$_offset $_size linear $2 $_offset"
+	fi
+
+	echo -e "$_table" | dmsetup load $1 || fail
+	dmsetup resume $1 || fail
+	blockdev --setra 0 /dev/mapper/$1
+	blockdev --setra 0 /dev/mapper/$_err
+}
+
 error_writes() { # $1 dmdev, $2 data dev, $3 offset, $4 size
 	local _dev_size=$(blockdev --getsz /dev/mapper/$1)
 	local _offset=$(($3+$4))
@@ -341,7 +369,7 @@ error_writes() { # $1 dmdev, $2 data dev, $3 offset, $4 size
 	blockdev --setra 0 /dev/mapper/$_err
 }
 
-fix_writes() { # $1 dmdev, $2 data dev
+fix_ios() { # $1 dmdev, $2 data dev
 	local _dev_size=$(blockdev --getsz /dev/mapper/$1)
 	dmsetup load $1 --table "0 $_dev_size linear $2 0" || fail
 	dmsetup resume $1 || fail
@@ -379,6 +407,23 @@ get_error_offsets() # $1 devsize, $2 minimal offset, $3 sector_size [512 if omit
 	ERROFFSET=$(($ERROFFSET-($ERROFFSET%$_sector_size)))
 }
 
+reencrypt_recover_read_error() { # $1 sector size, $2 resilience, $3 digest, [$4 header]
+	echo -n "resilience mode: $2 ..."
+	local _hdr=""
+	test -z "$4" || _hdr="--header $4"
+
+	error_reads $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV $_hdr --hotzone-size 1M --resilience $2 --sector-size $1 --force-offline-reencrypt -q $FAST_PBKDF_ARGON >/dev/null 2>&1 && fail
+	fix_ios $OVRDEV $OLD_DEV
+
+	check_hash $PWD1 $3 $4
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV $_hdr --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON || fail
+	check_hash $PWD1 $3 $4
+
+	echo "[OK]"
+}
+
 reencrypt_recover() { # $1 sector size, $2 resilience, $3 digest, [$4 header]
 	echo -n "resilience mode: $2 ..."
 	local _hdr=""
@@ -386,7 +431,7 @@ reencrypt_recover() { # $1 sector size, $2 resilience, $3 digest, [$4 header]
 
 	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV $_hdr --hotzone-size 1M --resilience $2 --sector-size $1 --force-offline-reencrypt -q $FAST_PBKDF_ARGON >/dev/null 2>&1 && fail
-	fix_writes $OVRDEV $OLD_DEV
+	fix_ios $OVRDEV $OLD_DEV
 
 	echo $PWD1 | $CRYPTSETUP -q repair $DEV $_hdr || fail
 
@@ -409,7 +454,7 @@ reencrypt_recover_online() { # $1 sector size, $2 resilience, $3 digest, [$4 hea
 	echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME $_hdr --hotzone-size 1M --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON >/dev/null 2>&1 && fail
 	$CRYPTSETUP status $DEV_NAME $_hdr | grep -q "reencryption:  in-progress" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
-	fix_writes $OVRDEV $OLD_DEV
+	fix_ios $OVRDEV $OLD_DEV
 
 	# recovery during activation
 	echo $PWD1 | $CRYPTSETUP open $DEV $_hdr $DEV_NAME || fail
@@ -421,6 +466,58 @@ reencrypt_recover_online() { # $1 sector size, $2 resilience, $3 digest, [$4 hea
 		echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME $_hdr --resilience $2 --resume-only -q || fail
 		check_hash_dev /dev/mapper/$DEV_NAME $3
 	fi
+
+	$CRYPTSETUP close $DEV_NAME || fail
+	echo "[OK]"
+}
+
+check_device_removed() { # $1 dm device name
+	# ignore racy udev or udev-like hacks in some distributions
+	dmsetup status $1 >/dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		local msg="Device $1 is still active"
+
+		local ret=$(dmsetup info -C --nohead $1 | cut -d ':' -f 4)
+
+		[ ${#ret} -eq 4 ] || fail
+		[ ${ret:2:1} = "s" ] && msg="$msg and suspended."
+
+		fail "$msg"
+	fi
+}
+
+reencrypt_recover_read_error_online() { # $1 sector size, $2 resilience, $3 digest, [$4 header]
+	echo -n "resilience mode: $2 ..."
+	local _hdr=""
+	test -z "$4" || _hdr="--header $4"
+
+	echo $PWD1 | $CRYPTSETUP open $DEV $_hdr $DEV_NAME || fail
+
+	error_reads $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+	echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME $_hdr --hotzone-size 1M --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON >/dev/null 2>&1 && fail
+
+	# less severe reencryption errors should not leave helper devices behind
+	check_device_removed $DEV_HOTZONE_FORWARD
+	check_device_removed $DEV_OVERLAY
+
+	# the device is expected in interrupted reencryption
+	if [ -n "$_hdr" ]; then
+		$CRYPTSETUP status $DEV_NAME || fail
+	fi
+	$CRYPTSETUP status $DEV_NAME $_hdr | grep -q "reencryption:  in-progress" || fail
+	# but it must not require reencryption recovery
+	$CRYPTSETUP luksDump ${4:-$DEV} | grep -q "in-reencryption" && fail
+	fix_ios $OVRDEV $OLD_DEV
+
+	check_hash_dev /dev/mapper/$DEV_NAME $3
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	# verify it does correct segment mappings (LUKS2 contains correct state description)
+	echo $PWD1 | $CRYPTSETUP open $DEV $_hdr $DEV_NAME || fail
+	check_hash_dev /dev/mapper/$DEV_NAME $3
+
+	echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME $_hdr --resilience $2 --resume-only -q || fail
+	check_hash_dev /dev/mapper/$DEV_NAME $3
 
 	$CRYPTSETUP close $DEV_NAME || fail
 	echo "[OK]"
@@ -441,7 +538,7 @@ reencrypt_recover_online_vk() { # $1 sector size, $2 resilience, $3 digest, [$4 
 	echo $PWD1 | $CRYPTSETUP reencrypt --active-name $DEV_NAME $_hdr --hotzone-size 1M --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON >/dev/null 2>&1 && fail
 	$CRYPTSETUP status $DEV_NAME $_hdr | grep -q "reencryption:  in-progress" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
-	fix_writes $OVRDEV $OLD_DEV
+	fix_ios $OVRDEV $OLD_DEV
 
 	# recovery during activation
 	$CRYPTSETUP open --volume-key-keyring $KEY_NAME1 --volume-key-keyring $KEY_NAME2 $DEV $_hdr $DEV_NAME || fail
@@ -468,7 +565,7 @@ encrypt_recover() { # $1 sector size, $2 reduce size, $3 digest, $4 device size 
 
 	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q >/dev/null 2>&1 && fail
-	fix_writes $OVRDEV $OLD_DEV
+	fix_ios $OVRDEV $OLD_DEV
 
 	echo $PWD1 | $CRYPTSETUP -q repair $DEV || fail
 
@@ -477,6 +574,26 @@ encrypt_recover() { # $1 sector size, $2 reduce size, $3 digest, $4 device size 
 		check_hash $PWD1 $3
 		echo $PWD1 | $CRYPTSETUP reencrypt $DEV --sector-size $1 -q $FAST_PBKDF_ARGON || fail
 	fi
+
+	check_hash_head $PWD1 $4 $3
+
+	echo "[OK]"
+}
+
+encrypt_recover_read_error() { # $1 sector size, $2 reduce size, $3 digest, $4 device size in sectors, $5 origin digest
+	wipe_dev $DEV
+	check_hash_dev $DEV $5
+
+	echo -n "resilience mode: datashift ..."
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --reduce-device-size $2 --sector-size $1 -q $FAST_PBKDF_ARGON --init-only >/dev/null 2>&1 || fail
+
+	error_reads $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q >/dev/null 2>&1 && fail
+	fix_ios $OVRDEV $OLD_DEV
+	check_hash $PWD1 $3
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --resume-only --sector-size $1 -q $FAST_PBKDF_ARGON || fail
 
 	check_hash_head $PWD1 $4 $3
 
@@ -496,7 +613,7 @@ encrypt_recover_online() { # $1 sector size, $2 reduce size, $3 digest, $4 devic
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q >/dev/null 2>&1 && fail
 	$CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
-	fix_writes $OVRDEV $OLD_DEV
+	fix_ios $OVRDEV $OLD_DEV
 
 	# recovery in activation
 	echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
@@ -514,6 +631,41 @@ encrypt_recover_online() { # $1 sector size, $2 reduce size, $3 digest, $4 devic
 	echo "[OK]"
 }
 
+encrypt_recover_read_error_online() { # $1 sector size, $2 reduce size, $3 digest, $4 device size in sectors, $5 origin digest
+	wipe_dev $DEV
+	check_hash_dev $DEV $5
+
+	echo -n "resilience mode: datashift ..."
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --reduce-device-size $2 --sector-size $1 -q $FAST_PBKDF_ARGON --init-only > /dev/null || fail
+	echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
+
+	error_reads $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+	echo $PWD1 | $CRYPTSETUP reencrypt --resume-only --active-name $DEV_NAME -q >/dev/null 2>&1 && fail
+
+	# less severe reencryption errors should not leave helper devices behind
+	check_device_removed $DEV_HOTZONE_BACKWARD
+	check_device_removed $DEV_OVERLAY
+
+	$CRYPTSETUP status $DEV_NAME | grep -q "reencryption:  in-progress" || fail
+	$CRYPTSETUP luksDump $DEV | grep -q "in-reencryption" && fail
+	fix_ios $OVRDEV $OLD_DEV
+
+	check_hash_dev /dev/mapper/$DEV_NAME $3
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	# recovery in activation
+	echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
+	check_hash_dev /dev/mapper/$DEV_NAME $3
+
+	echo $PWD1 | $CRYPTSETUP reencrypt --resume-only --active-name $DEV_NAME -q || fail
+
+	$CRYPTSETUP close $DEV_NAME || fail
+	check_hash_head $PWD1 $4 $3
+
+	echo "[OK]"
+}
+
 encrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
 	wipe_dev $DEV
 	check_hash_dev $DEV $3
@@ -522,7 +674,7 @@ encrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
 
 	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --hotzone-size 1M --header $4 --resilience $2 --sector-size $1 -q $FAST_PBKDF_ARGON 2>/dev/null && fail
-	fix_writes $OVRDEV $OLD_DEV
+	fix_ios $OVRDEV $OLD_DEV
 
 	echo $PWD1 | $CRYPTSETUP repair $DEV --header $4 || fail
 
@@ -549,7 +701,7 @@ encrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3 digest, 
 	echo $PWD1 | $CRYPTSETUP reencrypt -q $DEV --header $4 --hotzone-size 1M  2>/dev/null && fail
 	$CRYPTSETUP status $DEV_NAME --header $4 | grep -q "reencryption:  in-progress" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
-	fix_writes $OVRDEV $OLD_DEV
+	fix_ios $OVRDEV $OLD_DEV
 
 	echo $PWD1 | $CRYPTSETUP open $DEV --header $4 $DEV_NAME || fail
 	check_hash_dev /dev/mapper/$DEV_NAME $3
@@ -577,7 +729,7 @@ decrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
 
 	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --decrypt --hotzone-size 1M --header $4 --resilience $2 -q 2>/dev/null && fail
-	fix_writes $OVRDEV $OLD_DEV
+	fix_ios $OVRDEV $OLD_DEV
 
 	echo $PWD1 | $CRYPTSETUP repair $DEV --header $4 || fail
 
@@ -586,6 +738,29 @@ decrypt_recover_detached() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
 		check_hash $PWD1 $3 $4
 		echo $PWD1 | $CRYPTSETUP reencrypt $DEV --resume-only --header $4 --resilience $2 -q || fail
 	fi
+
+	check_hash_dev $DEV $3
+
+	[ -f $4 ] && rm -f $4
+
+	echo "[OK]"
+}
+
+decrypt_recover_read_error_detached() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size $1 --header $4 $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1 $4
+	check_hash $PWD1 $3 $4
+
+	echo -n "resilience mode: $2 ..."
+
+	error_reads $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --decrypt --hotzone-size 1M --header $4 --resilience $2 -q 2>/dev/null && fail
+	fix_ios $OVRDEV $OLD_DEV
+	$CRYPTSETUP luksDump $4 | grep -q "in-reencryption" && fail
+
+	check_hash $PWD1 $3 $4
+
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --resume-only --header $4 --resilience $2 -q || fail
 
 	check_hash_dev $DEV $3
 
@@ -606,7 +781,7 @@ decrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3 digest, 
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --decrypt --hotzone-size 1M --header $4 --resilience $2 -q 2>/dev/null && fail
 	$CRYPTSETUP status $DEV_NAME --header $4 | grep -q "reencryption:  in-progress" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
-	fix_writes $OVRDEV $OLD_DEV
+	fix_ios $OVRDEV $OLD_DEV
 
 	# recovery during activation
 	echo $PWD1 | $CRYPTSETUP open $DEV --header $4 $DEV_NAME || fail
@@ -617,6 +792,35 @@ decrypt_recover_detached_online() { # $1 sector size, $2 resilience, $3 digest, 
 		check_hash_dev /dev/mapper/$DEV_NAME $3
 		echo $PWD1 | $CRYPTSETUP reencrypt $DEV --header $4 --resilience $2 -q || fail
 	fi
+
+	$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 && fail
+	check_hash_dev $DEV $3
+
+	[ -f $4 ] && rm -f $4
+
+	echo "[OK]"
+}
+
+decrypt_recover_read_error_detached_online() { # $1 sector size, $2 resilience, $3 digest, $4 hdr
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size $1 --header $4 $FAST_PBKDF_ARGON $DEV || fail
+	echo $PWD1 | $CRYPTSETUP open $DEV --header $4 $DEV_NAME || fail
+	wipe_dev /dev/mapper/$DEV_NAME
+	check_hash_dev /dev/mapper/$DEV_NAME $3
+
+	echo -n "resilience mode: $2 ..."
+
+	error_reads $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --decrypt --hotzone-size 1M --header $4 --resilience $2 -q 2>/dev/null && fail
+	$CRYPTSETUP status $DEV_NAME --header $4 | grep -q "reencryption:  in-progress" || fail
+	fix_ios $OVRDEV $OLD_DEV
+	check_hash_dev /dev/mapper/$DEV_NAME $3
+
+	$CRYPTSETUP close $DEV_NAME || fail
+	echo $PWD1 | $CRYPTSETUP open $DEV --header $4 $DEV_NAME || fail
+
+	$CRYPTSETUP status $DEV_NAME --header $4 | grep -q "reencryption:  in-progress" || fail
+	check_hash_dev /dev/mapper/$DEV_NAME $3
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --resume-only --header $4 --resilience $2 -q || fail
 
 	$CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 && fail
 	check_hash_dev $DEV $3
@@ -637,7 +841,7 @@ decrypt_recover() { # $1 hash, $2 hdr, $3 dev size, $4 resilience, $5 hotzone si
 
 	error_writes $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --header $2 -q $_res >/dev/null 2>&1 && fail
-	fix_writes $OVRDEV $OLD_DEV
+	fix_ios $OVRDEV $OLD_DEV
 
 	echo $PWD1 | $CRYPTSETUP -q repair $DEV --header $2 || fail
 
@@ -667,7 +871,7 @@ decrypt_recover_online() { # $1 hash, $2 hdr, $3 dev size
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --header $2 -q $_res >/dev/null 2>&1 && fail
 	$CRYPTSETUP status $DEV_NAME --header $2 | grep -q "reencryption:  in-progress" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
-	fix_writes $OVRDEV $OLD_DEV
+	fix_ios $OVRDEV $OLD_DEV
 
 	# recovery during activation
 	echo $PWD1 | $CRYPTSETUP open $DEV --header $2 $DEV_NAME || fail
@@ -696,7 +900,7 @@ decrypt_recover_online_moved() { # $1 hash, $2 hdr, $3 dev size
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV --header $2 -q $_res >/dev/null 2>&1 && fail
 	$CRYPTSETUP status $DEV_NAME --header $2 | grep -q "reencryption:  in-progress" || fail
 	$CRYPTSETUP close $DEV_NAME || fail
-	fix_writes $OVRDEV $OLD_DEV
+	fix_ios $OVRDEV $OLD_DEV
 
 	# recovery but activation fails due to last segment recovery makes it plaintext device
 	echo $PWD1 | $CRYPTSETUP open $DEV --header $2 $DEV_NAME 2>/dev/null && fail
@@ -1258,7 +1462,7 @@ ERROFFSET=34816
 ERRLENGTH=65536
 error_io $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --device-size 1M --reduce-device-size 32M -q $FAST_PBKDF_ARGON  || fail
-fix_writes $OVRDEV $OLD_DEV
+fix_ios $OVRDEV $OLD_DEV
 check_hash_head $PWD1 2048 $HASH2
 
 wipe_dev_head $DEV 43
@@ -1268,7 +1472,7 @@ ERRLENGTH=12288
 # data device: [ reduce-device-size / 2 ] [ device-size ] [ error minefield ] [ reduce-device-size / 2]
 error_io $OVRDEV $OLD_DEV $ERROFFSET $ERRLENGTH
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --device-size 43M --reduce-device-size 16M -q $FAST_PBKDF_ARGON || fail
-fix_writes $OVRDEV $OLD_DEV
+fix_ios $OVRDEV $OLD_DEV
 check_hash_head $PWD1 88064 $HASH6
 
 echo "[3] Encryption with detached header"
@@ -1431,6 +1635,9 @@ echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 reencrypt_recover 512 checksum $HASH1
 reencrypt_recover 512 journal $HASH1
 
+echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+reencrypt_recover_read_error 512 checksum $HASH1
+
 if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "sector size 512->4096"
 
@@ -1443,6 +1650,11 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
 	reencrypt_recover 4096 journal $HASH1
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1
+
+	echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_read_error 4096 checksum $HASH1
 
 	echo "sector size 4096->4096"
 
@@ -1453,6 +1665,8 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover 4096 checksum $HASH1
 	reencrypt_recover 4096 journal $HASH1
+	echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_read_error 4096 checksum $HASH1
 fi
 
 echo "[7] Reencryption recovery (online i/o error)"
@@ -1466,6 +1680,8 @@ wipe $PWD1
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 reencrypt_recover_online 512 checksum $HASH1
 reencrypt_recover_online 512 journal $HASH1
+echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+reencrypt_recover_read_error_online 512 checksum $HASH1
 
 if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "sector size 512->4096"
@@ -1479,6 +1695,10 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1
 	reencrypt_recover_online 4096 journal $HASH1
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --offset $OFFSET $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1
+	echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_read_error_online 4096 checksum $HASH1
 
 	echo "sector size 4096->4096"
 
@@ -1489,6 +1709,8 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover_online 4096 checksum $HASH1
 	reencrypt_recover_online 4096 journal $HASH1
+	echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_read_error_online 4096 checksum $HASH1
 fi
 
 if [ $HAVE_KEYRING -eq 1 ]; then
@@ -1540,6 +1762,8 @@ check_hash $PWD1 $HASH7 $IMG_HDR
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 reencrypt_recover 512 checksum $HASH7 $IMG_HDR
 reencrypt_recover 512 journal $HASH7 $IMG_HDR
+echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+reencrypt_recover_read_error 512 checksum $HASH7 $IMG_HDR
 
 if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "sector size 512->4096"
@@ -1553,6 +1777,11 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
 	wipe $PWD1 $IMG_HDR
 	reencrypt_recover 4096 journal $HASH7 $IMG_HDR
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1 $IMG_HDR
+
+	echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_read_error 4096 checksum $HASH7 $IMG_HDR
 
 	echo "sector size 4096->4096"
 
@@ -1563,6 +1792,8 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover 4096 checksum $HASH7 $IMG_HDR
 	reencrypt_recover 4096 journal $HASH7 $IMG_HDR
+	echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_read_error 4096 checksum $HASH7 $IMG_HDR
 fi
 
 echo "[9] Reencryption with detached header recovery (online i/o error)"
@@ -1576,6 +1807,8 @@ wipe $PWD1 $IMG_HDR
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 reencrypt_recover_online 512 checksum $HASH7 $IMG_HDR
 reencrypt_recover_online 512 journal $HASH7 $IMG_HDR
+echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+reencrypt_recover_read_error_online 512 checksum $HASH7 $IMG_HDR
 
 if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "sector size 512->4096"
@@ -1590,6 +1823,11 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	wipe $PWD1 $IMG_HDR
 	reencrypt_recover_online 4096 journal $HASH7 $IMG_HDR
 
+	echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --sector-size 512 --header $IMG_HDR $FAST_PBKDF_ARGON $DEV || fail
+	wipe $PWD1 $IMG_HDR
+	echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_read_error_online 4096 checksum $HASH7 $IMG_HDR
+
 	echo "sector size 4096->4096"
 
 	get_error_offsets 31 0 4096
@@ -1599,6 +1837,8 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	reencrypt_recover_online 4096 checksum $HASH7 $IMG_HDR
 	reencrypt_recover_online 4096 journal $HASH7 $IMG_HDR
+	echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	reencrypt_recover_read_error_online 4096 checksum $HASH7 $IMG_HDR
 fi
 
 echo "[10] Encryption recovery"
@@ -1611,6 +1851,8 @@ get_error_offsets 64 $OFFSET 512 $((62*1024*2))
 
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 encrypt_recover 512 4M $HASH8 $((60*1024*2)) $HASH4
+echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+encrypt_recover_read_error 512 4M $HASH8 $((60*1024*2)) $HASH4
 
 if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "sector size 4096"
@@ -1619,6 +1861,8 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	encrypt_recover 4096 4M $HASH8 $((60*1024*2)) $HASH4
+	echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	encrypt_recover_read_error 4096 4M $HASH8 $((60*1024*2)) $HASH4
 fi
 
 echo "[11] Encryption recovery (online i/o error)"
@@ -1629,6 +1873,8 @@ get_error_offsets 64 $OFFSET 512 $((62*1024*2))
 
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 encrypt_recover_online 512 4M $HASH8 $((60*1024*2)) $HASH4
+echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+encrypt_recover_read_error_online 512 4M $HASH8 $((60*1024*2)) $HASH4
 
 if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "sector size 4096"
@@ -1637,6 +1883,9 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	encrypt_recover_online 4096 4M $HASH8 $((60*1024*2)) $HASH4
+
+	echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	encrypt_recover_read_error_online 4096 4M $HASH8 $((60*1024*2)) $HASH4
 fi
 
 echo "[12] Encryption with detached header recovery"
@@ -1690,6 +1939,8 @@ get_error_offsets 31 2049
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 decrypt_recover_detached 512 journal $HASH7 $IMG_HDR
 decrypt_recover_detached 512 checksum $HASH7 $IMG_HDR
+echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+decrypt_recover_read_error_detached 512 checksum $HASH7 $IMG_HDR
 
 if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "sector size 4096"
@@ -1700,6 +1951,8 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	decrypt_recover_detached 4096 checksum $HASH7 $IMG_HDR
 	decrypt_recover_detached 4096 journal $HASH7 $IMG_HDR
+	echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	decrypt_recover_read_error_detached 4096 checksum $HASH7 $IMG_HDR
 fi
 
 echo "[15] Decryption with detached header recovery (online i/o error)"
@@ -1712,6 +1965,8 @@ get_error_offsets 31 2049
 echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 decrypt_recover_detached_online 512 journal $HASH7 $IMG_HDR
 decrypt_recover_detached_online 512 checksum $HASH7 $IMG_HDR
+echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+decrypt_recover_read_error_detached_online 512 checksum $HASH7 $IMG_HDR
 
 if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "sector size 4096"
@@ -1722,6 +1977,8 @@ if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo "ERR writes to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
 	decrypt_recover_detached_online 4096 checksum $HASH7 $IMG_HDR
 	decrypt_recover_detached_online 4096 journal $HASH7 $IMG_HDR
+	echo "ERR reads to sectors [$ERROFFSET,$(($ERROFFSET+$ERRLENGTH-1))]"
+	decrypt_recover_read_error_detached_online 4096 checksum $HASH7 $IMG_HDR
 fi
 
 echo "[16] Offline reencryption with fixed device size."
