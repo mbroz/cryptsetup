@@ -18,25 +18,11 @@
     - sudo -E make check TESTS="00modules-test compat-test-opal"
 
 # Samsung SSD 980 500GB (on tiber machine)
-test-commit-rawhide-samsung980:
+test-rawhide-samsung980:
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
-  extends:
-    - .opal-template-fedora
-  tags:
-    - tiber
-  resource_group: samsung980-on-tiber
-  interruptible: false
-  variables:
-    PCI_PASSTHROUGH_VENDOR_ID: "144d"
-    PCI_PASSTHROUGH_DEVICE_ID: "a809"
-
-test-mergerq-rawhide-samsung980:
-  rules:
-    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
-      when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   extends:
     - .opal-template-fedora
@@ -81,25 +67,11 @@ test-mergerq-rawhide-samsung980:
 #    PCI_PASSTHROUGH_DEVICE_ID: "5017"
 
 # Samsung SSD 980 PRO 1TB (on trantor machine)
-test-commit-rawhide-samsung980pro:
+test-rawhide-samsung980pro:
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
-  extends:
-    - .opal-template-fedora
-  tags:
-    - trantor
-  resource_group: samsung980pro-on-trantor
-  interruptible: false
-  variables:
-    PCI_PASSTHROUGH_VENDOR_ID: "144d"
-    PCI_PASSTHROUGH_DEVICE_ID: "a80a"
-
-test-mergerq-rawhide-samsung980pro:
-  rules:
-    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
-      when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   extends:
     - .opal-template-fedora
