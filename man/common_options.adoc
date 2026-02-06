@@ -156,6 +156,14 @@ endif::[]
 *WARNING:* Do not use this option unless you run cryptsetup in a restricted environment where locking is impossible to perform (where /run directory cannot be used).
 endif::[]
 
+ifdef::ACTION_LUKSFORMAT[]
+*--disable-sum*::
+Disable SUM (Single User Mode) OPAL2 extension during luksFormat with HW encryption profile (OPAL2).
+The option affects only devices not yet enabled for OPAL2 encryption (in factory settings). For devices
+with already activated OPAL2 HW encryption profile the option is ignored. The option must be combined
+with --hw-opal or --hw-opal-only options.
+endif::[]
+
 ifdef::ACTION_OPEN,ACTION_TCRYPTDUMP[]
 *--disable-veracrypt*::
 This option can be used to disable VeraCrypt compatible mode (only TrueCrypt devices are recognized).
@@ -335,7 +343,6 @@ LUKS2 format only manages the locking range unlock key.
 This option enables HW-based data encryption managed by the SED OPAL drive only.
 +
 Please note that with OPAL-only (--hw-opal-only) encryption, the configured OPAL administrator PIN (passphrase) allows unlocking all configured locking ranges without LUKS keyslot decryption (without knowledge of LUKS passphrase).
-Because of many observed problems with compatibility, cryptsetup currently DOES NOT use OPAL single-user mode, which would allow such decoupling of OPAL admin PIN access.
 endif::[]
 
 ifdef::ACTION_REENCRYPT[]
