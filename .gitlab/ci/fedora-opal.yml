@@ -34,6 +34,40 @@ test-rawhide-samsung980:
     PCI_PASSTHROUGH_VENDOR_ID: "144d"
     PCI_PASSTHROUGH_DEVICE_ID: "a809"
 
+# CT1000T500SSD8 (on saturnin machine)
+test-rawhide-ctT500:
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  extends:
+    - .opal-template-fedora
+  tags:
+    - saturnin
+  resource_group: ctT500-on-saturnin
+  interruptible: false
+  variables:
+    PCI_PASSTHROUGH_VENDOR_ID: "c0a9"
+    PCI_PASSTHROUGH_DEVICE_ID: "5415"
+
+# WD PC SN5000S SDEQNSJ-2T00-1002 (on saturnin machine)
+test-rawhide-wdSN5000S:
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  extends:
+    - .opal-template-fedora
+  tags:
+    - saturnin
+  resource_group: wdSN5000S-on-saturnin
+  interruptible: false
+  variables:
+    PCI_PASSTHROUGH_VENDOR_ID: "15b7"
+    PCI_PASSTHROUGH_DEVICE_ID: "5036"
+
 # WD PC SN740 SDDQNQD-512G-1014 (on tiber machine)
 # Disabled on 2025-03-20, seems broken
 #test-commit-rawhide-sn740:
@@ -82,6 +116,23 @@ test-rawhide-samsung980pro:
   variables:
     PCI_PASSTHROUGH_VENDOR_ID: "144d"
     PCI_PASSTHROUGH_DEVICE_ID: "a80a"
+
+# WD PC SN740 SDDQMQD-256G-1001 (on trantor machine)
+test-rawhide-wdSN740:
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  extends:
+    - .opal-template-fedora
+  tags:
+    - trantor
+  resource_group: wdSN740-on-trantor
+  interruptible: false
+  variables:
+    PCI_PASSTHROUGH_VENDOR_ID: "15b7"
+    PCI_PASSTHROUGH_DEVICE_ID: "5016"
 
 # # UMIS RPETJ256MGE2MDQ (on tiber machine)
 # test-commit-rawhide-umis:
