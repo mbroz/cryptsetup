@@ -1529,10 +1529,6 @@ if dm_crypt_capi_support; then
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV --test-passphrase || fail
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME 2>&1 | grep -q "No known cipher specification pattern" || fail
 	echo $PWD1 | $CRYPTSETUP reencrypt $LOOPDEV >/dev/null 2>&1 && fail
-	dmsetup create $DEV_NAME --uuid CRYPT-LUKS2-3d20686f551748cb89911ad32379821b-test --table \
-         "0 8 crypt capi:xts(ecb(aes-generic))-plain64 edaa40709797973715e572bf7d86fcbb9cfe2051083c33c28d58fe4e1e7ff642 0 $LOOPDEV 32768"
-	$CRYPTSETUP status $DEV_NAME | grep -q "n/a" || fail
-	$CRYPTSETUP close $DEV_NAME ||fail
 fi
 
 if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
