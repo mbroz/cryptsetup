@@ -483,6 +483,17 @@ if get_option('veritysetup') and use_devmapper
         ])
 endif
 
+if get_option('veritysetup')
+    test('verity-compat-test-portable',
+        find_program('verity-compat-test-portable'),
+        workdir: meson.current_build_dir(),
+        timeout: 14400,
+        is_parallel: false,
+        depends: [
+            veritysetup,
+        ])
+endif
+
 if get_option('integritysetup') and use_devmapper
     test('integrity-compat-test',
         find_program('integrity-compat-test'),

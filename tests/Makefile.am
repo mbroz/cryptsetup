@@ -43,6 +43,7 @@ if VERITYSETUP
 if HAVE_DEVMAPPER_COND
 TESTS += verity-compat-test
 endif
+TESTS += verity-compat-test-portable
 endif
 
 if INTEGRITYSETUP
@@ -88,6 +89,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	compat-test-opal \
 	loopaes-test align-test discards-test mode-test password-hash-test \
 	align-test2 verity-compat-test \
+	verity-compat-test-portable \
 	reencryption-compat-test \
 	luks2-reencryption-test \
 	luks2-reencryption-mangle-test \
