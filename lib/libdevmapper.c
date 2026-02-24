@@ -8,6 +8,8 @@
  * Copyright (C) 2009-2025 Milan Broz
  */
 
+#if HAVE_DEVMAPPER
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h>
@@ -3478,3 +3480,216 @@ int dm_zero_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_
 
 	return 0;
 }
+
+#else /* HAVE_DEVMAPPER */
+
+#include <errno.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include "internal.h"
+
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+void dm_backend_init(struct crypt_device *cd)
+{
+}
+
+void dm_backend_exit(struct crypt_device *cd)
+{
+}
+
+int dm_targets_allocate(struct dm_target *first, unsigned count)
+{
+	return -ENOTSUP;
+}
+
+void dm_targets_free(struct crypt_device *cd, struct crypt_dm_active_device *dmd)
+{
+}
+
+int dm_crypt_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
+	struct device *data_device, struct volume_key *vk, const char *cipher,
+	uint64_t iv_offset, uint64_t data_offset,
+	const char *integrity, uint32_t integrity_key_size, uint32_t tag_size,
+	uint32_t sector_size)
+{
+	return -ENOTSUP;
+}
+
+int dm_verity_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
+	struct device *data_device, struct device *hash_device, struct device *fec_device,
+	const char *root_hash, uint32_t root_hash_size, const char *root_hash_sig_key_desc,
+	uint64_t hash_offset_block, uint64_t fec_blocks, struct crypt_params_verity *vp)
+{
+	return -ENOTSUP;
+}
+
+int dm_integrity_target_set(struct crypt_device *cd,
+	struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
+	struct device *meta_device,
+	struct device *data_device, uint64_t tag_size, uint64_t offset, uint32_t sector_size,
+	struct volume_key *vk,
+	struct volume_key *journal_crypt_key, struct volume_key *journal_mac_key,
+	const struct crypt_params_integrity *ip)
+{
+	return -ENOTSUP;
+}
+
+int dm_linear_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size,
+	struct device *data_device, uint64_t data_offset)
+{
+	return -ENOTSUP;
+}
+
+int dm_zero_target_set(struct dm_target *tgt, uint64_t seg_offset, uint64_t seg_size)
+{
+	return -ENOTSUP;
+}
+
+int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
+{
+	return -ENOTSUP;
+}
+
+int dm_status_device(struct crypt_device *cd, const char *name)
+{
+	return -ENOTSUP;
+}
+
+int dm_status_suspended(struct crypt_device *cd, const char *name)
+{
+	return -ENOTSUP;
+}
+
+int dm_status_verity_ok(struct crypt_device *cd, const char *name)
+{
+	return -ENOTSUP;
+}
+
+int dm_status_integrity_failures(struct crypt_device *cd, const char *name, uint64_t *count)
+{
+	return -ENOTSUP;
+}
+
+int dm_status_verity_repaired(struct crypt_device *cd, const char *name, uint64_t *repaired)
+{
+	return -ENOTSUP;
+}
+
+int dm_query_device(struct crypt_device *cd, const char *name,
+		    uint64_t get_flags, struct crypt_dm_active_device *dmd)
+{
+	return -ENOTSUP;
+}
+
+int dm_device_deps(struct crypt_device *cd, const char *name, const char *prefix,
+		   char **names, size_t names_length)
+{
+	return -ENOTSUP;
+}
+
+int dm_create_device(struct crypt_device *cd, const char *name,
+		     const char *type, struct crypt_dm_active_device *dmd)
+{
+	return -ENOTSUP;
+}
+
+int dm_reload_device(struct crypt_device *cd, const char *name,
+		     struct crypt_dm_active_device *dmd, uint64_t dmflags, unsigned resume)
+{
+	return -ENOTSUP;
+}
+
+int dm_suspend_device(struct crypt_device *cd, const char *name, uint64_t dmflags)
+{
+	return -ENOTSUP;
+}
+
+int dm_resume_device(struct crypt_device *cd, const char *name, uint64_t dmflags)
+{
+	return -ENOTSUP;
+}
+
+int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
+				const struct volume_key *vk)
+{
+	return -ENOTSUP;
+}
+
+int dm_error_device(struct crypt_device *cd, const char *name)
+{
+	return -ENOTSUP;
+}
+
+int dm_clear_device(struct crypt_device *cd, const char *name)
+{
+	return -ENOTSUP;
+}
+
+int dm_cancel_deferred_removal(const char *name)
+{
+	return -ENOTSUP;
+}
+
+int dm_flags(struct crypt_device *cd, dm_target_type target, uint64_t *flags)
+{
+	return -ENOTSUP;
+}
+
+const char *dm_get_dir(void)
+{
+	return "";
+}
+
+int dm_get_iname(const char *name, char **iname, bool with_path)
+{
+	return -ENOTSUP;
+}
+
+char *dm_get_active_iname(struct crypt_device *cd, const char *name)
+{
+	return NULL;
+}
+
+int dm_uuid_cmp(const char *dm_uuid, const char *hdr_uuid)
+{
+	return -ENOTSUP;
+}
+
+int dm_uuid_type_cmp(const char *dm_uuid, const char *type)
+{
+	return -ENOTSUP;
+}
+
+int dm_uuid_integrity_cmp(const char *dm_uuid, const char *dmi_uuid)
+{
+	return -ENOTSUP;
+}
+
+int lookup_dm_dev_by_uuid(struct crypt_device *cd, const char *uuid, const char *type)
+{
+	return -ENOTSUP;
+}
+
+int dm_is_dm_device(int major)
+{
+	return 0;
+}
+
+int dm_is_dm_kernel_name(const char *name)
+{
+	return 0;
+}
+
+char *dm_device_path(const char *prefix, int major, int minor)
+{
+	return NULL;
+}
+
+char *dm_device_name(const char *path)
+{
+	return NULL;
+}
+
+#endif /* HAVE_DEVMAPPER */

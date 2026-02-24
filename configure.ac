@@ -89,7 +89,20 @@ AC_CHECK_DECLS([O_CLOEXEC],,[AC_DEFINE([O_CLOEXEC],[0], [Defined to 0 if not pro
 ]])
 
 AC_CHECK_HEADERS(uuid/uuid.h,,[AC_MSG_ERROR([You need the uuid library.])])
-AC_CHECK_HEADER(libdevmapper.h,,[AC_MSG_ERROR([You need the device-mapper library.])])
+
+AC_ARG_ENABLE([devmapper],
+	AS_HELP_STRING([--disable-devmapper], [disable device-mapper support]),
+	[], [enable_devmapper=auto])
+use_devmapper=no
+if test "x$enable_devmapper" != "xno"; then
+	AC_CHECK_HEADER(libdevmapper.h,
+		[use_devmapper=yes],
+		[if test "x$enable_devmapper" = "xyes"; then
+			AC_MSG_ERROR([You need the device-mapper library.])
+		else
+			AC_MSG_WARN([device-mapper header not found, disabling device-mapper support.])
+		fi])
+fi
 
 AC_ARG_ENABLE([keyring],
 	AS_HELP_STRING([--disable-keyring], [disable kernel keyring support and builtin kernel keyring token]),
@@ -432,6 +445,10 @@ AM_CONDITIONAL(STATIC_TOOLS, test "x$enable_static_cryptsetup" = "xyes")
 AC_ARG_ENABLE([cryptsetup],
 	AS_HELP_STRING([--disable-cryptsetup], [disable cryptsetup support]),
 	[], [enable_cryptsetup=yes])
+if test "x$use_devmapper" != "xyes" -a "x$enable_cryptsetup" = "xyes"; then
+	AC_MSG_WARN([Disabling cryptsetup (requires device-mapper).])
+	enable_cryptsetup=no
+fi
 AM_CONDITIONAL(CRYPTSETUP, test "x$enable_cryptsetup" = "xyes")
 
 AC_ARG_ENABLE([veritysetup],
@@ -442,6 +459,10 @@ AM_CONDITIONAL(VERITYSETUP, test "x$enable_veritysetup" = "xyes")
 AC_ARG_ENABLE([integritysetup],
 	AS_HELP_STRING([--disable-integritysetup], [disable integritysetup support]),
 	[], [enable_integritysetup=yes])
+if test "x$use_devmapper" != "xyes" -a "x$enable_integritysetup" = "xyes"; then
+	AC_MSG_WARN([Disabling integritysetup (requires device-mapper).])
+	enable_integritysetup=no
+fi
 AM_CONDITIONAL(INTEGRITYSETUP, test "x$enable_integritysetup" = "xyes")
 
 AC_ARG_ENABLE([selinux],
@@ -453,32 +474,41 @@ AC_ARG_ENABLE([udev],
 	[], [enable_udev=yes])
 
 dnl Try to use pkg-config for devmapper, but fallback to old detection
-PKG_CHECK_MODULES([DEVMAPPER], [devmapper >= 1.02.03],, [
-	AC_CHECK_LIB(devmapper, dm_task_set_name,,
-		[AC_MSG_ERROR([You need the device-mapper library.])])
-	AC_CHECK_LIB(devmapper, dm_task_set_message,,
-		[AC_MSG_ERROR([The device-mapper library on your system is too old.])])
-	DEVMAPPER_LIBS=$LIBS
-])
-LIBS=$saved_LIBS
+if test "x$use_devmapper" = "xyes"; then
+	PKG_CHECK_MODULES([DEVMAPPER], [devmapper >= 1.02.03],, [
+		AC_CHECK_LIB(devmapper, dm_task_set_name,,
+			[AC_MSG_ERROR([You need the device-mapper library.])])
+		AC_CHECK_LIB(devmapper, dm_task_set_message,,
+			[AC_MSG_ERROR([The device-mapper library on your system is too old.])])
+		DEVMAPPER_LIBS=$LIBS
+	])
+	LIBS=$saved_LIBS
 
-LIBS="$LIBS $DEVMAPPER_LIBS"
-AC_CHECK_DECLS([dm_task_secure_data], [], [], [#include <libdevmapper.h>])
-AC_CHECK_DECLS([dm_task_retry_remove], [], [], [#include <libdevmapper.h>])
-AC_CHECK_DECLS([dm_task_deferred_remove], [], [], [#include <libdevmapper.h>])
-AC_CHECK_DECLS([dm_device_has_mounted_fs], [], [], [#include <libdevmapper.h>])
-AC_CHECK_DECLS([dm_device_has_holders], [], [], [#include <libdevmapper.h>])
-AC_CHECK_DECLS([dm_device_get_name], [], [], [#include <libdevmapper.h>])
-AC_CHECK_DECLS([DM_DEVICE_GET_TARGET_VERSION], [], [], [#include <libdevmapper.h>])
-AC_CHECK_DECLS([DM_UDEV_DISABLE_DISK_RULES_FLAG], [have_cookie=yes], [have_cookie=no], [#include <libdevmapper.h>])
-if test "x$enable_udev" = xyes; then
-	if test "x$have_cookie" = xno; then
-		AC_MSG_WARN([The device-mapper library on your system has no udev support, udev support disabled.])
-	else
-		AC_DEFINE(USE_UDEV, 1, [Try to use udev synchronisation?])
+	AC_DEFINE([HAVE_DEVMAPPER], [1], [Define to 1 if device-mapper is available.])
+
+	LIBS="$LIBS $DEVMAPPER_LIBS"
+	AC_CHECK_DECLS([dm_task_secure_data], [], [], [#include <libdevmapper.h>])
+	AC_CHECK_DECLS([dm_task_retry_remove], [], [], [#include <libdevmapper.h>])
+	AC_CHECK_DECLS([dm_task_deferred_remove], [], [], [#include <libdevmapper.h>])
+	AC_CHECK_DECLS([dm_device_has_mounted_fs], [], [], [#include <libdevmapper.h>])
+	AC_CHECK_DECLS([dm_device_has_holders], [], [], [#include <libdevmapper.h>])
+	AC_CHECK_DECLS([dm_device_get_name], [], [], [#include <libdevmapper.h>])
+	AC_CHECK_DECLS([DM_DEVICE_GET_TARGET_VERSION], [], [], [#include <libdevmapper.h>])
+	AC_CHECK_DECLS([DM_UDEV_DISABLE_DISK_RULES_FLAG], [have_cookie=yes], [have_cookie=no], [#include <libdevmapper.h>])
+	if test "x$enable_udev" = xyes; then
+		if test "x$have_cookie" = xno; then
+			AC_MSG_WARN([The device-mapper library on your system has no udev support, udev support disabled.])
+		else
+			AC_DEFINE(USE_UDEV, 1, [Try to use udev synchronisation?])
+		fi
 	fi
+	LIBS=$saved_LIBS
+else
+	DEVMAPPER_LIBS=""
+	DEVMAPPER_STATIC_LIBS=""
 fi
-LIBS=$saved_LIBS
+AC_SUBST([DEVMAPPER_LIBS])
+AC_SUBST([DEVMAPPER_STATIC_LIBS])
 
 dnl Check for JSON-C used in LUKS2
 PKG_CHECK_MODULES([JSON_C], [json-c])
@@ -641,18 +671,20 @@ if test "x$enable_static_cryptsetup" = "xyes"; then
 		AC_MSG_ERROR([Cannot find static popt library.]))
 
 	dnl Try to detect needed device-mapper static libraries, try pkg-config first.
-	LIBS="$saved_LIBS -static"
-	PKG_CHECK_MODULES([DEVMAPPER_STATIC], [devmapper >= 1.02.27],,[
-		DEVMAPPER_STATIC_LIBS=$DEVMAPPER_LIBS
-		if test "x$enable_selinux" = "xyes"; then
-			AC_CHECK_LIB(sepol, sepol_bool_set)
-			AC_CHECK_LIB(selinux, is_selinux_enabled)
-			DEVMAPPER_STATIC_LIBS="$DEVMAPPER_STATIC_LIBS $LIBS"
-		fi
-	])
-	LIBS="$saved_LIBS $DEVMAPPER_STATIC_LIBS"
-	AC_CHECK_LIB(devmapper, dm_task_set_uuid,,
-		AC_MSG_ERROR([Cannot link with static device-mapper library.]))
+	if test "x$use_devmapper" = "xyes"; then
+		LIBS="$saved_LIBS -static"
+		PKG_CHECK_MODULES([DEVMAPPER_STATIC], [devmapper >= 1.02.27],,[
+			DEVMAPPER_STATIC_LIBS=$DEVMAPPER_LIBS
+			if test "x$enable_selinux" = "xyes"; then
+				AC_CHECK_LIB(sepol, sepol_bool_set)
+				AC_CHECK_LIB(selinux, is_selinux_enabled)
+				DEVMAPPER_STATIC_LIBS="$DEVMAPPER_STATIC_LIBS $LIBS"
+			fi
+		])
+		LIBS="$saved_LIBS $DEVMAPPER_STATIC_LIBS"
+		AC_CHECK_LIB(devmapper, dm_task_set_uuid,,
+			AC_MSG_ERROR([Cannot link with static device-mapper library.]))
+	fi
 
 	dnl Try to detect uuid static library.
 	LIBS="$saved_LIBS -static"
@@ -711,9 +743,6 @@ else
 	PKG_CHECK_VAR([systemd_tmpfilesdir], [systemd], [tmpfilesdir], [], [systemd_tmpfilesdir=no])
 fi
 AC_MSG_RESULT([$systemd_tmpfilesdir])
-
-AC_SUBST([DEVMAPPER_LIBS])
-AC_SUBST([DEVMAPPER_STATIC_LIBS])
 
 AC_SUBST([PWQUALITY_LIBS])
 AC_SUBST([PWQUALITY_STATIC_LIBS])

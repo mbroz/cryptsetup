@@ -19,6 +19,7 @@ pkgconfig = import('pkgconfig')
 cc = meson.get_compiler('c')
 nop_command = find_program('echo')
 conf = configuration_data()
+is_linux = host_machine.system() == 'linux'
 
 PACKAGE_VERSION = meson.project_version()
 conf.set_quoted('PACKAGE_VERSION', PACKAGE_VERSION)
@@ -360,51 +361,84 @@ endif
 # ==========================================================================
 # libdevmapper
 
+opt_devmapper = get_option('devmapper')
 devmapper = dependency('devmapper',
     version: '>= 1.02.03',
-    required: false,
+    required: opt_devmapper,
     static: enable_static)
-if not devmapper.found()
-    message('devmapper not found using pkgconf')
+if not devmapper.found() and not opt_devmapper.disabled()
     devmapper = cc.find_library('devmapper',
+        required: opt_devmapper,
         static: enable_static)
-    assert(cc.has_function('dm_task_set_name',
-            prefix: '#include <libdevmapper.h>', dependencies: devmapper),
-        'You need the device-mapper library.')
+    if devmapper.found()
+        assert(cc.has_function('dm_task_set_name',
+                prefix: '#include <libdevmapper.h>', dependencies: devmapper),
+            'You need the device-mapper library.')
 
-    assert(cc.has_function('dm_task_set_message',
-            prefix: '#include <libdevmapper.h>', dependencies: devmapper),
-        'The device-mapper library on your system is too old.')
+        assert(cc.has_function('dm_task_set_message',
+                prefix: '#include <libdevmapper.h>', dependencies: devmapper),
+            'The device-mapper library on your system is too old.')
+    endif
 endif
+use_devmapper = devmapper.found()
+conf.set10('HAVE_DEVMAPPER', use_devmapper)
 
-foreach function : [
-    'dm_device_get_name',
-    'dm_device_has_holders',
-    'dm_device_has_mounted_fs',
-    'dm_task_deferred_remove',
-    'dm_task_retry_remove',
-    'dm_task_secure_data',
-]
-    has_function = cc.has_function(function,
-        prefix: '#include <libdevmapper.h>', dependencies: devmapper)
-    conf.set10('HAVE_DECL_' + function.underscorify().to_upper(), has_function)
-endforeach
+if use_devmapper
+    foreach function : [
+        'dm_device_get_name',
+        'dm_device_has_holders',
+        'dm_device_has_mounted_fs',
+        'dm_task_deferred_remove',
+        'dm_task_retry_remove',
+        'dm_task_secure_data',
+    ]
+        has_function = cc.has_function(function,
+            prefix: '#include <libdevmapper.h>', dependencies: devmapper)
+        conf.set10('HAVE_DECL_' + function.underscorify().to_upper(), has_function)
+    endforeach
 
-foreach symbol : [
-    'DM_DEVICE_GET_TARGET_VERSION',
-    'DM_UDEV_DISABLE_DISK_RULES_FLAG',
-]
-    has_symbol = cc.has_header_symbol('libdevmapper.h', symbol,
-        dependencies: devmapper)
-    conf.set10('HAVE_DECL_' + symbol.underscorify().to_upper(), has_symbol)
-endforeach
+    foreach symbol : [
+        'DM_DEVICE_GET_TARGET_VERSION',
+        'DM_UDEV_DISABLE_DISK_RULES_FLAG',
+    ]
+        has_symbol = cc.has_header_symbol('libdevmapper.h', symbol,
+            dependencies: devmapper)
+        conf.set10('HAVE_DECL_' + symbol.underscorify().to_upper(), has_symbol)
+    endforeach
 
-if cc.has_header_symbol('libdevmapper.h', 'DM_UDEV_DISABLE_DISK_RULES_FLAG',
-        dependencies: devmapper)
-    conf.set10('USE_UDEV', true,
-        description: 'Try to use udev synchronisation?')
+    if cc.has_header_symbol('libdevmapper.h', 'DM_UDEV_DISABLE_DISK_RULES_FLAG',
+            dependencies: devmapper)
+        conf.set10('USE_UDEV', true,
+            description: 'Try to use udev synchronisation?')
+    else
+        warning('The device-mapper library on your system has no udev support, udev support disabled.')
+    endif
 else
-    warning('The device-mapper library on your system has no udev support, udev support disabled.')
+    # Provide fallback values so that config.h is complete even without devmapper.
+    foreach function : [
+        'dm_device_get_name',
+        'dm_device_has_holders',
+        'dm_device_has_mounted_fs',
+        'dm_task_deferred_remove',
+        'dm_task_retry_remove',
+        'dm_task_secure_data',
+    ]
+        conf.set10('HAVE_DECL_' + function.underscorify().to_upper(), false)
+    endforeach
+    foreach symbol : [
+        'DM_DEVICE_GET_TARGET_VERSION',
+        'DM_UDEV_DISABLE_DISK_RULES_FLAG',
+    ]
+        conf.set10('HAVE_DECL_' + symbol.underscorify().to_upper(), false)
+    endforeach
+
+    # Auto-disable tools that require device-mapper.
+    if get_option('cryptsetup')
+        warning('Disabling cryptsetup (requires device-mapper).')
+    endif
+    if get_option('integritysetup')
+        warning('Disabling integritysetup (requires device-mapper).')
+    endif
 endif
 
 # ==========================================================================
@@ -450,6 +484,10 @@ endif
 crypto_backend_library = []
 use_internal_pbkdf2 = false
 use_internal_argon2 = true
+
+if get_option('crypto-backend') == 'kernel' and not is_linux
+    error('The kernel crypto backend (AF_ALG) is only available on Linux.')
+endif
 
 if get_option('crypto-backend') == 'gcrypt'
     req_version = '1.1.42'

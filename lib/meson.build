@@ -11,12 +11,14 @@ libcryptsetup_sym_path = join_paths(meson.current_source_dir(), 'libcryptsetup.s
 libcryptsetup_deps = [
     crypto_backend_library,
     uuid,
-    devmapper,
     libargon2_external,
     jsonc,
     blkid,
     dl,
 ]
+if use_devmapper
+    libcryptsetup_deps += devmapper
+endif
 
 libcryptsetup_sources = files(
     'bitlk/bitlk.c',

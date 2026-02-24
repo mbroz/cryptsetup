@@ -5,6 +5,7 @@ option('crypto-backend', type : 'combo', choices : ['gcrypt', 'openssl', 'nss', 
 option('cryptsetup', type : 'boolean', description : 'cryptsetup support', value : true)
 option('default-integrity-keyfile-size-maxkb', type : 'integer', description : 'maximum integritysetup keyfile size (in KiB)', value : 4)
 option('default-keyfile-size-maxkb', type : 'integer', description : 'maximum keyfile size (in KiB)', value : 8192)
+option('devmapper', type : 'feature', description : 'device-mapper support', value : 'auto')
 option('default-loopaes-cipher', type : 'string', description : 'cipher for loop-AES mode', value : 'aes')
 option('default-loopaes-keybits', type : 'integer', description : 'key length in bits for loop-AES mode', value : 256)
 option('default-luks1-cipher', type : 'string', description : 'cipher for LUKS1', value : 'aes')
