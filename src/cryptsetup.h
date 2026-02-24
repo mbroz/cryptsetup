@@ -21,6 +21,8 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <limits.h>
+
+#include "lib/errno_compat.h"
 #include <ctype.h>
 #include <fcntl.h>
 #include <popt.h>

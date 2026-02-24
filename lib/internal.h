@@ -20,6 +20,8 @@
 #include <fcntl.h>
 #include <assert.h>
 
+#include "errno_compat.h"
+
 #include "nls.h"
 #include "bitops.h"
 #include "utils_blkid.h"
