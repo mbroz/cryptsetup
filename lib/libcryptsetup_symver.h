@@ -59,7 +59,7 @@
      __attribute__((__symver__(#_public_sym _ver_str #_maj "." #_min)))
 #endif
 
-#if !defined(_CRYPT_SYMVER) && (defined(__GNUC__) || defined(__clang__))
+#if !defined(_CRYPT_SYMVER) && (defined(__GNUC__) || defined(__clang__)) && !defined(__APPLE__)
 #  define _CRYPT_SYMVER(_local_sym, _public_sym, _ver_str, _maj, _min)         \
      __asm__(".symver " #_local_sym "," #_public_sym _ver_str #_maj "." #_min);
 #endif

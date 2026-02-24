@@ -15,6 +15,11 @@
 #include <sys/stat.h>
 #include <sys/utsname.h>
 
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#include <mach/mach.h>
+#endif
+
 #include "internal.h"
 
 size_t crypt_getpagesize(void)
@@ -53,6 +58,19 @@ uint64_t crypt_getphysmemory_kb(void)
 
 uint64_t crypt_getphysmemoryfree_kb(void)
 {
+#ifdef __APPLE__
+	vm_size_t page_size;
+	vm_statistics64_data_t vm_stats;
+	mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+	mach_port_t mach_port = mach_host_self();
+
+	host_page_size(mach_port, &page_size);
+	if (host_statistics64(mach_port, HOST_VM_INFO64,
+	    (host_info64_t)&vm_stats, &count) != KERN_SUCCESS)
+		return 0;
+
+	return (uint64_t)vm_stats.free_count * page_size / 1024;
+#else
 	long pagesize, phys_pages;
 	uint64_t phys_memoryfree_kb, page_size_kb;
 
@@ -71,6 +89,7 @@ uint64_t crypt_getphysmemoryfree_kb(void)
 
 	/* coverity[return_overflow:FALSE] */
 	return phys_memoryfree_kb;
+#endif
 }
 
 bool crypt_swapavailable(void)
