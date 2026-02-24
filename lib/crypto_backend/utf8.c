@@ -16,9 +16,9 @@
  */
 
 #include <errno.h>
-#include <endian.h>
 
 #include "crypto_backend.h"
+#include "bitops.h"
 
 static inline bool utf16_is_surrogate(char16_t c)
 {
