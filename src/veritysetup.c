@@ -264,6 +264,21 @@ out:
 	return r;
 }
 
+static int action_verify(void)
+{
+	if (action_argc < 3 && !ARG_SET(OPT_ROOT_HASH_FILE_ID)) {
+		log_err(_("Command requires <root_hash> or --root-hash-file option as argument."));
+		return -EINVAL;
+	}
+
+	return _activate(NULL,
+			 action_argv[0],
+			 action_argv[1],
+			 ARG_SET(OPT_ROOT_HASH_FILE_ID) ? NULL : action_argv[2],
+			 CRYPT_VERITY_CHECK_HASH);
+}
+
+#if HAVE_DEVMAPPER
 static int action_open(void)
 {
 	if (action_argc < 4 && !ARG_SET(OPT_ROOT_HASH_FILE_ID)) {
@@ -279,20 +294,6 @@ static int action_open(void)
 			 action_argv[2],
 			 ARG_SET(OPT_ROOT_HASH_FILE_ID) ? NULL : action_argv[3],
 			 ARG_SET(OPT_ROOT_HASH_SIGNATURE_ID) ? CRYPT_VERITY_ROOT_HASH_SIGNATURE : 0);
-}
-
-static int action_verify(void)
-{
-	if (action_argc < 3 && !ARG_SET(OPT_ROOT_HASH_FILE_ID)) {
-		log_err(_("Command requires <root_hash> or --root-hash-file option as argument."));
-		return -EINVAL;
-	}
-
-	return _activate(NULL,
-			 action_argv[0],
-			 action_argv[1],
-			 ARG_SET(OPT_ROOT_HASH_FILE_ID) ? NULL : action_argv[2],
-			 CRYPT_VERITY_CHECK_HASH);
 }
 
 static int action_close(void)
@@ -450,6 +451,7 @@ out:
 		r = 0;
 	return r;
 }
+#endif /* HAVE_DEVMAPPER */
 
 static int action_dump(void)
 {
@@ -484,9 +486,11 @@ static struct action_type {
 } action_types[] = {
 	{ "format",	action_format, 2, N_("<data_device> <hash_device>"),N_("format device") },
 	{ "verify",	action_verify, 2, N_("<data_device> <hash_device> [<root_hash>]"),N_("verify device") },
+#if HAVE_DEVMAPPER
 	{ "open",	action_open,   3, N_("<data_device> <name> <hash_device> [<root_hash>]"),N_("open device as <name>") },
 	{ "close",	action_close,  1, N_("<name>"),N_("close device (remove mapping)") },
 	{ "status",	action_status, 1, N_("<name>"),N_("show active device status") },
+#endif
 	{ "dump",	action_dump,   1, N_("<hash_device>"),N_("show on-disk information") },
 	{ NULL, NULL, 0, NULL, NULL }
 };
@@ -622,6 +626,7 @@ int main(int argc, const char **argv)
 		action_argc++;
 
 	/* Handle aliases */
+#if HAVE_DEVMAPPER
 	if (!strcmp(aname, "create") && action_argc > 1) {
 		/* create command had historically switched arguments */
 		if (action_argv[0] && action_argv[1]) {
@@ -633,6 +638,7 @@ int main(int argc, const char **argv)
 	} else if (!strcmp(aname, "remove")) {
 		aname = "close";
 	}
+#endif
 
 	for (action = action_types; action->type; action++)
 		if (strcmp(action->type, aname) == 0)
