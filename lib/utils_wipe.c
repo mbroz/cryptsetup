@@ -11,11 +11,14 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#if HAVE_LINUX_BLKDEV
 #include <linux/fs.h>
+#endif
 #include "internal.h"
 #include "luks2/luks2_internal.h"
 #include "luks2/hw_opal/hw_opal.h"
 
+#if HAVE_LINUX_BLKDEV
 /* block device zeroout ioctls, introduced in Linux kernel 3.7 */
 #ifndef BLKZEROOUT
 #define BLKZEROOUT _IO(0x12,127)
@@ -40,6 +43,15 @@ static int wipe_zeroout(struct crypt_device *cd, int devfd,
 
 	return 0;
 }
+#else /* HAVE_LINUX_BLKDEV */
+static int wipe_zeroout(struct crypt_device *cd __attribute__((unused)),
+			int devfd __attribute__((unused)),
+			uint64_t offset __attribute__((unused)),
+			uint64_t length __attribute__((unused)))
+{
+	return -ENOTSUP;
+}
+#endif /* HAVE_LINUX_BLKDEV */
 
 /*
  * Wipe using Peter Gutmann method described in

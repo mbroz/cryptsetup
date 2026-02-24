@@ -14,7 +14,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#if HAVE_LINUX_BLKDEV
 #include <linux/fs.h>
+#endif
 #include <unistd.h>
 #if HAVE_SYS_SYSMACROS_H
 # include <sys/sysmacros.h>     /* for major, minor */
@@ -75,10 +77,14 @@ static size_t device_block_size_fd(int fd, size_t *min_size)
 	if (S_ISREG(st.st_mode))
 		bsize = device_fs_block_size_fd(fd);
 	else {
+#if HAVE_LINUX_BLKDEV
 		if (ioctl(fd, BLKSSZGET, &arg) < 0)
 			bsize = crypt_getpagesize();
 		else
 			bsize = (size_t)arg;
+#else
+		bsize = crypt_getpagesize();
+#endif
 	}
 
 	if (!min_size)
@@ -109,8 +115,10 @@ static size_t device_block_phys_size_fd(int fd)
 
 	if (S_ISREG(st.st_mode))
 		bsize = MAX_SECTOR_SIZE;
+#if HAVE_LINUX_BLKDEV
 	else if (ioctl(fd, BLKPBSZGET, &arg) >= 0)
 		bsize = (size_t)arg;
+#endif
 
 	return bsize;
 }
@@ -489,10 +497,12 @@ const char *device_path(const struct device *device)
 }
 
 /* block device topology ioctls, introduced in 2.6.32 */
+#if HAVE_LINUX_BLKDEV
 #ifndef BLKIOMIN
 #define BLKIOMIN    _IO(0x12,120)
 #define BLKIOOPT    _IO(0x12,121)
 #define BLKALIGNOFF _IO(0x12,122)
+#endif
 #endif
 
 void device_topology_alignment(struct crypt_device *cd,
@@ -516,6 +526,7 @@ void device_topology_alignment(struct crypt_device *cd,
 	if (fd == -1)
 		return;
 
+#if HAVE_LINUX_BLKDEV
 	/* minimum io size */
 	if (ioctl(fd, BLKIOMIN, &min_io_size) == -1) {
 		log_dbg(cd, "Topology info for %s not supported, using default alignment %lu bytes.",
@@ -551,6 +562,10 @@ void device_topology_alignment(struct crypt_device *cd,
 
 	log_dbg(cd, "Topology: IO (%u/%u), offset = %lu; Required alignment is %lu bytes.",
 		min_io_size, opt_io_size, *alignment_offset, *required_alignment);
+#else
+	log_dbg(cd, "Topology info for %s not supported, using default alignment %lu bytes.",
+		device->path, default_alignment);
+#endif
 out:
 	(void)close(fd);
 }
@@ -624,6 +639,7 @@ int device_read_ahead(struct device *device, uint32_t *read_ahead)
 	if (!device)
 		return 0;
 
+#if HAVE_LINUX_BLKDEV
 	if ((fd = open(device->path, O_RDONLY)) < 0)
 		return 0;
 
@@ -632,6 +648,7 @@ int device_read_ahead(struct device *device, uint32_t *read_ahead)
 
 	if (r)
 		*read_ahead = (uint32_t) read_ahead_long;
+#endif
 
 	return r;
 }
@@ -655,8 +672,11 @@ int device_size(struct device *device, uint64_t *size)
 	if (S_ISREG(st.st_mode)) {
 		*size = (uint64_t)st.st_size;
 		r = 0;
-	} else if (ioctl(devfd, BLKGETSIZE64, size) >= 0)
+	}
+#if HAVE_LINUX_BLKDEV
+	else if (ioctl(devfd, BLKGETSIZE64, size) >= 0)
 		r = 0;
+#endif
 out:
 	close(devfd);
 	return r;
@@ -764,6 +784,7 @@ static int device_info(struct crypt_device *cd,
 		 * check whether BKROGET says that it is read-only. E.g. read-only loop
 		 * devices may be opened read-write but are read-only according to BLKROGET
 		 */
+#if HAVE_LINUX_BLKDEV
 		if (real_readonly == 0 && (r = ioctl(fd, BLKROGET, &real_readonly)) < 0)
 			goto out;
 
@@ -772,6 +793,10 @@ static int device_info(struct crypt_device *cd,
 			real_size >>= SECTOR_SHIFT;
 			goto out;
 		}
+#else
+		r = -ENOTSUP;
+		goto out;
+#endif
 	}
 out:
 	if (fd != -1)

@@ -7,8 +7,10 @@
  */
 
 #include <sys/ioctl.h>
+#if HAVE_LINUX_BLKDEV
 #include <linux/fs.h>
-#include <uuid/uuid.h>
+#endif
+#include "utils_uuid.h"
 
 #include "cryptsetup.h"
 #include "cryptsetup_args.h"
@@ -862,6 +864,7 @@ static int copy_data(struct reenc_ctx *rc)
 		goto out;
 	}
 
+#if HAVE_LINUX_BLKDEV
 	if (ioctl(fd_old, BLKGETSIZE64, &rc->device_size_org_real) < 0) {
 		log_err(_("Cannot get device size."));
 		goto out;
@@ -871,6 +874,11 @@ static int copy_data(struct reenc_ctx *rc)
 		log_err(_("Cannot get device size."));
 		goto out;
 	}
+#else
+	log_err(_("LUKS1 offline reencryption requires Linux block devices."));
+	r = -ENOTSUP;
+	goto out;
+#endif
 
 	if (ARG_SET(OPT_DEVICE_SIZE_ID))
 		rc->device_size = ARG_UINT64(OPT_DEVICE_SIZE_ID);
