@@ -189,6 +189,9 @@ foreach function : [
     conf.set10('HAVE_' + function.underscorify().to_upper(), cc.has_function(function))
 endforeach
 
+conf.set10('HAVE_ARC4RANDOM', cc.has_function('arc4random_buf'))
+conf.set10('HAVE_GETENTROPY', cc.has_function('getentropy'))
+
 # no need to enable large file support, as it is on be default in meson
 # https://github.com/mesonbuild/meson/commit/853634a48da025c59eef70161dba0d150833f60d
 

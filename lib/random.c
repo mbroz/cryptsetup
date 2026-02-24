@@ -9,11 +9,48 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/select.h>
+#if HAVE_GETENTROPY && !HAVE_ARC4RANDOM
+#include <sys/random.h>
+#endif
 
 #include "libcryptsetup.h"
 #include "internal.h"
 
 static int random_initialised = 0;
+
+/*
+ * Portable RNG: use arc4random_buf() or getentropy() on non-Linux platforms
+ * where /dev/urandom and /dev/random may not exist. On Linux the traditional
+ * device-file path is always used so existing behaviour is unchanged.
+ */
+#if !HAVE_LINUX_DEVPATH && (HAVE_ARC4RANDOM || HAVE_GETENTROPY)
+#define USE_PORTABLE_RNG 1
+#else
+#define USE_PORTABLE_RNG 0
+#endif
+
+#if USE_PORTABLE_RNG
+#if HAVE_ARC4RANDOM
+static int _get_random_portable(char *buf, size_t len)
+{
+	arc4random_buf(buf, len);
+	return 0;
+}
+#elif HAVE_GETENTROPY
+static int _get_random_portable(char *buf, size_t len)
+{
+	while (len) {
+		/* getentropy() is limited to 256 bytes per call */
+		size_t n = len > 256 ? 256 : len;
+		if (getentropy(buf, n))
+			return -EINVAL;
+		buf += n;
+		len -= n;
+	}
+	return 0;
+}
+#endif
+#endif /* USE_PORTABLE_RNG */
 
 #define URANDOM_DEVICE	"/dev/urandom"
 static int urandom_fd = -1;
@@ -128,12 +165,20 @@ static int _get_random(struct crypt_device *ctx, char *buf, size_t len)
 
 	return 0;
 }
+
 /* Initialisation of both RNG file descriptors is mandatory */
 int crypt_random_init(struct crypt_device *ctx)
 {
 	if (random_initialised)
 		return 0;
 
+#if USE_PORTABLE_RNG
+	if (crypt_fips_mode())
+		log_verbose(ctx, _("Running in FIPS mode."));
+
+	random_initialised = 1;
+	return 0;
+#else
 	/* Used for CRYPT_RND_NORMAL */
 	if(urandom_fd == -1)
 		urandom_fd = open(URANDOM_DEVICE, O_RDONLY | O_CLOEXEC);
@@ -155,6 +200,7 @@ err:
 	crypt_random_exit();
 	log_err(ctx, _("Fatal error during RNG initialisation."));
 	return -ENOSYS;
+#endif /* !USE_PORTABLE_RNG */
 }
 
 /* coverity[ -taint_source : arg-1 ] */
@@ -164,19 +210,30 @@ int crypt_random_get(struct crypt_device *ctx, char *buf, size_t len, int qualit
 
 	switch(quality) {
 	case CRYPT_RND_NORMAL:
+#if USE_PORTABLE_RNG
+		status = _get_random_portable(buf, len);
+#else
 		status = _get_urandom(buf, len);
+#endif
 		break;
 	case CRYPT_RND_SALT:
 		if (crypt_fips_mode())
 			status = crypt_backend_rng(buf, len, quality, 1);
 		else
+#if USE_PORTABLE_RNG
+			status = _get_random_portable(buf, len);
+#else
 			status = _get_urandom(buf, len);
+#endif
 		break;
 	case CRYPT_RND_KEY:
 		if (crypt_fips_mode()) {
 			status = crypt_backend_rng(buf, len, quality, 1);
 			break;
 		}
+#if USE_PORTABLE_RNG
+		status = _get_random_portable(buf, len);
+#else
 		rng_type = ctx ? crypt_get_rng_type(ctx) :
 				 crypt_random_default_key_rng();
 		switch (rng_type) {
@@ -189,6 +246,7 @@ int crypt_random_get(struct crypt_device *ctx, char *buf, size_t len, int qualit
 		default:
 			abort();
 		}
+#endif
 		break;
 	default:
 		log_err(ctx, _("Unknown RNG quality requested."));
@@ -205,6 +263,7 @@ void crypt_random_exit(void)
 {
 	random_initialised = 0;
 
+#if !USE_PORTABLE_RNG
 	if(random_fd != -1) {
 		(void)close(random_fd);
 		random_fd = -1;
@@ -214,10 +273,14 @@ void crypt_random_exit(void)
 		(void)close(urandom_fd);
 		urandom_fd = -1;
 	}
+#endif
 }
 
 int crypt_random_default_key_rng(void)
 {
+#if USE_PORTABLE_RNG
+	return CRYPT_RNG_URANDOM;
+#else
 	/* coverity[pointless_string_compare] */
 	if (!strcmp(DEFAULT_RNG, RANDOM_DEVICE))
 		return CRYPT_RNG_RANDOM;
@@ -228,4 +291,5 @@ int crypt_random_default_key_rng(void)
 
 	/* RNG misconfiguration is fatal */
 	abort();
+#endif
 }

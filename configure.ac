@@ -112,6 +112,9 @@ case "$host_os" in
     linux*) AC_DEFINE([HAVE_LINUX_DEVPATH], [1],
 	[Define to 1 on Linux where sysfs is available.]) ;;
 esac
+AC_CHECK_FUNC([arc4random_buf],
+	[AC_DEFINE([HAVE_ARC4RANDOM], [1], [Define to 1 if arc4random_buf is available.])])
+AC_CHECK_FUNCS([getentropy])
 
 AC_ARG_ENABLE([keyring],
 	AS_HELP_STRING([--disable-keyring], [disable kernel keyring support and builtin kernel keyring token]),
