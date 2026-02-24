@@ -845,3 +845,16 @@ subdir('src')
 subdir('scripts')
 subdir('tokens')
 subdir('tests')
+
+# ==========================================================================
+# Build configuration summary
+
+summary({
+    'device-mapper': use_devmapper,
+    'loop devices': conf.get('HAVE_LOOP') == 1,
+    'linux block ioctls': conf.get('HAVE_LINUX_BLKDEV') == 1,
+    'linux device paths': conf.get('HAVE_LINUX_DEVPATH') == 1,
+    'arc4random_buf': conf.get('HAVE_ARC4RANDOM') == 1,
+    'getentropy': conf.get('HAVE_GETENTROPY') == 1,
+    'sys/utsname.h': conf.get('HAVE_SYS_UTSNAME_H') == 1,
+}, section: 'Platform features')
