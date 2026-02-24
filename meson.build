@@ -153,7 +153,7 @@ endif
 uuid = dependency('uuid',
     static: enable_static)
 assert(cc.has_function('uuid_clear',
-        prefix: '#include <uuid.h>', dependencies: uuid),
+        prefix: '#include <uuid/uuid.h>', dependencies: uuid),
     'You need the uuid library.')
 
 # ==========================================================================
