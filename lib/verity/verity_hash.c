@@ -336,6 +336,15 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd, bool verify,
 			if (r)
 				goto out;
 		} else {
+			/*
+			 * Flush the write buffer before re-reading the hash
+			 * device through a second file handle.  On Linux the
+			 * unified page cache makes this optional; on macOS
+			 * and other BSDs, unflushed data is invisible to a
+			 * separate FILE* opened on the same path.
+			 */
+			fflush(hash_file);
+
 			hash_file_2 = fopen(device_path(crypt_metadata_device(cd)), "r");
 			if (!hash_file_2) {
 				log_err(cd, _("Cannot open device %s."),
