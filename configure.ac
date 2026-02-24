@@ -80,7 +80,7 @@ AC_C_RESTRICT
 
 AC_HEADER_DIRENT
 AC_CHECK_HEADERS(fcntl.h malloc.h inttypes.h uchar.h sys/ioctl.h sys/mman.h \
-	sys/sysmacros.h sys/statvfs.h ctype.h unistd.h locale.h byteswap.h endian.h stdint.h)
+	sys/sysmacros.h sys/statvfs.h sys/utsname.h ctype.h unistd.h locale.h byteswap.h endian.h stdint.h)
 AC_CHECK_DECLS([O_CLOEXEC],,[AC_DEFINE([O_CLOEXEC],[0], [Defined to 0 if not provided])],
 [[
 #ifdef HAVE_FCNTL_H
