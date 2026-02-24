@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "errno_compat.h"
 #include "utils_io.h"
 
 enum fn_enum {

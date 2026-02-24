@@ -78,14 +78,18 @@ if enable_static
         ],
         install: true)
 else
+    libcryptsetup_link_args = []
+    if is_linux
+        libcryptsetup_link_args += [
+            '-Wl,--version-script=' +
+            libcryptsetup_sym_path,
+        ]
+    endif
     libcryptsetup = library('cryptsetup',
         libcryptsetup_sources,
         dependencies: libcryptsetup_deps,
         version: libcryptsetup_version,
-        link_args: [
-            '-Wl,--version-script=' +
-            libcryptsetup_sym_path,
-        ],
+        link_args: libcryptsetup_link_args,
         link_with: [
             libcrypto_backend,
             libutils_io,
