@@ -522,6 +522,9 @@ fi
 AC_SUBST([DEVMAPPER_LIBS])
 AC_SUBST([DEVMAPPER_STATIC_LIBS])
 
+AM_CONDITIONAL([HAVE_DEVMAPPER_COND], [test "x$use_devmapper" = "xyes"])
+AM_CONDITIONAL([IS_LINUX], [case "$host_os" in linux*) true ;; *) false ;; esac])
+
 dnl Check for JSON-C used in LUKS2
 PKG_CHECK_MODULES([JSON_C], [json-c])
 AC_CHECK_DECLS([json_object_object_add_ex], [], [], [#include <json-c/json.h>])

@@ -1,7 +1,13 @@
-TESTS = 00modules-test \
+TESTS = \
+	compat-args-test \
+	keyring-test \
+	vectors-test \
+	unit-utils-crypt-test
+
+if HAVE_DEVMAPPER_COND
+TESTS += \
 	api-test \
 	api-test-2 \
-	compat-args-test \
 	compat-test \
 	compat-test2 \
 	compat-test-opal \
@@ -14,24 +20,29 @@ TESTS = 00modules-test \
 	tcrypt-compat-test \
 	luks1-compat-test \
 	device-test \
-	keyring-test \
 	keyring-compat-test \
 	keyring-trusted-test \
 	luks2-validation-test \
 	luks2-integrity-test \
-	vectors-test \
-	blockwise-compat-test \
 	bitlk-compat-test \
 	fvault2-compat-test \
-	run-all-symbols \
-	unit-utils-crypt-test \
-	unit-wipe-test \
 	reencryption-compat-test \
 	luks2-reencryption-test \
 	luks2-reencryption-mangle-test
+endif
+
+if IS_LINUX
+TESTS += \
+	00modules-test \
+	blockwise-compat-test \
+	run-all-symbols \
+	unit-wipe-test
+endif
 
 if VERITYSETUP
+if HAVE_DEVMAPPER_COND
 TESTS += verity-compat-test
+endif
 endif
 
 if INTEGRITYSETUP
@@ -167,7 +178,15 @@ all_symbols_test_LDFLAGS = $(AM_LDFLAGS) -ldl
 all_symbols_test_CFLAGS = $(AM_CFLAGS)
 all_symbols_test_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
-check_PROGRAMS = api-test api-test-2 differ crypto-check vectors-test unit-utils-io unit-utils-crypt-test unit-wipe all-symbols-test
+check_PROGRAMS = differ crypto-check vectors-test unit-utils-io unit-utils-crypt-test
+
+if HAVE_DEVMAPPER_COND
+check_PROGRAMS += api-test api-test-2
+endif
+
+if IS_LINUX
+check_PROGRAMS += unit-wipe all-symbols-test
+endif
 
 check-programs: test-symbols-list.h $(check_PROGRAMS) fake_systemd_tpm_path.so
 
