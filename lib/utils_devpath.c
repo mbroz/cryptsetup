@@ -8,6 +8,8 @@
  * Copyright (C) 2009-2025 Milan Broz
  */
 
+#if HAVE_LINUX_DEVPATH
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -527,3 +529,74 @@ int lookup_by_sysfs_uuid_field(const char *dm_uuid)
 
 	return r;
 }
+
+#else /* HAVE_LINUX_DEVPATH */
+
+#include <errno.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "internal.h"
+
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+char *crypt_lookup_dev(const char *dev_id)
+{
+	return NULL;
+}
+
+int crypt_dev_get_partition_number(const char *dev_path)
+{
+	return 0;
+}
+
+int crypt_dev_is_rotational(int major, int minor)
+{
+	return 0;
+}
+
+int crypt_dev_is_dax(int major, int minor)
+{
+	return 0;
+}
+
+int crypt_dev_is_zoned(int major, int minor)
+{
+	return 0;
+}
+
+int crypt_dev_is_nop_dif(int major, int minor, uint32_t *tag_size)
+{
+	return 0;
+}
+
+int crypt_dev_is_partition(const char *dev_path)
+{
+	return 0;
+}
+
+char *crypt_get_partition_device(const char *dev_path, uint64_t offset, uint64_t size)
+{
+	return NULL;
+}
+
+uint64_t crypt_dev_partition_offset(const char *dev_path)
+{
+	return 0;
+}
+
+char *crypt_get_base_device(const char *dev_path)
+{
+	return NULL;
+}
+
+int lookup_by_disk_id(const char *dm_uuid)
+{
+	return 0;
+}
+
+int lookup_by_sysfs_uuid_field(const char *dm_uuid)
+{
+	return 0;
+}
+
+#endif /* HAVE_LINUX_DEVPATH */

@@ -108,6 +108,10 @@ AC_CHECK_HEADER([linux/loop.h],
 	[AC_DEFINE([HAVE_LOOP], [1], [Define to 1 if linux/loop.h is available.])])
 AC_CHECK_HEADER([linux/fs.h],
 	[AC_DEFINE([HAVE_LINUX_BLKDEV], [1], [Define to 1 if linux/fs.h is available.])])
+case "$host_os" in
+    linux*) AC_DEFINE([HAVE_LINUX_DEVPATH], [1],
+	[Define to 1 on Linux where sysfs is available.]) ;;
+esac
 
 AC_ARG_ENABLE([keyring],
 	AS_HELP_STRING([--disable-keyring], [disable kernel keyring support and builtin kernel keyring token]),

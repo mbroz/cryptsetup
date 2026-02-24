@@ -112,6 +112,7 @@ endforeach
 
 conf.set10('HAVE_LOOP', cc.has_header('linux/loop.h'))
 conf.set10('HAVE_LINUX_BLKDEV', cc.has_header('linux/fs.h'))
+conf.set10('HAVE_LINUX_DEVPATH', is_linux)
 
 fcntl_header = conf.get('HAVE_FCNTL_H') == 1 ? 'fcntl.h' : 'stdio.h'
 if cc.has_header_symbol(fcntl_header, 'O_CLOEXEC')
