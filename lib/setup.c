@@ -12,7 +12,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#if HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
+#endif
 #include <errno.h>
 
 #include "libcryptsetup.h"
@@ -258,7 +260,9 @@ int crypt_opal_supported(struct crypt_device *cd, struct device *opal_device)
 
 int init_crypto(struct crypt_device *ctx)
 {
+#if HAVE_SYS_UTSNAME_H
 	struct utsname uts;
+#endif
 	int r;
 
 	r = crypt_random_init(ctx);
@@ -275,9 +279,11 @@ int init_crypto(struct crypt_device *ctx)
 		log_dbg(ctx, "Crypto backend (%s%s) initialized in cryptsetup library version %s.",
 			crypt_backend_version(), crypt_argon2_version(), PACKAGE_VERSION);
 
+#if HAVE_SYS_UTSNAME_H
 		if (!uname(&uts))
 			log_dbg(ctx, "Detected kernel %s %s %s.",
 				uts.sysname, uts.release, uts.machine);
+#endif
 		_crypto_logged = 1;
 	}
 
