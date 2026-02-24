@@ -104,6 +104,9 @@ if test "x$enable_devmapper" != "xno"; then
 		fi])
 fi
 
+AC_CHECK_HEADER([linux/loop.h],
+	[AC_DEFINE([HAVE_LOOP], [1], [Define to 1 if linux/loop.h is available.])])
+
 AC_ARG_ENABLE([keyring],
 	AS_HELP_STRING([--disable-keyring], [disable kernel keyring support and builtin kernel keyring token]),
 	[], [enable_keyring=yes])

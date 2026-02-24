@@ -110,6 +110,8 @@ foreach header : required_headers
     conf.set10('HAVE_' + header.underscorify().to_upper(), cc.has_header(header))
 endforeach
 
+conf.set10('HAVE_LOOP', cc.has_header('linux/loop.h'))
+
 fcntl_header = conf.get('HAVE_FCNTL_H') == 1 ? 'fcntl.h' : 'stdio.h'
 if cc.has_header_symbol(fcntl_header, 'O_CLOEXEC')
     conf.set10('HAVE_DECL_O_CLOEXEC', true)

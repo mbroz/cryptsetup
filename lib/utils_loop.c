@@ -6,6 +6,8 @@
  * Copyright (C) 2009-2025 Milan Broz
  */
 
+#if HAVE_LOOP
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -316,3 +318,38 @@ int crypt_loop_device(const char *loop)
 
 	return 1;
 }
+
+#else /* HAVE_LOOP */
+
+#include <stddef.h>
+#include "utils_loop.h"
+
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+int crypt_loop_attach(char **loop, const char *file, int offset,
+		      int autoclear, int *readonly, size_t blocksize)
+{
+	return -1;
+}
+
+int crypt_loop_detach(const char *loop)
+{
+	return 0;
+}
+
+int crypt_loop_resize(const char *loop)
+{
+	return 0;
+}
+
+char *crypt_loop_backing_file(const char *loop)
+{
+	return NULL;
+}
+
+int crypt_loop_device(const char *loop)
+{
+	return 0;
+}
+
+#endif /* HAVE_LOOP */
