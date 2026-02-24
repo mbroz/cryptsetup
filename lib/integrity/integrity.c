@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <uuid/uuid.h>
+#include "utils_uuid.h"
 
 #include "integrity.h"
 #include "internal.h"
@@ -438,7 +438,7 @@ int INTEGRITY_format(struct crypt_device *cd,
 	struct device *p_metadata_device, *p_data_device, *reduced_device = NULL;
 
 	uuid_generate(tmp_uuid_bin);
-	uuid_unparse(tmp_uuid_bin, tmp_uuid);
+	crypt_uuid_unparse(tmp_uuid_bin, tmp_uuid);
 
 	r = snprintf(tmp_name, sizeof(tmp_name), "temporary-cryptsetup-%s", tmp_uuid);
 	if (r < 0 || (size_t)r >= sizeof(tmp_name))

@@ -7,7 +7,7 @@
  */
 
 #include "luks2_internal.h"
-#include <uuid/uuid.h>
+#include "utils_uuid.h"
 
 struct area {
 	uint64_t offset;
@@ -234,7 +234,7 @@ int LUKS2_generate_hdr(
 	if (!uuid)
 		uuid_generate(partitionUuid);
 
-	uuid_unparse(partitionUuid, hdr->uuid);
+	crypt_uuid_unparse(partitionUuid, hdr->uuid);
 
 	hdr->jobj = json_object_new_object();
 	if (!hdr->jobj) {

@@ -9,7 +9,7 @@
 
 #include <errno.h>
 #include <string.h>
-#include <uuid/uuid.h>
+#include "utils_uuid.h"
 #include <time.h>
 #include <limits.h>
 
@@ -82,7 +82,7 @@ static void swap_guid(struct bitlk_guid *guid) {
 
 static void guid_to_string(struct bitlk_guid *guid, char *out) {
 	swap_guid(guid);
-	uuid_unparse((unsigned char *) guid, out);
+	crypt_uuid_unparse((unsigned char *) guid, out);
 }
 
 typedef enum {

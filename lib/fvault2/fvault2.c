@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <regex.h>
 #include <stdio.h>
-#include <uuid/uuid.h>
+#include "utils_uuid.h"
 
 #include "internal.h"
 #include "fvault2.h"
@@ -429,7 +429,7 @@ static int _reformat_uuid(
 	if (r < 0)
 		return -EINVAL;
 
-	uuid_unparse(uuid_bin, uuid_out);
+	crypt_uuid_unparse(uuid_bin, uuid_out);
 	return 0;
 }
 
@@ -566,7 +566,7 @@ static int _read_volume_header(
 
 	*block_size = le32_to_cpu(vol_header->block_size);
 	*disklbl_blkoff = le64_to_cpu(vol_header->disklbl_blkoff);
-	uuid_unparse(vol_header->ph_vol_uuid, ph_vol_uuid);
+	crypt_uuid_unparse(vol_header->ph_vol_uuid, ph_vol_uuid);
 	crypt_safe_memcpy(enc_key, vol_header->key_data, FVAULT2_AES_KEY_SIZE);
 	crypt_safe_memcpy((char *)enc_key + FVAULT2_AES_KEY_SIZE,
 		vol_header->ph_vol_uuid, FVAULT2_AES_KEY_SIZE);

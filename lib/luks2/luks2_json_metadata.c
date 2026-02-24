@@ -11,7 +11,7 @@
 #include "luks2/hw_opal/hw_opal.h"
 #include "../integrity/integrity.h"
 #include <ctype.h>
-#include <uuid/uuid.h>
+#include "utils_uuid.h"
 
 struct interval {
 	uint64_t offset;
@@ -1264,7 +1264,7 @@ int LUKS2_hdr_uuid(struct crypt_device *cd, struct luks2_hdr *hdr, const char *u
 	if (!uuid)
 		uuid_generate(partitionUuid);
 
-	uuid_unparse(partitionUuid, hdr->uuid);
+	crypt_uuid_unparse(partitionUuid, hdr->uuid);
 
 	return LUKS2_hdr_write(cd, hdr);
 }

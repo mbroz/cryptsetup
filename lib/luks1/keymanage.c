@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <uuid/uuid.h>
+#include "utils_uuid.h"
 #include <limits.h>
 
 #include "luks.h"
@@ -834,7 +834,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 		return r;
 	}
 
-        uuid_unparse(partitionUuid, header->uuid);
+        crypt_uuid_unparse(partitionUuid, header->uuid);
 
 	log_dbg(ctx, "Data offset %d, UUID %s, digest iterations %" PRIu32,
 		header->payloadOffset, header->uuid, header->mkDigestIterations);
@@ -856,7 +856,7 @@ int LUKS_hdr_uuid_set(
 	if (!uuid)
 		uuid_generate(partitionUuid);
 
-	uuid_unparse(partitionUuid, hdr->uuid);
+	crypt_uuid_unparse(partitionUuid, hdr->uuid);
 
 	return LUKS_write_phdr(hdr, ctx);
 }

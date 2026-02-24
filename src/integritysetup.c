@@ -6,7 +6,7 @@
  * Copyright (C) 2017-2025 Milan Broz
  */
 
-#include <uuid/uuid.h>
+#include "utils_uuid.h"
 
 #define DEFAULT_ALG_NAME "crc32c"
 
@@ -84,7 +84,7 @@ static int _wipe_data_device(struct crypt_device *cd, const char *integrity_key)
 
 	/* Activate the device a temporary one */
 	uuid_generate(tmp_uuid_bin);
-	uuid_unparse(tmp_uuid_bin, tmp_uuid);
+	crypt_uuid_unparse(tmp_uuid_bin, tmp_uuid);
 	if (snprintf(tmp_name, sizeof(tmp_name), "temporary-cryptsetup-%s", tmp_uuid) < 0)
 		goto out;
 	if (snprintf(tmp_path, sizeof(tmp_path), "%s/%s", crypt_get_dir(), tmp_name) < 0)

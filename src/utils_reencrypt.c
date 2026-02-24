@@ -7,7 +7,7 @@
  * Copyright (C) 2021-2025 Ondrej Kozina
  */
 
-#include <uuid/uuid.h>
+#include "utils_uuid.h"
 
 #include "cryptsetup.h"
 #include "cryptsetup_args.h"
@@ -710,7 +710,7 @@ static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device,
 
 	if (!ARG_SET(OPT_UUID_ID)) {
 		uuid_generate(uuid);
-		uuid_unparse(uuid, uuid_str);
+		crypt_uuid_unparse(uuid, uuid_str);
 		if (!(tmp = strdup(uuid_str)))
 			return -ENOMEM;
 		ARG_SET_STR(OPT_UUID_ID, tmp);

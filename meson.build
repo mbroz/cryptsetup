@@ -161,6 +161,8 @@ uuid = dependency('uuid',
 assert(cc.has_function('uuid_clear',
         prefix: '#include <uuid/uuid.h>', dependencies: uuid),
     'You need the uuid library.')
+conf.set10('HAVE_UUID_UNPARSE_LOWER', cc.has_function('uuid_unparse_lower',
+        prefix: '#include <uuid/uuid.h>', dependencies: uuid))
 
 # ==========================================================================
 

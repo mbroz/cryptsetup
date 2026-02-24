@@ -13,7 +13,7 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <uuid/uuid.h>
+#include "utils_uuid.h"
 
 #include "libcryptsetup.h"
 #include "verity.h"
@@ -129,7 +129,7 @@ int VERITY_read_sb(struct crypt_device *cd,
 	memcpy(CONST_CAST(char*)params->salt, sb.salt, params->salt_size);
 
 	if ((*uuid_string = malloc(40)))
-		uuid_unparse(sb.uuid, *uuid_string);
+		crypt_uuid_unparse(sb.uuid, *uuid_string);
 
 	params->hash_area_offset = sb_offset;
 	return 0;
@@ -234,7 +234,7 @@ int VERITY_UUID_generate(char **uuid_string)
 	if (!*uuid_string)
 		return -ENOMEM;
 	uuid_generate(uuid);
-	uuid_unparse(uuid, *uuid_string);
+	crypt_uuid_unparse(uuid, *uuid_string);
 	return 0;
 }
 
