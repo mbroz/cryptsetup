@@ -225,10 +225,15 @@ endif
 
 # ==========================================================================
 
-popt = cc.find_library('popt',
-    static: enable_static)
+popt = dependency('popt',
+    static: enable_static,
+    required: false)
+if not popt.found()
+    popt = cc.find_library('popt',
+        static: enable_static)
+endif
 assert(cc.has_function('poptConfigFileToString',
-        dependencies: popt),
+        prefix: '#include <popt.h>', dependencies: popt),
     'You need popt 1.7 or newer to compile.')
 
 # ==========================================================================
