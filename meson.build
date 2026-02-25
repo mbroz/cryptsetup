@@ -551,10 +551,15 @@ elif get_option('crypto-backend') == 'openssl'
     conf.set10('HAVE_DECL_OSSL_GET_MAX_THREADS',
         cc.has_header_symbol('openssl/thread.h', 'OSSL_get_max_threads',
             dependencies: crypto_backend_library))
-    conf.set10('HAVE_DECL_OSSL_KDF_PARAM_ARGON2_VERSION',
+    # LibreSSL defines OSSL_KDF_PARAM_ARGON2_VERSION in core_names.h but does
+    # not implement the EVP_KDF API. Check for both the symbol and the function.
+    _have_ossl_argon2 = (
         cc.has_header_symbol('openssl/core_names.h', 'OSSL_KDF_PARAM_ARGON2_VERSION',
+            dependencies: crypto_backend_library) and
+        cc.has_function('EVP_KDF_fetch',
             dependencies: crypto_backend_library))
-    if conf.get('HAVE_DECL_OSSL_KDF_PARAM_ARGON2_VERSION') == 1
+    conf.set10('HAVE_DECL_OSSL_KDF_PARAM_ARGON2_VERSION', _have_ossl_argon2)
+    if _have_ossl_argon2
         use_internal_argon2 = false
     endif
 elif get_option('crypto-backend') == 'nss'
