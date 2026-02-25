@@ -54,7 +54,7 @@ if get_option('veritysetup')
         include_directories: includes_tools)
 endif
 
-if get_option('integritysetup')
+if get_option('integritysetup') and use_devmapper
     integritysetup_files = files(
         'integritysetup.c',
         'utils_args.c',
