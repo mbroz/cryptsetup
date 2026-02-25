@@ -423,8 +423,7 @@ if get_option('ssh-token')
     argp = []
 
     if not cc.has_function('argp_parse', prefix: '#include <argp.h>', dependencies: argp)
-        argp = cc.find_library('argp',
-            static: enable_static)
+        argp = cc.find_library('argp')
     endif
 
     libssh = dependency('libssh')
