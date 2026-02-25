@@ -201,14 +201,14 @@ if not cc.has_function('dlsym',
         error('dlsym not found')
     endif
 endif
-if cc.has_function('dlvsym',
+have_dlvsym = cc.has_function('dlvsym',
         dependencies: dl)
-    conf.set10('HAVE_DLVSYM', true)
+conf.set10('HAVE_DLVSYM', have_dlvsym)
+if not have_dlvsym
+    warning('dlvsym not found, external token plugins will use dlsym as fallback.')
 endif
 
 if get_option('external-tokens')
-    assert(conf.has('HAVE_DLVSYM') and conf.get('HAVE_DLVSYM') == 1,
-        'dl library has no dlvsym function')
     conf.set10('USE_EXTERNAL_TOKENS', true,
         description: 'Use external tokens')
 endif
