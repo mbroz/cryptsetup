@@ -422,18 +422,36 @@ check_fec()
 	return $ret
 }
 
-check_option() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, $6 status option, $7-$8 CLI options
+check_option()
 {
-	DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
-	FORMAT_PARAMS="--format=$4 --data-block-size=$1 --hash-block-size=$1 --hash=$5 --salt=$3"
+	local block_size=$1
+	local root_hash=$2
+	local salt=$3
+	local version=$4
+	local hash_alg=$5
+	local status_option=$6
+	shift 6
+	local cli_options=("$@")
 
-	echo -n "Option $7 / $6 "
-	$VERITYSETUP format $DEV_PARAMS $FORMAT_PARAMS >/dev/null 2>&1 || fail
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $2 $7 $8 >/dev/null 2>&1 || fail
+	local dev_params=("$LOOPDEV1" "$LOOPDEV2")
+	local format_params=(--format="$version"
+			     --data-block-size="$block_size"
+			     --hash-block-size="$block_size"
+			     --hash="$hash_alg"
+			     --salt="$salt")
+
+	echo -n "Option ${cli_options[*]} / $status_option "
+	$VERITYSETUP format "${dev_params[@]}" "${format_params[@]}" \
+		&>/dev/null || fail
+	$VERITYSETUP create $DEV_NAME "${dev_params[@]}" "$root_hash" \
+		"${cli_options[@]}" \
+		&>/dev/null || fail
 	check_exists
-	$VERITYSETUP status $DEV_NAME 2>/dev/null | grep flags | grep -q $6 || fail
-	dmsetup table $DEV_NAME 2>/dev/null | grep -q $6 || fail
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP status $DEV_NAME 2>/dev/null | grep flags \
+		| grep -q "$status_option" || fail
+	dmsetup table $DEV_NAME 2>/dev/null \
+		| grep -q "$status_option" || fail
+	$VERITYSETUP close $DEV_NAME &>/dev/null || fail
 	echo "[OK]"
 }
 
