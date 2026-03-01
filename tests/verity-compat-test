@@ -135,25 +135,32 @@ compare_out()
 
 check_root_hash_fail()
 {
+	local root_hash root_hash_bad
+
 	echo -n "Root hash check "
-	ROOT_HASH=$($VERITYSETUP format $IMG $IMG_HASH --fec-device $FEC_DEV --fec-roots 2 -h sha256 | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
-	ROOT_HASH_BAD=abcdef0000000000000000000000000000000000000000000000000000000000
 
-	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH || fail
-	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH_BAD >/dev/null 2>&1 && fail
-	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH_BAD --fec-device $FEC_DEV --fec-roots 2 >/dev/null 2>&1 && fail
+	root_hash=$($VERITYSETUP format $IMG $IMG_HASH \
+		    --fec-device $FEC_DEV --fec-roots 2 -h sha256 |
+		    grep "Root hash" | cut -d: -f2 | tr -d "\t\n ")
+	root_hash_bad=abcdef0000000000000000000000000000000000000000000000000000000000
 
-	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH $ROOT_HASH || fail
+	$VERITYSETUP verify $IMG $IMG_HASH "$root_hash" || fail
+	$VERITYSETUP verify $IMG $IMG_HASH "$root_hash_bad" &>/dev/null && fail
+	$VERITYSETUP verify $IMG $IMG_HASH "$root_hash_bad" \
+		--fec-device $FEC_DEV --fec-roots 2 &>/dev/null && fail
+
+	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH "$root_hash" || fail
 	check_exists
-	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=4096 count=1 >/dev/null 2>&1
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=4096 count=1 &>/dev/null
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null || fail
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP close $DEV_NAME &>/dev/null || fail
 
-	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH $ROOT_HASH_BAD >/dev/null 2>&1 || fail
+	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH "$root_hash_bad" \
+		&>/dev/null || fail
 	check_exists
-	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=4096 count=1 >/dev/null 2>&1
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=4096 count=1 &>/dev/null
 	dmsetup status $DEV_NAME | grep "verity C" >/dev/null || fail
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP close $DEV_NAME &>/dev/null || fail
 
 	echo "[OK]"
 }
