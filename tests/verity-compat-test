@@ -23,50 +23,68 @@ DEV_UUID=a60c98d2-ae9b-4865-bfcb-b4e3ace11033
 
 remove_mapping()
 {
-	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2 >/dev/null 2>&1
-	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
-	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
-	rm -f $IMG $IMG.roothash $IMG_HASH $DEV_OUT $FEC_DEV $IMG_TMP >/dev/null 2>&1
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2 &>/dev/null
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME &>/dev/null
+	[ -n "$LOOPDEV1" ] && losetup -d "$LOOPDEV1" &>/dev/null
+	rm -f $IMG $IMG.roothash $IMG_HASH $DEV_OUT $FEC_DEV $IMG_TMP
 	LOOPDEV1=""
 	LOOPDEV2=""
 }
 
 fail()
 {
-	[ -n "$1" ] && echo "$1"
+	local message=$1
+
+	[ -n "$message" ] && echo "$message"
 	echo "FAILED backtrace:"
-	while caller $frame; do ((frame++)); done
+	local frame=0
+	while caller $frame; do
+		(( ++frame ))
+	done
 	[ -f $DEV_OUT ] && cat $DEV_OUT
 	remove_mapping
 	exit 2
 }
 
-_sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
+# Used only by 'trap'.  Suppress "function is never invoked" shellcheck warning.
+# shellcheck disable=SC2329
+_sigchld()
+{
+	local c=$?
+	(( c == 139 )) && fail "Segfault"
+	(( c == 134 )) && fail "Aborted"
+	return "$c"
+}
 trap _sigchld CHLD
 
 skip()
 {
-	[ -n "$1" ] && echo "$1"
+	local message=$1
+
+	[ -n "$message" ] && echo "$message"
 	exit 77
 }
 
-prepare() # $1 dev1_siz [$2 dev2_size]
+prepare()
 {
+	local dev1_size=$1 # in KiB
+	local dev2_size=$2 # optional, in KiB
+
 	remove_mapping
 
-	dd if=/dev/zero of=$IMG bs=1k count=$1 >/dev/null 2>&1
+	dd if=/dev/zero of=$IMG bs=1k count="$dev1_size" &>/dev/null
 	LOOPDEV1=$(losetup -f 2>/dev/null)
 	[ -z "$LOOPDEV1" ] && fail "No free loop device"
-	losetup $LOOPDEV1 $IMG
+	losetup "$LOOPDEV1" $IMG
 
-	[ -z "$2" ] && return
+	[ -z "$dev2_size" ] && return
 	LOOPDEV2=$IMG_HASH
 }
 
 wipe()
 {
-	dd if=/dev/zero of=$LOOPDEV1 bs=256k >/dev/null 2>&1
-	rm -f $IMG_HASH $DEV_OUT >/dev/null 2>&1
+	dd if=/dev/zero of="$LOOPDEV1" bs=256k &>/dev/null
+	rm -f $IMG_HASH $DEV_OUT &>/dev/null
 }
 
 check_exists()
@@ -74,409 +92,582 @@ check_exists()
 	[ -b /dev/mapper/$DEV_NAME ] || fail
 }
 
-check_version() # MAJ MIN
+check_version()
 {
-	VER_STR=$(dmsetup targets | grep verity | cut -f 3 -dv)
-	[ -z "$VER_STR" ] && fail "Failed to parse dm-verity version."
+	local major=$1
+	local minor=$2
+	local ver_str ver_major ver_minor
 
-	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
-	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+	ver_str=$(dmsetup targets | grep verity | cut -f 3 -dv)
+	[ -z "$ver_str" ] && fail "Failed to parse dm-verity version."
 
-	test $VER_MAJ -gt $1 && return 0
-	test $VER_MAJ -lt $1 && return 1
-	test $VER_MIN -ge $2 && return 0
+	ver_major=$(echo "$ver_str" | cut -f 1 -d.)
+	ver_minor=$(echo "$ver_str" | cut -f 2 -d.)
 
-	return 1
+	(( ver_major > major )) || (( ver_major == major && ver_minor >= minor ))
 }
 
 check_version_kernel()
 {
-	KER_STR=$(uname -r)
-	[ -z "$KER_STR" ] && fail "Failed to parse kernel version."
-	KER_MAJ=$(echo $KER_STR | cut -f 1 -d.)
-	KER_MIN=$(echo $KER_STR | cut -f 2 -d.)
+	local major=$1
+	local minor=$2
+	local ker_str ker_major ker_minor
 
-	test $KER_MAJ -gt $1 && return 0
-	test $KER_MAJ -lt $1 && return 1
-	test $KER_MIN -ge $2 && return 0
+	ker_str=$(uname -r)
+	[ -z "$ker_str" ] && fail "Failed to parse kernel version."
+	ker_major=$(echo "$ker_str" | cut -f 1 -d.)
+	ker_minor=$(echo "$ker_str" | cut -f 2 -d.)
 
-	return 1
+	(( ker_major > major )) || (( ker_major == major && ker_minor >= minor ))
 }
 
-compare_out() # $1 what, $2 expected
+compare_out()
 {
-	OPT=$(grep -v "^#" $DEV_OUT | grep -i "$1" | sed -e s/.*\:\ // )
-	[ -z "$OPT" ] && fail
-	[ $OPT != $2 ] && fail "$1 differs ($2)"
+	local what=$1
+	local expected=$2
+	local actual
+
+	actual=$(grep -v "^#" $DEV_OUT | grep -i "$what" |
+		 sed -e "s/.*:[[:space:]]*//")
+	[ -z "$actual" ] && fail
+	[ "$actual" != "$expected" ] && fail "$what differs ($expected)"
 }
 
 check_root_hash_fail()
 {
+	local root_hash root_hash_bad
+
 	echo -n "Root hash check "
-	ROOT_HASH=$($VERITYSETUP format $IMG $IMG_HASH --fec-device $FEC_DEV --fec-roots 2 -h sha256 | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
-	ROOT_HASH_BAD=abcdef0000000000000000000000000000000000000000000000000000000000
 
-	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH || fail
-	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH_BAD >/dev/null 2>&1 && fail
-	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH_BAD --fec-device $FEC_DEV --fec-roots 2 >/dev/null 2>&1 && fail
+	root_hash=$($VERITYSETUP format $IMG $IMG_HASH \
+		    --fec-device $FEC_DEV --fec-roots 2 -h sha256 |
+		    grep "Root hash" | cut -d: -f2 | tr -d "\t\n ")
+	root_hash_bad=abcdef0000000000000000000000000000000000000000000000000000000000
 
-	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH $ROOT_HASH || fail
+	$VERITYSETUP verify $IMG $IMG_HASH "$root_hash" || fail
+	$VERITYSETUP verify $IMG $IMG_HASH "$root_hash_bad" &>/dev/null && fail
+	$VERITYSETUP verify $IMG $IMG_HASH "$root_hash_bad" \
+		--fec-device $FEC_DEV --fec-roots 2 &>/dev/null && fail
+
+	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH "$root_hash" || fail
 	check_exists
-	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=4096 count=1 >/dev/null 2>&1
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=4096 count=1 &>/dev/null
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null || fail
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP close $DEV_NAME &>/dev/null || fail
 
-	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH $ROOT_HASH_BAD >/dev/null 2>&1 || fail
+	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH "$root_hash_bad" \
+		&>/dev/null || fail
 	check_exists
-	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=4096 count=1 >/dev/null 2>&1
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=4096 count=1 &>/dev/null
 	dmsetup status $DEV_NAME | grep "verity C" >/dev/null || fail
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP close $DEV_NAME &>/dev/null || fail
 
 	echo "[OK]"
 }
 
-check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6 offset]
+check_root_hash()
 {
-	local FORMAT_PARAMS
-	local VERIFY_PARAMS
-	local ROOT_HASH
+	local block_size=$1
+	local root_hash=$2
+	local salt=$3
+	local version=$4
+	local hash_alg=$5
+	local hash_offset=$6 # used only if LOOPDEV2 is unset or empty
 
+	local dev_params
 	if [ -z "$LOOPDEV2" ] ; then
-		BLOCKS=$(($6 / $1))
-		DEV_PARAMS="$LOOPDEV1 $LOOPDEV1 \
-			   --hash-offset $6 \
-			   --data-blocks=$BLOCKS --debug"
+		dev_params=("$LOOPDEV1" "$LOOPDEV1" \
+			    --hash-offset="$hash_offset" \
+			    --data-blocks=$((hash_offset / block_size)) \
+			    --debug)
 	else
-		DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
+		dev_params=("$LOOPDEV1" "$LOOPDEV2")
 	fi
 
-	for root_hash_as_file in yes no; do
-	for sb in yes no; do
-	FORMAT_PARAMS="--format=$4 --data-block-size=$1 --hash-block-size=$1 --hash=$5 --salt=$3"
-	if [ $sb == yes ] ; then
-		VERIFY_PARAMS=""
-	else
-		FORMAT_PARAMS="$FORMAT_PARAMS --no-superblock"
-		VERIFY_PARAMS=$FORMAT_PARAMS
+	local root_hash_as_file sb
+	for root_hash_as_file in true false; do
+	for sb in true false; do
+
+	local format_params=(--format="$version"
+			     --data-block-size="$block_size"
+			     --hash-block-size="$block_size"
+			     --hash="$hash_alg"
+			     --salt="$salt")
+	local verify_params=()
+	if ! $sb; then
+		format_params+=(--no-superblock)
+		verify_params=("${format_params[@]}")
 	fi
-	if [ $root_hash_as_file == yes ] ; then
-		echo -n $2 > $IMG.roothash
-		FORMAT_PARAMS="$FORMAT_PARAMS --root-hash-file=$IMG.roothash"
-		VERIFY_PARAMS="$VERIFY_PARAMS --root-hash-file=$IMG.roothash"
-		ROOT_HASH=""
+	if $root_hash_as_file; then
+		echo -n "$root_hash" > "$IMG.roothash"
+		format_params+=(--root-hash-file="$IMG.roothash")
+		verify_params+=(--root-hash-file="$IMG.roothash")
 	else
-		ROOT_HASH="$2"
+		verify_params+=("$root_hash")
 	fi
 
-	for fail in data hash; do
+	local device_to_corrupt
+	for device_to_corrupt in "data_dev" "hash_dev"; do
 	wipe
-	echo -n "V$4(sb=$sb root_hash_as_file=$root_hash_as_file) $5 block size $1: "
-	$VERITYSETUP format $DEV_PARAMS $FORMAT_PARAMS >$DEV_OUT
-	if [ $? -ne 0 ] ; then
-		if [[ $1 =~ "sha2" ]] ; then
+	echo -n "V$version(sb=$sb root_hash_as_file=$root_hash_as_file) $hash_alg block size $block_size: "
+	if ! $VERITYSETUP format "${dev_params[@]}" "${format_params[@]}" \
+		>$DEV_OUT
+	then
+		if [[ $hash_alg == sha2* ]]; then
 			fail "Cannot format device."
 		fi
 		return
 	fi
 
 	echo -n "[root hash]"
-	compare_out "root hash" $2
-	compare_out "salt" "$3"
+	compare_out "root hash" "$root_hash"
+	compare_out "salt" "$salt"
 
-	$VERITYSETUP verify $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH >>$DEV_OUT 2>&1 || fail
+	$VERITYSETUP verify "${dev_params[@]}" "${verify_params[@]}" \
+		&>>$DEV_OUT || fail
 	echo -n "[verify]"
 
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH  >>$DEV_OUT 2>&1 || fail
+	$VERITYSETUP create $DEV_NAME "${dev_params[@]}" "${verify_params[@]}" \
+		&>>$DEV_OUT || fail
 	check_exists
-	SIZE_BYTES=$(blockdev --getsize64 /dev/mapper/$DEV_NAME)
-	SIZE_512S=$(( $SIZE_BYTES / 512 ))
-	$VERITYSETUP status $DEV_NAME 2>/dev/null | grep " size:" | grep -q -F "$SIZE_512S [512-byte units] ($SIZE_BYTES [bytes])" || fail
+	local device_size
+	device_size=$(blockdev --getsize64 /dev/mapper/$DEV_NAME)
+	$VERITYSETUP status $DEV_NAME 2>/dev/null \
+		| grep " size:" \
+		| grep -q -F "$((device_size / 512)) [512-byte units] ($device_size [bytes])" \
+		|| fail
 	echo -n "[activate]"
 
-	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=$1 2>/dev/null
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs="$block_size" 2>/dev/null
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null || fail
 	echo -n "[in-kernel verify]"
 
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP close $DEV_NAME &>/dev/null || fail
 
-	case $fail in
-	data)
-		dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=3456 count=8 conv=notrunc 2>/dev/null
-		TXT="data_dev"
+	case $device_to_corrupt in
+	data_dev)
+		dd if=/dev/urandom of="$LOOPDEV1" bs=1 \
+			seek=3456 count=8 conv=notrunc \
+			2>/dev/null
 		;;
-	hash)
+	hash_dev)
 		if [ -z "$LOOPDEV2" ] ; then
-			dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=$((8193 + $4)) count=8 conv=notrunc 2>/dev/null
+			dd if=/dev/urandom of="$LOOPDEV1" bs=1 \
+			   seek=$((8193 + hash_offset)) count=8 conv=notrunc \
+			   2>/dev/null
 		else
-			dd if=/dev/urandom of=$LOOPDEV2 bs=1 seek=8193 count=8 conv=notrunc 2>/dev/null
+			dd if=/dev/urandom of="$LOOPDEV2" bs=1 \
+			   seek=8193 count=8 conv=notrunc \
+			   2>/dev/null
 		fi
-                TXT="hash_dev"
 		;;
 	esac
 
-	$VERITYSETUP verify $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH >>$DEV_OUT 2>&1 && \
-		fail "userspace check for $TXT corruption"
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH >>$DEV_OUT 2>&1 || \
-		fail "activation"
-	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=$1 2>/dev/null
-	dmsetup status $DEV_NAME | grep "verity V" >/dev/null && \
-		fail "in-kernel check for $TXT corruption"
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail "deactivation"
-	echo "[$TXT corruption]"
+	$VERITYSETUP verify "${dev_params[@]}" "${verify_params[@]}" \
+		&>>$DEV_OUT \
+		&& fail "userspace check for $device_to_corrupt corruption"
+	$VERITYSETUP create $DEV_NAME "${dev_params[@]}" "${verify_params[@]}" \
+		&>>$DEV_OUT \
+		|| fail "activation"
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs="$block_size" 2>/dev/null
+	dmsetup status $DEV_NAME | grep "verity V" >/dev/null \
+		&& fail "in-kernel check for $device_to_corrupt corruption"
+	$VERITYSETUP close $DEV_NAME &>/dev/null \
+		|| fail "deactivation"
+	echo "[$device_to_corrupt corruption]"
 	done
 	done
 	done
 }
 
-corrupt_device() # $1 device, $2 device_size(in bytes), $3 #{corrupted_bytes}
+corrupt_device()
 {
+	local device=$1
+	local device_size=$2 # in bytes
+	local num_corrupted_bytes=$3
+
 	# Repeatable magic corruption :-)
-	CORRUPT=$3
+	local i seek
 	RANDOM=43
-	while [ "$CORRUPT" -gt 0 ]; do
-		SEEK=$RANDOM
-		while [ $SEEK -ge $2 ] ; do SEEK=$RANDOM; done
-		echo -n -e "\x55" | dd of=$1 bs=1 count=1 seek=$SEEK conv=notrunc > /dev/null 2>&1
-		CORRUPT=$(($CORRUPT - 1))
+	for (( i = 0; i < num_corrupted_bytes; i++ )); do
+		seek=$RANDOM
+		while (( seek >= device_size )); do
+			seek=$RANDOM
+		done
+		printf "\x55" \
+			| dd of="$device" bs=1 count=1 seek=$seek conv=notrunc \
+			&>/dev/null
 	done
 }
 
-# $1 data_device, $2 hash_device, $3 fec_device, $4 data/hash_block_size(in bytes),
-# $5 data_size(in blocks), $6 device_size(in blocks), $7 hash_offset(in bytes),
-# $8 fec_offset(in bytes), $9 fec_roots, ${10} corrupted_bytes, [${11} superblock(y/n), ${12} salt]
-# NOTE: do not use fail() in this function, use RET code
+# NOTE: do not use fail() in this function, use the return code
 check_fec()
 {
+	local data_dev=$1
+	local hash_dev=$2
+	local fec_dev=$3
+	local block_size=$4
+	local data_blocks=$5
+	local device_blocks=$6
+	local hash_offset=$7 # in bytes
+	local fec_offset=$8 # in bytes
+	local fec_roots=$9
+	local num_corrupted_bytes=${10}
+	local use_superblock=${11} # y/n
+	local salt=${12}
+
 	INDEX=25
-	dd if=/dev/zero of=$1 bs=$4 count=$6 > /dev/null 2>&1
+	dd if=/dev/zero of="$data_dev" bs="$block_size" count="$device_blocks" \
+		&>/dev/null
 
-	echo -n "Block_size: $4, Data_size: $(($4 * $5))B, FEC_roots: $9, Corrupted_bytes: ${10} "
+	echo -n "Block_size: $block_size, "
+	echo -n "Data_size: $((block_size * data_blocks))B, "
+	echo -n "FEC_roots: $fec_roots, "
+	echo -n "Corrupted_bytes: $num_corrupted_bytes "
 
-	PARAMS=" --data-block-size=$4 --hash-block-size=$4 "
-	if [ "$5" -ne "$6" ]; then
-		PARAMS="$PARAMS --data-blocks=$5"
+	local params=(--data-block-size="$block_size"
+		      --hash-block-size="$block_size")
+	if (( data_blocks != device_blocks )); then
+		params+=(--data-blocks="$data_blocks")
 	fi
 
-	if [ "$7" -ne 0 ]; then
-		PARAMS="$PARAMS --hash-offset=$7"
+	if (( hash_offset != 0 )); then
+		params+=(--hash-offset="$hash_offset")
 	fi
 
-	if [ "$8" -ne 0 ]; then
-		PARAMS="$PARAMS --fec-offset=$8"
+	if (( fec_offset != 0 )); then
+		params+=(--fec-offset="$fec_offset")
 	fi
 
-	if [ "${11}" == "n" ]; then
+	if [ "$use_superblock" = "n" ]; then
 		INDEX=24
 		echo -n "[no-superblock]"
-		PARAMS="$PARAMS --no-superblock --salt=${12}"
-	elif [ -n "${12}" ]; then
-		PARAMS="$PARAMS --salt=${12}"
+		params+=(--no-superblock --salt="$salt")
+	elif [ -n "$salt" ]; then
+		params+=(--salt="$salt")
 	fi
 
-	if [[ "$1" == "$2" && "$1" == "$3" ]]; then
+	local orig_hash
+	if [ "$data_dev" = "$hash_dev" ] && [ "$data_dev" = "$fec_dev" ]; then
 		echo -n "[one_device_test]"
-		dd if=/dev/zero of=$IMG_TMP bs=$4 count=$5  > /dev/null 2>&1
-		HASH_ORIG=$(sha256sum $IMG_TMP | cut -d' ' -f 1)
+		dd if=/dev/zero of=$IMG_TMP bs="$block_size" \
+			count="$data_blocks" &>/dev/null
+		orig_hash=$(sha256sum $IMG_TMP | cut -d' ' -f 1)
 	else
-		HASH_ORIG=$(sha256sum $1 | cut -d' ' -f 1)
+		orig_hash=$(sha256sum "$data_dev" | cut -d' ' -f 1)
 	fi
 
-	ROOT_HASH=$($VERITYSETUP format $1 $2 --fec-device=$3 $PARAMS | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
+	local root_hash
+	root_hash=$($VERITYSETUP format "$data_dev" "$hash_dev" \
+		    --fec-device="$fec_dev" "${params[@]}" | \
+		    grep "Root hash" | cut -d: -f2 | tr -d "\t\n ")
 
-	corrupt_device $1 $(($5 * $4)) ${10}
+	corrupt_device "$data_dev" $((data_blocks * block_size)) \
+		       "$num_corrupted_bytes"
 
-	$VERITYSETUP create $DEV_NAME $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS > /dev/null 2>&1
-	if [ "$?" -ne "0" ] ; then
+	if ! $VERITYSETUP create $DEV_NAME "$data_dev" "$hash_dev" \
+		"$root_hash" --fec-device="$fec_dev" "${params[@]}" &>/dev/null
+	then
 		echo "[N/A, test skipped]"
 		return 3
 	fi
 
-	udevadm settle > /dev/null 2>&1
+	udevadm settle &>/dev/null
 
-	dd if=/dev/mapper/$DEV_NAME of=$IMG_TMP > /dev/null 2>&1
-	HASH_REPAIRED=$(sha256sum $IMG_TMP | cut -d' ' -f 1)
+	dd if=/dev/mapper/$DEV_NAME of=$IMG_TMP &>/dev/null
 
+	local repaired_hash repaired
+	repaired_hash=$(sha256sum $IMG_TMP | cut -d' ' -f 1)
 	# If empty, status not supported
-	REPAIRED=$(dmsetup status $DEV_NAME |sed -e s/.*verity\ \[VC\]\ *//)
-	if [ -n "$REPAIRED" -a "$REPAIRED" != "-" ] ; then
-		echo -n "[EC events: $REPAIRED]"
+	repaired=$(dmsetup status $DEV_NAME |sed -e s/.*verity\ \[VC\]\ *//)
+	if [ -n "$repaired" ] && [ "$repaired" != "-" ]; then
+		echo -n "[EC events: $repaired]"
 	else
-		REPAIRED=""
+		repaired=""
 	fi
 
 	$VERITYSETUP close $DEV_NAME
 
-	if [ "$HASH_ORIG" != "$HASH_REPAIRED" ]; then
-		RET=1
-		if [ -n "$REPAIRED" ]; then
-			[ "$REPAIRED" -eq 0 ] || { RET=4; echo "FEC repaired events should be 0."; }
+	local ret
+	if [ "$orig_hash" != "$repaired_hash" ]; then
+		ret=1
+		if [ -n "$repaired" ] && (( repaired != 0 )); then
+			ret=4
+			echo "FEC repaired events should be 0."
 		fi
 		echo -n "[kernel correction failed]"
-		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 &&  { RET=5; echo "Userspace verify should fail"; }
-		echo -n "[userspace verify failed]"
-	else
-		RET=0
-		echo -n "[repaired in kernel]"
-		if [ -n "$REPAIRED" ]; then
-			[ "$REPAIRED" -gt 0 ] || { RET=4; echo "FEC repaired events should be greater than 0."; }
+		if $VERITYSETUP verify "$data_dev" "$hash_dev" "$root_hash" \
+			--fec-device="$fec_dev" "${params[@]}" &>/dev/null; then
+			ret=5
+			echo "Userspace verify should fail"
+		else
+			echo -n "[userspace verify failed]"
 		fi
-		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 ||  { RET=5; echo "Userspace verify failed"; }
-		echo "[userspace verify][OK]"
+	else
+		ret=0
+		echo -n "[repaired in kernel]"
+		if [ -n "$repaired" ] && (( repaired <= 0 )); then
+			ret=4
+			echo "FEC repaired events should be greater than 0."
+		fi
+		if $VERITYSETUP verify "$data_dev" "$hash_dev" "$root_hash" \
+			--fec-device="$fec_dev" "${params[@]}" &>/dev/null; then
+			echo "[userspace verify][OK]"
+		else
+			ret=5
+			echo "Userspace verify failed"
+		fi
 	fi
-	rm $1 $2 $3 $IMG_TMP > /dev/null 2>&1
-	return $RET
+	rm -f "$data_dev" "$hash_dev" "$fec_dev" $IMG_TMP
+	return $ret
 }
 
-check_option() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, $6 status option, $7-$8 CLI options
+check_option()
 {
-	DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
-	FORMAT_PARAMS="--format=$4 --data-block-size=$1 --hash-block-size=$1 --hash=$5 --salt=$3"
+	local block_size=$1
+	local root_hash=$2
+	local salt=$3
+	local version=$4
+	local hash_alg=$5
+	local status_option=$6
+	shift 6
+	local cli_options=("$@")
 
-	echo -n "Option $7 / $6 "
-	$VERITYSETUP format $DEV_PARAMS $FORMAT_PARAMS >/dev/null 2>&1 || fail
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $2 $7 $8 >/dev/null 2>&1 || fail
+	local dev_params=("$LOOPDEV1" "$LOOPDEV2")
+	local format_params=(--format="$version"
+			     --data-block-size="$block_size"
+			     --hash-block-size="$block_size"
+			     --hash="$hash_alg"
+			     --salt="$salt")
+
+	echo -n "Option ${cli_options[*]} / $status_option "
+	$VERITYSETUP format "${dev_params[@]}" "${format_params[@]}" \
+		&>/dev/null || fail
+	$VERITYSETUP create $DEV_NAME "${dev_params[@]}" "$root_hash" \
+		"${cli_options[@]}" \
+		&>/dev/null || fail
 	check_exists
-	$VERITYSETUP status $DEV_NAME 2>/dev/null | grep flags | grep -q $6 || fail
-	dmsetup table $DEV_NAME 2>/dev/null | grep -q $6 || fail
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP status $DEV_NAME 2>/dev/null | grep flags \
+		| grep -q "$status_option" || fail
+	dmsetup table $DEV_NAME 2>/dev/null \
+		| grep -q "$status_option" || fail
+	$VERITYSETUP close $DEV_NAME &>/dev/null || fail
 	echo "[OK]"
 }
 
 valgrind_setup()
 {
-	command -v valgrind >/dev/null || fail "Cannot find valgrind."
-	[ ! -f $VERITYSETUP_VALGRIND ] && fail "Unable to get location of veritysetup executable."
-	[ ! -f valg.sh ] && fail "Unable to get location of valg runner script."
+	command -v valgrind >/dev/null \
+		|| fail "Cannot find valgrind."
+	[ -f "$VERITYSETUP_VALGRIND" ] \
+		|| fail "Unable to get location of veritysetup executable."
+	[ -f valg.sh ] \
+		|| fail "Unable to get location of valg runner script."
 	if [ -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 		export LD_LIBRARY_PATH="$VERITYSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
 	fi
 }
 
+# Called by name.  Suppress "function is never invoked" shellcheck warning.
+# shellcheck disable=SC2329
 valgrind_run()
 {
-	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${VERITYSETUP_VALGRIND} "$@"
+	INFOSTRING="$(basename "${BASH_SOURCE[1]}")-line-${BASH_LINENO[0]}" ./valg.sh "${VERITYSETUP_VALGRIND}" "$@"
 }
 
-checkOffsetBug() # $1 size, $2 hash-offset, $3 data-blocks
+checkOffsetBug()
 {
-	echo -n "Size :: $1 B | Hash-offset :: $2 blocks | Data-blocks :: $3 "
-	dd if=/dev/zero of=$IMG bs=1 count=0 seek=$1 >/dev/null 2>&1
-	$VERITYSETUP --data-blocks=$3 --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1 || fail "Test [hash-offset greater than 2G] failed"
+	local device_size=$1 # in bytes
+	local hash_offset=$2 # in bytes
+	local data_blocks=$3
+
+	echo -n "Device-size :: $device_size B | "
+	echo -n "Hash-offset :: $hash_offset B | "
+	echo -n "Data-blocks :: $data_blocks "
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek="$device_size" &>/dev/null
+	$VERITYSETUP --data-blocks="$data_blocks" --hash-offset="$hash_offset" \
+		format $IMG $IMG &>/dev/null \
+		|| fail "Test [hash-offset greater than 2G] failed"
 	echo "[OK]"
 	remove_mapping
 }
 
-checkOverlapBug() # $1 size, $2 hash-offset, $3 data-blocks, $4 block_size, $5 fec_offset
+checkOverlapBug()
 {
-	echo -n "Device-size :: $1 B | "
-	[ $# -ge 3 ] && echo -n "Data-blocks :: $3 blocks| "
-	[ $# -lt 3 ] && echo -n "Data-blocks :: whole device | "
-	[ $# -ge 4 ] && echo -n "Block-size :: $4 B | "
-	[ $# -lt 4 ] && echo -n "Block-size :: 4096 B | "
-	echo -n "Hash-offset :: $2 B | "
+	local device_size=$1
+	local hash_offset=$2 # in bytes
+	local data_blocks=$3 # optional, defaults to whole device
+	local block_size=$4 # optional, defaults to 4096
+	local fec_offset=$5 # optional
 
-	dd if=/dev/zero of=$IMG bs=1 count=0 seek=$1 >/dev/null 2>&1
-	if [ -z $3 ] ; then
+	echo -n "Device-size :: $device_size B | "
+	[ -n "$data_blocks" ] && echo -n "Data-blocks :: $data_blocks blocks| "
+	[ -z "$data_blocks" ] && echo -n "Data-blocks :: whole device | "
+	[ -n "$block_size" ] && echo -n "Block-size :: $block_size B | "
+	[ -z "$block_size" ] && echo -n "Block-size :: 4096 B | "
+	echo -n "Hash-offset :: $hash_offset B | "
+
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek="$device_size" &>/dev/null
+	if [ -z "$data_blocks" ] ; then
 		# veritysetup must fail
-		$VERITYSETUP --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1 && fail "Test [overlap with option \"--data-blocks\" not entered] failed"
+		$VERITYSETUP --hash-offset="$hash_offset" format $IMG $IMG \
+			&>/dev/null \
+			&& fail "Test [overlap with option \"--data-blocks\" not entered] failed"
 	else
-		$VERITYSETUP --data-block-size=$4 --hash-block-size=$4 --data-blocks=$3 --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1
-		RET=$?
-		[ "$3" -gt "$(($2 / $4))" ] && [ "$RET" -eq "0" ] && fail "Test [overlap - hash-offset in data area] failed"
+		$VERITYSETUP --data-block-size="$block_size" \
+			--hash-block-size="$block_size" \
+			--data-blocks="$data_blocks" \
+			--hash-offset="$hash_offset" \
+			format $IMG $IMG &>/dev/null \
+			&& (( data_blocks > hash_offset / block_size )) \
+			&& fail "Test [overlap - hash-offset in data area] failed"
 	fi
 
-	if [ $# -eq 5 ] ; then
-		echo -n "FEC-offset :: $5 B | "
-		PARAMS="--data-block-size=$4 --hash-block-size=$4 --data-blocks=$3 --fec-device=$IMG --fec-offset=$5"
+	if [ -n "$fec_offset" ] ; then
+		echo -n "FEC-offset :: $fec_offset B | "
+		local params=(--data-block-size="$block_size"
+			      --hash-block-size="$block_size"
+			      --data-blocks="$data_blocks"
+			      --fec-device="$IMG"
+			      --fec-offset="$fec_offset")
 
 		# test data-fec area overlap
-		$VERITYSETUP format $IMG $IMG_HASH $PARAMS >/dev/null 2>&1
-		RET=$?
-		[ "$(($3*$4))" -gt "$5" ] && [ "$RET" -eq "0" ] && fail "Test [data/fec area overlap] failed"
+		$VERITYSETUP format $IMG $IMG_HASH "${params[@]}" \
+			&>/dev/null \
+			&& (( data_blocks * block_size > fec_offset )) \
+			&& fail "Test [data/fec area overlap] failed"
 
-		HASH_SIZE=$(stat --printf="%s" $IMG_HASH)
+		local hash_size
+		hash_size=$(stat --printf="%s" $IMG_HASH)
 
 		# test hash-fec area overlap
-		$VERITYSETUP format $IMG $IMG $PARAMS --hash-offset=$2 >/dev/null 2>&1
-		RET=$?
-		[ "$(($2 + $HASH_SIZE))" -gt "$5" ] && [ "$RET" -eq "0" ] && fail "Test [hash/fec area overlap] failed"
+		$VERITYSETUP format $IMG $IMG "${params[@]}" \
+			--hash-offset="$hash_offset" &>/dev/null \
+			&& (( hash_offset + hash_size > fec_offset )) \
+			&& fail "Test [hash/fec area overlap] failed"
 	fi
 
 	echo "[OK]"
 	remove_mapping
 }
 
-# $1 size, $2 block size, $3 roots, $4 hash offset, $5 fec offset,
-# $6 one dev(1 - one device, 2 - one device for data and hash, one device for fec data, 3 - three separate devices),
-# $7 #{corrupted bytes}
 checkUserSpaceRepair()
 {
-	BS=512
-	COUNT=50000
-	dd if=/dev/zero of=$IMG bs=$BS count=$COUNT >/dev/null 2>&1
-	PARAMS="--data-block-size=$2 --hash-block-size=$2 --fec-roots=$3"
-	[ "$1" -gt 0 ] && PARAMS="$PARAMS --data-blocks=$1" && BS=$2 && COUNT=$1
+	local data_blocks=$1
+	local block_size=$2
+	local fec_roots=$3
+	local hash_offset=$4
+	local fec_offset=$5
+	local num_devices=$6 # 1 - one device
+			     # 2 - one device for data and hash, one device for fec data
+			     # 3 - three separate devices
+	local num_corrupted_bytes=$7
 
+	local bs=512
+	local count=50000
+	dd if=/dev/zero of=$IMG bs=$bs count=$count &>/dev/null
+	local params=(--data-block-size="$block_size"
+		      --hash-block-size="$block_size"
+		      --fec-roots="$fec_roots")
+	if (( data_blocks > 0 )); then
+		params+=(--data-blocks="$data_blocks")
+		bs=$block_size
+		count=$data_blocks
+	fi
+
+	local hash_dev fec_dev
 	# different parameters for different number of devices
-	[ "$6" -eq 1 ] && HASH_DEV=$IMG && FEC=$IMG && PARAMS="$PARAMS --hash-offset=$4 --fec-offset=$5" && echo -n "[One device]"
-	[ "$6" -eq 2 ] && HASH_DEV=$IMG && FEC=$FEC_DEV && PARAMS="$PARAMS --hash-offset=$4" && echo -n "[Two separate data/hash and fec devices]"
-	[ "$6" -eq 3 ] && HASH_DEV=$IMG_HASH && FEC=$FEC_DEV && echo -n "[Three separate devices]"
+	case "$num_devices" in
+	1)
+		hash_dev=$IMG
+		fec_dev=$IMG
+		params+=(--hash-offset="$hash_offset"
+			 --fec-offset="$fec_offset")
+		echo -n "[One device]"
+		;;
+	2)
+		hash_dev=$IMG
+		fec_dev=$FEC_DEV
+		params+=(--hash-offset="$hash_offset")
+		echo -n "[Two separate data/hash and fec devices]"
+		;;
+	3)
+		hash_dev=$IMG_HASH
+		fec_dev=$FEC_DEV
+		echo -n "[Three separate devices]"
+		;;
+	*)
+		fail "Bad value for num_devices: $num_devices"
+		;;
+	esac
+	echo -n "[nroots::$fec_roots]"
 
-	echo -n "[nroots::$3]"
-
-	ROOT_HASH=$($VERITYSETUP format $IMG $HASH_DEV --fec-device $FEC $PARAMS --salt=$DEV_SALT --uuid=$DEV_UUID | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
+	local root_hash
+	root_hash=$($VERITYSETUP format $IMG "$hash_dev" \
+		    --fec-device="$fec_dev" --salt=$DEV_SALT --uuid=$DEV_UUID \
+		    "${params[@]}" \
+		    | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
 
 	echo -n "[Errors can be corrected]"
-	corrupt_device $IMG $(($BS*$COUNT)) $7
-	$VERITYSETUP verify $IMG $HASH_DEV $ROOT_HASH --fec-device=$FEC $PARAMS >/dev/null 2>&1
-	RET=$?
-	[ "$RET" -ne 0 ] && fail "Device can be corrected, but it wasn't."
+	corrupt_device $IMG $((bs * count)) "$num_corrupted_bytes"
+	$VERITYSETUP verify $IMG "$hash_dev" "$root_hash" \
+		--fec-device="$fec_dev" "${params[@]}" &>/dev/null \
+		|| fail "Device can be corrected, but it wasn't."
 	echo -n "[OK]"
 
 	echo -n "[Errors cannot be corrected]"
-	dd if=/dev/urandom of=$IMG bs=$BS count=$COUNT conv=notrunc >/dev/null 2>&1
-	$VERITYSETUP verify $IMG $HASH_DEV $ROOT_HASH --fec-device=$FEC $PARAMS >/dev/null 2>&1
-	RET=$?
-	[ "$RET" -eq 0 ] && fail "Device cannot be correct, but it didn't fail."
+	dd if=/dev/urandom of=$IMG bs="$bs" count="$count" conv=notrunc \
+		&>/dev/null
+	$VERITYSETUP verify $IMG "$hash_dev" "$root_hash" \
+		--fec-device="$fec_dev" "${params[@]}" &>/dev/null \
+		&& fail "Device cannot be corrected, but it didn't fail."
 	echo "[OK]"
 }
 
-check_concurrent() # $1 hash
+check_concurrent()
 {
-	DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
+	local root_hash=$1
+
+	local dev_params=("$LOOPDEV1" "$LOOPDEV2")
 
 	# First check that with two sequential opens, we are returning the expected -EEXIST
-	$VERITYSETUP format $DEV_PARAMS >/dev/null 2>&1 || fail
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $1 >/dev/null 2>&1 || fail
+	$VERITYSETUP format "${dev_params[@]}" &>/dev/null || fail
+	$VERITYSETUP create $DEV_NAME "${dev_params[@]}" "$root_hash" \
+		&>/dev/null || fail
 	check_exists
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $1 2>&1 >/dev/null | grep -q "Device $DEV_NAME already exists" || fail
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP create $DEV_NAME "${dev_params[@]}" "$root_hash" \
+		2>&1 >/dev/null | grep -q "Device $DEV_NAME already exists" \
+		|| fail
+	$VERITYSETUP close $DEV_NAME &>/dev/null || fail
 
-	# Then do two concurrent opens, and check that libdevmapper did not return -EINVAL, which is
-	# not gracefully recoverable. Either could fail depending on scheduling, so just check that
-	# the libdevmapper error does not appear in either of the outputs.
-	cat /dev/null >$DEV_OUT
-	$VERITYSETUP create -v --shared $DEV_NAME $DEV_PARAMS $1 >>$DEV_OUT 2>&1 &
-	$VERITYSETUP create -v --shared $DEV_NAME $DEV_PARAMS $1 >>$DEV_OUT 2>&1 &
+	# Then do two concurrent opens, and check that libdevmapper did not
+	# return -EINVAL, which is not gracefully recoverable. Either could fail
+	# depending on scheduling, so just check that the libdevmapper error
+	# does not appear in either of the outputs.
+	echo -n > $DEV_OUT
+	$VERITYSETUP create -v --shared $DEV_NAME "${dev_params[@]}" \
+		"$root_hash" &>>$DEV_OUT &
+	$VERITYSETUP create -v --shared $DEV_NAME "${dev_params[@]}" \
+		"$root_hash" &>>$DEV_OUT &
 	wait
 	grep -q "Command failed with code .* (wrong or missing parameters)" $DEV_OUT && fail
 	grep -q "Command failed with code .* (wrong device or file specified)." $DEV_OUT && fail
 	# Some distros have strange udev rules, settle here seems to be necessary
-	udevadm settle >/dev/null 2>&1
+	udevadm settle &>/dev/null
 	check_exists
 	rm $DEV_OUT
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP close $DEV_NAME &>/dev/null || fail
 
 	echo "[OK]"
 }
 
 export LANG=C
-[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+[ "$(id -u)" != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$VERITYSETUP" ] && skip "Cannot find $VERITYSETUP, test skipped."
 
 [ -n "$VALG" ] && valgrind_setup && VERITYSETUP=valgrind_run
-modprobe dm-verity >/dev/null 2>&1
-dmsetup targets | grep verity >/dev/null 2>&1 || skip "Cannot find dm-verity target, test skipped."
+modprobe dm-verity &>/dev/null
+dmsetup targets | grep verity &>/dev/null || skip "Cannot find dm-verity target, test skipped."
 command -v blockdev >/dev/null || skip "Cannot find blockdev utility, test skipped."
 
 # VERITYSETUP tests
@@ -552,24 +743,23 @@ if check_version 1 3; then
 	echo "Veritysetup [FEC tests]"
 	for INDEX in  {1..4}; do
 	  # in the first iteration check if we can use FEC (it can be compiled-out)
-	  (check_fec $IMG $IMG $IMG 4096 30 150 163840 409600 $(($RANDOM % 23 + 2)) $(($INDEX * 4)))
+	  (check_fec $IMG $IMG $IMG 4096 30 150 163840 409600 $((RANDOM % 23 + 2)) $((INDEX * 4)))
 	  RET=$?
-	  [ "$RET" -eq 3 ] && break
-	  [ "$RET" -eq 0 ] || fail "FEC repair failed"
+	  (( RET == 3 )) && break
+	  (( RET == 0 )) || fail "FEC repair failed"
 
-	  (check_fec $IMG $IMG $IMG 512  500 50000 2457600 4915200 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
-	  (check_fec $IMG $IMG $IMG 512  500 50000 2457600 4915200 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'y' $SALT) || fail "FEC repair failed"
-	  (check_fec $IMG $IMG $IMG 4096  64 6250  4194304 8388608 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
-	  (check_fec $IMG $IMG $IMG 4096  64 6250  4194304 8388608 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'y' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG $IMG 512  500 50000 2457600 4915200 $((RANDOM % 23 + 2)) $((INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG $IMG 512  500 50000 2457600 4915200 $((RANDOM % 23 + 2)) $((INDEX * 4)) 'y' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG $IMG 4096  64 6250  4194304 8388608 $((RANDOM % 23 + 2)) $((INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG $IMG 4096  64 6250  4194304 8388608 $((RANDOM % 23 + 2)) $((INDEX * 4)) 'y' $SALT) || fail "FEC repair failed"
 
-	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
-	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 35 35 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
-	  (check_fec $IMG $IMG_HASH $FEC_DEV 512 2000 2000 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
-	  (check_fec $IMG $IMG_HASH $FEC_DEV 1024 2000 2000 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $((RANDOM % 23 + 2)) $((INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 35 35 0 0 $((RANDOM % 23 + 2)) $((INDEX * 4))) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 512 2000 2000 0 0 $((RANDOM % 23 + 2)) $((INDEX * 4))) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 1024 2000 2000 0 0 $((RANDOM % 23 + 2)) $((INDEX * 4))) || fail "FEC repair failed"
 	  # this test should fail
-	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $(($RANDOM % 23 + 2)) $(($RANDOM % 200 + 200)))
-	  RET=$?
-	  [ "$RET" -eq 1 ] || fail "FEC repair must fail"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $((RANDOM % 23 + 2)) $((RANDOM % 200 + 200)))
+	  (( $? == 1 )) || fail "FEC repair must fail"
 	  echo "[OK]"
 	done
 fi
@@ -589,24 +779,27 @@ check_concurrent 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c3932517
 
 echo -n "Deferred removal of device:"
 prepare 8192 1024
-$VERITYSETUP format $LOOPDEV1 $IMG_HASH --format=1 --data-block-size=512 --hash-block-size=512 --hash=sha256 --salt=$SALT >/dev/null 2>&1 || fail "Cannot format device."
-$VERITYSETUP open $LOOPDEV1 $DEV_NAME $DEV $IMG_HASH 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 || fail "Cannot activate device."
+$VERITYSETUP format "$LOOPDEV1" $IMG_HASH --format=1 --data-block-size=512 \
+	--hash-block-size=512 --hash=sha256 --salt=$SALT &>/dev/null \
+	|| fail "Cannot format device."
+$VERITYSETUP open "$LOOPDEV1" $DEV_NAME $IMG_HASH \
+	9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 \
+	|| fail "Cannot activate device."
 dmsetup create $DEV_NAME2 --table "0 8 linear /dev/mapper/$DEV_NAME 0"
 [ ! -b /dev/mapper/$DEV_NAME2 ] && fail
-$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 && fail
-$VERITYSETUP status $DEV_NAME >/dev/null 2>&1 || fail
-$VERITYSETUP close --deferred $DEV_NAME >/dev/null 2>&1
-if [ $? -eq 0 ] ; then
+$VERITYSETUP close $DEV_NAME &>/dev/null && fail
+$VERITYSETUP status $DEV_NAME &>/dev/null || fail
+if $VERITYSETUP close --deferred $DEV_NAME &>/dev/null; then
 	dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" || fail
-	$VERITYSETUP close --cancel-deferred $DEV_NAME >/dev/null 2>&1
-	dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" >/dev/null 2>&1 && fail
-	$VERITYSETUP close --deferred $DEV_NAME >/dev/null 2>&1
+	$VERITYSETUP close --cancel-deferred $DEV_NAME &>/dev/null
+	dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" &>/dev/null && fail
+	$VERITYSETUP close --deferred $DEV_NAME &>/dev/null
 	dmsetup remove $DEV_NAME2 || fail
-	$VERITYSETUP status $DEV_NAME >/dev/null 2>&1 && fail
+	$VERITYSETUP status $DEV_NAME &>/dev/null && fail
 	echo "[OK]"
 else
-	dmsetup remove $DEV_NAME2 >/dev/null 2>&1
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1
+	dmsetup remove $DEV_NAME2 &>/dev/null
+	$VERITYSETUP close $DEV_NAME &>/dev/null
 	echo "[N/A]"
 fi
 
@@ -614,9 +807,15 @@ echo -n "Early check for active name:"
 prepare 8192 1024
 DM_BAD_NAME=x/x
 DM_LONG_NAME=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-$VERITYSETUP format $LOOPDEV1 $IMG_HASH --format=1 --data-block-size=512 --hash-block-size=512 --hash=sha256 --salt=$SALT >/dev/null 2>&1 || fail "Cannot format device."
-$VERITYSETUP open $LOOPDEV1 $DM_BAD_NAME $DEV $IMG_HASH 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 2>/dev/null && fail
-$VERITYSETUP open $LOOPDEV1 $DM_LONG_NAME $DEV $IMG_HASH 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 2>/dev/null && fail
+$VERITYSETUP format "$LOOPDEV1" $IMG_HASH --format=1 \
+	--data-block-size=512 --hash-block-size=512 --hash=sha256 --salt=$SALT \
+	&>/dev/null || fail "Cannot format device."
+$VERITYSETUP open "$LOOPDEV1" $DM_BAD_NAME $IMG_HASH \
+	9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 \
+	2>/dev/null && fail
+$VERITYSETUP open "$LOOPDEV1" $DM_LONG_NAME $IMG_HASH \
+	9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 \
+	2>/dev/null && fail
 echo "[OK]"
 
 remove_mapping
