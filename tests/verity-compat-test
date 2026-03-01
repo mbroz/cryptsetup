@@ -475,49 +475,76 @@ valgrind_run()
 	INFOSTRING="$(basename "${BASH_SOURCE[1]}")-line-${BASH_LINENO[0]}" ./valg.sh "${VERITYSETUP_VALGRIND}" "$@"
 }
 
-checkOffsetBug() # $1 size, $2 hash-offset, $3 data-blocks
+checkOffsetBug()
 {
-	echo -n "Size :: $1 B | Hash-offset :: $2 blocks | Data-blocks :: $3 "
-	dd if=/dev/zero of=$IMG bs=1 count=0 seek=$1 >/dev/null 2>&1
-	$VERITYSETUP --data-blocks=$3 --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1 || fail "Test [hash-offset greater than 2G] failed"
+	local device_size=$1 # in bytes
+	local hash_offset=$2 # in bytes
+	local data_blocks=$3
+
+	echo -n "Device-size :: $device_size B | "
+	echo -n "Hash-offset :: $hash_offset B | "
+	echo -n "Data-blocks :: $data_blocks "
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek="$device_size" &>/dev/null
+	$VERITYSETUP --data-blocks="$data_blocks" --hash-offset="$hash_offset" \
+		format $IMG $IMG &>/dev/null \
+		|| fail "Test [hash-offset greater than 2G] failed"
 	echo "[OK]"
 	remove_mapping
 }
 
-checkOverlapBug() # $1 size, $2 hash-offset, $3 data-blocks, $4 block_size, $5 fec_offset
+checkOverlapBug()
 {
-	echo -n "Device-size :: $1 B | "
-	[ $# -ge 3 ] && echo -n "Data-blocks :: $3 blocks| "
-	[ $# -lt 3 ] && echo -n "Data-blocks :: whole device | "
-	[ $# -ge 4 ] && echo -n "Block-size :: $4 B | "
-	[ $# -lt 4 ] && echo -n "Block-size :: 4096 B | "
-	echo -n "Hash-offset :: $2 B | "
+	local device_size=$1
+	local hash_offset=$2 # in bytes
+	local data_blocks=$3 # optional, defaults to whole device
+	local block_size=$4 # optional, defaults to 4096
+	local fec_offset=$5 # optional
 
-	dd if=/dev/zero of=$IMG bs=1 count=0 seek=$1 >/dev/null 2>&1
-	if [ -z $3 ] ; then
+	echo -n "Device-size :: $device_size B | "
+	[ -n "$data_blocks" ] && echo -n "Data-blocks :: $data_blocks blocks| "
+	[ -z "$data_blocks" ] && echo -n "Data-blocks :: whole device | "
+	[ -n "$block_size" ] && echo -n "Block-size :: $block_size B | "
+	[ -z "$block_size" ] && echo -n "Block-size :: 4096 B | "
+	echo -n "Hash-offset :: $hash_offset B | "
+
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek="$device_size" &>/dev/null
+	if [ -z "$data_blocks" ] ; then
 		# veritysetup must fail
-		$VERITYSETUP --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1 && fail "Test [overlap with option \"--data-blocks\" not entered] failed"
+		$VERITYSETUP --hash-offset="$hash_offset" format $IMG $IMG \
+			&>/dev/null \
+			&& fail "Test [overlap with option \"--data-blocks\" not entered] failed"
 	else
-		$VERITYSETUP --data-block-size=$4 --hash-block-size=$4 --data-blocks=$3 --hash-offset=$2 format $IMG $IMG >/dev/null 2>&1
-		RET=$?
-		[ "$3" -gt "$(($2 / $4))" ] && [ "$RET" -eq "0" ] && fail "Test [overlap - hash-offset in data area] failed"
+		$VERITYSETUP --data-block-size="$block_size" \
+			--hash-block-size="$block_size" \
+			--data-blocks="$data_blocks" \
+			--hash-offset="$hash_offset" \
+			format $IMG $IMG &>/dev/null \
+			&& (( data_blocks > hash_offset / block_size )) \
+			&& fail "Test [overlap - hash-offset in data area] failed"
 	fi
 
-	if [ $# -eq 5 ] ; then
-		echo -n "FEC-offset :: $5 B | "
-		PARAMS="--data-block-size=$4 --hash-block-size=$4 --data-blocks=$3 --fec-device=$IMG --fec-offset=$5"
+	if [ -n "$fec_offset" ] ; then
+		echo -n "FEC-offset :: $fec_offset B | "
+		local params=(--data-block-size="$block_size"
+			      --hash-block-size="$block_size"
+			      --data-blocks="$data_blocks"
+			      --fec-device="$IMG"
+			      --fec-offset="$fec_offset")
 
 		# test data-fec area overlap
-		$VERITYSETUP format $IMG $IMG_HASH $PARAMS >/dev/null 2>&1
-		RET=$?
-		[ "$(($3*$4))" -gt "$5" ] && [ "$RET" -eq "0" ] && fail "Test [data/fec area overlap] failed"
+		$VERITYSETUP format $IMG $IMG_HASH "${params[@]}" \
+			&>/dev/null \
+			&& (( data_blocks * block_size > fec_offset )) \
+			&& fail "Test [data/fec area overlap] failed"
 
-		HASH_SIZE=$(stat --printf="%s" $IMG_HASH)
+		local hash_size
+		hash_size=$(stat --printf="%s" $IMG_HASH)
 
 		# test hash-fec area overlap
-		$VERITYSETUP format $IMG $IMG $PARAMS --hash-offset=$2 >/dev/null 2>&1
-		RET=$?
-		[ "$(($2 + $HASH_SIZE))" -gt "$5" ] && [ "$RET" -eq "0" ] && fail "Test [hash/fec area overlap] failed"
+		$VERITYSETUP format $IMG $IMG "${params[@]}" \
+			--hash-offset="$hash_offset" &>/dev/null \
+			&& (( hash_offset + hash_size > fec_offset )) \
+			&& fail "Test [hash/fec area overlap] failed"
 	fi
 
 	echo "[OK]"
