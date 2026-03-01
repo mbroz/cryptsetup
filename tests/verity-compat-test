@@ -624,31 +624,39 @@ checkUserSpaceRepair()
 	echo "[OK]"
 }
 
-check_concurrent() # $1 hash
+check_concurrent()
 {
-	DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
+	local root_hash=$1
+
+	local dev_params=("$LOOPDEV1" "$LOOPDEV2")
 
 	# First check that with two sequential opens, we are returning the expected -EEXIST
-	$VERITYSETUP format $DEV_PARAMS >/dev/null 2>&1 || fail
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $1 >/dev/null 2>&1 || fail
+	$VERITYSETUP format "${dev_params[@]}" &>/dev/null || fail
+	$VERITYSETUP create $DEV_NAME "${dev_params[@]}" "$root_hash" \
+		&>/dev/null || fail
 	check_exists
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $1 2>&1 >/dev/null | grep -q "Device $DEV_NAME already exists" || fail
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP create $DEV_NAME "${dev_params[@]}" "$root_hash" \
+		2>&1 >/dev/null | grep -q "Device $DEV_NAME already exists" \
+		|| fail
+	$VERITYSETUP close $DEV_NAME &>/dev/null || fail
 
-	# Then do two concurrent opens, and check that libdevmapper did not return -EINVAL, which is
-	# not gracefully recoverable. Either could fail depending on scheduling, so just check that
-	# the libdevmapper error does not appear in either of the outputs.
-	cat /dev/null >$DEV_OUT
-	$VERITYSETUP create -v --shared $DEV_NAME $DEV_PARAMS $1 >>$DEV_OUT 2>&1 &
-	$VERITYSETUP create -v --shared $DEV_NAME $DEV_PARAMS $1 >>$DEV_OUT 2>&1 &
+	# Then do two concurrent opens, and check that libdevmapper did not
+	# return -EINVAL, which is not gracefully recoverable. Either could fail
+	# depending on scheduling, so just check that the libdevmapper error
+	# does not appear in either of the outputs.
+	echo -n > $DEV_OUT
+	$VERITYSETUP create -v --shared $DEV_NAME "${dev_params[@]}" \
+		"$root_hash" &>>$DEV_OUT &
+	$VERITYSETUP create -v --shared $DEV_NAME "${dev_params[@]}" \
+		"$root_hash" &>>$DEV_OUT &
 	wait
 	grep -q "Command failed with code .* (wrong or missing parameters)" $DEV_OUT && fail
 	grep -q "Command failed with code .* (wrong device or file specified)." $DEV_OUT && fail
 	# Some distros have strange udev rules, settle here seems to be necessary
-	udevadm settle >/dev/null 2>&1
+	udevadm settle &>/dev/null
 	check_exists
 	rm $DEV_OUT
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP close $DEV_NAME &>/dev/null || fail
 
 	echo "[OK]"
 }
