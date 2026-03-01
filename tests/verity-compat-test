@@ -165,94 +165,116 @@ check_root_hash_fail()
 	echo "[OK]"
 }
 
-check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6 offset]
+check_root_hash()
 {
-	local FORMAT_PARAMS
-	local VERIFY_PARAMS
-	local ROOT_HASH
+	local block_size=$1
+	local root_hash=$2
+	local salt=$3
+	local version=$4
+	local hash_alg=$5
+	local hash_offset=$6 # used only if LOOPDEV2 is unset or empty
 
+	local dev_params
 	if [ -z "$LOOPDEV2" ] ; then
-		BLOCKS=$(($6 / $1))
-		DEV_PARAMS="$LOOPDEV1 $LOOPDEV1 \
-			   --hash-offset $6 \
-			   --data-blocks=$BLOCKS --debug"
+		dev_params=("$LOOPDEV1" "$LOOPDEV1" \
+			    --hash-offset="$hash_offset" \
+			    --data-blocks=$((hash_offset / block_size)) \
+			    --debug)
 	else
-		DEV_PARAMS="$LOOPDEV1 $LOOPDEV2"
+		dev_params=("$LOOPDEV1" "$LOOPDEV2")
 	fi
 
-	for root_hash_as_file in yes no; do
-	for sb in yes no; do
-	FORMAT_PARAMS="--format=$4 --data-block-size=$1 --hash-block-size=$1 --hash=$5 --salt=$3"
-	if [ $sb == yes ] ; then
-		VERIFY_PARAMS=""
-	else
-		FORMAT_PARAMS="$FORMAT_PARAMS --no-superblock"
-		VERIFY_PARAMS=$FORMAT_PARAMS
+	local root_hash_as_file sb
+	for root_hash_as_file in true false; do
+	for sb in true false; do
+
+	local format_params=(--format="$version"
+			     --data-block-size="$block_size"
+			     --hash-block-size="$block_size"
+			     --hash="$hash_alg"
+			     --salt="$salt")
+	local verify_params=()
+	if ! $sb; then
+		format_params+=(--no-superblock)
+		verify_params=("${format_params[@]}")
 	fi
-	if [ $root_hash_as_file == yes ] ; then
-		echo -n $2 > $IMG.roothash
-		FORMAT_PARAMS="$FORMAT_PARAMS --root-hash-file=$IMG.roothash"
-		VERIFY_PARAMS="$VERIFY_PARAMS --root-hash-file=$IMG.roothash"
-		ROOT_HASH=""
+	if $root_hash_as_file; then
+		echo -n "$root_hash" > "$IMG.roothash"
+		format_params+=(--root-hash-file="$IMG.roothash")
+		verify_params+=(--root-hash-file="$IMG.roothash")
 	else
-		ROOT_HASH="$2"
+		verify_params+=("$root_hash")
 	fi
 
-	for fail in data hash; do
+	local device_to_corrupt
+	for device_to_corrupt in "data_dev" "hash_dev"; do
 	wipe
-	echo -n "V$4(sb=$sb root_hash_as_file=$root_hash_as_file) $5 block size $1: "
-	$VERITYSETUP format $DEV_PARAMS $FORMAT_PARAMS >$DEV_OUT
-	if [ $? -ne 0 ] ; then
-		if [[ $1 =~ "sha2" ]] ; then
+	echo -n "V$version(sb=$sb root_hash_as_file=$root_hash_as_file) $hash_alg block size $block_size: "
+	if ! $VERITYSETUP format "${dev_params[@]}" "${format_params[@]}" \
+		>$DEV_OUT
+	then
+		if [[ $hash_alg == sha2* ]]; then
 			fail "Cannot format device."
 		fi
 		return
 	fi
 
 	echo -n "[root hash]"
-	compare_out "root hash" $2
-	compare_out "salt" "$3"
+	compare_out "root hash" "$root_hash"
+	compare_out "salt" "$salt"
 
-	$VERITYSETUP verify $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH >>$DEV_OUT 2>&1 || fail
+	$VERITYSETUP verify "${dev_params[@]}" "${verify_params[@]}" \
+		&>>$DEV_OUT || fail
 	echo -n "[verify]"
 
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH  >>$DEV_OUT 2>&1 || fail
+	$VERITYSETUP create $DEV_NAME "${dev_params[@]}" "${verify_params[@]}" \
+		&>>$DEV_OUT || fail
 	check_exists
-	SIZE_BYTES=$(blockdev --getsize64 /dev/mapper/$DEV_NAME)
-	SIZE_512S=$(( $SIZE_BYTES / 512 ))
-	$VERITYSETUP status $DEV_NAME 2>/dev/null | grep " size:" | grep -q -F "$SIZE_512S [512-byte units] ($SIZE_BYTES [bytes])" || fail
+	local device_size
+	device_size=$(blockdev --getsize64 /dev/mapper/$DEV_NAME)
+	$VERITYSETUP status $DEV_NAME 2>/dev/null \
+		| grep " size:" \
+		| grep -q -F "$((device_size / 512)) [512-byte units] ($device_size [bytes])" \
+		|| fail
 	echo -n "[activate]"
 
-	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=$1 2>/dev/null
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs="$block_size" 2>/dev/null
 	dmsetup status $DEV_NAME | grep "verity V" >/dev/null || fail
 	echo -n "[in-kernel verify]"
 
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+	$VERITYSETUP close $DEV_NAME &>/dev/null || fail
 
-	case $fail in
-	data)
-		dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=3456 count=8 conv=notrunc 2>/dev/null
-		TXT="data_dev"
+	case $device_to_corrupt in
+	data_dev)
+		dd if=/dev/urandom of="$LOOPDEV1" bs=1 \
+			seek=3456 count=8 conv=notrunc \
+			2>/dev/null
 		;;
-	hash)
+	hash_dev)
 		if [ -z "$LOOPDEV2" ] ; then
-			dd if=/dev/urandom of=$LOOPDEV1 bs=1 seek=$((8193 + $4)) count=8 conv=notrunc 2>/dev/null
+			dd if=/dev/urandom of="$LOOPDEV1" bs=1 \
+			   seek=$((8193 + hash_offset)) count=8 conv=notrunc \
+			   2>/dev/null
 		else
-			dd if=/dev/urandom of=$LOOPDEV2 bs=1 seek=8193 count=8 conv=notrunc 2>/dev/null
+			dd if=/dev/urandom of="$LOOPDEV2" bs=1 \
+			   seek=8193 count=8 conv=notrunc \
+			   2>/dev/null
 		fi
-                TXT="hash_dev"
 		;;
 	esac
 
-	$VERITYSETUP verify $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH >>$DEV_OUT 2>&1 && \
-		fail "userspace check for $TXT corruption"
-	$VERITYSETUP create $DEV_NAME $DEV_PARAMS $VERIFY_PARAMS $ROOT_HASH >>$DEV_OUT 2>&1 || \
-		fail "activation"
-	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=$1 2>/dev/null
-	dmsetup status $DEV_NAME | grep "verity V" >/dev/null && \
-		fail "in-kernel check for $TXT corruption"
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail "deactivation"
-	echo "[$TXT corruption]"
+	$VERITYSETUP verify "${dev_params[@]}" "${verify_params[@]}" \
+		&>>$DEV_OUT \
+		&& fail "userspace check for $device_to_corrupt corruption"
+	$VERITYSETUP create $DEV_NAME "${dev_params[@]}" "${verify_params[@]}" \
+		&>>$DEV_OUT \
+		|| fail "activation"
+	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs="$block_size" 2>/dev/null
+	dmsetup status $DEV_NAME | grep "verity V" >/dev/null \
+		&& fail "in-kernel check for $device_to_corrupt corruption"
+	$VERITYSETUP close $DEV_NAME &>/dev/null \
+		|| fail "deactivation"
+	echo "[$device_to_corrupt corruption]"
 	done
 	done
 	done
