@@ -457,17 +457,22 @@ check_option()
 
 valgrind_setup()
 {
-	command -v valgrind >/dev/null || fail "Cannot find valgrind."
-	[ ! -f $VERITYSETUP_VALGRIND ] && fail "Unable to get location of veritysetup executable."
-	[ ! -f valg.sh ] && fail "Unable to get location of valg runner script."
+	command -v valgrind >/dev/null \
+		|| fail "Cannot find valgrind."
+	[ -f "$VERITYSETUP_VALGRIND" ] \
+		|| fail "Unable to get location of veritysetup executable."
+	[ -f valg.sh ] \
+		|| fail "Unable to get location of valg runner script."
 	if [ -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 		export LD_LIBRARY_PATH="$VERITYSETUP_LIB_VALGRIND:$LD_LIBRARY_PATH"
 	fi
 }
 
+# Called by name.  Suppress "function is never invoked" shellcheck warning.
+# shellcheck disable=SC2329
 valgrind_run()
 {
-	INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}" ./valg.sh ${VERITYSETUP_VALGRIND} "$@"
+	INFOSTRING="$(basename "${BASH_SOURCE[1]}")-line-${BASH_LINENO[0]}" ./valg.sh "${VERITYSETUP_VALGRIND}" "$@"
 }
 
 checkOffsetBug() # $1 size, $2 hash-offset, $3 data-blocks
