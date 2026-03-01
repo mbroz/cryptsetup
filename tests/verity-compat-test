@@ -300,90 +300,126 @@ corrupt_device()
 	done
 }
 
-# $1 data_device, $2 hash_device, $3 fec_device, $4 data/hash_block_size(in bytes),
-# $5 data_size(in blocks), $6 device_size(in blocks), $7 hash_offset(in bytes),
-# $8 fec_offset(in bytes), $9 fec_roots, ${10} corrupted_bytes, [${11} superblock(y/n), ${12} salt]
-# NOTE: do not use fail() in this function, use RET code
+# NOTE: do not use fail() in this function, use the return code
 check_fec()
 {
+	local data_dev=$1
+	local hash_dev=$2
+	local fec_dev=$3
+	local block_size=$4
+	local data_blocks=$5
+	local device_blocks=$6
+	local hash_offset=$7 # in bytes
+	local fec_offset=$8 # in bytes
+	local fec_roots=$9
+	local num_corrupted_bytes=${10}
+	local use_superblock=${11} # y/n
+	local salt=${12}
+
 	INDEX=25
-	dd if=/dev/zero of=$1 bs=$4 count=$6 > /dev/null 2>&1
+	dd if=/dev/zero of="$data_dev" bs="$block_size" count="$device_blocks" \
+		&>/dev/null
 
-	echo -n "Block_size: $4, Data_size: $(($4 * $5))B, FEC_roots: $9, Corrupted_bytes: ${10} "
+	echo -n "Block_size: $block_size, "
+	echo -n "Data_size: $((block_size * data_blocks))B, "
+	echo -n "FEC_roots: $fec_roots, "
+	echo -n "Corrupted_bytes: $num_corrupted_bytes "
 
-	PARAMS=" --data-block-size=$4 --hash-block-size=$4 "
-	if [ "$5" -ne "$6" ]; then
-		PARAMS="$PARAMS --data-blocks=$5"
+	local params=(--data-block-size="$block_size"
+		      --hash-block-size="$block_size")
+	if (( data_blocks != device_blocks )); then
+		params+=(--data-blocks="$data_blocks")
 	fi
 
-	if [ "$7" -ne 0 ]; then
-		PARAMS="$PARAMS --hash-offset=$7"
+	if (( hash_offset != 0 )); then
+		params+=(--hash-offset="$hash_offset")
 	fi
 
-	if [ "$8" -ne 0 ]; then
-		PARAMS="$PARAMS --fec-offset=$8"
+	if (( fec_offset != 0 )); then
+		params+=(--fec-offset="$fec_offset")
 	fi
 
-	if [ "${11}" == "n" ]; then
+	if [ "$use_superblock" = "n" ]; then
 		INDEX=24
 		echo -n "[no-superblock]"
-		PARAMS="$PARAMS --no-superblock --salt=${12}"
-	elif [ -n "${12}" ]; then
-		PARAMS="$PARAMS --salt=${12}"
+		params+=(--no-superblock --salt="$salt")
+	elif [ -n "$salt" ]; then
+		params+=(--salt="$salt")
 	fi
 
-	if [[ "$1" == "$2" && "$1" == "$3" ]]; then
+	local orig_hash
+	if [ "$data_dev" = "$hash_dev" ] && [ "$data_dev" = "$fec_dev" ]; then
 		echo -n "[one_device_test]"
-		dd if=/dev/zero of=$IMG_TMP bs=$4 count=$5  > /dev/null 2>&1
-		HASH_ORIG=$(sha256sum $IMG_TMP | cut -d' ' -f 1)
+		dd if=/dev/zero of=$IMG_TMP bs="$block_size" \
+			count="$data_blocks" &>/dev/null
+		orig_hash=$(sha256sum $IMG_TMP | cut -d' ' -f 1)
 	else
-		HASH_ORIG=$(sha256sum $1 | cut -d' ' -f 1)
+		orig_hash=$(sha256sum "$data_dev" | cut -d' ' -f 1)
 	fi
 
-	ROOT_HASH=$($VERITYSETUP format $1 $2 --fec-device=$3 $PARAMS | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
+	local root_hash
+	root_hash=$($VERITYSETUP format "$data_dev" "$hash_dev" \
+		    --fec-device="$fec_dev" "${params[@]}" | \
+		    grep "Root hash" | cut -d: -f2 | tr -d "\t\n ")
 
-	corrupt_device $1 $(($5 * $4)) ${10}
+	corrupt_device "$data_dev" $((data_blocks * block_size)) \
+		       "$num_corrupted_bytes"
 
-	$VERITYSETUP create $DEV_NAME $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS > /dev/null 2>&1
-	if [ "$?" -ne "0" ] ; then
+	if ! $VERITYSETUP create $DEV_NAME "$data_dev" "$hash_dev" \
+		"$root_hash" --fec-device="$fec_dev" "${params[@]}" &>/dev/null
+	then
 		echo "[N/A, test skipped]"
 		return 3
 	fi
 
-	udevadm settle > /dev/null 2>&1
+	udevadm settle &>/dev/null
 
-	dd if=/dev/mapper/$DEV_NAME of=$IMG_TMP > /dev/null 2>&1
-	HASH_REPAIRED=$(sha256sum $IMG_TMP | cut -d' ' -f 1)
+	dd if=/dev/mapper/$DEV_NAME of=$IMG_TMP &>/dev/null
 
+	local repaired_hash repaired
+	repaired_hash=$(sha256sum $IMG_TMP | cut -d' ' -f 1)
 	# If empty, status not supported
-	REPAIRED=$(dmsetup status $DEV_NAME |sed -e s/.*verity\ \[VC\]\ *//)
-	if [ -n "$REPAIRED" -a "$REPAIRED" != "-" ] ; then
-		echo -n "[EC events: $REPAIRED]"
+	repaired=$(dmsetup status $DEV_NAME |sed -e s/.*verity\ \[VC\]\ *//)
+	if [ -n "$repaired" ] && [ "$repaired" != "-" ]; then
+		echo -n "[EC events: $repaired]"
 	else
-		REPAIRED=""
+		repaired=""
 	fi
 
 	$VERITYSETUP close $DEV_NAME
 
-	if [ "$HASH_ORIG" != "$HASH_REPAIRED" ]; then
-		RET=1
-		if [ -n "$REPAIRED" ]; then
-			[ "$REPAIRED" -eq 0 ] || { RET=4; echo "FEC repaired events should be 0."; }
+	local ret
+	if [ "$orig_hash" != "$repaired_hash" ]; then
+		ret=1
+		if [ -n "$repaired" ] && (( repaired != 0 )); then
+			ret=4
+			echo "FEC repaired events should be 0."
 		fi
 		echo -n "[kernel correction failed]"
-		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 &&  { RET=5; echo "Userspace verify should fail"; }
-		echo -n "[userspace verify failed]"
-	else
-		RET=0
-		echo -n "[repaired in kernel]"
-		if [ -n "$REPAIRED" ]; then
-			[ "$REPAIRED" -gt 0 ] || { RET=4; echo "FEC repaired events should be greater than 0."; }
+		if $VERITYSETUP verify "$data_dev" "$hash_dev" "$root_hash" \
+			--fec-device="$fec_dev" "${params[@]}" &>/dev/null; then
+			ret=5
+			echo "Userspace verify should fail"
+		else
+			echo -n "[userspace verify failed]"
 		fi
-		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 ||  { RET=5; echo "Userspace verify failed"; }
-		echo "[userspace verify][OK]"
+	else
+		ret=0
+		echo -n "[repaired in kernel]"
+		if [ -n "$repaired" ] && (( repaired <= 0 )); then
+			ret=4
+			echo "FEC repaired events should be greater than 0."
+		fi
+		if $VERITYSETUP verify "$data_dev" "$hash_dev" "$root_hash" \
+			--fec-device="$fec_dev" "${params[@]}" &>/dev/null; then
+			echo "[userspace verify][OK]"
+		else
+			ret=5
+			echo "Userspace verify failed"
+		fi
 	fi
-	rm $1 $2 $3 $IMG_TMP > /dev/null 2>&1
-	return $RET
+	rm -f "$data_dev" "$hash_dev" "$fec_dev" $IMG_TMP
+	return $ret
 }
 
 check_option() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, $6 status option, $7-$8 CLI options
