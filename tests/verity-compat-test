@@ -65,23 +65,26 @@ skip()
 	exit 77
 }
 
-prepare() # $1 dev1_siz [$2 dev2_size]
+prepare()
 {
+	local dev1_size=$1 # in KiB
+	local dev2_size=$2 # optional, in KiB
+
 	remove_mapping
 
-	dd if=/dev/zero of=$IMG bs=1k count=$1 >/dev/null 2>&1
+	dd if=/dev/zero of=$IMG bs=1k count="$dev1_size" &>/dev/null
 	LOOPDEV1=$(losetup -f 2>/dev/null)
 	[ -z "$LOOPDEV1" ] && fail "No free loop device"
-	losetup $LOOPDEV1 $IMG
+	losetup "$LOOPDEV1" $IMG
 
-	[ -z "$2" ] && return
+	[ -z "$dev2_size" ] && return
 	LOOPDEV2=$IMG_HASH
 }
 
 wipe()
 {
-	dd if=/dev/zero of=$LOOPDEV1 bs=256k >/dev/null 2>&1
-	rm -f $IMG_HASH $DEV_OUT >/dev/null 2>&1
+	dd if=/dev/zero of="$LOOPDEV1" bs=256k &>/dev/null
+	rm -f $IMG_HASH $DEV_OUT &>/dev/null
 }
 
 check_exists()
@@ -89,33 +92,33 @@ check_exists()
 	[ -b /dev/mapper/$DEV_NAME ] || fail
 }
 
-check_version() # MAJ MIN
+check_version()
 {
-	VER_STR=$(dmsetup targets | grep verity | cut -f 3 -dv)
-	[ -z "$VER_STR" ] && fail "Failed to parse dm-verity version."
+	local major=$1
+	local minor=$2
+	local ver_str ver_major ver_minor
 
-	VER_MAJ=$(echo $VER_STR | cut -f 1 -d.)
-	VER_MIN=$(echo $VER_STR | cut -f 2 -d.)
+	ver_str=$(dmsetup targets | grep verity | cut -f 3 -dv)
+	[ -z "$ver_str" ] && fail "Failed to parse dm-verity version."
 
-	test $VER_MAJ -gt $1 && return 0
-	test $VER_MAJ -lt $1 && return 1
-	test $VER_MIN -ge $2 && return 0
+	ver_major=$(echo "$ver_str" | cut -f 1 -d.)
+	ver_minor=$(echo "$ver_str" | cut -f 2 -d.)
 
-	return 1
+	(( ver_major > major )) || (( ver_major == major && ver_minor >= minor ))
 }
 
 check_version_kernel()
 {
-	KER_STR=$(uname -r)
-	[ -z "$KER_STR" ] && fail "Failed to parse kernel version."
-	KER_MAJ=$(echo $KER_STR | cut -f 1 -d.)
-	KER_MIN=$(echo $KER_STR | cut -f 2 -d.)
+	local major=$1
+	local minor=$2
+	local ker_str ker_major ker_minor
 
-	test $KER_MAJ -gt $1 && return 0
-	test $KER_MAJ -lt $1 && return 1
-	test $KER_MIN -ge $2 && return 0
+	ker_str=$(uname -r)
+	[ -z "$ker_str" ] && fail "Failed to parse kernel version."
+	ker_major=$(echo "$ker_str" | cut -f 1 -d.)
+	ker_minor=$(echo "$ker_str" | cut -f 2 -d.)
 
-	return 1
+	(( ker_major > major )) || (( ker_major == major && ker_minor >= minor ))
 }
 
 compare_out() # $1 what, $2 expected
