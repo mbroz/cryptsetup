@@ -662,12 +662,12 @@ check_concurrent()
 }
 
 export LANG=C
-[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+[ "$(id -u)" != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ ! -x "$VERITYSETUP" ] && skip "Cannot find $VERITYSETUP, test skipped."
 
 [ -n "$VALG" ] && valgrind_setup && VERITYSETUP=valgrind_run
-modprobe dm-verity >/dev/null 2>&1
-dmsetup targets | grep verity >/dev/null 2>&1 || skip "Cannot find dm-verity target, test skipped."
+modprobe dm-verity &>/dev/null
+dmsetup targets | grep verity &>/dev/null || skip "Cannot find dm-verity target, test skipped."
 command -v blockdev >/dev/null || skip "Cannot find blockdev utility, test skipped."
 
 # VERITYSETUP tests
@@ -743,24 +743,23 @@ if check_version 1 3; then
 	echo "Veritysetup [FEC tests]"
 	for INDEX in  {1..4}; do
 	  # in the first iteration check if we can use FEC (it can be compiled-out)
-	  (check_fec $IMG $IMG $IMG 4096 30 150 163840 409600 $(($RANDOM % 23 + 2)) $(($INDEX * 4)))
+	  (check_fec $IMG $IMG $IMG 4096 30 150 163840 409600 $((RANDOM % 23 + 2)) $((INDEX * 4)))
 	  RET=$?
-	  [ "$RET" -eq 3 ] && break
-	  [ "$RET" -eq 0 ] || fail "FEC repair failed"
+	  (( RET == 3 )) && break
+	  (( RET == 0 )) || fail "FEC repair failed"
 
-	  (check_fec $IMG $IMG $IMG 512  500 50000 2457600 4915200 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
-	  (check_fec $IMG $IMG $IMG 512  500 50000 2457600 4915200 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'y' $SALT) || fail "FEC repair failed"
-	  (check_fec $IMG $IMG $IMG 4096  64 6250  4194304 8388608 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
-	  (check_fec $IMG $IMG $IMG 4096  64 6250  4194304 8388608 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'y' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG $IMG 512  500 50000 2457600 4915200 $((RANDOM % 23 + 2)) $((INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG $IMG 512  500 50000 2457600 4915200 $((RANDOM % 23 + 2)) $((INDEX * 4)) 'y' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG $IMG 4096  64 6250  4194304 8388608 $((RANDOM % 23 + 2)) $((INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG $IMG 4096  64 6250  4194304 8388608 $((RANDOM % 23 + 2)) $((INDEX * 4)) 'y' $SALT) || fail "FEC repair failed"
 
-	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
-	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 35 35 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
-	  (check_fec $IMG $IMG_HASH $FEC_DEV 512 2000 2000 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
-	  (check_fec $IMG $IMG_HASH $FEC_DEV 1024 2000 2000 0 0 $(($RANDOM % 23 + 2)) $(($INDEX * 4))) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $((RANDOM % 23 + 2)) $((INDEX * 4)) 'n' $SALT) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 35 35 0 0 $((RANDOM % 23 + 2)) $((INDEX * 4))) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 512 2000 2000 0 0 $((RANDOM % 23 + 2)) $((INDEX * 4))) || fail "FEC repair failed"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 1024 2000 2000 0 0 $((RANDOM % 23 + 2)) $((INDEX * 4))) || fail "FEC repair failed"
 	  # this test should fail
-	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $(($RANDOM % 23 + 2)) $(($RANDOM % 200 + 200)))
-	  RET=$?
-	  [ "$RET" -eq 1 ] || fail "FEC repair must fail"
+	  (check_fec $IMG $IMG_HASH $FEC_DEV 4096 30 30 0 0 $((RANDOM % 23 + 2)) $((RANDOM % 200 + 200)))
+	  (( $? == 1 )) || fail "FEC repair must fail"
 	  echo "[OK]"
 	done
 fi
@@ -780,24 +779,27 @@ check_concurrent 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c3932517
 
 echo -n "Deferred removal of device:"
 prepare 8192 1024
-$VERITYSETUP format $LOOPDEV1 $IMG_HASH --format=1 --data-block-size=512 --hash-block-size=512 --hash=sha256 --salt=$SALT >/dev/null 2>&1 || fail "Cannot format device."
-$VERITYSETUP open $LOOPDEV1 $DEV_NAME $DEV $IMG_HASH 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 || fail "Cannot activate device."
+$VERITYSETUP format "$LOOPDEV1" $IMG_HASH --format=1 --data-block-size=512 \
+	--hash-block-size=512 --hash=sha256 --salt=$SALT &>/dev/null \
+	|| fail "Cannot format device."
+$VERITYSETUP open "$LOOPDEV1" $DEV_NAME $IMG_HASH \
+	9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 \
+	|| fail "Cannot activate device."
 dmsetup create $DEV_NAME2 --table "0 8 linear /dev/mapper/$DEV_NAME 0"
 [ ! -b /dev/mapper/$DEV_NAME2 ] && fail
-$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 && fail
-$VERITYSETUP status $DEV_NAME >/dev/null 2>&1 || fail
-$VERITYSETUP close --deferred $DEV_NAME >/dev/null 2>&1
-if [ $? -eq 0 ] ; then
+$VERITYSETUP close $DEV_NAME &>/dev/null && fail
+$VERITYSETUP status $DEV_NAME &>/dev/null || fail
+if $VERITYSETUP close --deferred $DEV_NAME &>/dev/null; then
 	dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" || fail
-	$VERITYSETUP close --cancel-deferred $DEV_NAME >/dev/null 2>&1
-	dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" >/dev/null 2>&1 && fail
-	$VERITYSETUP close --deferred $DEV_NAME >/dev/null 2>&1
+	$VERITYSETUP close --cancel-deferred $DEV_NAME &>/dev/null
+	dmsetup info $DEV_NAME | grep -q "DEFERRED REMOVE" &>/dev/null && fail
+	$VERITYSETUP close --deferred $DEV_NAME &>/dev/null
 	dmsetup remove $DEV_NAME2 || fail
-	$VERITYSETUP status $DEV_NAME >/dev/null 2>&1 && fail
+	$VERITYSETUP status $DEV_NAME &>/dev/null && fail
 	echo "[OK]"
 else
-	dmsetup remove $DEV_NAME2 >/dev/null 2>&1
-	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1
+	dmsetup remove $DEV_NAME2 &>/dev/null
+	$VERITYSETUP close $DEV_NAME &>/dev/null
 	echo "[N/A]"
 fi
 
@@ -805,9 +807,15 @@ echo -n "Early check for active name:"
 prepare 8192 1024
 DM_BAD_NAME=x/x
 DM_LONG_NAME=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-$VERITYSETUP format $LOOPDEV1 $IMG_HASH --format=1 --data-block-size=512 --hash-block-size=512 --hash=sha256 --salt=$SALT >/dev/null 2>&1 || fail "Cannot format device."
-$VERITYSETUP open $LOOPDEV1 $DM_BAD_NAME $DEV $IMG_HASH 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 2>/dev/null && fail
-$VERITYSETUP open $LOOPDEV1 $DM_LONG_NAME $DEV $IMG_HASH 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 2>/dev/null && fail
+$VERITYSETUP format "$LOOPDEV1" $IMG_HASH --format=1 \
+	--data-block-size=512 --hash-block-size=512 --hash=sha256 --salt=$SALT \
+	&>/dev/null || fail "Cannot format device."
+$VERITYSETUP open "$LOOPDEV1" $DM_BAD_NAME $IMG_HASH \
+	9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 \
+	2>/dev/null && fail
+$VERITYSETUP open "$LOOPDEV1" $DM_LONG_NAME $IMG_HASH \
+	9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 \
+	2>/dev/null && fail
 echo "[OK]"
 
 remove_mapping
