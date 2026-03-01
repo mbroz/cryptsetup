@@ -23,30 +23,45 @@ DEV_UUID=a60c98d2-ae9b-4865-bfcb-b4e3ace11033
 
 remove_mapping()
 {
-	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2 >/dev/null 2>&1
-	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME >/dev/null 2>&1
-	[ ! -z "$LOOPDEV1" ] && losetup -d $LOOPDEV1 >/dev/null 2>&1
-	rm -f $IMG $IMG.roothash $IMG_HASH $DEV_OUT $FEC_DEV $IMG_TMP >/dev/null 2>&1
+	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove $DEV_NAME2 &>/dev/null
+	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove $DEV_NAME &>/dev/null
+	[ -n "$LOOPDEV1" ] && losetup -d "$LOOPDEV1" &>/dev/null
+	rm -f $IMG $IMG.roothash $IMG_HASH $DEV_OUT $FEC_DEV $IMG_TMP
 	LOOPDEV1=""
 	LOOPDEV2=""
 }
 
 fail()
 {
-	[ -n "$1" ] && echo "$1"
+	local message=$1
+
+	[ -n "$message" ] && echo "$message"
 	echo "FAILED backtrace:"
-	while caller $frame; do ((frame++)); done
+	local frame=0
+	while caller $frame; do
+		(( ++frame ))
+	done
 	[ -f $DEV_OUT ] && cat $DEV_OUT
 	remove_mapping
 	exit 2
 }
 
-_sigchld() { local c=$?; [ $c -eq 139 ] && fail "Segfault"; [ $c -eq 134 ] && fail "Aborted"; }
+# Used only by 'trap'.  Suppress "function is never invoked" shellcheck warning.
+# shellcheck disable=SC2329
+_sigchld()
+{
+	local c=$?
+	(( c == 139 )) && fail "Segfault"
+	(( c == 134 )) && fail "Aborted"
+	return "$c"
+}
 trap _sigchld CHLD
 
 skip()
 {
-	[ -n "$1" ] && echo "$1"
+	local message=$1
+
+	[ -n "$message" ] && echo "$message"
 	exit 77
 }
 
