@@ -280,16 +280,23 @@ check_root_hash()
 	done
 }
 
-corrupt_device() # $1 device, $2 device_size(in bytes), $3 #{corrupted_bytes}
+corrupt_device()
 {
+	local device=$1
+	local device_size=$2 # in bytes
+	local num_corrupted_bytes=$3
+
 	# Repeatable magic corruption :-)
-	CORRUPT=$3
+	local i seek
 	RANDOM=43
-	while [ "$CORRUPT" -gt 0 ]; do
-		SEEK=$RANDOM
-		while [ $SEEK -ge $2 ] ; do SEEK=$RANDOM; done
-		echo -n -e "\x55" | dd of=$1 bs=1 count=1 seek=$SEEK conv=notrunc > /dev/null 2>&1
-		CORRUPT=$(($CORRUPT - 1))
+	for (( i = 0; i < num_corrupted_bytes; i++ )); do
+		seek=$RANDOM
+		while (( seek >= device_size )); do
+			seek=$RANDOM
+		done
+		printf "\x55" \
+			| dd of="$device" bs=1 count=1 seek=$seek conv=notrunc \
+			&>/dev/null
 	done
 }
 
