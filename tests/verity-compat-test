@@ -551,38 +551,76 @@ checkOverlapBug()
 	remove_mapping
 }
 
-# $1 size, $2 block size, $3 roots, $4 hash offset, $5 fec offset,
-# $6 one dev(1 - one device, 2 - one device for data and hash, one device for fec data, 3 - three separate devices),
-# $7 #{corrupted bytes}
 checkUserSpaceRepair()
 {
-	BS=512
-	COUNT=50000
-	dd if=/dev/zero of=$IMG bs=$BS count=$COUNT >/dev/null 2>&1
-	PARAMS="--data-block-size=$2 --hash-block-size=$2 --fec-roots=$3"
-	[ "$1" -gt 0 ] && PARAMS="$PARAMS --data-blocks=$1" && BS=$2 && COUNT=$1
+	local data_blocks=$1
+	local block_size=$2
+	local fec_roots=$3
+	local hash_offset=$4
+	local fec_offset=$5
+	local num_devices=$6 # 1 - one device
+			     # 2 - one device for data and hash, one device for fec data
+			     # 3 - three separate devices
+	local num_corrupted_bytes=$7
 
+	local bs=512
+	local count=50000
+	dd if=/dev/zero of=$IMG bs=$bs count=$count &>/dev/null
+	local params=(--data-block-size="$block_size"
+		      --hash-block-size="$block_size"
+		      --fec-roots="$fec_roots")
+	if (( data_blocks > 0 )); then
+		params+=(--data-blocks="$data_blocks")
+		bs=$block_size
+		count=$data_blocks
+	fi
+
+	local hash_dev fec_dev
 	# different parameters for different number of devices
-	[ "$6" -eq 1 ] && HASH_DEV=$IMG && FEC=$IMG && PARAMS="$PARAMS --hash-offset=$4 --fec-offset=$5" && echo -n "[One device]"
-	[ "$6" -eq 2 ] && HASH_DEV=$IMG && FEC=$FEC_DEV && PARAMS="$PARAMS --hash-offset=$4" && echo -n "[Two separate data/hash and fec devices]"
-	[ "$6" -eq 3 ] && HASH_DEV=$IMG_HASH && FEC=$FEC_DEV && echo -n "[Three separate devices]"
+	case "$num_devices" in
+	1)
+		hash_dev=$IMG
+		fec_dev=$IMG
+		params+=(--hash-offset="$hash_offset"
+			 --fec-offset="$fec_offset")
+		echo -n "[One device]"
+		;;
+	2)
+		hash_dev=$IMG
+		fec_dev=$FEC_DEV
+		params+=(--hash-offset="$hash_offset")
+		echo -n "[Two separate data/hash and fec devices]"
+		;;
+	3)
+		hash_dev=$IMG_HASH
+		fec_dev=$FEC_DEV
+		echo -n "[Three separate devices]"
+		;;
+	*)
+		fail "Bad value for num_devices: $num_devices"
+		;;
+	esac
+	echo -n "[nroots::$fec_roots]"
 
-	echo -n "[nroots::$3]"
-
-	ROOT_HASH=$($VERITYSETUP format $IMG $HASH_DEV --fec-device $FEC $PARAMS --salt=$DEV_SALT --uuid=$DEV_UUID | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
+	local root_hash
+	root_hash=$($VERITYSETUP format $IMG "$hash_dev" \
+		    --fec-device="$fec_dev" --salt=$DEV_SALT --uuid=$DEV_UUID \
+		    "${params[@]}" \
+		    | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
 
 	echo -n "[Errors can be corrected]"
-	corrupt_device $IMG $(($BS*$COUNT)) $7
-	$VERITYSETUP verify $IMG $HASH_DEV $ROOT_HASH --fec-device=$FEC $PARAMS >/dev/null 2>&1
-	RET=$?
-	[ "$RET" -ne 0 ] && fail "Device can be corrected, but it wasn't."
+	corrupt_device $IMG $((bs * count)) "$num_corrupted_bytes"
+	$VERITYSETUP verify $IMG "$hash_dev" "$root_hash" \
+		--fec-device="$fec_dev" "${params[@]}" &>/dev/null \
+		|| fail "Device can be corrected, but it wasn't."
 	echo -n "[OK]"
 
 	echo -n "[Errors cannot be corrected]"
-	dd if=/dev/urandom of=$IMG bs=$BS count=$COUNT conv=notrunc >/dev/null 2>&1
-	$VERITYSETUP verify $IMG $HASH_DEV $ROOT_HASH --fec-device=$FEC $PARAMS >/dev/null 2>&1
-	RET=$?
-	[ "$RET" -eq 0 ] && fail "Device cannot be correct, but it didn't fail."
+	dd if=/dev/urandom of=$IMG bs="$bs" count="$count" conv=notrunc \
+		&>/dev/null
+	$VERITYSETUP verify $IMG "$hash_dev" "$root_hash" \
+		--fec-device="$fec_dev" "${params[@]}" &>/dev/null \
+		&& fail "Device cannot be corrected, but it didn't fail."
 	echo "[OK]"
 }
 
