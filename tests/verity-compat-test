@@ -121,11 +121,16 @@ check_version_kernel()
 	(( ker_major > major )) || (( ker_major == major && ker_minor >= minor ))
 }
 
-compare_out() # $1 what, $2 expected
+compare_out()
 {
-	OPT=$(grep -v "^#" $DEV_OUT | grep -i "$1" | sed -e s/.*\:\ // )
-	[ -z "$OPT" ] && fail
-	[ $OPT != $2 ] && fail "$1 differs ($2)"
+	local what=$1
+	local expected=$2
+	local actual
+
+	actual=$(grep -v "^#" $DEV_OUT | grep -i "$what" |
+		 sed -e "s/.*:[[:space:]]*//")
+	[ -z "$actual" ] && fail
+	[ "$actual" != "$expected" ] && fail "$what differs ($expected)"
 }
 
 check_root_hash_fail()
