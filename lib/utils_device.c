@@ -676,7 +676,7 @@ int device_fallocate(struct device *device, uint64_t size)
 		return -EINVAL;
 
 	if (!fstat(devfd, &st) && S_ISREG(st.st_mode) &&
-	    ((uint64_t)st.st_size >= size || !posix_fallocate(devfd, 0, size))) {
+	    ((uint64_t)st.st_size >= size || !(r = posix_fallocate(devfd, 0, size)))) {
 		r = 0;
 		if (device->file_path && crypt_loop_resize(device->path))
 			r = -EINVAL;
@@ -690,6 +690,7 @@ int device_check_size(struct crypt_device *cd,
 		      struct device *device,
 		      uint64_t req_offset, int falloc)
 {
+	int r;
 	uint64_t dev_size;
 
 	if (device_size(device, &dev_size)) {
@@ -701,8 +702,17 @@ int device_check_size(struct crypt_device *cd,
 
 	if (req_offset > dev_size) {
 		/* If it is header file, increase its size */
-		if (falloc && !device_fallocate(device, req_offset))
-			return 0;
+		if (falloc) {
+			if (!(r = device_fallocate(device, req_offset)))
+				return 0;
+
+			/* posix_fallocate returns positive errno on error */
+			if (r > 0) {
+				log_err(cd, _("Cannot grow %s to %" PRIu64 " bytes (%s)."),
+					device_path(device), req_offset, strerror(r));
+				return -EINVAL;
+			}
+		}
 
 		log_err(cd, _("Device %s is too small. Need at least %" PRIu64 " bytes."),
 			device_path(device), req_offset);
