@@ -22,6 +22,7 @@
 #include "libcryptsetup.h"
 
 #define DEVICE_1_UUID "28632274-8c8a-493f-835b-da802e1c576b"
+#define DEVICE_2_UUID "a8632274-8c8a-493f-835b-da802e1c576b"
 #define DEVICE_EMPTY_name "crypt_zero"
 #define DEVICE_EMPTY DMDIR DEVICE_EMPTY_name
 #define DEVICE_ERROR_name "crypt_error"
@@ -784,6 +785,37 @@ static void SuspendDevice(void)
 	EQ_(0, cad.flags & CRYPT_ACTIVATE_SUSPENDED);
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
+
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_load(cd, CRYPT_LUKS1, NULL));
+
+	/* Create identical device except the UUID and VK */
+	OK_(crypt_init(&cd2, DMDIR L_DEVICE_OK));
+	OK_(crypt_set_pbkdf_type(cd2, &fast_pbkdf));
+	key[0] = ~key[0];
+	OK_(crypt_format(cd2, CRYPT_LUKS1, crypt_get_cipher(cd), crypt_get_cipher_mode(cd), DEVICE_2_UUID, key, key_size, NULL));
+	EQ_(0, crypt_keyslot_add_by_volume_key(cd2, 0, NULL, key_size, PASSPHRASE, strlen(PASSPHRASE)));
+
+	/* Activate and suspend both devices */
+	OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
+	OK_(crypt_suspend(cd, CDEVICE_1));
+	OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, NULL, key_size, 0));
+	OK_(crypt_suspend(cd2, CDEVICE_2));
+
+	/* Switch context for resume (mismatching UUIDs) */
+	FAIL_(crypt_resume_by_passphrase(cd, CDEVICE_2, 0, KEY1, strlen(KEY1)), "Mismatching UUID.");
+	OK_(crypt_get_active_device(cd2, CDEVICE_2, &cad));
+	EQ_(CRYPT_ACTIVATE_SUSPENDED, cad.flags & CRYPT_ACTIVATE_SUSPENDED);
+	FAIL_(crypt_resume_by_passphrase(cd2, CDEVICE_1, 0, PASSPHRASE, strlen(PASSPHRASE)), "Mismatching UUID.");
+	OK_(crypt_get_active_device(cd, CDEVICE_1, &cad));
+	EQ_(CRYPT_ACTIVATE_SUSPENDED, cad.flags & CRYPT_ACTIVATE_SUSPENDED);
+
+	OK_(crypt_resume_by_passphrase(cd, CDEVICE_1, 0, KEY1, strlen(KEY1)));
+	OK_(crypt_resume_by_passphrase(cd2, CDEVICE_2, 0, PASSPHRASE, strlen(PASSPHRASE)));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	OK_(crypt_deactivate(cd2, CDEVICE_2));
+	CRYPT_FREE(cd);
+	CRYPT_FREE(cd2);
 
 	_remove_keyfiles();
 	_cleanup_dmdevices();

@@ -4504,6 +4504,7 @@ int crypt_resume_by_keyslot_context(struct crypt_device *cd,
 	int r;
 	struct volume_key *vk = NULL;
 	int unlocked_keyslot = -EINVAL;
+	struct crypt_dm_active_device dmd = {};
 
 	if (!name)
 		return -EINVAL;
@@ -4520,6 +4521,17 @@ int crypt_resume_by_keyslot_context(struct crypt_device *cd,
 	if (!r) {
 		log_err(cd, _("Volume %s is not suspended."), name);
 		return -EINVAL;
+	}
+
+	r = dm_query_device(cd, name, DM_ACTIVE_UUID, &dmd);
+	if (r < 0)
+		return r;
+
+	r = dm_uuid_cmp(dmd.uuid, LUKS_UUID(cd));
+	if (r < 0) {
+		log_dbg(cd, "LUKS device header uuid: %s mismatches DM returned uuid %s",
+			LUKS_UUID(cd), dmd.uuid);
+		goto out;
 	}
 
 	if (isLUKS1(cd->type) && kc->get_luks1_volume_key)
@@ -4544,12 +4556,11 @@ int crypt_resume_by_keyslot_context(struct crypt_device *cd,
 		goto out;
 
 	r = resume_by_volume_key(cd, vk, name);
-
-	crypt_free_volume_key(vk);
-	return r < 0 ? r : unlocked_keyslot;
 out:
 	crypt_free_volume_key(vk);
-	return r;
+	free(CONST_CAST(void*)dmd.uuid);
+
+	return r < 0 ? r : unlocked_keyslot;
 }
 
 int crypt_resume_by_passphrase(struct crypt_device *cd,
