@@ -4544,12 +4544,9 @@ int crypt_resume_by_keyslot_context(struct crypt_device *cd,
 		goto out;
 
 	r = resume_by_volume_key(cd, vk, name);
-
-	crypt_free_volume_key(vk);
-	return r < 0 ? r : unlocked_keyslot;
 out:
 	crypt_free_volume_key(vk);
-	return r;
+	return r < 0 ? r : unlocked_keyslot;
 }
 
 int crypt_resume_by_passphrase(struct crypt_device *cd,
