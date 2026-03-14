@@ -996,10 +996,12 @@ static int action_status(void)
 			log_std("  keysize: %d [bits]\n", crypt_get_volume_key_size(cd) * 8);
 			log_std("  key location: %s\n", (cad.flags & CRYPT_ACTIVATE_KEYRING_KEY) ? "keyring" : "dm-crypt");
 		} else if (hw_enc == CRYPT_OPAL_HW_ONLY) {
-			log_std("  encryption: HW OPAL only\n");
+			log_std("  encryption: HW OPAL%s only\n",
+				crypt_get_hw_opal_sum_enabled(cd) > 0 ? " (Single User Mode)" : "");
 			log_std("  OPAL keysize: %d [bits]\n", crypt_get_hw_encryption_key_size(cd) * 8);
 		} else if (hw_enc == CRYPT_SW_AND_OPAL_HW) {
-			log_std("  encryption: dm-crypt over HW OPAL\n");
+			log_std("  encryption: dm-crypt over HW OPAL%s\n",
+				crypt_get_hw_opal_sum_enabled(cd) > 0 ? " (Single User Mode)" : "");
 			log_std("  OPAL keysize: %d [bits]\n", crypt_get_hw_encryption_key_size(cd) * 8);
 			log_std("  cipher:  %s-%s\n", crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
 			log_std("  keysize: %d [bits]\n", (crypt_get_volume_key_size(cd) - crypt_get_hw_encryption_key_size(cd)) * 8);

@@ -413,7 +413,10 @@ test_device() #opal_mode, #format_params, #--integrity-no-wipe
 {
 	echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 $1 $2 $3 -q $FAST_PBKDF_OPT $OPAL2_DEV || fail
 	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
-	test -z "$3" ||	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M count=1 oflag=direct >/dev/null 2>&1 || fail
+	if [ $HAVE_SUM -eq 1 ]; then
+		$CRYPTSETUP -q status  $DEV_NAME | grep -q "(Single User Mode)" || fail
+	fi
+	test -z "$3" || dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M count=1 oflag=direct >/dev/null 2>&1 || fail
 	$CRYPTSETUP luksSuspend $DEV_NAME || fail
 	dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
 	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME || fail
@@ -429,7 +432,10 @@ test_device_detached_header() #hdr, #opal_mode, #format_params, #--integrity-no-
 {
 	echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP luksFormat --type luks2 --header $1 $2 $3 $4 -q $FAST_PBKDF_OPT $OPAL2_DEV || fail
 	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --header $1 || fail
-	test -z "$4" ||	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M count=1 oflag=direct >/dev/null 2>&1 || fail
+	if [ $HAVE_SUM -eq 1 ]; then
+		$CRYPTSETUP -q status  $DEV_NAME | grep -q "(Single User Mode)" || fail
+	fi
+	test -z "$4" || dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M count=1 oflag=direct >/dev/null 2>&1 || fail
 	$CRYPTSETUP luksSuspend $DEV_NAME || fail
 	dd if=$OPAL2_DEV of=/dev/zero bs=1M count=1 iflag=direct >/dev/null 2>&1 && fail
 	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME 2>/dev/null && fail

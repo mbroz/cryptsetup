@@ -1704,7 +1704,7 @@ bool LUKS2_reencrypt_requirement_candidate(struct luks2_hdr *hdr)
 	return false;
 }
 
-int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint8_t *version)
+static int LUKS2_config_get_requirement_version(struct luks2_hdr *hdr, uint8_t *version, const char *name)
 {
 	json_object *jobj_mandatory, *jobj;
 	int i, len;
@@ -1712,6 +1712,7 @@ int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint8_t *version)
 
 	assert(hdr);
 	assert(version);
+	assert(name);
 
 	jobj_mandatory = mandatory_requirements_jobj(hdr);
 	if (!jobj_mandatory)
@@ -1724,8 +1725,8 @@ int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint8_t *version)
 	for (i = 0; i < len; i++) {
 		jobj = json_object_array_get_idx(jobj_mandatory, i);
 
-		/* search for requirements prefixed with "online-reencrypt" */
-		if (strncmp(json_object_get_string(jobj), "online-reencrypt", 16))
+		/* search for requirements prefixed with name */
+		if (strncmp(json_object_get_string(jobj), name, strlen(name)))
 			continue;
 
 		/* check current library is aware of the requirement */
@@ -1739,6 +1740,16 @@ int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint8_t *version)
 	}
 
 	return -ENOENT;
+}
+
+int LUKS2_config_get_reencrypt_version(struct luks2_hdr *hdr, uint8_t *version)
+{
+	return LUKS2_config_get_requirement_version(hdr, version, "online-reencrypt");
+}
+
+int LUKS2_config_get_opal_version(struct luks2_hdr *hdr, uint8_t *version)
+{
+	return LUKS2_config_get_requirement_version(hdr, version, "opal");
 }
 
 static const struct requirement_flag *stored_requirement_name_by_id(struct luks2_hdr *hdr, uint32_t req_id)
@@ -2149,7 +2160,8 @@ static void hdr_dump_segments(struct crypt_device *cd, json_object *hdr_jobj)
 
 		json_object_object_get_ex(jobj_segment, "type", &jobj1);
 		if (!strncmp(json_object_get_string(jobj1), "hw-opal", 7)) {
-			log_std(cd, "\tHW OPAL encryption:\n");
+			log_std(cd, "\tHW OPAL%s encryption:\n",
+				crypt_get_hw_opal_sum_enabled(cd) > 0 ? " (Single User Mode)" : "");
 			json_object_object_get_ex(jobj_segment, "opal_segment_number", &jobj1);
 			log_std(cd, "\t\tOPAL segment number: %" PRIu32 "\n", crypt_jobj_get_uint32(jobj1));
 			json_object_object_get_ex(jobj_segment, "opal_key_size", &jobj1);
