@@ -456,6 +456,14 @@ const char *crypt_get_default_type(void);
 int crypt_get_hw_encryption_type(struct crypt_device *cd);
 
 /**
+ * Get OPAL Single User Mode (SUM) configuration
+ *
+ * @return @e 1 if OPAL in SUM is used, @e 0 if OPAL without SUM is used
+ *         or negative errno value otherwise.
+ */
+int crypt_get_hw_opal_sum_enabled(struct crypt_device *cd);
+
+/**
  * Get HW encryption (like OPAL) key size (in bytes)
  *
  * @return key size or @e 0 if no HW encryption is used.
