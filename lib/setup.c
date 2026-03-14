@@ -6804,6 +6804,23 @@ int crypt_get_hw_encryption_type(struct crypt_device *cd)
 	return CRYPT_SW_ONLY;
 }
 
+int crypt_get_hw_opal_sum_enabled(struct crypt_device* cd)
+{
+	uint8_t version;
+
+	if (!cd)
+		return -EINVAL;
+
+	if (!isLUKS2(cd->type))
+		return -ENOTSUP;
+
+	/* No Opal flag present */
+	if (LUKS2_config_get_opal_version(&cd->u.luks2.hdr, &version) < 0)
+		return -ENOTSUP;
+
+	return version > 1 ? 1 : 0;
+}
+
 int crypt_get_verity_info(struct crypt_device *cd,
 	struct crypt_params_verity *vp)
 {
