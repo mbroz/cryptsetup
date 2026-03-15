@@ -694,7 +694,10 @@ static int _cipher_init(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec, const 
 	if (!strcmp(mode, "xts"))
 		key_bits /= 2;
 
-	r = snprintf(cipher_name, sizeof(cipher_name), "%s-%d-%s", name, key_bits, mode);
+	if ((!strcmp(name, "sm4")) && key_bits == 128)
+		r = snprintf(cipher_name, sizeof(cipher_name), "%s-%s", name, mode);
+	else
+		r = snprintf(cipher_name, sizeof(cipher_name), "%s-%d-%s", name, key_bits, mode);
 	if (r < 0 || (size_t)r >= sizeof(cipher_name))
 		return -EINVAL;
 
