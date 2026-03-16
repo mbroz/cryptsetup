@@ -1962,6 +1962,25 @@ typedef enum {
 crypt_status_info crypt_status(struct crypt_device *cd, const char *name);
 
 /**
+ * Device HW encryption status
+ */
+typedef enum {
+	CRYPT_HW_INVALID, /**< cannot get the status info or possible missing support in kernel */
+	CRYPT_HW_OTHER,   /**< device support only non-OPAL subsystems */
+	CRYPT_HW_OPAL,    /**< device claims OPAL2 support */
+	CRYPT_HW_OPAL_SUM /**< device claims OPAL2 with SUM (Single User Mode) option */
+} crypt_status_hw_encryption_info;
+
+/**
+ * Get status info about supported HW encryption
+ *
+ * @param cd crypt device handle
+ *
+ * @return value defined by crypt_status_hw_encryption_info.
+ */
+crypt_status_hw_encryption_info crypt_status_hw_encryption(struct crypt_device *cd);
+
+/**
  * Dump text-formatted information about crypt or verity device to log output.
  *
  * @param cd crypt device handle
