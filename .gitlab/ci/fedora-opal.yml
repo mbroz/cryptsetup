@@ -68,21 +68,21 @@ test-rawhide-samsung980pro:
     PCI_PASSTHROUGH_DEVICE_ID: "a80a"
 
 # WD PC SN740 SDDQMQD-256G-1001 (on trantor machine)
-# test-rawhide-wdSN740:
-#   rules:
-#     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
-#       when: never
-#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
-#     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-#   extends:
-#     - .opal-template-fedora
-#   tags:
-#     - trantor
-#   resource_group: wdSN740-on-trantor
-#   interruptible: false
-#   variables:
-#     PCI_PASSTHROUGH_VENDOR_ID: "15b7"
-#     PCI_PASSTHROUGH_DEVICE_ID: "5016"
+test-rawhide-wdSN740:
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  extends:
+    - .opal-template-fedora
+  tags:
+    - trantor
+  resource_group: wdSN740-on-trantor
+  interruptible: false
+  variables:
+    PCI_PASSTHROUGH_VENDOR_ID: "15b7"
+    PCI_PASSTHROUGH_DEVICE_ID: "5016"
 
 # # UMIS RPETJ256MGE2MDQ (on tiber machine)
 # test-commit-rawhide-umis:
