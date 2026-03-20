@@ -86,5 +86,6 @@ check-programs: libcryptsetup.la
 
 if ENABLE_FUZZ_TARGETS
 fuzz-targets: libcryptsetup.la libcrypto_backend.la
-	$(MAKE) -C tests/fuzz $@
+	$(MAKE) -C tests/fuzz fuzz-targets $@
+.PHONY: fuzz-targets
 endif

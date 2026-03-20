@@ -3,6 +3,10 @@ EXTRA_DIST = README.md oss-fuzz-build.sh
 distclean-local:
 	-rm -rf out build
 
+if ENABLE_FUZZ_TARGETS
+EXTRA_PROGRAMS  = crypt2_load_fuzz crypt2_load_ondisk_fuzz
+CLEANFILES = $(EXTRA_PROGRAMS)
+
 LIB_FUZZING_ENGINE := $(if $(LIB_FUZZING_ENGINE),$(LIB_FUZZING_ENGINE),"-fsanitize=fuzzer")
 SANITIZER := $(if $(SANITIZER),,"-fsanitize=address")
 
@@ -25,11 +29,7 @@ test-environment-m:
 	fi
 test-environment: | test-environment-m $(DEPS_PATH)
 
-if ENABLE_FUZZ_TARGETS
-noinst_PROGRAMS = \
-	crypt2_load_fuzz \
-	crypt2_load_ondisk_fuzz
+fuzz-targets: test-environment $(EXTRA_PROGRAMS)
 
-fuzz-targets: test-environment $(noinst_PROGRAMS)
-.PHONY: fuzz-targets
+.PHONY: test-environment test-environment-m fuzz-targets
 endif
