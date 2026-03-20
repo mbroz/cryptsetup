@@ -43,7 +43,7 @@ static bool calculate_checksum(const char *data, size_t size, struct luks2_hdr_d
 	if (sizeof(*hdr_rw) > size)
 		return false;
 
-	hdr_size = be64_to_cpu(((struct luks2_hdr_disk *)data)->hdr_size);
+	hdr_size = be64_to_cpu(((struct luks2_hdr_disk *)(uintptr_t)data)->hdr_size);
 	if (hdr_size > size || hdr_size <= sizeof(*hdr_rw))
 		return false;
 
