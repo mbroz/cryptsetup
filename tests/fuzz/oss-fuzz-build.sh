@@ -34,7 +34,7 @@ export CFLAGS="${CFLAGS:-$flags} -I$DEPS_PATH/include"
 export CXXFLAGS="${CXXFLAGS:-$flags} -I$DEPS_PATH/include"
 export LDFLAGS="${LDFLAGS-} -L$DEPS_PATH/lib"
 
-ENABLED_FUZZERS=${ENABLED_FUZZERS:-crypt2_load_fuzz crypt2_load_ondisk_fuzz crypt2_load_proto_plain_json_fuzz}
+ENABLED_FUZZERS=${ENABLED_FUZZERS:-crypt2_load_fuzz crypt2_load_ondisk_fuzz}
 
 mkdir -p $SRC
 mkdir -p $OUT
@@ -42,13 +42,10 @@ mkdir -p $DEPS_PATH
 cd $SRC
 
 echo "Installing dependencies"
-LIBFUZZER_PATCH="$XPWD/unpoison-mutated-buffers-from-libfuzzer.patch"
-in_oss_fuzz && LIBFUZZER_PATCH="$XPWD/cryptsetup/tests/fuzz/unpoison-mutated-buffers-from-libfuzzer.patch"
 
 in_oss_fuzz && apt-get update && apt-get install -y \
     make autoconf automake autopoint libtool pkg-config \
-    sharutils gettext expect keyutils ninja-build \
-    bison flex
+    sharutils gettext expect keyutils bison flex
 
 echo "Cloning git repositories"
 # FIXME: temporary use branch master instead of develop
@@ -67,13 +64,6 @@ last_commit lvm2
 
 [ ! -d popt ] && git clone -q --depth 1 https://github.com/rpm-software-management/popt.git
 last_commit popt
-
-# FIXME: temporary fix until libprotobuf stops shuffling C++ requirements
-# [ ! -d libprotobuf-mutator ] && git clone --depth 1 https://github.com/google/libprotobuf-mutator.git \
-[ ! -d libprotobuf-mutator ] && git clone -q --depth 1 --branch v1.1 -c advice.detachedHead=false \
-    https://github.com/google/libprotobuf-mutator.git &&
-    [ "$SANITIZER" == "memory" ] && ( cd libprotobuf-mutator; patch -p1 < $LIBFUZZER_PATCH )
-last_commit libprotobuf-mutator
 
 [ ! -d openssl ] && git clone -q --depth 1 https://github.com/openssl/openssl
 last_commit openssl
@@ -138,21 +128,6 @@ cmake .. -DCMAKE_INSTALL_PREFIX="$DEPS_PATH" -DBUILD_SHARED_LIBS=OFF
 make -j
 make install
 cd ../..
-
-cd libprotobuf-mutator
-mkdir -p build
-rm -fr build/*
-cd build
-cmake .. -GNinja \
-    -DCMAKE_INSTALL_PREFIX="$DEPS_PATH" \
-    -DPKG_CONFIG_PATH="$PKG_CONFIG_PATH" \
-    -DLIB_PROTO_MUTATOR_TESTING=OFF \
-    -DLIB_PROTO_MUTATOR_DOWNLOAD_PROTOBUF=ON
-ninja
-ninja install
-cd external.protobuf;
-cp -Rf bin lib include "$DEPS_PATH";
-cd ../../..
 
 echo "Building cryptsetup fuzzers"
 if in_oss_fuzz; then

@@ -1,6 +1,6 @@
 # Fuzzing target for cryptsetup project
 
-This directory contains experimental targets for fuzzing testing.
+This directory contains targets for fuzzing testing.
 It can be run in the OSS-Fuzz project but also compiled separately.
 
 # Requirements
@@ -34,9 +34,9 @@ sudo chcon -Rt svirt_sandbox_file_t build/
 ```
 
 # Run LUKS2 fuzzer
-`FUZZER_NAME` can be one of: `crypt2_load_fuzz`, `crypt2_load_proto_fuzz`, `crypt2_load_proto_plain_json_fuzz`
+`FUZZER_NAME` can be one of: `crypt2_load_fuzz`, `crypt2_load_ondisk_fuzz`
 ```
-FUZZER_NAME="crypt2_load_proto_plain_json_fuzz"
+FUZZER_NAME="crypt2_load_fuzz"
 sudo mkdir -p build/corpus/cryptsetup/$FUZZER_NAME
 sudo python infra/helper.py run_fuzzer --corpus-dir build/corpus/cryptsetup/$FUZZER_NAME/ --sanitizer address cryptsetup $FUZZER_NAME '-jobs=8 -workers=8'
 ```

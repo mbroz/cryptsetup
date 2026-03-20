@@ -287,35 +287,6 @@ if get_option('fuzz-targets')
     else
         fuzzing_engine = declare_dependency(link_args: get_option('fuzzing-engine').split())
     endif
-
-    protobuf = dependency('protobuf',
-        required: false)
-    protoc = find_program('protoc',
-        required: false)
-    if not protoc.found()
-        protoc = find_program('tests/fuzz/build/static_lib_deps/bin/protoc',
-            required: false)
-    endif
-    if not protoc.found() or not protobuf.found()
-        error('protoc tool and/or protobuf pkg-config dependency not found')
-    endif
-
-    libprotobuf_mutator = dependency('libprotobuf-mutator',
-        required: false)
-    if not libprotobuf_mutator.found()
-        error('libprotobuf-mutator not found')
-    endif
-
-    protoc_generator = generator(protoc,
-        output: [
-            '@BASENAME@.pb.cc',
-            '@BASENAME@.pb.h',
-        ],
-        arguments: [
-            '--proto_path=@CURRENT_SOURCE_DIR@',
-            '--cpp_out=@BUILD_DIR@',
-            '@INPUT@',
-        ])
 endif
 
 # ==========================================================================
