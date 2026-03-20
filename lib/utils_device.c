@@ -153,7 +153,7 @@ static int device_read_test(struct crypt_device *cd, int devfd)
 	if (minsize > sizeof(buffer))
 		minsize = sizeof(buffer);
 
-	if (read_blockwise(devfd, blocksize, alignment, buffer, minsize) == (ssize_t)minsize) {
+	if (read_lseek_blockwise(devfd, blocksize, alignment, buffer, minsize, 0) == (ssize_t)minsize) {
 		log_dbg(cd, "Direct-io read works.");
 		r = 0;
 	} else {

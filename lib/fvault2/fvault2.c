@@ -524,9 +524,9 @@ static int _read_volume_header(
 	}
 
 	log_dbg(cd, "Reading FVAULT2 volume header of size %u bytes.", FVAULT2_VOL_HEADER_SIZE);
-	if (read_blockwise(devfd, device_block_size(cd, dev),
+	if (read_lseek_blockwise(devfd, device_block_size(cd, dev),
 			device_alignment(dev), vol_header,
-			FVAULT2_VOL_HEADER_SIZE) != FVAULT2_VOL_HEADER_SIZE) {
+			FVAULT2_VOL_HEADER_SIZE, 0) != FVAULT2_VOL_HEADER_SIZE) {
 		log_err(cd, _("Could not read %u bytes of volume header."), FVAULT2_VOL_HEADER_SIZE);
 		r = -EIO;
 		goto out;
