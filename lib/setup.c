@@ -3827,7 +3827,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		r = INTEGRITY_data_sectors(cd, crypt_metadata_device(cd),
 					   crypt_get_data_offset(cd) * SECTOR_SIZE, &old_size);
 		if (r < 0)
-			return r;
+			goto out;
 
 		dmd.size = dmdq.size;
 		dmd.flags = dmdq.flags | CRYPT_ACTIVATE_REFRESH | CRYPT_ACTIVATE_PRIVATE;
@@ -3851,7 +3851,7 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		r = INTEGRITY_data_sectors(cd, crypt_metadata_device(cd),
 				crypt_get_data_offset(cd) * SECTOR_SIZE, &new_size);
 		if (r < 0)
-			return r;
+			goto out;
 		log_dbg(cd, "Maximum integrity device size from kernel %" PRIu64, new_size);
 
 		if (old_size == new_size && new_size == dmdq.size &&
