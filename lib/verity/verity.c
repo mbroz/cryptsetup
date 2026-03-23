@@ -301,7 +301,7 @@ int VERITY_activate(struct crypt_device *cd,
 		     struct crypt_params_verity *verity_hdr,
 		     uint32_t activation_flags)
 {
-	uint64_t dmv_flags;
+	uint64_t dmv_flags = 0;
 	int r;
 	key_serial_t kid = 0;
 	char *description = NULL;
