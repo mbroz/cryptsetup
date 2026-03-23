@@ -3370,6 +3370,8 @@ static int reencrypt_lock_internal(struct crypt_device *cd, const char *uuid, st
 	int r;
 	char *lock_resource;
 
+	assert(uuid);
+
 	if (!crypt_metadata_locking_enabled()) {
 		*reencrypt_lock = NULL;
 		return 0;
@@ -3406,6 +3408,7 @@ int LUKS2_reencrypt_lock_by_dm_uuid(struct crypt_device *cd, const char *dm_uuid
 			 dm_uuid + 6, dm_uuid + 14, dm_uuid + 18, dm_uuid + 22, dm_uuid + 26);
 		if (r < 0 || (size_t)r != (sizeof(hdr_uuid) - 1))
 			return -EINVAL;
+		uuid = hdr_uuid;
 	} else if (dm_uuid_cmp(dm_uuid, uuid))
 		return -EINVAL;
 
