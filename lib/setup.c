@@ -3564,7 +3564,7 @@ static int _reload_device(struct crypt_device *cd, const char *name,
 	r = dm_reload_device(cd, name, &tdmd, dmflags, 1);
 out:
 	/* otherwise dm_targets_free would free src key */
-	if (src->u.crypt.vk == tgt->u.crypt.vk)
+	if (tgt->type == DM_CRYPT && src->u.crypt.vk == tgt->u.crypt.vk)
 		tgt->u.crypt.vk = NULL;
 
 	dm_targets_free(cd, &tdmd);
