@@ -1635,12 +1635,12 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 		for (s = 0; s < count; s++) {
 			if (crypt_hash_write(rp->p.csum.ch, data_buffer + (s * rp->p.csum.block_size), rp->p.csum.block_size)) {
 				log_dbg(cd, "Failed to write hash.");
-				r = EINVAL;
+				r = -EINVAL;
 				goto out;
 			}
 			if (crypt_hash_final(rp->p.csum.ch, checksum_tmp, rp->p.csum.hash_size)) {
 				log_dbg(cd, "Failed to finalize hash.");
-				r = EINVAL;
+				r = -EINVAL;
 				goto out;
 			}
 			if (!memcmp(checksum_tmp, (char *)rp->p.csum.checksums + (s * rp->p.csum.hash_size), rp->p.csum.hash_size)) {
