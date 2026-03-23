@@ -139,7 +139,7 @@ void xlog(const char *msg, const char *tst, const char *func, int line, const ch
 
 /* loop helpers */
 int loop_device(const char *loop);
-int loop_attach(char **loop, const char *file, int offset,
+int loop_attach(char **loop, const char *file, uint64_t offset,
 		      int autoclear, int *readonly);
 int loop_detach(const char *loop);
 
