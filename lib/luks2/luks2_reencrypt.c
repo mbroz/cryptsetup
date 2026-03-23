@@ -4450,7 +4450,7 @@ int crypt_reencrypt(
  * use only for calculation of minimal data device size.
  * The real data offset is taken directly from segments!
  */
-int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
+uint64_t LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
 {
 	crypt_reencrypt_info ri = LUKS2_reencrypt_status(hdr);
 	uint64_t data_offset = LUKS2_get_data_offset(hdr);
