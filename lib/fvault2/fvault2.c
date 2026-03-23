@@ -371,7 +371,8 @@ static int _parse_metadata_block_0x0019(
 	uint32_t xml_off = le32_to_cpu(md_block->xml_off);
 	uint32_t xml_size = le32_to_cpu(md_block->xml_size);
 
-	if (xml_off + xml_size > FVAULT2_MD_BLOCK_SIZE)
+	if (xml_off >= FVAULT2_MD_BLOCK_SIZE ||
+	    xml_size > FVAULT2_MD_BLOCK_SIZE - xml_off)
 		return -EINVAL;
 
 	xml = strndup((const char *)md_block + xml_off, xml_size);
@@ -451,7 +452,8 @@ static int _parse_metadata_block_0x001a(
 	uint32_t xml_off = le32_to_cpu(md_block->xml_off);
 	uint32_t xml_size = le32_to_cpu(md_block->xml_size);
 
-	if (xml_off + xml_size > FVAULT2_MD_BLOCK_SIZE)
+	if (xml_off >= FVAULT2_MD_BLOCK_SIZE ||
+	    xml_size > FVAULT2_MD_BLOCK_SIZE - xml_off)
 		return -EINVAL;
 
 	xml = strndup((const char *)md_block + xml_off, xml_size);
