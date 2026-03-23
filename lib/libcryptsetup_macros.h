@@ -62,4 +62,8 @@
 # define LUKS_STRIPES 4000
 #endif
 
+#ifndef LUKS2_OBJECTS_MAX
+# define LUKS2_OBJECTS_MAX 32
+#endif
+
 #endif /* _LIBCRYPTSETUP_MACROS_H */
