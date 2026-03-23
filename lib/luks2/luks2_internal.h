@@ -367,7 +367,7 @@ int LUKS2_reencrypt_digest_new(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_digest_old(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_segment_new(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_segment_old(struct luks2_hdr *hdr);
-int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise);
+uint64_t LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise);
 
 int LUKS2_reencrypt_max_hotzone_size(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
