@@ -29,7 +29,7 @@
 #define BITLK_FVE_METADATA_HEADERS_LEN BITLK_FVE_METADATA_BLOCK_HEADER_LEN + BITLK_FVE_METADATA_HEADER_LEN
 
 /* total size of the FVE area (64 KiB) */
-#define BITLK_FVE_METADATA_SIZE 64 * 1024
+#define BITLK_FVE_METADATA_SIZE (64 * 1024)
 
 #define BITLK_ENTRY_HEADER_LEN 8
 #define BITLK_VMK_HEADER_LEN 28
@@ -55,7 +55,7 @@
 
 /* not available in older version of libuuid */
 #ifndef UUID_STR_LEN
-#define UUID_STR_LEN	37
+#define UUID_STR_LEN 37
 #endif
 
 /* known types of GUIDs from the BITLK superblock */

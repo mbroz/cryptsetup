@@ -23,7 +23,7 @@
 #define FVAULT2_MD_BLOCK_SIZE 8192
 
 /* maximal offset to read metadata block */
-#define FVAULT2_MAX_OFF 1024*1024*1024
+#define FVAULT2_MAX_OFF (1024 * 1024 * 1024)
 
 /* encrypted metadata parsing progress flags (see _read_encrypted_metadata) */
 #define FVAULT2_ENC_MD_PARSED_0x0019 0b001
