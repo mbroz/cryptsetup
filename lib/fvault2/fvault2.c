@@ -229,13 +229,13 @@ static int _unwrap_key(
 	if (r < 0)
 		goto out;
 
-	cipher_in = malloc(16);
+	cipher_in = crypt_safe_alloc(16);
 	if (cipher_in == NULL) {
 		r = -ENOMEM;
 		goto out;
 	}
 
-	cipher_out = malloc(16);
+	cipher_out = crypt_safe_alloc(16);
 	if (cipher_out == NULL) {
 		r = -ENOMEM;
 		goto out;
@@ -283,8 +283,8 @@ static int _unwrap_key(
 	((uint64_t *)key_buf)[0] = r2;
 	((uint64_t *)key_buf)[1] = r3;
 out:
-	free(cipher_in);
-	free(cipher_out);
+	crypt_safe_free(cipher_in);
+	crypt_safe_free(cipher_out);
 	if (cipher != NULL)
 		crypt_cipher_destroy(cipher);
 	return r;
