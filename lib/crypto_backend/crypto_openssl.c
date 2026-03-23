@@ -546,6 +546,9 @@ void crypt_hmac_destroy(struct crypt_hmac *ctx)
 int crypt_backend_rng(char *buffer, size_t length,
 	int quality __attribute__((unused)), int fips __attribute__((unused)))
 {
+	if (length > INT_MAX)
+		return -EINVAL;
+
 	if (RAND_bytes((unsigned char *)buffer, length) != 1)
 		return -EINVAL;
 
