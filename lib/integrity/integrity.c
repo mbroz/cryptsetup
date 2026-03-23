@@ -51,6 +51,10 @@ static int INTEGRITY_read_superblock(struct crypt_device *cd,
 			sb->version, device_path(device));
 		r = -EINVAL;
 	} else {
+		if ((int)sb->log2_sectors_per_block + SECTOR_SHIFT >= 32) {
+			log_dbg(cd, "dm-integrity log2_sectors_per_block overflow");
+			return -EINVAL;
+		}
 		sb->integrity_tag_size = le16toh(sb->integrity_tag_size);
 		sb->journal_sections = le32toh(sb->journal_sections);
 		sb->provided_data_sectors = le64toh(sb->provided_data_sectors);
