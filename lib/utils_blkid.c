@@ -217,6 +217,7 @@ int blk_do_wipe(struct blkid_handle *h)
 	return blkid_do_wipe(h->pr, 0);
 #else
 	const char *offset;
+	char *end;
 	off_t offset_val;
 	void *buf;
 	ssize_t ret;
@@ -244,7 +245,11 @@ int blk_do_wipe(struct blkid_handle *h)
 		return -EINVAL;
 	memset(buf, 0, len);
 
-	offset_val = strtoll(offset, NULL, 10);
+	offset_val = strtoll(offset, &end, 10);
+	if (*end || !*offset || errno == ERANGE) {
+		free(buf);
+		return -EINVAL;
+	}
 
 	/* TODO: missing crypt_wipe_fd() */
 	ret = write_lseek_blockwise(h->fd, bsize, alignment, buf, len, offset_val);
