@@ -443,6 +443,12 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 
 	h->hash_len = EVP_MAC_CTX_get_mac_size(h->md);
 	h->md_org = EVP_MAC_CTX_dup(h->md);
+	if (!h->md_org) {
+		EVP_MAC_CTX_free(h->md);
+		EVP_MAC_free(h->mac);
+		free(h);
+		return -EINVAL;
+	}
 #else
 	h = malloc(sizeof(*h));
 	if (!h)
