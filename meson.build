@@ -67,6 +67,7 @@ foreach default_option : (default_int_options)
 endforeach
 
 conf.set('DEFAULT_LUKS2_LOCK_DIR_PERMS', get_option('default-luks2-lock-dir-perms'))
+conf.set('DEFAULT_LUKS2_LOCK_PATH_UNQUOTED', get_option('default-luks2-lock-path'))
 
 sanitizer = get_option('b_sanitize')
 sanitizer_enabled = sanitizer != '' and sanitizer != 'none'
