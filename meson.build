@@ -48,7 +48,6 @@ default_int_options = [
     'default-luks1-keybits',
     'default-luks2-iter-time',
     'default-luks2-keyslot-keybits',
-    'default-luks2-lock-dir-perms',
     'default-luks2-memory-kb',
     'default-luks2-parallel-threads',
     'default-passphrase-size-max',
@@ -66,6 +65,8 @@ endforeach
 foreach default_option : (default_int_options)
     conf.set(default_option.underscorify().to_upper(), get_option(default_option))
 endforeach
+
+conf.set('DEFAULT_LUKS2_LOCK_DIR_PERMS', get_option('default-luks2-lock-dir-perms'))
 
 sanitizer = get_option('b_sanitize')
 sanitizer_enabled = sanitizer != '' and sanitizer != 'none'
