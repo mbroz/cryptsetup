@@ -21,8 +21,8 @@ bash -c "echo 'deb-src http://archive.ubuntu.com/ubuntu/ $RELEASE main restricte
 add-apt-repository -y ppa:ubuntu-toolchain-r/test
 PACKAGES+=(gcc-$COMPILER_VERSION)
 
-# scsi_debug, gost crypto
-PACKAGES+=(dkms linux-headers-$(uname -r) linux-modules-extra-$(uname -r) gost-crypto-dkms)
+# scsi_debug
+PACKAGES+=(dkms linux-headers-$(uname -r) linux-modules-extra-$(uname -r))
 
 apt-get -y update --fix-missing
 apt-get -y install "${PACKAGES[@]}"
