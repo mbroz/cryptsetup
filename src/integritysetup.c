@@ -522,7 +522,6 @@ out:
 	if (r == -ENOTSUP)
 		r = 0;
 	return r;
-	return -EINVAL;
 }
 
 static int action_dump(void)
