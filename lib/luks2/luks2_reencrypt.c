@@ -1635,12 +1635,12 @@ static int reencrypt_recover_segment(struct crypt_device *cd,
 		for (s = 0; s < count; s++) {
 			if (crypt_hash_write(rp->p.csum.ch, data_buffer + (s * rp->p.csum.block_size), rp->p.csum.block_size)) {
 				log_dbg(cd, "Failed to write hash.");
-				r = EINVAL;
+				r = -EINVAL;
 				goto out;
 			}
 			if (crypt_hash_final(rp->p.csum.ch, checksum_tmp, rp->p.csum.hash_size)) {
 				log_dbg(cd, "Failed to finalize hash.");
-				r = EINVAL;
+				r = -EINVAL;
 				goto out;
 			}
 			if (!memcmp(checksum_tmp, (char *)rp->p.csum.checksums + (s * rp->p.csum.hash_size), rp->p.csum.hash_size)) {
@@ -3370,6 +3370,8 @@ static int reencrypt_lock_internal(struct crypt_device *cd, const char *uuid, st
 	int r;
 	char *lock_resource;
 
+	assert(uuid);
+
 	if (!crypt_metadata_locking_enabled()) {
 		*reencrypt_lock = NULL;
 		return 0;
@@ -3406,6 +3408,7 @@ int LUKS2_reencrypt_lock_by_dm_uuid(struct crypt_device *cd, const char *dm_uuid
 			 dm_uuid + 6, dm_uuid + 14, dm_uuid + 18, dm_uuid + 22, dm_uuid + 26);
 		if (r < 0 || (size_t)r != (sizeof(hdr_uuid) - 1))
 			return -EINVAL;
+		uuid = hdr_uuid;
 	} else if (dm_uuid_cmp(dm_uuid, uuid))
 		return -EINVAL;
 
@@ -4447,7 +4450,7 @@ int crypt_reencrypt(
  * use only for calculation of minimal data device size.
  * The real data offset is taken directly from segments!
  */
-int LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
+uint64_t LUKS2_reencrypt_data_offset(struct luks2_hdr *hdr, bool blockwise)
 {
 	crypt_reencrypt_info ri = LUKS2_reencrypt_status(hdr);
 	uint64_t data_offset = LUKS2_get_data_offset(hdr);

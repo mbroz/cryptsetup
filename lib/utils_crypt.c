@@ -298,7 +298,7 @@ int crypt_capi_to_cipher(char **org_c, char **org_i, const char *c_dm, const cha
 		return -EINVAL;
 
 	/* legacy mode */
-	if (strncmp(c_dm, "capi:", 4)) {
+	if (strncmp(c_dm, "capi:", 5)) {
 		if (!(*org_c = strdup(c_dm)))
 			return -ENOMEM;
 		if (i_dm) {

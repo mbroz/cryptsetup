@@ -48,7 +48,6 @@ default_int_options = [
     'default-luks1-keybits',
     'default-luks2-iter-time',
     'default-luks2-keyslot-keybits',
-    'default-luks2-lock-dir-perms',
     'default-luks2-memory-kb',
     'default-luks2-parallel-threads',
     'default-passphrase-size-max',
@@ -66,6 +65,9 @@ endforeach
 foreach default_option : (default_int_options)
     conf.set(default_option.underscorify().to_upper(), get_option(default_option))
 endforeach
+
+conf.set('DEFAULT_LUKS2_LOCK_DIR_PERMS', get_option('default-luks2-lock-dir-perms'))
+conf.set('DEFAULT_LUKS2_LOCK_PATH_UNQUOTED', get_option('default-luks2-lock-path'))
 
 sanitizer = get_option('b_sanitize')
 sanitizer_enabled = sanitizer != '' and sanitizer != 'none'
@@ -153,7 +155,7 @@ endif
 uuid = dependency('uuid',
     static: enable_static)
 assert(cc.has_function('uuid_clear',
-        prefix: '#include <uuid.h>', dependencies: uuid),
+        prefix: '#include <uuid/uuid.h>', dependencies: uuid),
     'You need the uuid library.')
 
 # ==========================================================================
@@ -201,14 +203,14 @@ if not cc.has_function('dlsym',
         error('dlsym not found')
     endif
 endif
-if cc.has_function('dlvsym',
+have_dlvsym = cc.has_function('dlvsym',
         dependencies: dl)
-    conf.set10('HAVE_DLVSYM', true)
+conf.set10('HAVE_DLVSYM', have_dlvsym)
+if not have_dlvsym
+    warning('dlvsym not found, external token plugins will use dlsym as fallback.')
 endif
 
 if get_option('external-tokens')
-    assert(conf.has('HAVE_DLVSYM') and conf.get('HAVE_DLVSYM') == 1,
-        'dl library has no dlvsym function')
     conf.set10('USE_EXTERNAL_TOKENS', true,
         description: 'Use external tokens')
 endif
@@ -225,10 +227,16 @@ endif
 
 # ==========================================================================
 
-popt = cc.find_library('popt',
-    static: enable_static)
+popt = dependency('popt',
+    static: enable_static,
+    required: false)
+if not popt.found()
+    popt = cc.find_library('popt',
+        static: enable_static,
+        required: true)
+endif
 assert(cc.has_function('poptConfigFileToString',
-        dependencies: popt),
+        prefix: '#include <popt.h>', dependencies: popt),
     'You need popt 1.7 or newer to compile.')
 
 # ==========================================================================
@@ -423,8 +431,7 @@ if get_option('ssh-token')
     argp = []
 
     if not cc.has_function('argp_parse', prefix: '#include <argp.h>', dependencies: argp)
-        argp = cc.find_library('argp',
-            static: enable_static)
+        argp = cc.find_library('argp')
     endif
 
     libssh = dependency('libssh')
@@ -509,10 +516,15 @@ elif get_option('crypto-backend') == 'openssl'
     conf.set10('HAVE_DECL_OSSL_GET_MAX_THREADS',
         cc.has_header_symbol('openssl/thread.h', 'OSSL_get_max_threads',
             dependencies: crypto_backend_library))
-    conf.set10('HAVE_DECL_OSSL_KDF_PARAM_ARGON2_VERSION',
+    # LibreSSL defines OSSL_KDF_PARAM_ARGON2_VERSION in core_names.h but does
+    # not implement the EVP_KDF API. Check for both the symbol and the function.
+    _have_ossl_argon2 = (
         cc.has_header_symbol('openssl/core_names.h', 'OSSL_KDF_PARAM_ARGON2_VERSION',
+            dependencies: crypto_backend_library) and
+        cc.has_function('EVP_KDF_fetch',
             dependencies: crypto_backend_library))
-    if conf.get('HAVE_DECL_OSSL_KDF_PARAM_ARGON2_VERSION') == 1
+    conf.set10('HAVE_DECL_OSSL_KDF_PARAM_ARGON2_VERSION', _have_ossl_argon2)
+    if _have_ossl_argon2
         use_internal_argon2 = false
     endif
 elif get_option('crypto-backend') == 'nss'

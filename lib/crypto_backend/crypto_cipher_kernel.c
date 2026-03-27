@@ -240,7 +240,7 @@ int crypt_cipher_check_kernel(const char *name, const char *mode,
 
 	salg_type = aead ? "aead" : "skcipher";
 	r = snprintf((char *)sa.salg_type, sizeof(sa.salg_type), "%s", salg_type);
-	if (r < 0 || (size_t)r >= sizeof(sa.salg_name))
+	if (r < 0 || (size_t)r >= sizeof(sa.salg_type))
 		return -EINVAL;
 
 	memset(tmp_salg_name, 0, sizeof(tmp_salg_name));

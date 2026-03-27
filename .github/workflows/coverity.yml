@@ -12,7 +12,7 @@ jobs:
     if: github.repository == 'mbroz/cryptsetup'
     steps:
       - name: Repository checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Ubuntu setup
         run: sudo -E .github/workflows/cibuild-setup-ubuntu.sh
         env:

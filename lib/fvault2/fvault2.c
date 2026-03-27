@@ -229,13 +229,13 @@ static int _unwrap_key(
 	if (r < 0)
 		goto out;
 
-	cipher_in = malloc(16);
+	cipher_in = crypt_safe_alloc(16);
 	if (cipher_in == NULL) {
 		r = -ENOMEM;
 		goto out;
 	}
 
-	cipher_out = malloc(16);
+	cipher_out = crypt_safe_alloc(16);
 	if (cipher_out == NULL) {
 		r = -ENOMEM;
 		goto out;
@@ -283,8 +283,8 @@ static int _unwrap_key(
 	((uint64_t *)key_buf)[0] = r2;
 	((uint64_t *)key_buf)[1] = r3;
 out:
-	free(cipher_in);
-	free(cipher_out);
+	crypt_safe_free(cipher_in);
+	crypt_safe_free(cipher_out);
 	if (cipher != NULL)
 		crypt_cipher_destroy(cipher);
 	return r;
@@ -371,7 +371,8 @@ static int _parse_metadata_block_0x0019(
 	uint32_t xml_off = le32_to_cpu(md_block->xml_off);
 	uint32_t xml_size = le32_to_cpu(md_block->xml_size);
 
-	if (xml_off + xml_size > FVAULT2_MD_BLOCK_SIZE)
+	if (xml_off >= FVAULT2_MD_BLOCK_SIZE ||
+	    xml_size > FVAULT2_MD_BLOCK_SIZE - xml_off)
 		return -EINVAL;
 
 	xml = strndup((const char *)md_block + xml_off, xml_size);
@@ -451,7 +452,8 @@ static int _parse_metadata_block_0x001a(
 	uint32_t xml_off = le32_to_cpu(md_block->xml_off);
 	uint32_t xml_size = le32_to_cpu(md_block->xml_size);
 
-	if (xml_off + xml_size > FVAULT2_MD_BLOCK_SIZE)
+	if (xml_off >= FVAULT2_MD_BLOCK_SIZE ||
+	    xml_size > FVAULT2_MD_BLOCK_SIZE - xml_off)
 		return -EINVAL;
 
 	xml = strndup((const char *)md_block + xml_off, xml_size);
@@ -524,9 +526,9 @@ static int _read_volume_header(
 	}
 
 	log_dbg(cd, "Reading FVAULT2 volume header of size %u bytes.", FVAULT2_VOL_HEADER_SIZE);
-	if (read_blockwise(devfd, device_block_size(cd, dev),
+	if (read_lseek_blockwise(devfd, device_block_size(cd, dev),
 			device_alignment(dev), vol_header,
-			FVAULT2_VOL_HEADER_SIZE) != FVAULT2_VOL_HEADER_SIZE) {
+			FVAULT2_VOL_HEADER_SIZE, 0) != FVAULT2_VOL_HEADER_SIZE) {
 		log_err(cd, _("Could not read %u bytes of volume header."), FVAULT2_VOL_HEADER_SIZE);
 		r = -EIO;
 		goto out;
