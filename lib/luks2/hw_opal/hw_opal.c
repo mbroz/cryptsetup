@@ -859,7 +859,7 @@ static int opal_reuse_active_lsp(struct crypt_device *cd, int fd, uint32_t sum,
 		/* If device supports SUM let's get list of SUM enabled LRs */
 		r = opal_get_sum_status_anybody(cd, fd, segment_number, &range_policy, &segment_in_sum);
 		if (r < 0)
-			return r;
+			goto out;
 	}
 
 	/* If it is already enabled, wipe the locking range first */

@@ -1082,11 +1082,11 @@ struct unlocked_keyslot {
 };
 
 struct keyslot_contexts {
-	struct unlocked_keyslot ks[16];
-	struct unlocked_token tkns[16];
+	struct unlocked_keyslot ks[LUKS2_OBJECTS_MAX / 2];
+	struct unlocked_token tkns[LUKS2_OBJECTS_MAX / 2];
 
 	/* available unlock methods linked in keyslot struct */
-	struct crypt_keyslot_context *kc[16];
+	struct crypt_keyslot_context *kc[LUKS2_OBJECTS_MAX / 2];
 
 	/* contains pointer to context unlocking existing volume key */
 	struct crypt_keyslot_context *p_old_kc;

@@ -1047,7 +1047,7 @@ size_t device_alignment(struct device *device)
 	int devfd;
 
 	if (!device)
-		return -EINVAL;
+		return 0;
 
 	if (!device->alignment) {
 		devfd = open(device_path(device), O_RDONLY);

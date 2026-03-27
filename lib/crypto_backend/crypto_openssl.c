@@ -443,6 +443,12 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 
 	h->hash_len = EVP_MAC_CTX_get_mac_size(h->md);
 	h->md_org = EVP_MAC_CTX_dup(h->md);
+	if (!h->md_org) {
+		EVP_MAC_CTX_free(h->md);
+		EVP_MAC_free(h->mac);
+		free(h);
+		return -EINVAL;
+	}
 #else
 	h = malloc(sizeof(*h));
 	if (!h)
@@ -540,6 +546,9 @@ void crypt_hmac_destroy(struct crypt_hmac *ctx)
 int crypt_backend_rng(char *buffer, size_t length,
 	int quality __attribute__((unused)), int fips __attribute__((unused)))
 {
+	if (length > INT_MAX)
+		return -EINVAL;
+
 	if (RAND_bytes((unsigned char *)buffer, length) != 1)
 		return -EINVAL;
 

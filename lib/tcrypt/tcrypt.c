@@ -626,7 +626,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			params->cipher, params->mode, params->key_size);
 	}
 out:
-	crypt_safe_memzero(pwd, TCRYPT_KEY_POOL_LEN);
+	crypt_safe_memzero(pwd, VCRYPT_KEY_POOL_LEN);
 	if (key)
 		crypt_safe_memzero(key, TCRYPT_HDR_KEY_LEN);
 	free(key);

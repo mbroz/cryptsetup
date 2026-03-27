@@ -3188,6 +3188,8 @@ void crypt_safe_free(void *data);
  * @param size new size of memory in bytes
  *
  * @return pointer to allocated memory or @e NULL.
+ *
+ * @note On memory failure, original memory safely wiped and deallocated.
  */
 void *crypt_safe_realloc(void *data, size_t size);
 

@@ -776,7 +776,7 @@ static char *crypt_loop_get_device(void)
 	return strdup(dev);
 }
 
-int loop_attach(char **loop, const char *file, int offset,
+int loop_attach(char **loop, const char *file, uint64_t offset,
 		      int autoclear, int *readonly)
 {
 	struct loop_config config = {0};
