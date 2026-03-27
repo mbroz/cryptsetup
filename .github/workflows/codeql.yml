@@ -47,7 +47,7 @@ jobs:
         env: { COMPILER: "gcc", COMPILER_VERSION: "14",  RUN_SSH_PLUGIN_TEST: "1" }
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
