@@ -178,6 +178,7 @@ compatimage.img:
 	@xz -k -d compatimage.img.xz
 
 valgrind-check: api-test api-test-2 differ
+	./00modules-test
 	@VALG=1 ./compat-args-test
 	@VALG=1 ./compat-test
 	@VALG=1 ./compat-test2

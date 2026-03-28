@@ -34,7 +34,8 @@ test-commit-job-valgrind:
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+    #- if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_COMMIT_BRANCH == "valgrind-test"
   script:
    - make -j
    - make -j -C tests check-programs
