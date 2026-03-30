@@ -36,7 +36,7 @@ static OSSL_PROVIDER *ossl_default = NULL;
 static OSSL_LIB_CTX  *ossl_ctx = NULL;
 static char backend_version[256] = "OpenSSL";
 
-#define MAX_THREADS 8
+#define MAX_THREADS 64
 #if !HAVE_DECL_OSSL_GET_MAX_THREADS
 static int OSSL_set_max_threads(OSSL_LIB_CTX *ctx __attribute__((unused)),
 				uint64_t max_threads __attribute__((unused))) { return 0; }
