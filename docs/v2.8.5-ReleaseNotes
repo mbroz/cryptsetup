@@ -1,0 +1,73 @@
+Cryptsetup 2.8.5 Release Notes
+==============================
+Stable bug-fix release.
+
+All users of cryptsetup 2.8.x must upgrade to this version.
+
+Changes since version 2.8.4
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix FileVault (fvault2) metadata parsing.
+  With a specially crafted image, it is possible to cause a crash during the loading
+  of the FileVault-compatible disk encryption format. It is caused by the metadata block size
+  not being fully validated during the crypt_load() API call.
+
+  Thanks to David Pokora (Trail of Bits, in collaboration with Anthropic) for reporting
+  and proposing the patch.
+
+* Fix reading FileVault image metadata from incorrect image offset.
+  If two subsequent crypt_load() API calls are made, the second call to load FileVault metadata
+  uses an incorrect offset.  Subsequently, the correct FileVault metadata is not recognized.
+  This is caused by a missing seek to the device's beginning. No other formats are affected.
+
+* OpenSSL backend: Increase the number of allowed threads to 64.
+  If there are multiple crypto contexts in use, the 8-thread limit could cause parallel Argon2
+  PBKDF to wait or even deadlock. This is a workaround; the real fix probably needs changes
+  in the OpenSSL Argon2 thread allocation.
+
+* Fix LUKS2 reencryption lock name.
+  If the device is in the reencryption process, it must use the metadata lock to protect
+  the reencryption metadata. In some very specific situations, the lock did not contain
+  the proper UUID of the reencrypted device.
+
+* Check the UUID of the resumed device to match the UUID stored in metadata.
+  It is possible to resume the device with an invalid context, with possible data corruption
+  (a different encryption key is loaded).
+
+* Add a specific error for failed detached header allocation.
+  If there wasn't enough space on the filesystem, the error message was confusing.
+
+* Fix tests not to use aes-generic kernel cipher name.
+  Since Linux kernel 7.0, the crypto library has been used, and the old generic alias for kernel
+  crypto no longer works. As it was never supposed to be used from userspace, tests were fixed
+  to pass even with Linux kernel 7.0.
+
+* Fix OpenSSL crypto backend if built with LibreSSL.
+  LibreSSL provides some definitions that it does not actually support.
+  This confused the logic of the configuration scripts.
+
+* Several compatibility fixes to the alternative Meson configuration system:
+  * using pkg-config to find the popt library,
+  * fix the UUID header path in the function check,
+  * fix argp detection with the static argp-standalone library,
+  * allow external tokens without dlvsym (with musl library),
+  * propagate the crypto backend library dependency to all targets in the static build, and
+  * fix the defined locking directory path..
+  These changes align it with Autoconf logic.
+
+* Various code fixes based on AI-assisted reviews:
+  * fix memory wiping of the larger Veracrypt password pool,
+  * remove superfluous return line in integritysetup,
+  * OpenSSL crypto backend: check for maximal RAND_bytes buffer size,
+  * FileVault fomrat:: use safe_alloc for key unwrapping,
+  * check for strtoll() failure,
+  * avoid integrity sector size overflow (when reading from disk),
+  * fix device-mapper flags initialization in the error path,
+  * increase buffer for keyring name in the device-mapper table to not truncate it,
+  * document non-standard behavior of safe_realloc,
+  * fix wrong union access for dm-integrity reload,
+  * check for possible CTX_dup failure in OpenSSL crypto backend,
+  * fix kernel crypto backend snprintf check,
+  * fix prefix "capi:" check not to ignore colon,
+  * fix device resize not to leak data on error path, and
+  * fix return value in reencryption segment helper.
