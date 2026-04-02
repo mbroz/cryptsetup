@@ -838,6 +838,7 @@ test -z "$with_luks2_lock_path" && with_luks2_lock_path=/run/cryptsetup
 CS_ABSPATH([${with_luks2_lock_path}],[with-luks2-lock-path])
 DEFAULT_LUKS2_LOCK_PATH=$with_luks2_lock_path
 AC_SUBST(DEFAULT_LUKS2_LOCK_PATH)
+AC_SUBST([DEFAULT_LUKS2_LOCK_PATH_UNQUOTED], [$DEFAULT_LUKS2_LOCK_PATH])
 
 CS_NUM_WITH([luks2-lock-dir-perms], [default luks2 locking directory permissions], [0700])
 test -z "$with_luks2_lock_dir_perms" && with_luks2_lock_dir_perms=0700
