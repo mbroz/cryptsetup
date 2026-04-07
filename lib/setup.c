@@ -6321,6 +6321,19 @@ int crypt_dump_json(struct crypt_device *cd, const char **json, uint32_t flags)
 	return -EINVAL;
 }
 
+int crypt_get_hw_opal_locking_ranges(struct crypt_device *cd,
+				const char *opal_pin,
+				size_t opal_pin_size,
+				struct crypt_hw_opal_range *opal_ranges,
+				size_t opal_ranges_count)
+{
+	if (!cd || !crypt_data_device(cd) || !opal_ranges || !opal_ranges_count)
+		return -EINVAL;
+
+	return opal_get_ranges_params(cd, crypt_data_device(cd), 0 /* OPAL_ADMIN1 */,
+				 opal_pin, opal_pin_size, opal_ranges, opal_ranges_count);
+}
+
 /* internal only */
 const char *crypt_get_cipher_spec(struct crypt_device *cd)
 {
