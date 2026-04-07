@@ -3287,6 +3287,47 @@ int crypt_set_keyring_to_link(struct crypt_device* cd,
 	const char* key_type_desc,
 	const char* keyring_to_link_vk);
 
+typedef enum {
+	READ_WRITE = 0, /* unlocked */
+	READ_ONLY,      /* unlocked only for reading */
+	LOCKED,         /* locked */
+} crypt_hw_lock_type;
+
+struct crypt_hw_encrypt_object {
+	uint8_t id; /* locking range id */
+	unsigned read_locking_enabled:1; /* read locking is enabled */
+	unsigned write_locking_enabled:1; /* write locking is enabled */
+	crypt_hw_lock_type lock;
+	int8_t sum_enabled; /* SUM status is undefined, disabled or enabled for negative value, zero or positive value respectively. */
+	int8_t range_policy; /* Range Policy is undefined, disabled or enabled for negative value, zero or positive value respectively.  */
+	uint64_t offset; /* locking range offset in bytes */
+	uint64_t length; /* locking range length in bytes */
+};
+
+/**
+ * Get information about HW OPAL locking ranges.
+ *
+ * The function provides status information about OPAL2 locking ranges
+ * that can be retrieved using the Admin1 authority PIN.
+ *
+ * @param cd opal device handle (obtained by crypt_init() where backing device was HW OPAL device)
+ * @param opal_pin passphrase used to authenticate OPAL Admin1 authority
+ * @param opal_pin_size size of @e opal_pin (binary data)
+ * @param hw_objs return buffer for OPAL2 locking ranges state descriptions
+ * @param hw_objs_size size of @e hw_objs array
+ *
+ * @note if @e hw_objs_size, and therefore the @e hw_objs array, is too small to contain all OPAL
+ * 	 locking object descriptions retrieved from the OPAL device, the function returns -ENOSPC.
+ *
+ * @return Number of returned locking objects via @e hw_objs array on success, -EPERM if provided
+ * 	   OPAL Admin PIN (passphrase) was incorrect, or other negative errno value otherwise.
+ */
+int crypt_get_hw_encrypt_status(struct crypt_device *cd,
+				const char *opal_pin,
+				size_t opal_pin_size,
+				struct crypt_hw_encrypt_object *hw_objs,
+				size_t hw_objs_size);
+
 /** @} */
 
 #ifdef __cplusplus
