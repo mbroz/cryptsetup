@@ -3138,7 +3138,6 @@ int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd __attribute__((unuse
 	struct volume_key *opal_key, *crypt_key;
 
 	assert(vk);
-	assert(ret_crypt_key);
 	assert(ret_opal_key);
 
 	jobj_segment = LUKS2_get_segment_jobj(hdr, CRYPT_DEFAULT_SEGMENT);
@@ -3158,7 +3157,8 @@ int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd __attribute__((unuse
 
 	/* OPAL SEGMENT only */
 	if (crypt_volume_key_length(vk) == opal_user_key_size) {
-		*ret_crypt_key = NULL;
+		if (ret_crypt_key)
+			*ret_crypt_key = NULL;
 		*ret_opal_key = NULL;
 		return 0;
 	}
@@ -3167,15 +3167,17 @@ int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd __attribute__((unuse
 	if (!opal_key)
 		return -ENOMEM;
 
-	crypt_key = crypt_alloc_volume_key(crypt_volume_key_length(vk) - opal_user_key_size,
-					   crypt_volume_key_get_key(vk) + opal_user_key_size);
-	if (!crypt_key) {
-		crypt_free_volume_key(opal_key);
-		return -ENOMEM;
+	if (ret_crypt_key) {
+		crypt_key = crypt_alloc_volume_key(crypt_volume_key_length(vk) - opal_user_key_size,
+						   crypt_volume_key_get_key(vk) + opal_user_key_size);
+		if (!crypt_key) {
+			crypt_free_volume_key(opal_key);
+			return -ENOMEM;
+		}
+		*ret_crypt_key = crypt_key;
 	}
 
 	*ret_opal_key = opal_key;
-	*ret_crypt_key = crypt_key;
 
 	return 0;
 }
