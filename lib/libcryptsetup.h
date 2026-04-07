@@ -3342,6 +3342,63 @@ int crypt_set_keyring_to_link(struct crypt_device* cd,
  */
 int crypt_hw_opal_locking_ranges_max(struct crypt_device *cd);
 
+/**
+ * State of OPAL locking range
+ */
+typedef enum {
+	CRYPT_HW_OPAL_RW = 0, /* unlocked for R/W */
+	CRYPT_HW_OPAL_RO,     /* unlocked only for read */
+	CRYPT_HW_OPAL_LOCKED, /* locked for all I/O */
+} crypt_hw_opal_lock_state;
+
+/**
+ * OPAL feature state
+ */
+typedef enum {
+	CRYPT_HW_OPAL_FEATURE_DISABLED = 0, /* a feature is disabled */
+	CRYPT_HW_OPAL_FEATURE_ENABLED,      /* a feature is enabled */
+	CRYPT_HW_OPAL_FEATURE_UNDEFINED,    /* a feature state is undefined (missing kernel API) */
+} crypt_hw_opal_feature_state;
+
+/**
+ * OPAL locking range description
+ */
+struct crypt_hw_opal_range {
+	uint8_t id; /* locking range id */
+	unsigned int read_locking_enabled; /* read locking is enabled */
+	unsigned int write_locking_enabled; /* write locking is enabled */
+	crypt_hw_opal_lock_state lock_state;
+	crypt_hw_opal_feature_state sum; /* Locking range SUM support */
+	crypt_hw_opal_feature_state range_policy; /* Range Policy */
+	uint64_t offset; /* locking range offset in bytes (absolute offset on the whole block device) */
+	uint64_t length; /* locking range length in bytes */
+};
+
+/**
+ * Get information about OPAL locking ranges.
+ *
+ * The function provides status information about OPAL locking ranges
+ * that can be retrieved using the Admin1 authority PIN.
+ *
+ * @param cd OPAL device handle
+ * @param opal_pin passphrase used to authenticate OPAL Admin1 authority
+ * @param opal_pin_size size of @e opal_pin (binary data)
+ * @param opal_ranges return buffer for OPAL locking ranges descriptions
+ * @param opal_ranges_count size of @e opal_ranges array
+ *
+ * @note if @e opal_ranges_count, and therefore the @e opal_ranges array, is too small to contain all OPAL
+ * 	 locking range descriptions retrieved from the OPAL device, the function returns -ENOSPC.
+ * 	 Use @ref crypt_hw_opal_locking_ranges_max to get max number of supported OPAL locking ranges by the OPAL device.
+ *
+ * @return the number of locking ranges returned in the @e opal_ranges array on success, -EPERM if provided
+ * 	   OPAL Admin PIN (passphrase) was incorrect, or other negative errno value otherwise.
+ */
+int crypt_get_hw_opal_locking_ranges(struct crypt_device *cd,
+				     const char *opal_pin,
+				     size_t opal_pin_size,
+				     struct crypt_hw_opal_range *opal_ranges,
+				     size_t opal_ranges_count);
+
 /** @} */
 
 #ifdef __cplusplus
