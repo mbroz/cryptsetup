@@ -29,6 +29,7 @@
 #define KILLKEY_ACTION		"luksKillSlot"
 #define LUKSDUMP_ACTION		"luksDump"
 #define OPEN_ACTION		"open"
+#define OPALDUMP_ACTION		"opaldump"
 #define REENCRYPT_ACTION	"reencrypt"
 #define REMOVEKEY_ACTION	"luksRemoveKey"
 #define REPAIR_ACTION		"repair"

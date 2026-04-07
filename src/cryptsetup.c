@@ -3014,6 +3014,86 @@ out:
 	return r;
 }
 
+static int action_opaldump(void)
+{
+	int r, response_count;
+	crypt_status_hw_encryption_info ci;
+	struct crypt_hw_opal_range *response = NULL;
+	char *admin_pin = NULL;
+	size_t count, i = 0, admin_pin_size = 0;
+	struct crypt_device *cd = NULL;
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		return r;
+
+	ci = crypt_status_hw_encryption(cd);
+	if (ci == CRYPT_HW_INVALID) {
+		log_err(_("Device %s or kernel does not support OPAL2 encryption."),
+			crypt_get_device_name(cd));
+		r = -EINVAL;
+		goto out;
+	}
+
+	if (ci == CRYPT_HW_OTHER) {
+		log_err(_("Unsupported HW OPAL profile on device %s."),
+			crypt_get_device_name(cd));
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = crypt_get_hw_opal_enabled(cd);
+	if (r <= 0) {
+		log_err(_("Device %s was not configured for OPAL2 encryption."),
+			crypt_get_device_name(cd));
+		r = -EINVAL;
+		goto out;
+	}
+
+	r = crypt_hw_opal_locking_ranges_max(cd);
+	if (r < 0)
+		goto out;
+	response_count = r;
+
+	response = malloc(sizeof(*response) * response_count);
+	if (!response) {
+		r = -ENOMEM;
+		goto out;
+	}
+
+	r = tools_get_key(_("Enter OPAL Admin password: "), &admin_pin, &admin_pin_size,
+			  0, 0, NULL, ARG_UINT32(OPT_TIMEOUT_ID), 0, 0, cd);
+	if (r < 0)
+		goto out;
+
+	r = crypt_get_hw_opal_locking_ranges(cd, admin_pin, admin_pin_size, response, response_count);
+	if (!r) {
+		log_std(_("No OPAL2 segment configured on device %s.\n"), action_argv[0]);
+		r = -ENOENT;
+	} else if (r == -EPERM) {
+		log_err(_("Invalid OPAL Admin password provided."));
+	} else if (r < 0)
+		log_err(_("Failed to query device %s for OPAL2 segments."), action_argv[0]);
+
+	if (r < 0)
+		goto out;
+
+	count = (size_t)r;
+
+	log_std("OPAL information for %s\n", crypt_get_device_name(cd));
+	log_std("OPAL subsystem: %s\n", crypt_hw_status_to_string(ci));
+
+	print_opal_table_header();
+	while (i < count)
+		print_opal_table_line(response + i++);
+
+	r = 0;
+out:
+	crypt_safe_free(admin_pin);
+	crypt_free(cd);
+	free(response);
+	return r;
+}
+
 static const char *_get_device_type(void)
 {
 	const char *type, *name = NULL;
@@ -3703,6 +3783,7 @@ static struct action_type {
 	{ UUID_ACTION,		action_luksUUID,	NULL,			1, N_("<device>"), N_("print UUID of LUKS device") },
 	{ ISLUKS_ACTION,	action_isLuks,		NULL,			1, N_("<device>"), N_("tests <device> for LUKS partition header") },
 	{ LUKSDUMP_ACTION,	action_luksDump,	verify_luksDump,	1, N_("<device>"), N_("dump LUKS partition information") },
+	{ OPALDUMP_ACTION,	action_opaldump,	NULL,			1, N_("<device>"), N_("dump OPAL2 device information") },
 	{ TCRYPTDUMP_ACTION,	action_tcryptDump,	verify_tcryptdump,	1, N_("<device>"), N_("dump TCRYPT device information") },
 	{ BITLKDUMP_ACTION,	action_bitlkDump,	NULL,			1, N_("<device>"), N_("dump BITLK device information") },
 	{ FVAULT2DUMP_ACTION,	action_fvault2Dump,	NULL,			1, N_("<device>"), N_("dump FVAULT2 device information") },
