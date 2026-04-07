@@ -694,25 +694,32 @@ static int opal_sum_setup(struct crypt_device *cd, int fd, const void *admin_key
 	return r > 0 ? -EINVAL : r;
 }
 
+static bool opal_segment_in_sum(uint32_t segment_number, struct opal_sum_ranges *sranges)
+{
+	int i;
+
+	assert(sranges);
+
+	for (i = 0; i < sranges->num_lrs ; i++) {
+		if (sranges->lr[i] == segment_number)
+			return true;
+	}
+
+	return false;
+}
+
 static int opal_get_sum_status_anybody(struct crypt_device *cd, int fd, uint32_t segment_number,
 				       uint8_t *r_policy, uint8_t *r_segment_in_sum)
 {
-	int i, r;
+	int r;
 	struct opal_sum_ranges sum_ranges = {};
 
 	r = opal_get_sum_ranges_anybody(cd, fd, &sum_ranges);
 	if (r < 0)
 		return r;
 
-	if (r_segment_in_sum) {
-		*r_segment_in_sum = 0;
-		for (i = 0; i < sum_ranges.num_lrs ; i++) {
-			if (sum_ranges.lr[i] == segment_number) {
-				*r_segment_in_sum = 1;
-				break;
-			}
-		}
-	}
+	if (r_segment_in_sum)
+		*r_segment_in_sum = opal_segment_in_sum(segment_number, &sum_ranges);
 
 	if (r_policy)
 		*r_policy = sum_ranges.range_policy;
