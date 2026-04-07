@@ -144,7 +144,7 @@ Do not load the volume key in the kernel keyring; store it directly in the dm-cr
 This option is supported only for the LUKS2 type.
 endif::[]
 
-ifndef::ACTION_BENCHMARK,ACTION_BITLKDUMP,ACTION_TCRYPTDUMP[]
+ifndef::ACTION_BENCHMARK,ACTION_BITLKDUMP,ACTION_TCRYPTDUMP,ACTION_OPALDUMP[]
 *--disable-locks*::
 Disable lock protection for metadata on disk.
 This option is valid only for LUKS2 and is ignored for other formats.
@@ -262,7 +262,7 @@ Use _cryptsetup --help_ to show the defaults.
 endif::[]
 endif::[]
 
-ifndef::ACTION_BENCHMARK,ACTION_BITLKDUMP[]
+ifndef::ACTION_BENCHMARK,ACTION_BITLKDUMP,ACTION_OPALDUMP[]
 *--header* _<device or file storing the LUKS header>_::
 ifndef::ACTION_OPEN,ACTION_ERASE[]
 Use a detached (separated) metadata device or file where the LUKS header is stored.
@@ -1042,7 +1042,7 @@ Do not activate the device, just verify the passphrase.
 The device mapping name is not mandatory if this option is used.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_LUKSRESUME,ACTION_RESIZE,ACTION_TCRYPTDUMP,ACTION_BITLKDUMP[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_OPALDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_LUKSRESUME,ACTION_RESIZE,ACTION_TCRYPTDUMP,ACTION_BITLKDUMP[]
 *--timeout*, *-t* _seconds_::
 The number of seconds to wait before a timeout on passphrase input via terminal.
 It is relevant every time a passphrase is asked.
