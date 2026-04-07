@@ -3002,6 +3002,63 @@ out:
 	return r;
 }
 
+static int action_opaldump(void)
+{
+	int r;
+	crypt_status_hw_encryption_info ci;
+	struct crypt_hw_encrypt_object response[9];
+	char *admin_pin = NULL;
+	size_t count, i = 0, admin_pin_size = 0;
+	struct crypt_device *cd = NULL;
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		return r;
+
+	ci = crypt_status_hw_encryption(cd);
+	if (ci == CRYPT_HW_INVALID) {
+		log_err(_("Device %s or kernel does not support OPAL encryption."),
+			crypt_get_device_name(cd));
+		r = -EINVAL;
+		goto out;
+	}
+
+	if (ci == CRYPT_HW_OPAL || ci == CRYPT_HW_OPAL_SUM) {
+		r = tools_get_key(_("Enter OPAL Admin password: "), &admin_pin, &admin_pin_size,
+				  0, 0, NULL, ARG_UINT32(OPT_TIMEOUT_ID), 0, 0, cd);
+		if (r < 0)
+			goto out;
+	}
+
+	log_std("OPAL information for %s\n", crypt_get_device_name(cd));
+	log_std("OPAL subsystem: %s\n", crypt_hw_status_to_string(ci));
+
+	if (ci == CRYPT_HW_OPAL || ci == CRYPT_HW_OPAL_SUM) {
+		r = crypt_get_hw_encrypt_status(cd, admin_pin, admin_pin_size, response, ARRAY_SIZE(response));
+		if (!r) {
+			log_std(_("No HW OPAL segment configured on device %s"), action_argv[0]);
+			r = -ENOENT;
+		} else if (r == -EPERM) {
+			log_err(_("Invalid OPAL Admin password provided."));
+		} else if (r < 0)
+			log_err(_("Failed to query device %s for HW segments."), action_argv[0]);
+
+		if (r < 0)
+			goto out;
+
+		count = (size_t)r;
+
+		print_opal_table_header();
+		while (i < count)
+			print_opal_table_line(response + i++);
+	}
+
+	r = 0;
+out:
+	crypt_safe_free(admin_pin);
+	crypt_free(cd);
+	return r;
+}
+
 static const char *_get_device_type(void)
 {
 	const char *type, *name = NULL;
@@ -3687,6 +3744,7 @@ static struct action_type {
 	{ UUID_ACTION,		action_luksUUID,	NULL,			1, N_("<device>"), N_("print UUID of LUKS device") },
 	{ ISLUKS_ACTION,	action_isLuks,		NULL,			1, N_("<device>"), N_("tests <device> for LUKS partition header") },
 	{ LUKSDUMP_ACTION,	action_luksDump,	verify_luksDump,	1, N_("<device>"), N_("dump LUKS partition information") },
+	{ OPALDUMP_ACTION,	action_opaldump,	NULL,			1, N_("<device>"), N_("dump OPAL2 device information") },
 	{ TCRYPTDUMP_ACTION,	action_tcryptDump,	verify_tcryptdump,	1, N_("<device>"), N_("dump TCRYPT device information") },
 	{ BITLKDUMP_ACTION,	action_bitlkDump,	NULL,			1, N_("<device>"), N_("dump BITLK device information") },
 	{ FVAULT2DUMP_ACTION,	action_fvault2Dump,	NULL,			1, N_("<device>"), N_("dump FVAULT2 device information") },
