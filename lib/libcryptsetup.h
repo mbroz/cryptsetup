@@ -3305,6 +3305,32 @@ struct crypt_hw_encrypt_object {
 };
 
 /**
+ * Get information about HW OPAL locking ranges used in LUKS2
+ *
+ * The function provides status information about OPAL2 locking ranges
+ * that can be retrieved using the User authority PIN generated and stored
+ * in LUKS2 metadata.
+ *
+ * @param cd LUKS2 device handle
+ * @param keyslot requested keyslot or CRYPT_ANY_SLOT
+ * @param kc keyslot context providing volume key or passphrase to @e keyslot.
+ * @param hw_objs return buffer for OPAL2 locking ranges state descriptions
+ * @param hw_objs_size size of @e hw_objs array
+ *
+ * @note if @e hw_objs_size, and therefore the @e hw_objs array, is too small to contain all OPAL
+ * 	 locking object descriptions retrieved from the OPAL device, the function returns -ENOSPC.
+ *
+ * @return Number of returned locking objects via @e hw_objs array on success, -EPERM if stored OPAL key
+ * 	   was wrong for OPAL User authority associated with the HW segment, or other negative errno
+ * 	   value otherwise.
+ */
+int crypt_get_hw_encrypt_status_by_keyslot_context(struct crypt_device *cd,
+				int keyslot,
+				struct crypt_keyslot_context *kc,
+				struct crypt_hw_encrypt_object *hw_objs,
+				size_t hw_objs_size);
+
+/**
  * Get information about HW OPAL locking ranges.
  *
  * The function provides status information about OPAL2 locking ranges
