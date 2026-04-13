@@ -59,6 +59,14 @@ int opal_exclusive_lock(struct crypt_device *cd,
 			struct crypt_lock_handle **opal_lock);
 void opal_exclusive_unlock(struct crypt_device *cd, struct crypt_lock_handle *opal_lock);
 
+int opal_get_single_range_params(struct crypt_device *cd,
+			 struct device *dev,
+			 uint32_t opal_user_id,
+			 uint8_t opal_locking_range_id,
+			 const void *opal_key,
+			 size_t opal_key_size,
+			 struct crypt_hw_opal_range *ret_opal_range);
+
 int opal_get_ranges_params(struct crypt_device *cd,
 			 struct device *dev,
 			 uint32_t opal_user_id,
