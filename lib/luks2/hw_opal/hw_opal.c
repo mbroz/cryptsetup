@@ -1741,6 +1741,63 @@ static int opal_get_range(struct crypt_device *cd,
 	return 1;
 }
 
+int opal_get_single_range_params(struct crypt_device *cd,
+			 struct device *dev,
+			 uint32_t opal_user_id,
+			 uint8_t opal_locking_range_id,
+			 const void *opal_key,
+			 size_t opal_key_size,
+			 struct crypt_hw_opal_range *ret_opal_range)
+{
+	int fd, r;
+	uint32_t opal_block_size;
+	struct opal_lr_status *lrs;
+	struct opal_sum_ranges sum_ranges = {};
+	bool sum_undefined = false;
+
+	assert(ret_opal_range);
+
+	fd = device_open(cd, dev, O_RDONLY);
+	if (fd < 0)
+		return -EIO;
+
+	r = opal_geometry_fd(cd, fd, NULL, &opal_block_size, NULL, NULL);
+	if (r != OPAL_STATUS_SUCCESS)
+		return -EINVAL;
+
+	/* check if kernel recognizes the device as SUM capable */
+	r = opal_query_status_fd(cd, fd, OPAL_FL_SUM_SUPPORTED);
+	if (r < 0)
+		return r;
+
+	/* Check locking ranges SUM state only if the device advertises SUM support */
+	if (r) {
+		r = opal_get_sum_ranges_anybody(cd, fd, &sum_ranges);
+		sum_undefined = (r < 0);
+	}
+
+	lrs = crypt_safe_alloc(sizeof(*lrs));
+	if (!lrs)
+		return -ENOMEM;
+
+	*lrs = (struct opal_lr_status) {
+		.session = {
+			.who = opal_user_id,
+			.opal_key = {
+				.lr = opal_locking_range_id,
+				.key_len = opal_key_size,
+			}
+		}
+	};
+	crypt_safe_memcpy(lrs->session.opal_key.key, opal_key, opal_key_size);
+
+	r = opal_get_range(cd, fd, opal_block_size, sum_undefined, lrs, &sum_ranges, ret_opal_range);
+
+	crypt_safe_free(lrs);
+
+	return r;
+}
+
 int opal_get_ranges_params(struct crypt_device *cd,
 			 struct device *dev,
 			 uint32_t opal_user_id,
@@ -1900,6 +1957,17 @@ void opal_exclusive_unlock(struct crypt_device *cd, struct crypt_lock_handle *op
 crypt_status_hw_encryption_info crypt_status_hw_encryption(struct crypt_device *cd)
 {
 	return CRYPT_HW_INVALID;
+}
+
+int opal_get_single_range_params(struct crypt_device *cd,
+			 struct device *dev,
+			 uint32_t opal_user_id,
+			 uint8_t opal_locking_range_id,
+			 const void *opal_key,
+			 size_t opal_key_size,
+			 struct crypt_hw_opal_range *ret_opal_range)
+{
+	return -ENOTSUP;
 }
 
 int opal_get_ranges_params(struct crypt_device *cd,
