@@ -33,7 +33,11 @@ To dump LUKS2 JSON metadata (without basic header information like UUID), use th
 
 If --dump-volume-key is used with --key-file and the argument to --key-file is '-', no validation question will be asked and no warning given.
 
-*<options>* can be [--dump-volume-key, --dump-json-metadata, --key-file, --keyfile-offset, --keyfile-size, --header, --disable-locks, --volume-key-file, --type, --unbound, --key-slot, --timeout, --external-tokens-path].
+For a LUKS2 device formatted with hardware OPAL2 (Self Encrypting Drive) support, the --dump-hw-opal option prints additional information about the SED OPAL2 locking range associated with the device.
+The printed information includes the OPAL keysize, the OPAL subsystem type and a table of the OPAL locking range(s) owned by the LUKS2 device (see *cryptsetup-opaldump*(8) for a description of the table columns).
+To dump all the OPAL information of a device, independent of LUKS2 metadata, use the *opaldump* action instead.
+
+*<options>* can be [--dump-volume-key, --dump-json-metadata, --dump-hw-opal, --key-file, --keyfile-offset, --keyfile-size, --header, --disable-locks, --volume-key-file, --volume-key-keyring, --type, --unbound, --key-slot, --token-id, --token-type, --token-only, --timeout, --external-tokens-path].
 
 include::man/common_options.adoc[]
 include::man/common_footer.adoc[]
