@@ -2950,8 +2950,16 @@ $CRYPTSETUP close $DEV_NAME || fail
 reformat_reencrypt_device
 $CRYPTSETUP -q luksErase $DEV || fail
 
+# run the test with additional debug output
+echo "Key before truncate:"
+keyctl describe %user:$KEY_NAME_VK2
+keyctl print %user:$KEY_NAME_VK2
 head -c 63 $VKEY2 | keyctl padd user $KEY_NAME_VK2 %:$KEYRING > /dev/null || fail
-$CRYPTSETUP -q reencrypt --init-only --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- 2>/dev/null && fail
+echo "Key after truncate:"
+keyctl describe %user:$KEY_NAME_VK2
+keyctl print %user:$KEY_NAME_VK2
+$CRYPTSETUP -q reencrypt --init-only --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV --debug <&- && fail
+#$CRYPTSETUP -q reencrypt --init-only --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- 2>/dev/null && fail
 $CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt" && fail "Failed initialization with reencryption flag"
 
 head -c 64 $VKEY2 | keyctl padd user $KEY_NAME_VK2 %:$KEYRING > /dev/null || fail
