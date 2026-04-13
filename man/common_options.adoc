@@ -175,6 +175,13 @@ ifdef::ACTION_LUKSDUMP[]
 For _luksDump_ (LUKS2 only), this option prints the content of the LUKS2 header JSON metadata area.
 endif::[]
 
+ifdef::ACTION_LUKSDUMP[]
+*--dump-hw-opal*::
+For _luksDump_, print additional information about the SED OPAL2 hardware locking range associated with a LUKS2 device formatted with hardware OPAL2 (Self Encrypting Drive) support.
+The device must be unlocked to query the drive, so a passphrase, a LUKS2 token or the volume key has to be supplied.
+See also the *opaldump* action in *cryptsetup-opaldump*(8) for dumping OPAL information of the whole device (without attachment to LUKS2 metadata).
+endif::[]
+
 ifdef::ACTION_LUKSDUMP,ACTION_TCRYPTDUMP,ACTION_BITLKDUMP[]
 *--dump-volume-key*::
 --dump-master-key (OBSOLETE alias)::
