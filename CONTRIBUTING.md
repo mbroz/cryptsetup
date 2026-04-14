@@ -11,7 +11,7 @@ We welcome contributions from everyone.
 Cryptsetup is an independent project with much volunteer effort, and our resources are limited.
 Following the guidelines specified in this file makes it easier for us to process your issue.
 
-Project maintainers can remove or reject abusive or otherwise unacceptable comments or code.
+Project maintainers can remove or reject abusive contributions, code apparently submitted by artificial intelligence (AI) without human interaction, or otherwise unacceptable comments or code.
 
 Git repository
 --------------
@@ -42,6 +42,10 @@ Changes from developers and external contributors should go through the GitLab r
 Alternatively (for trivial changes), you can send a patch to [cryptsetup mailing list](mailto:cryptsetup@lists.linux.dev).
 
 Please do not write personal emails with questions or patches to maintainers and developers.
+
+Please refrain from submissions that you haven't thoroughly understood, reviewed, and tested.
+Please disclose if your contribution was AI-generated.
+Descriptions and comments should be made by you.
 
 ### Project structure
 Cryptsetup projects include a libcryptsetup library, tools, token plugins, documentation, and a test suite.
