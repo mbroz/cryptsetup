@@ -5,7 +5,7 @@ CIPHER_CBC_ESSIV="aes-cbc-essiv:sha256"
 CIPHER_CBC_TCW="serpent-cbc-tcw"
 # TODO: mode with LMK
 
-TEST_KEYRING_NAME="keyringtest_keyring"
+TEST_KEYRING_NAME="keyringcompattest_keyring"
 
 LOGON_KEY_16_OK="dmtst:lkey_16"
 LOGON_KEY_32_OK="dmtst:lkey_32"
@@ -38,7 +38,7 @@ remove_mapping()
 	[ -b /dev/mapper/$NAME ] && dmsetup remove --retry $NAME
 
 	# unlink whole test keyring
-	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
+	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING >/dev/null
 
 	rmmod scsi_debug >/dev/null 2>&1
 
@@ -106,10 +106,17 @@ dm_crypt_keyring_support()
 }
 
 test_and_prepare_keyring() {
+	local s_desc=$(keyctl rdescribe @s | cut -d';' -f5)
+	local us_desc=$(keyctl rdescribe @us | cut -d';' -f5)
+
+	if [ "$s_desc" = "$us_desc" -a -n "$s_desc" ]; then
+		echo "Session keyring is missing. Giving new one to parent process..."
+		keyctl new_session > /dev/null || skip "Could not create session keyring, test skipped"
+	fi
+
 	keyctl list "@s" > /dev/null || skip "Current session keyring is unreachable, test skipped"
-	TEST_KEYRING=$(keyctl newring $TEST_KEYRING_NAME "@u" 2> /dev/null)
-	test -n "$TEST_KEYRING" || skip "Failed to create keyring in user keyring"
-	keyctl search "@s" keyring "$TEST_KEYRING" > /dev/null 2>&1 || keyctl link "@u" "@s" > /dev/null 2>&1
+	TEST_KEYRING=$(keyctl newring $TEST_KEYRING_NAME "@s" 2> /dev/null)
+	test -n "$TEST_KEYRING" || skip "Failed to create keyring in session keyring"
 	load_key "$HEXKEY_16" user test_key "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
 }
 
