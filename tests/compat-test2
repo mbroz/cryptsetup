@@ -811,12 +811,12 @@ if dm_crypt_keyring_support; then
 	echo | $CRYPTSETUP -q resize --size 100 $DEV_NAME 2>/dev/null && fail
 	if [ -n "$HAVE_KEYRING" ]; then
 		test_and_prepare_keyring
-		load_key user $TEST_KEY_DESC2 $PWD1 "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
+		load_key user $TEST_KEY_DESC2 $PWD1 "$TEST_KEYRING" || fail
 		$CRYPTSETUP token add $LOOPDEV --key-description $TEST_KEY_DESC2 --token-id 1 || fail
 		$CRYPTSETUP -q resize --size 99 $DEV_NAME <&- || fail
 		$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "99 \[512-byte units\]" || fail
 		#replace kernel key with wrong pass
-		load_key user $TEST_KEY_DESC2 $PWD2 "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
+		load_key user $TEST_KEY_DESC2 $PWD2 "$TEST_KEYRING" || fail
 		# must fail due to --token-only
 		echo $PWD1 | $CRYPTSETUP -q resize --token-only --size 100 $DEV_NAME && fail
 		$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 \[512-byte units\]" && fail
