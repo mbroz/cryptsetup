@@ -36,6 +36,9 @@ TEST_KEYRING_NAME="compattest2_keyring"
 TEST_KEY_DESC0="compattest2_desc0"
 TEST_KEY_DESC1="compattest2_desc1"
 TEST_KEY_DESC2="compattest2_desc2"
+KEY_NAME="cryptsetup:test_volume_key_id"
+KEY_NAME2="cryptsetup:test_volume_key_id2"
+KEY_NAME3="cryptsetup:test_volume_key_id3"
 VK_FILE="compattest2_vkfile"
 IMPORT_TOKEN="{\"type\":\"some_type\",\"keyslots\":[],\"base64_data\":\"zxI7vKB1Qwl4VPB4D-N-OgcC14hPCG0IDu8O7eCqaQ\"}"
 TOKEN_FILE0=test-token-file0
@@ -67,9 +70,36 @@ remove_mapping()
 	$HEADER_LUKS2_PV $HEADER_LUKS2_INV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* \
 	$KEY_FILE0 $KEY_FILE1 >/dev/null 2>&1
 
-	# unlink whole test keyring
-	[ -n "$TEST_KEYRING" ] && keyctl unlink $TEST_KEYRING "@u" >/dev/null
-	unset TEST_KEYRING
+	# unlink all test keys
+	if [ -n "$TEST_KEYRING" ]; then
+		keyctl unlink $TEST_KEYRING >/dev/null
+
+		# some tests link keys in standard keyrings to test basic functionality.
+		# Use best effort to do proper cleanup. All other keys should always
+		# go in $TEST_KEYRING
+		keyctl unlink %user:$KEY_NAME >/dev/null 2>&1
+		keyctl unlink %logon:$KEY_NAME >/dev/null 2>&1
+
+		keyctl unlink %user:$KEY_NAME2 >/dev/null 2>&1
+		keyctl unlink %logon:$KEY_NAME2 >/dev/null 2>&1
+
+		keyctl unlink %user:$KEY_NAME3 >/dev/null 2>&1
+		keyctl unlink %logon:$KEY_NAME3 >/dev/null 2>&1
+
+		keyctl unlink %user:$KEY_NAME   "@u" >/dev/null 2>&1
+		keyctl unlink %logon:$KEY_NAME  "@u" >/dev/null 2>&1
+
+		keyctl unlink %user:$KEY_NAME2  "@u" >/dev/null 2>&1
+		keyctl unlink %logon:$KEY_NAME2 "@u" >/dev/null 2>&1
+
+		keyctl unlink %user:$KEY_NAME   "@us" >/dev/null 2>&1
+		keyctl unlink %logon:$KEY_NAME  "@us" >/dev/null 2>&1
+
+		keyctl unlink %user:$KEY_NAME2  "@us" >/dev/null 2>&1
+		keyctl unlink %logon:$KEY_NAME2 "@us" >/dev/null 2>&1
+
+		unset TEST_KEYRING
+	fi
 
 	rmmod scsi_debug >/dev/null 2>&1
 	scsi_debug_teardown $DEV
@@ -255,12 +285,18 @@ dm_crypt_sector_size_support()
 }
 
 test_and_prepare_keyring() {
-	command -v keyctl >/dev/null || skip "Cannot find keyctl, test skipped"
-	keyctl list "@s" > /dev/null || skip "Current session keyring is unreachable, test skipped"
-	TEST_KEYRING=$(keyctl newring $TEST_KEYRING_NAME "@u" 2> /dev/null)
-	test -n "$TEST_KEYRING" || skip "Failed to create keyring in user keyring"
-	keyctl search "@s" keyring "$TEST_KEYRING" > /dev/null 2>&1 || keyctl link "@u" "@s" > /dev/null 2>&1
-	load_key user test_key test_data "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
+	local s_desc=$(keyctl rdescribe @s | cut -d';' -f5)
+	local us_desc=$(keyctl rdescribe @us | cut -d';' -f5)
+
+	if [ "$s_desc" = "$us_desc" -a -n "$s_desc" ]; then
+		echo "Session keyring is missing. Giving new one to parent process..."
+		keyctl new_session > /dev/null || fail "Could not create new session keyring"
+	fi
+
+	TEST_KEYRING=$(keyctl newring $TEST_KEYRING_NAME "@s" 2> /dev/null)
+	test -n "$TEST_KEYRING" || fail "Failed to create keyring in session keyring"
+	keyctl search "@s" keyring $TEST_KEYRING_NAME > /dev/null 2>&1 || fail "Could not find test keyring in a session keyring"
+	load_key user test_key test_data "$TEST_KEYRING" || fail "Kernel keyring service is useless on this system"
 }
 
 # $1 type
@@ -277,11 +313,9 @@ setup_luks2_env() {
 	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $LOOPDEV || fail
 	$CRYPTSETUP luksDump $LOOPDEV >/dev/null || fail
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME || fail
-	HAVE_KEYRING=$($CRYPTSETUP status $DEV_NAME | grep "keyring")
-	if [ -n "$HAVE_KEYRING" ]; then
-		HAVE_KEYRING=1
-	else
-		HAVE_KEYRING=0
+	local check_keyring=$($CRYPTSETUP status $DEV_NAME | grep "key location: keyring")
+	if [ -n "$check_keyring" ]; then
+		command -v keyctl >/dev/null && HAVE_KEYRING=1
 	fi
 	if $($CRYPTSETUP --version | grep -q "BLKID"); then
 		HAVE_BLKID=1
@@ -775,14 +809,14 @@ echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fai
 echo $PWD1 | $CRYPTSETUP luksOpen $LOOPDEV $DEV_NAME || fail
 if dm_crypt_keyring_support; then
 	echo | $CRYPTSETUP -q resize --size 100 $DEV_NAME 2>/dev/null && fail
-	if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
+	if [ -n "$HAVE_KEYRING" ]; then
 		test_and_prepare_keyring
-		load_key user $TEST_KEY_DESC2 $PWD1 "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
+		load_key user $TEST_KEY_DESC2 $PWD1 "$TEST_KEYRING" || fail
 		$CRYPTSETUP token add $LOOPDEV --key-description $TEST_KEY_DESC2 --token-id 1 || fail
 		$CRYPTSETUP -q resize --size 99 $DEV_NAME <&- || fail
 		$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "99 \[512-byte units\]" || fail
 		#replace kernel key with wrong pass
-		load_key user $TEST_KEY_DESC2 $PWD2 "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped."
+		load_key user $TEST_KEY_DESC2 $PWD2 "$TEST_KEYRING" || fail
 		# must fail due to --token-only
 		echo $PWD1 | $CRYPTSETUP -q resize --token-only --size 100 $DEV_NAME && fail
 		$CRYPTSETUP -q status  $DEV_NAME | grep "size:" | grep -q "100 \[512-byte units\]" && fail
@@ -1153,7 +1187,7 @@ fi
 # FIXME: candidate for non-root tests
 prepare "[33] tokens" wipe
 echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail
-if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
+if [ -n "$HAVE_KEYRING" ]; then
 
 	test_and_prepare_keyring
 
@@ -1471,7 +1505,7 @@ echo $PWD4 | $CRYPTSETUP open -q --test-passphrase -S5 $IMG || fail
 $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S6 --volume-key-file $VK_FILE --new-keyfile $KEY5 $IMG || fail
 $CRYPTSETUP open --test-passphrase -q -S6 -d $KEY5 $IMG || fail
 
-if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
+if [ -n "$HAVE_KEYRING" ]; then
 	test_and_prepare_keyring
 	load_key user $TEST_KEY_DESC0 $PWD1 "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
 	load_key user $TEST_KEY_DESC1 $PWDW "$TEST_KEYRING" || fail "Cannot load 32 byte user key type"
@@ -1531,33 +1565,24 @@ if dm_crypt_capi_support; then
 	echo $PWD1 | $CRYPTSETUP reencrypt $LOOPDEV >/dev/null 2>&1 && fail
 fi
 
-if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
+if [ -n "$HAVE_KEYRING" ]; then
 	prepare "[45] Link VK to a keyring and use custom VK type." wipe
 
 	echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV 2> /dev/null || fail
-	KEY_NAME="cryptsetup:test_volume_key_id"
-	KEY_NAME2="cryptsetup:test_volume_key_id2"
-	KEY_NAME3="cryptsetup:test_volume_key_id3"
 	test_and_prepare_keyring
-	KID=$(echo -n test | keyctl padd user my_token @s)
-	keyctl unlink $KID >/dev/null 2>&1 @s && SESSION_KEYRING_WORKS=1
-	KID=$(echo -n test | keyctl padd user my_token @us)
-	keyctl unlink $KID >/dev/null 2>&1 @us && USER_SESSION_KEYRING_WORKS=1
 
 	test_vk_link $KEY_NAME "@u"
 	test_vk_link $KEY_NAME "@u" "user"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@s"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@s" "logon"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@s" "user"
+	test_vk_link $KEY_NAME "@s"
+	test_vk_link $KEY_NAME "@s" "logon"
+	test_vk_link $KEY_NAME "@s" "user"
 	test_vk_link $KEY_NAME "%:$TEST_KEYRING_NAME"
 	test_vk_link $KEY_NAME "%:$TEST_KEYRING_NAME" "user"
 	test_vk_link $KEY_NAME "%:$TEST_KEYRING_NAME" "logon"
 	# explicitly specify keyring key type
 	test_vk_link $KEY_NAME "%keyring:$TEST_KEYRING_NAME"
 
-	test_vk_link_and_reactivate $KEY_NAME "@u" "user"
-	test_vk_link_and_reactivate $KEY_NAME "@u"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link_and_reactivate $KEY_NAME "@s" "user"
+	test_vk_link_and_reactivate $KEY_NAME "@s" "user"
 	test_vk_link_and_reactivate $KEY_NAME "%:$TEST_KEYRING_NAME" "user"
 	# explicitly specify keyring key type
 	test_vk_link_and_reactivate $KEY_NAME "%keyring:$TEST_KEYRING_NAME" "user"
@@ -1601,19 +1626,17 @@ if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
 
 	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@u"
 	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@u" "user"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s" "logon"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s" "user"
+	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s"
+	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s" "logon"
+	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s" "user"
 	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME"
 	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME" "user"
 	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME" "logon"
 	# explicitly specify keyring key type
 	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "%keyring:$TEST_KEYRING_NAME"
 
-	test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "@u"
-	test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "@u" "user"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "@s"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "@s" "user"
+	test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "@s"
+	test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "@s" "user"
 	test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME"
 	test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME" "user"
 
@@ -1666,7 +1689,7 @@ if [ $? -eq 0 ] ; then
 	$CRYPTSETUP close $DEV_NAME || fail
 fi
 
-if [ $HAVE_KEYRING -gt 0 -a -d /proc/sys/kernel/keys ]; then
+if [ -n "$HAVE_KEYRING" ]; then
 	prepare "[49] Keyring description use" wipe
 	test_and_prepare_keyring
 	load_key user $TEST_KEY_DESC1 $PWD1 "$TEST_KEYRING" || fail
