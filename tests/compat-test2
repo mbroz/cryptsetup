@@ -1570,21 +1570,19 @@ if [ -n "$HAVE_KEYRING" ]; then
 
 	echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV 2> /dev/null || fail
 	test_and_prepare_keyring
-	KID=$(echo -n test | keyctl padd user my_token @s)
-	keyctl unlink $KID >/dev/null 2>&1 @s && SESSION_KEYRING_WORKS=1
 
 	test_vk_link $KEY_NAME "@u"
 	test_vk_link $KEY_NAME "@u" "user"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@s"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@s" "logon"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link $KEY_NAME "@s" "user"
+	test_vk_link $KEY_NAME "@s"
+	test_vk_link $KEY_NAME "@s" "logon"
+	test_vk_link $KEY_NAME "@s" "user"
 	test_vk_link $KEY_NAME "%:$TEST_KEYRING_NAME"
 	test_vk_link $KEY_NAME "%:$TEST_KEYRING_NAME" "user"
 	test_vk_link $KEY_NAME "%:$TEST_KEYRING_NAME" "logon"
 	# explicitly specify keyring key type
 	test_vk_link $KEY_NAME "%keyring:$TEST_KEYRING_NAME"
 
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_vk_link_and_reactivate $KEY_NAME "@s" "user"
+	test_vk_link_and_reactivate $KEY_NAME "@s" "user"
 	test_vk_link_and_reactivate $KEY_NAME "%:$TEST_KEYRING_NAME" "user"
 	# explicitly specify keyring key type
 	test_vk_link_and_reactivate $KEY_NAME "%keyring:$TEST_KEYRING_NAME" "user"
@@ -1628,17 +1626,17 @@ if [ -n "$HAVE_KEYRING" ]; then
 
 	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@u"
 	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@u" "user"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s" "logon"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s" "user"
+	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s"
+	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s" "logon"
+	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "@s" "user"
 	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME"
 	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME" "user"
 	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME" "logon"
 	# explicitly specify keyring key type
 	test_reencrypt_vk_link $KEY_NAME $KEY_NAME2 "%keyring:$TEST_KEYRING_NAME"
 
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "@s"
-	[[ ! -z "$SESSION_KEYRING_WORKS" ]] && test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "@s" "user"
+	test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "@s"
+	test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "@s" "user"
 	test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME"
 	test_reencrypt_vk_link_and_reactivate $KEY_NAME $KEY_NAME2 "%:$TEST_KEYRING_NAME" "user"
 
