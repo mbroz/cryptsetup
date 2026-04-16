@@ -31,6 +31,7 @@ PWDW="rUkL4RUryBom"
 TEST_KEYRING_NAME="compattestopal_keyring"
 TEST_TOKEN0="compattest2_desc0"
 TEST_TOKEN1="compattest2_desc1"
+KEY_NAME="cryptsetup:test_volume_key_id"
 VK_FILE="compattest2_vkfile"
 IMPORT_TOKEN="{\"type\":\"some_type\",\"keyslots\":[],\"base64_data\":\"zxI7vKB1Qwl4VPB4D-N-OgcC14hPCG0IDu8O7eCqaQ\"}"
 TOKEN_FILE0=test-token-file0
@@ -51,9 +52,22 @@ remove_mapping()
 	$HEADER_LUKS2_INV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* \
 	$KEY_FILE0 $KEY_FILE1 $KEY_PWD1 $NO_HEADER_IMG >/dev/null 2>&1
 
-	# unlink whole test keyring
+	# unlink all test keys
 	if [ -n "$TEST_KEYRING" ]; then
 		keyctl unlink $TEST_KEYRING >/dev/null
+
+		# some tests link keys in standard keyrings to test basic functionality.
+		# Use best effort to do proper cleanup. All other keys should always
+		# go in $TEST_KEYRING
+		keyctl unlink %user:$KEY_NAME >/dev/null 2>&1
+		keyctl unlink %logon:$KEY_NAME >/dev/null 2>&1
+
+		keyctl unlink %user:$KEY_NAME   "@u" >/dev/null 2>&1
+		keyctl unlink %logon:$KEY_NAME  "@u" >/dev/null 2>&1
+
+		keyctl unlink %user:$KEY_NAME   "@us" >/dev/null 2>&1
+		keyctl unlink %logon:$KEY_NAME  "@us" >/dev/null 2>&1
+
 		unset TEST_KEYRING
 	fi
 }
@@ -1268,7 +1282,6 @@ if [ -n "$HAVE_KEYRING" ]; then
 	prepare "[38] Link VK to a keyring and use custom VK type." wipe
 
 	echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $OPAL2_DEV 2> /dev/null || fail
-	KEY_NAME="cryptsetup:test_volume_key_id"
 	test_and_prepare_keyring
 	KID=$(echo -n test | keyctl padd user my_token @s)
 	keyctl unlink $KID >/dev/null 2>&1 @s && SESSION_KEYRING_WORKS=1
