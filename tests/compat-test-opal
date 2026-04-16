@@ -218,14 +218,13 @@ test_and_prepare_keyring() {
 
 	if [ "$s_desc" = "$us_desc" -a -n "$s_desc" ]; then
 		echo "Session keyring is missing. Giving new one to parent process..."
-		keyctl new_session > /dev/null || skip "Could not create new session keyring, test skipped"
+		keyctl new_session > /dev/null || fail "Could not create new session keyring"
 	fi
 
-	keyctl list "@s" > /dev/null || skip "Current session keyring is unreachable, test skipped"
 	TEST_KEYRING=$(keyctl newring $TEST_KEYRING_NAME "@s" 2> /dev/null)
-	test -n "$TEST_KEYRING" || skip "Failed to create keyring in session keyring, test skipped"
-	keyctl search "@s" keyring $TEST_KEYRING_NAME > /dev/null 2>&1 || skip "Could not find test keyring in a session keyring, test skipped"
-	load_key user test_key test_data "$TEST_KEYRING" || skip "Kernel keyring service is useless on this system, test skipped"
+	test -n "$TEST_KEYRING" || fail "Failed to create keyring in session keyring"
+	keyctl search "@s" keyring $TEST_KEYRING_NAME > /dev/null 2>&1 || fail "Could not find test keyring in a session keyring"
+	load_key user test_key test_data "$TEST_KEYRING" || fail "Kernel keyring service is useless on this system"
 }
 
 # $1 type
