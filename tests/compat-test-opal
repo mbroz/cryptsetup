@@ -1284,8 +1284,6 @@ if [ -n "$HAVE_KEYRING" ]; then
 	test_and_prepare_keyring
 	KID=$(echo -n test | keyctl padd user my_token @s)
 	keyctl unlink $KID >/dev/null 2>&1 @s && SESSION_KEYRING_WORKS=1
-	KID=$(echo -n test | keyctl padd user my_token @us)
-	keyctl unlink $KID >/dev/null 2>&1 @us && USER_SESSION_KEYRING_WORKS=1
 
 	test_vk_link $KEY_NAME "@u"
 	test_vk_link $KEY_NAME "@u" "user"
