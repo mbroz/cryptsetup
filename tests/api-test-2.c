@@ -3193,6 +3193,38 @@ static void Pbkdf(void)
 	_cleanup_dmdevices();
 }
 
+static void TypeDefaults(void)
+{
+	struct crypt_type_defaults defaults;
+
+	// test valid LUKS1 defaults
+	OK_(crypt_get_type_defaults(CRYPT_LUKS1, &defaults));
+	OK_(strcmp(defaults.cipher, DEFAULT_LUKS1_CIPHER));
+	OK_(strcmp(defaults.cipher_mode, DEFAULT_LUKS1_MODE));
+	OK_(strcmp(defaults.hash, default_luks1_hash));
+	EQ_(defaults.key_size, DEFAULT_LUKS1_KEYBITS);
+	NULL_(defaults.integrity);
+	EQ_(defaults.tag_size, 0);
+
+	// test valid LUKS2 defaults
+	OK_(crypt_get_type_defaults(CRYPT_LUKS2, &defaults));
+	OK_(strcmp(defaults.cipher, DEFAULT_LUKS1_CIPHER));
+	OK_(strcmp(defaults.cipher_mode, DEFAULT_LUKS1_MODE));
+	OK_(strcmp(defaults.hash, default_luks1_hash));
+	EQ_(defaults.key_size, DEFAULT_LUKS1_KEYBITS);
+	OK_(strcmp(defaults.integrity, "hmac-sha256"));
+	EQ_(defaults.tag_size, 32);
+
+	// test invalid type (non-LUKS)
+	FAIL_(crypt_get_type_defaults(CRYPT_PLAIN, &defaults), "Invalid type");
+	FAIL_(crypt_get_type_defaults(CRYPT_LOOPAES, &defaults), "Invalid type");
+	FAIL_(crypt_get_type_defaults(CRYPT_VERITY, &defaults), "Invalid type");
+
+	// test NULL pointer
+	FAIL_(crypt_get_type_defaults(NULL, &defaults), "Invalid type");
+	FAIL_(crypt_get_type_defaults(CRYPT_LUKS1, NULL), "NULL defaults pointer");
+}
+
 static void Luks2KeyslotAdd(void)
 {
 	char key[128], key2[128], key_ret[128];
@@ -6175,6 +6207,7 @@ int main(int argc, char *argv[])
 	RUN_(TokenActivationByKeyring, "Builtin kernel keyring token");
 	RUN_(LuksConvert, "LUKS1 <-> LUKS2 conversions");
 	RUN_(Pbkdf, "Default PBKDF manipulation routines");
+	RUN_(TypeDefaults, "Device type default cryptographic parameters");
 	RUN_(Luks2KeyslotParams, "Add a new keyslot with different encryption");
 	RUN_(Luks2KeyslotAdd, "Add a new keyslot by unused key");
 	RUN_(Luks2ActivateByKeyring, "LUKS2 activation by passphrase in keyring");
