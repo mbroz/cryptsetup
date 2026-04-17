@@ -3,7 +3,9 @@
     - .fail_if_coredump_generated
   timeout: 2 hours
   before_script:
-    - sudo apt-get -y update
+    - |
+      sudo 'echo -e "Package: jq\nPin: version 1.8.1-4+b1\nPin-Priority: 1001" >/etc/apt/preferences.d/jq'
+      sudo apt-get -y update
     - >
       sudo apt-get -y install -y -qq git gcc make autoconf automake autopoint
       pkgconf libtool libtool-bin gettext libssl-dev libdevmapper-dev
