@@ -21,7 +21,7 @@ generate()
 	TEST_MDA_SIZE_BYTES=$((TEST_MDA_SIZE*512))
 	TEST_JSN_SIZE=$((TEST_MDA_SIZE-LUKS2_BIN_HDR_SIZE))
 
-	json_str=$(jq -c '.' $TMPDIR/json0)
+	json_str=$(_jq '.' $TMPDIR/json0)
 
 	write_luks2_json "$json_str" $TMPDIR/json0 $TEST_JSN_SIZE
 	write_luks2_json "$json_str" $TMPDIR/json1 $TEST_JSN_SIZE
@@ -45,7 +45,7 @@ check()
 	test "$str_res1" = "SKUL" || exit 2
 
 	read_luks2_json0 $TGT_IMG $TMPDIR/json_res0
-	jq -c --arg js $JS 'if .config.json_size != ( $js | tostring )
+	_jq --arg js $JS 'if .config.json_size != ( $js | tostring )
 	       then error("Unexpected value in result json") else empty end' $TMPDIR/json_res0 || exit 5
 }
 

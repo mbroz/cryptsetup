@@ -18,7 +18,7 @@
 generate()
 {
 	# add empty token
-	json_str=$(jq -c '.tokens."0" = {"type":"a", "keyslots":[]}' $TMPDIR/json0)
+	json_str=$(_jq '.tokens."0" = {"type":"a", "keyslots":[]}' $TMPDIR/json0)
 	json_len_orig=${#json_str}
 	test $json_len_orig -lt $((LUKS2_JSON_SIZE*512)) || exit 2
 

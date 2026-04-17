@@ -15,7 +15,7 @@
 
 generate()
 {
-	json_str=$(jq -c '.config.keyslots_size = (.config.keyslots_size | tonumber - 1 | tostring)' $TMPDIR/json0)
+	json_str=$(_jq '.config.keyslots_size = (.config.keyslots_size | tonumber - 1 | tostring)' $TMPDIR/json0)
 	test -n "$json_str" || exit 2
 	test ${#json_str} -lt $((LUKS2_JSON_SIZE*512)) || exit 2
 
@@ -29,7 +29,7 @@ check()
 	lib_hdr1_killed || exit 2
 
 	read_luks2_json0 $TGT_IMG $TMPDIR/json_res0
-	jq -c 'if (.config.keyslots_size | tonumber % 4096) == 0
+	_jq 'if (.config.keyslots_size | tonumber % 4096) == 0
 	       then error("Unexpected value in result json") else empty end' $TMPDIR/json_res0 || exit 5
 }
 
