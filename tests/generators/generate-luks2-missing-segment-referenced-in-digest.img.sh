@@ -17,9 +17,9 @@
 generate()
 {
 	read -r json_str_orig < $TMPDIR/json0
-	arr_len=$(jq -c -M '.digests."0".segments | length' $TMPDIR/json0)
+	arr_len=$(_jq -M '.digests."0".segments | length' $TMPDIR/json0)
 	# add missing keyslot reference in keyslots array of digest '0'
-	json_str=$(jq -c 'def arr: ["digests", "0", "segments"];
+	json_str=$(_jq 'def arr: ["digests", "0", "segments"];
 	       def missseg: getpath(["segments"]) | keys | max | tonumber + 1 | tostring;
 	       setpath(arr; getpath(arr) + [ missseg ])' $TMPDIR/json0)
 	test ${#json_str} -lt $((LUKS2_JSON_SIZE*512)) || exit 2
@@ -35,7 +35,7 @@ check()
 	lib_hdr0_checksum || exit 2
 
 	read_luks2_json0 $TGT_IMG $TMPDIR/json_res0
-	new_arr_len=$(jq -c -M '.digests."0".segments | length' $TMPDIR/json_res0)
+	new_arr_len=$(_jq -M '.digests."0".segments | length' $TMPDIR/json_res0)
 	test $((arr_len+1)) -eq $new_arr_len || exit 2
 }
 

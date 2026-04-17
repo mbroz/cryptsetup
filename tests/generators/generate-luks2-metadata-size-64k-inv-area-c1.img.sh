@@ -26,7 +26,7 @@ generate()
 	JSON_SIZE=$((TEST_JSN_SIZE*512))
 	DATA_OFFSET=16777216
 
-	json_str=$(jq -c --arg jdiff $JSON_DIFF --arg jsize $JSON_SIZE --arg off $DATA_OFFSET \
+	json_str=$(_jq --arg jdiff $JSON_DIFF --arg jsize $JSON_SIZE --arg off $DATA_OFFSET \
 			 --arg mda $((2*TEST_MDA_SIZE_BYTES)) \
 		   '.keyslots[].area.offset |= ( . | tonumber + ($jdiff | tonumber) | tostring) |
 		    .keyslots."7".area.offset = ( ((.config.keyslots_size | tonumber) + ($mda | tonumber) - (.keyslots."7".area.size | tonumber) + 1) | tostring ) |
@@ -51,7 +51,7 @@ check()
 
 	read_luks2_json0 $TGT_IMG $TMPDIR/json_res0 $TEST_JSN_SIZE
 # .keyslots.7.area.offset = ( ((.config.keyslots_size | tonumber) + ($mda | tonumber) - (.keyslots.7.area.size | tonumber) + 1) | tostring ) |
-	jq -c --arg mda $((2*TEST_MDA_SIZE_BYTES)) --arg jsize $JSON_SIZE \
+	_jq --arg mda $((2*TEST_MDA_SIZE_BYTES)) --arg jsize $JSON_SIZE \
 		'if (.keyslots."7".area.offset != ( ((.config.keyslots_size | tonumber) + ($mda | tonumber) - (.keyslots."7".area.size | tonumber) + 1) | tostring )) or
 		    (.config.json_size != $jsize)
 		then error("Unexpected value in result json") else empty end' $TMPDIR/json_res0 || exit 5
