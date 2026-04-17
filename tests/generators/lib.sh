@@ -175,9 +175,12 @@ _dd()
 	dd $@ status=none
 }
 
+# Remove all trailing 0x00 characters
+# Last parameter must be an input file
 _jq()
 {
-	jq -c "$@"
+	local last="${!#}"
+	sed 's/\x00*$//' "$last" | jq -c "${@:1:$#-1}"
 }
 
 write_bin_hdr_size() {
