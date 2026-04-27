@@ -11,7 +11,7 @@ extern "C" {
 #include "crypto_backend/crypto_backend.h"
 #include "FuzzerInterface.h"
 
-void empty_log(int level, const char *msg, void *usrptr) {}
+static void empty_log(int level, const char *msg, void *usrptr) {}
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 	int fd, r;
