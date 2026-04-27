@@ -34,6 +34,7 @@
 #define OPT_DISABLE_LOCKS		"disable-locks"
 #define OPT_DISABLE_SUM			"disable-sum"
 #define OPT_DISABLE_VERACRYPT		"disable-veracrypt"
+#define OPT_DUMP_HW_OPAL		"dump-hw-opal"
 #define OPT_DUMP_JSON			"dump-json-metadata"
 #define OPT_DUMP_MASTER_KEY		"dump-master-key"
 #define OPT_DUMP_VOLUME_KEY		"dump-volume-key"

@@ -146,6 +146,7 @@ static const char *opal_status_to_string(int t)
 static const char *opal_ioctl_to_string(unsigned long rq)
 {
 	switch(rq) {
+	case IOC_OPAL_DISCOVERY:       return "DISCOVERY";
 	case IOC_OPAL_GET_STATUS:      return "GET_STATUS";
 	case IOC_OPAL_GET_GEOMETRY:    return "GET_GEOMETRY";
 	case IOC_OPAL_GET_LR_STATUS:   return "GET_LR_STATUS";
@@ -178,12 +179,17 @@ static void opal_ioctl_debug(struct crypt_device *cd,
 {
 	const char *cmd = opal_ioctl_to_string(rq);
 
-	if (ret) {
+	/* Discovery ioctl returns response size */
+	if (ret < 0 || (ret && rq != IOC_OPAL_DISCOVERY)) {
 		log_dbg(cd, "OPAL %s failed: %s", cmd, opal_status_to_string(ret));
 		return;
 	}
 
 	if (post) switch(rq) {
+	case IOC_OPAL_DISCOVERY: { /* OUT */
+		log_dbg(cd, "OPAL %s", cmd);
+		};
+		break;
 	case IOC_OPAL_GET_STATUS: { /* OUT */
 		struct opal_status *st = args;
 		log_dbg(cd, "OPAL %s: flags:%" PRIu32, cmd, st->flags);
@@ -688,25 +694,32 @@ static int opal_sum_setup(struct crypt_device *cd, int fd, const void *admin_key
 	return r > 0 ? -EINVAL : r;
 }
 
+static bool opal_segment_in_sum(uint32_t segment_number, struct opal_sum_ranges *sranges)
+{
+	int i;
+
+	assert(sranges);
+
+	for (i = 0; i < sranges->num_lrs ; i++) {
+		if (sranges->lr[i] == segment_number)
+			return true;
+	}
+
+	return false;
+}
+
 static int opal_get_sum_status_anybody(struct crypt_device *cd, int fd, uint32_t segment_number,
 				       uint8_t *r_policy, uint8_t *r_segment_in_sum)
 {
-	int i, r;
+	int r;
 	struct opal_sum_ranges sum_ranges = {};
 
 	r = opal_get_sum_ranges_anybody(cd, fd, &sum_ranges);
 	if (r < 0)
 		return r;
 
-	if (r_segment_in_sum) {
-		*r_segment_in_sum = 0;
-		for (i = 0; i < sum_ranges.num_lrs ; i++) {
-			if (sum_ranges.lr[i] == segment_number) {
-				*r_segment_in_sum = 1;
-				break;
-			}
-		}
-	}
+	if (r_segment_in_sum)
+		*r_segment_in_sum = opal_segment_in_sum(segment_number, &sum_ranges);
 
 	if (r_policy)
 		*r_policy = sum_ranges.range_policy;
@@ -1563,6 +1576,216 @@ void opal_exclusive_unlock(struct crypt_device *cd, struct crypt_lock_handle *op
 	crypt_unlock_internal(cd, opal_lock);
 }
 
+struct level_0_discovery_header {
+	uint32_t length;
+	uint32_t revision;
+	uint8_t reserved[8];
+	uint8_t vendor_specific[32];
+}  __attribute__ ((packed));
+
+struct level_0_discovery_feature_shared {
+	uint16_t feature_code;
+	uint8_t reserved_minor : 4;
+	uint8_t descriptor_version : 4;
+	uint8_t length;
+}  __attribute__ ((packed));
+
+static crypt_status_hw_encryption_info opal_discovery0(struct crypt_device *cd)
+{
+	int fd;
+	int r, feat_length;
+	struct opal_discovery discovery;
+	struct level_0_discovery_header *dh;
+	struct level_0_discovery_feature_shared *feat_hdr;
+	char buf[4096];
+	const char *feature;
+	void *feat_ptr, *feat_end;
+	crypt_status_hw_encryption_info hw_enc, hw_enc_final;
+
+	fd = device_open(cd, crypt_data_device(cd), O_RDONLY);
+	if (fd < 0)
+		return CRYPT_HW_INVALID;
+
+	discovery.data = (uintptr_t)buf;
+	discovery.size = sizeof(buf);
+	memset(buf, 0, sizeof(buf));
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_DISCOVERY, &discovery);
+	if (r < 0)
+		return CRYPT_HW_INVALID;
+
+	dh = (struct level_0_discovery_header *)buf;
+	feat_ptr = buf + sizeof(*dh);
+	feat_end = buf + be32_to_cpu(dh->length);
+
+	hw_enc = hw_enc_final = CRYPT_HW_NONE;
+	while (feat_ptr < feat_end) {
+		feat_hdr = feat_ptr;
+		/* Length defines data following the header [3.3.6 Core spec] */
+		feat_length = feat_hdr->length + sizeof(*feat_hdr);
+
+		switch (be16_to_cpu(feat_hdr->feature_code)) {
+		/*   0x0000: reserved */
+		case 0x0001: feature = "TPer"; break;
+		case 0x0002: feature = "Locking"; break;
+		case 0x0003: feature = "Geometry"; break;
+		case 0x0004: feature = "Secure messaging"; break;
+		case 0x0005: feature = "SIIS"; break;
+		/*   0x00ff: reserved */
+		/*   0x0100 - 0x03ff: SSCs */
+		case 0x0100: feature = "Enterprise"; hw_enc = CRYPT_HW_OTHER; break;
+		case 0x0200: feature = "Opal1"; hw_enc = CRYPT_HW_OTHER; break;
+		case 0x0201: feature = "SUM"; hw_enc = CRYPT_HW_OPAL_SUM; break;
+		case 0x0202: feature = "Data store"; break;
+		case 0x0203: feature = "Opal2"; hw_enc = CRYPT_HW_OPAL; break;
+		case 0x0301: feature = "Opalite"; hw_enc = CRYPT_HW_OTHER;  break;
+		case 0x0302: feature = "Pyrite1"; hw_enc = CRYPT_HW_OTHER;  break;
+		case 0x0303: feature = "Pyrite2"; hw_enc = CRYPT_HW_OTHER;  break;
+		case 0x0304: feature = "Ruby"; hw_enc = CRYPT_HW_OTHER; break;
+		case 0x0305: feature = "KPIO"; break;
+		/*   0x0400 - 0xbfff reserved */
+		case 0x0401: feature = "Locking LBA ranges"; break;
+		case 0x0402: feature = "Block SID"; break;
+		case 0x0403: feature = "NS locking"; break;
+		case 0x0404: feature = "Data removal"; break;
+		case 0x0405: feature = "NS geometry"; break;
+		case 0x0407: feature = "NS Shadow MBR"; break;
+		case 0x0409: feature = "CPIN"; break;
+		case 0x040a: feature = "NS KPIO"; break;
+		/*   0xC000 - 0xffff vendor specific */
+		default: feature = "(unknown)"; break;
+		}
+
+		log_dbg(cd, "Feature 0x%03x %s", be16_to_cpu(feat_hdr->feature_code), feature);
+
+		feat_ptr = (char *)feat_ptr + feat_length;
+		if (hw_enc > hw_enc_final)
+			hw_enc_final = hw_enc;
+	}
+
+	return hw_enc_final;
+}
+
+crypt_status_hw_encryption_info crypt_status_hw_encryption(struct crypt_device *cd)
+{
+	int r;
+
+	r = opal_discovery0(cd);
+	if (r > CRYPT_HW_INVALID)
+		return r;
+
+	/* Fallback if Discovery is not available */
+	if (opal_supported(cd, crypt_data_device(cd)) <= 0)
+		return CRYPT_HW_INVALID;
+
+	r = opal_sum_supported(cd, crypt_data_device(cd));
+	return r > 0 ? CRYPT_HW_OPAL_SUM : CRYPT_HW_OPAL;
+}
+
+static crypt_hw_lock_type sedopal_lock_state_translate(unsigned int sed_opal_lock_state)
+{
+	switch(sed_opal_lock_state) {
+	case OPAL_RW:
+		return READ_WRITE;
+	case OPAL_RO:
+		return READ_ONLY;
+	case OPAL_LK:
+	default: /* fall-through */
+		return LOCKED;
+	}
+}
+
+int opal_get_ranges_list(struct crypt_device *cd,
+			 struct device *dev,
+			 uint32_t opal_user_id,
+			 const void *opal_key,
+			 size_t opal_key_size,
+			 struct crypt_hw_encrypt_object *hw_obj,
+			 size_t hw_obj_count)
+{
+	int fd, r, results_count = 0;
+	uint8_t lr = 0;
+	uint32_t opal_block_size;
+	struct opal_lr_status *lrs;
+	struct opal_sum_ranges sum_ranges = {};
+	bool sum_undefined = false;
+
+	assert(hw_obj);
+	assert(hw_obj_count > 0);
+
+	fd = device_open(cd, dev, O_RDONLY);
+	if (fd < 0)
+		return -EIO;
+
+	r = opal_geometry_fd(cd, fd, NULL, &opal_block_size, NULL, NULL);
+	if (r != OPAL_STATUS_SUCCESS)
+		return -EINVAL;
+
+	/* check if kernel recognizes the device as SUM capable */
+	r = opal_query_status_fd(cd, fd, OPAL_FL_SUM_SUPPORTED);
+	if (r < 0)
+		return r;
+
+	/* Check locking ranges SUM state only if the device advertises SUM support */
+	if (r) {
+		r = opal_get_sum_ranges_anybody(cd, fd, &sum_ranges);
+		sum_undefined = (r < 0);
+	}
+
+	lrs = crypt_safe_alloc(sizeof(*lrs));
+	if (!lrs)
+		return -ENOMEM;
+
+	*lrs = (struct opal_lr_status) {
+		.session = {
+			.who = opal_user_id,
+			.opal_key = {
+				.key_len = opal_key_size,
+			}
+		}
+	};
+	crypt_safe_memcpy(lrs->session.opal_key.key, opal_key, opal_key_size);
+
+	for (lr = 0; lr < OPAL_MAX_LRS && lr < hw_obj_count; lr++) {
+		lrs->session.opal_key.lr = lr;
+
+		r = opal_ioctl(cd, fd, IOC_OPAL_GET_LR_STATUS, lrs);
+		if (r < 0)
+			goto out;
+		if (r == OPAL_STATUS_NOT_AUTHORIZED) {
+			r = -EPERM;
+			goto out;
+		}
+		if (r != OPAL_STATUS_SUCCESS)
+			continue;
+
+		/* FIXME: fine tune condition when do not report LR back to the caller */
+		if (!lrs->range_start && !lrs->range_length && !lrs->RLE && !lrs->WLE)
+			continue;
+
+		hw_obj[results_count++] = (struct crypt_hw_encrypt_object) {
+			.id = lr,
+			.offset = lrs->range_start * opal_block_size,
+			.length = lrs->range_length * opal_block_size,
+			.read_locking_enabled = lrs->RLE,
+			.write_locking_enabled = lrs->WLE,
+			.lock = sedopal_lock_state_translate(lrs->l_state),
+			.sum_enabled = sum_undefined ? -1 : opal_segment_in_sum(lr, &sum_ranges),
+			.range_policy = sum_undefined ? -1 : sum_ranges.range_policy,
+		};
+	}
+
+	if (lr >= hw_obj_count && hw_obj_count < OPAL_MAX_LRS)
+		r = -ENOSPC;
+	else
+		r = results_count;
+out:
+	crypt_safe_free(lrs);
+	if (r < 0)
+		memset(hw_obj, 0, hw_obj_count * sizeof(*hw_obj));
+
+	return r;
+}
 #else
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
@@ -1647,4 +1870,19 @@ void opal_exclusive_unlock(struct crypt_device *cd, struct crypt_lock_handle *op
 {
 }
 
+crypt_status_hw_encryption_info crypt_status_hw_encryption(struct crypt_device *cd)
+{
+	return CRYPT_HW_INVALID;
+}
+
+int opal_get_ranges_list(struct crypt_device *cd,
+			 struct device *dev,
+			 uint32_t opal_user_id,
+			 const void *opal_key,
+			 size_t opal_key_size,
+			 struct crypt_hw_encrypt_object *hw_obj,
+			 size_t hw_obj_count)
+{
+	return -ENOTSUP;
+}
 #endif

@@ -456,6 +456,14 @@ const char *crypt_get_default_type(void);
 int crypt_get_hw_encryption_type(struct crypt_device *cd);
 
 /**
+ * Get OPAL Single User Mode (SUM) configuration
+ *
+ * @return @e 1 if OPAL in SUM is used, @e 0 if OPAL without SUM is used
+ *         or negative errno value otherwise.
+ */
+int crypt_get_hw_opal_sum_enabled(struct crypt_device *cd);
+
+/**
  * Get HW encryption (like OPAL) key size (in bytes)
  *
  * @return key size or @e 0 if no HW encryption is used.
@@ -1954,6 +1962,26 @@ typedef enum {
 crypt_status_info crypt_status(struct crypt_device *cd, const char *name);
 
 /**
+ * Device HW encryption status
+ */
+typedef enum {
+	CRYPT_HW_INVALID, /**< cannot get the status info, possible missing support in kernel */
+	CRYPT_HW_NONE,    /**< device does not support any TCG HW security subsystem  */
+	CRYPT_HW_OTHER,   /**< device support only non-OPAL subsystems */
+	CRYPT_HW_OPAL,    /**< device claims OPAL2 support */
+	CRYPT_HW_OPAL_SUM /**< device claims OPAL2 with SUM (Single User Mode) option */
+} crypt_status_hw_encryption_info;
+
+/**
+ * Get status info about supported HW encryption
+ *
+ * @param cd crypt device handle
+ *
+ * @return value defined by crypt_status_hw_encryption_info.
+ */
+crypt_status_hw_encryption_info crypt_status_hw_encryption(struct crypt_device *cd);
+
+/**
  * Dump text-formatted information about crypt or verity device to log output.
  *
  * @param cd crypt device handle
@@ -3258,6 +3286,73 @@ int crypt_set_keyring_to_link(struct crypt_device* cd,
 	const char* old_key_description,
 	const char* key_type_desc,
 	const char* keyring_to_link_vk);
+
+typedef enum {
+	READ_WRITE = 0, /* unlocked */
+	READ_ONLY,      /* unlocked only for reading */
+	LOCKED,         /* locked */
+} crypt_hw_lock_type;
+
+struct crypt_hw_encrypt_object {
+	uint8_t id; /* locking range id */
+	unsigned read_locking_enabled:1; /* read locking is enabled */
+	unsigned write_locking_enabled:1; /* write locking is enabled */
+	crypt_hw_lock_type lock;
+	int8_t sum_enabled; /* SUM status is undefined, disabled or enabled for negative value, zero or positive value respectively. */
+	int8_t range_policy; /* Range Policy is undefined, disabled or enabled for negative value, zero or positive value respectively.  */
+	uint64_t offset; /* locking range offset in bytes */
+	uint64_t length; /* locking range length in bytes */
+};
+
+/**
+ * Get information about HW OPAL locking ranges used in LUKS2
+ *
+ * The function provides status information about OPAL2 locking ranges
+ * that can be retrieved using the User authority PIN generated and stored
+ * in LUKS2 metadata.
+ *
+ * @param cd LUKS2 device handle
+ * @param keyslot requested keyslot or CRYPT_ANY_SLOT
+ * @param kc keyslot context providing volume key or passphrase to @e keyslot.
+ * @param hw_objs return buffer for OPAL2 locking ranges state descriptions
+ * @param hw_objs_size size of @e hw_objs array
+ *
+ * @note if @e hw_objs_size, and therefore the @e hw_objs array, is too small to contain all OPAL
+ * 	 locking object descriptions retrieved from the OPAL device, the function returns -ENOSPC.
+ *
+ * @return Number of returned locking objects via @e hw_objs array on success, -EPERM if stored OPAL key
+ * 	   was wrong for OPAL User authority associated with the HW segment, or other negative errno
+ * 	   value otherwise.
+ */
+int crypt_get_hw_encrypt_status_by_keyslot_context(struct crypt_device *cd,
+				int keyslot,
+				struct crypt_keyslot_context *kc,
+				struct crypt_hw_encrypt_object *hw_objs,
+				size_t hw_objs_size);
+
+/**
+ * Get information about HW OPAL locking ranges.
+ *
+ * The function provides status information about OPAL2 locking ranges
+ * that can be retrieved using the Admin1 authority PIN.
+ *
+ * @param cd opal device handle (obtained by crypt_init() where backing device was HW OPAL device)
+ * @param opal_pin passphrase used to authenticate OPAL Admin1 authority
+ * @param opal_pin_size size of @e opal_pin (binary data)
+ * @param hw_objs return buffer for OPAL2 locking ranges state descriptions
+ * @param hw_objs_size size of @e hw_objs array
+ *
+ * @note if @e hw_objs_size, and therefore the @e hw_objs array, is too small to contain all OPAL
+ * 	 locking object descriptions retrieved from the OPAL device, the function returns -ENOSPC.
+ *
+ * @return Number of returned locking objects via @e hw_objs array on success, -EPERM if provided
+ * 	   OPAL Admin PIN (passphrase) was incorrect, or other negative errno value otherwise.
+ */
+int crypt_get_hw_encrypt_status(struct crypt_device *cd,
+				const char *opal_pin,
+				size_t opal_pin_size,
+				struct crypt_hw_encrypt_object *hw_objs,
+				size_t hw_objs_size);
 
 /** @} */
 

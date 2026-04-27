@@ -996,10 +996,12 @@ static int action_status(void)
 			log_std("  keysize: %d [bits]\n", crypt_get_volume_key_size(cd) * 8);
 			log_std("  key location: %s\n", (cad.flags & CRYPT_ACTIVATE_KEYRING_KEY) ? "keyring" : "dm-crypt");
 		} else if (hw_enc == CRYPT_OPAL_HW_ONLY) {
-			log_std("  encryption: HW OPAL only\n");
+			log_std("  encryption: HW OPAL%s only\n",
+				crypt_get_hw_opal_sum_enabled(cd) > 0 ? " (Single User Mode)" : "");
 			log_std("  OPAL keysize: %d [bits]\n", crypt_get_hw_encryption_key_size(cd) * 8);
 		} else if (hw_enc == CRYPT_SW_AND_OPAL_HW) {
-			log_std("  encryption: dm-crypt over HW OPAL\n");
+			log_std("  encryption: dm-crypt over HW OPAL%s\n",
+				crypt_get_hw_opal_sum_enabled(cd) > 0 ? " (Single User Mode)" : "");
 			log_std("  OPAL keysize: %d [bits]\n", crypt_get_hw_encryption_key_size(cd) * 8);
 			log_std("  cipher:  %s-%s\n", crypt_get_cipher(cd), crypt_get_cipher_mode(cd));
 			log_std("  keysize: %d [bits]\n", (crypt_get_volume_key_size(cd) - crypt_get_hw_encryption_key_size(cd)) * 8);
@@ -2641,6 +2643,176 @@ out:
 	return r;
 }
 
+static const char *opal_lock_mode_to_string(crypt_hw_lock_type lock)
+{
+	switch (lock) {
+	case READ_ONLY:
+		return "read-only";
+	case READ_WRITE:
+		return "read-write";
+	case LOCKED:
+	default:
+		return "locked";
+	}
+}
+
+static const char *opal_locking_to_string(unsigned opal_locking)
+{
+	return opal_locking ? "enabled" : "disabled";
+}
+
+static const char *opal_sum_to_string(int8_t opal_sum)
+{
+	if (opal_sum < 0)
+		return "unknown";
+	return opal_locking_to_string(opal_sum);
+}
+
+static void print_opal_table_header(void)
+{
+	log_std("OPAL Locking Ranges:\n");
+	log_std("ID  Offset (bytes)    Length (bytes)    ReadLocking WriteLocking Mode       SUM      RangePolicy\n");
+	log_std("------------------------------------------------------------------------------------------------\n");
+}
+
+static void print_opal_table_line(const struct crypt_hw_encrypt_object *resp)
+{
+	assert(resp);
+
+	log_std("%-3d %-17" PRIu64 " %-17" PRIu64 " %-11s %-12s %-10s %-8s %-11s\n",
+		resp->id,
+		resp->offset,
+		resp->length,
+		opal_locking_to_string(resp->read_locking_enabled),
+		opal_locking_to_string(resp->write_locking_enabled),
+		opal_lock_mode_to_string(resp->lock),
+		opal_sum_to_string(resp->sum_enabled),
+		opal_sum_to_string(resp->range_policy));
+}
+
+static const char *crypt_hw_status_to_string(crypt_status_hw_encryption_info ci)
+{
+	switch (ci) {
+	case CRYPT_HW_NONE:	return "None";
+	case CRYPT_HW_OTHER:	return "Other (not OPAL2)";
+	case CRYPT_HW_OPAL:	return "OPAL2";
+	case CRYPT_HW_OPAL_SUM:	return "OPAL2 with Single User Mode";
+	default:		return "N/A";
+	}
+}
+
+static int luksDump_with_opal(struct crypt_device *cd)
+{
+	crypt_status_hw_encryption_info ci;
+	int hw_enc, keysize, r, tries;
+	size_t count, i = 0;
+	struct crypt_hw_encrypt_object response[9];
+	struct crypt_keyslot_context *kc1 = NULL, *dummy = NULL;
+
+	hw_enc = crypt_get_hw_encryption_type(cd);
+	if (hw_enc < 0)
+		return hw_enc;
+
+	/* This will filter out also LUKS1 devices */
+	if (hw_enc == CRYPT_SW_ONLY) {
+		log_err(_("Device %s is not configured for HW OPAL encryption"),
+			crypt_get_device_name(cd));
+		return -EINVAL;
+	}
+
+	ci = crypt_status_hw_encryption(cd);
+	if (ci == CRYPT_HW_INVALID) {
+		log_err(_("Device %s or kernel does not support OPAL encryption."),
+			crypt_get_device_name(cd));
+		r = -EINVAL;
+		goto out;
+	}
+
+	keysize = crypt_get_volume_key_size(cd);
+	if (keysize <= 0)
+		return -EINVAL;
+
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID) || ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
+		r = luks_init_keyslot_contexts_by_volume_keys(cd, vk_files[0], NULL,
+							      keysize, 0,
+							      vks_in_keyring[0],
+							      NULL,
+							      &kc1, &dummy);
+		if (r < 0)
+			goto out;
+	} else {
+		r = luks_try_token_unlock(cd, ARG_INT32(OPT_KEY_SLOT_ID),
+					  ARG_INT32(OPT_TOKEN_ID_ID), NULL,
+					  ARG_STR(OPT_TOKEN_TYPE_ID), 0,
+					  set_tries_tty(false), true,
+					  ARG_SET(OPT_TOKEN_ONLY_ID) || ARG_SET(OPT_TOKEN_ID_ID) || ARG_SET(OPT_TOKEN_TYPE_ID),
+					  &kc1);
+		if (quit || (r < 0 && ARG_SET(OPT_TOKEN_ONLY_ID)))
+			goto out;
+
+		if (r < 0) {
+			tries = set_tries_tty(true);
+			do {
+				crypt_keyslot_context_free(kc1);
+				kc1 = NULL;
+				r = luks_init_keyslot_context(cd, NULL, verify_passphrase(0),
+							      false, &kc1);
+				if (r < 0)
+					goto out;
+
+				r = crypt_activate_by_keyslot_context(cd, NULL, ARG_INT32(OPT_KEY_SLOT_ID),
+								      kc1, CRYPT_ANY_SLOT, NULL, 0);
+
+				tools_keyslot_msg(r, UNLOCKED);
+				tools_passphrase_msg(r);
+				check_signal(&r);
+			} while ((r == -EPERM || r == -ERANGE) && (--tries > 0));
+		}
+	}
+
+	if (r < 0)
+		goto out;
+
+	r = crypt_get_hw_encrypt_status_by_keyslot_context(cd, ARG_INT32(OPT_KEY_SLOT_ID), kc1,
+							   response, ARRAY_SIZE(response));
+	if (!r) {
+		log_std(_("No HW OPAL segment owned by LUKS2 on device %s.\n"),
+			crypt_get_device_name(cd));
+		r = -ENOENT;
+	} else if (r == -EPERM) {
+		log_err(_("OPAL key stored in LUKS2 metadata does not match device %s."),
+			crypt_get_device_name(cd));
+	} else if (r < 0)
+		log_err(_("Failed to query device %s for HW segments."), crypt_get_device_name(cd));
+
+	if (r < 0)
+		goto out;
+
+	count = (size_t)r;
+
+	log_std("LUKS header information for %s\n", crypt_get_device_name(cd));
+	if (hw_enc == CRYPT_SW_AND_OPAL_HW) {
+		log_std("Cipher name:   \t%s (over HW OPAL)\n", crypt_get_cipher(cd));
+		log_std("Cipher mode:   \t%s (over HW OPAL)\n", crypt_get_cipher_mode(cd));
+		log_std("keysize:\t%d [bits]\n", (keysize - crypt_get_hw_encryption_key_size(cd)) * 8);
+	}
+	log_std("OPAL keysize:\t%d [bits]\n", crypt_get_hw_encryption_key_size(cd) * 8);
+	log_std("Payload offset:\t%d\n", (int)crypt_get_data_offset(cd));
+	log_std("UUID:          \t%s\n", crypt_get_uuid(cd));
+	log_std("OPAL subsystem:\t%s\n", crypt_hw_status_to_string(ci));
+
+	print_opal_table_header();
+	while (i < count)
+		print_opal_table_line(response + i++);
+
+	r = 0;
+out:
+	crypt_keyslot_context_free(kc1);
+	crypt_keyslot_context_free(dummy);
+
+	return r;
+}
+
 static int action_luksDump(void)
 {
 	struct crypt_device *cd = NULL;
@@ -2668,6 +2840,8 @@ static int action_luksDump(void)
 		r = luksDump_with_volume_key(cd);
 	else if (ARG_SET(OPT_UNBOUND_ID))
 		r = luksDump_with_unbound_key(cd);
+	else if (ARG_SET(OPT_DUMP_HW_OPAL_ID))
+		r = luksDump_with_opal(cd);
 	else if (ARG_SET(OPT_DUMP_JSON_ID))
 		r = crypt_dump_json(cd, NULL, 0);
 	else
@@ -2824,6 +2998,63 @@ static int action_luksRestore(void)
 		crypt_set_confirm_callback(cd, yesDialog, NULL);
 	r = crypt_header_restore(cd, NULL, ARG_STR(OPT_HEADER_BACKUP_FILE_ID));
 out:
+	crypt_free(cd);
+	return r;
+}
+
+static int action_opaldump(void)
+{
+	int r;
+	crypt_status_hw_encryption_info ci;
+	struct crypt_hw_encrypt_object response[9];
+	char *admin_pin = NULL;
+	size_t count, i = 0, admin_pin_size = 0;
+	struct crypt_device *cd = NULL;
+
+	if ((r = crypt_init(&cd, action_argv[0])))
+		return r;
+
+	ci = crypt_status_hw_encryption(cd);
+	if (ci == CRYPT_HW_INVALID) {
+		log_err(_("Device %s or kernel does not support OPAL encryption."),
+			crypt_get_device_name(cd));
+		r = -EINVAL;
+		goto out;
+	}
+
+	if (ci == CRYPT_HW_OPAL || ci == CRYPT_HW_OPAL_SUM) {
+		r = tools_get_key(_("Enter OPAL Admin password: "), &admin_pin, &admin_pin_size,
+				  0, 0, NULL, ARG_UINT32(OPT_TIMEOUT_ID), 0, 0, cd);
+		if (r < 0)
+			goto out;
+	}
+
+	log_std("OPAL information for %s\n", crypt_get_device_name(cd));
+	log_std("OPAL subsystem: %s\n", crypt_hw_status_to_string(ci));
+
+	if (ci == CRYPT_HW_OPAL || ci == CRYPT_HW_OPAL_SUM) {
+		r = crypt_get_hw_encrypt_status(cd, admin_pin, admin_pin_size, response, ARRAY_SIZE(response));
+		if (!r) {
+			log_std(_("No HW OPAL segment configured on device %s"), action_argv[0]);
+			r = -ENOENT;
+		} else if (r == -EPERM) {
+			log_err(_("Invalid OPAL Admin password provided."));
+		} else if (r < 0)
+			log_err(_("Failed to query device %s for HW segments."), action_argv[0]);
+
+		if (r < 0)
+			goto out;
+
+		count = (size_t)r;
+
+		print_opal_table_header();
+		while (i < count)
+			print_opal_table_line(response + i++);
+	}
+
+	r = 0;
+out:
+	crypt_safe_free(admin_pin);
 	crypt_free(cd);
 	return r;
 }
@@ -3513,6 +3744,7 @@ static struct action_type {
 	{ UUID_ACTION,		action_luksUUID,	NULL,			1, N_("<device>"), N_("print UUID of LUKS device") },
 	{ ISLUKS_ACTION,	action_isLuks,		NULL,			1, N_("<device>"), N_("tests <device> for LUKS partition header") },
 	{ LUKSDUMP_ACTION,	action_luksDump,	verify_luksDump,	1, N_("<device>"), N_("dump LUKS partition information") },
+	{ OPALDUMP_ACTION,	action_opaldump,	NULL,			1, N_("<device>"), N_("dump OPAL2 device information") },
 	{ TCRYPTDUMP_ACTION,	action_tcryptDump,	verify_tcryptdump,	1, N_("<device>"), N_("dump TCRYPT device information") },
 	{ BITLKDUMP_ACTION,	action_bitlkDump,	NULL,			1, N_("<device>"), N_("dump BITLK device information") },
 	{ FVAULT2DUMP_ACTION,	action_fvault2Dump,	NULL,			1, N_("<device>"), N_("dump FVAULT2 device information") },

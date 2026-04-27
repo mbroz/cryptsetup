@@ -6232,6 +6232,60 @@ int crypt_dump_json(struct crypt_device *cd, const char **json, uint32_t flags)
 	return -EINVAL;
 }
 
+int crypt_get_hw_encrypt_status(struct crypt_device *cd,
+				const char *opal_pin,
+				size_t opal_pin_size,
+				struct crypt_hw_encrypt_object *hw_objs,
+				size_t hw_objs_size)
+{
+	if (!cd || !crypt_data_device(cd) || !hw_objs || !hw_objs_size)
+		return -EINVAL;
+
+	return opal_get_ranges_list(cd, crypt_data_device(cd), 0 /* OPAL_ADMIN1 */,
+				 opal_pin, opal_pin_size, hw_objs, hw_objs_size);
+}
+
+int crypt_get_hw_encrypt_status_by_keyslot_context(struct crypt_device *cd,
+				int keyslot,
+				struct crypt_keyslot_context *kc,
+				struct crypt_hw_encrypt_object *hw_objs,
+				size_t hw_objs_size)
+{
+	int r;
+	uint32_t opal_segment_number;
+	struct volume_key *p_opal_key, *vk = NULL, *opal_key = NULL;
+
+	if (!cd || !kc || !kc->get_luks2_volume_key || !hw_objs || !hw_objs_size)
+		return -EINVAL;
+
+	r = onlyLUKS2(cd);
+	if (r < 0)
+		return r;
+
+	r = LUKS2_get_opal_segment_number(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, &opal_segment_number);
+	if (r < 0)
+		return -EINVAL;
+
+	r = kc->get_luks2_volume_key(cd, kc, keyslot, &vk);
+	if (r < 0)
+		return r;
+
+	r = LUKS2_split_crypt_and_opal_keys(cd, &cd->u.luks2.hdr, vk, NULL, &opal_key);
+	if (r < 0)
+		goto out;
+
+	p_opal_key = opal_key ?: vk;
+
+	r = opal_get_ranges_list(cd, crypt_data_device(cd), opal_segment_number + 1,
+				 crypt_volume_key_get_key(p_opal_key),
+				 crypt_volume_key_length(p_opal_key), hw_objs, hw_objs_size);
+out:
+	crypt_free_volume_key(vk);
+	crypt_free_volume_key(opal_key);
+
+	return r;
+}
+
 /* internal only */
 const char *crypt_get_cipher_spec(struct crypt_device *cd)
 {
@@ -6808,6 +6862,23 @@ int crypt_get_hw_encryption_type(struct crypt_device *cd)
 	}
 
 	return CRYPT_SW_ONLY;
+}
+
+int crypt_get_hw_opal_sum_enabled(struct crypt_device* cd)
+{
+	uint8_t version;
+
+	if (!cd)
+		return -EINVAL;
+
+	if (!isLUKS2(cd->type))
+		return -ENOTSUP;
+
+	/* No Opal flag present */
+	if (LUKS2_config_get_opal_version(&cd->u.luks2.hdr, &version) < 0)
+		return -ENOTSUP;
+
+	return version > 1 ? 1 : 0;
 }
 
 int crypt_get_verity_info(struct crypt_device *cd,
