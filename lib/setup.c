@@ -6795,6 +6795,25 @@ const char *crypt_get_default_type(void)
 	return DEFAULT_LUKS_FORMAT;
 }
 
+int crypt_get_type_defaults(const char *type, struct crypt_type_defaults *defaults)
+{
+	if (!type || !isLUKS(type) || !defaults)
+	    return -EINVAL;
+
+	memset(defaults, 0, sizeof(*defaults));
+
+	defaults->cipher = DEFAULT_LUKS1_CIPHER;
+	defaults->cipher_mode = DEFAULT_LUKS1_MODE;
+	defaults->hash = DEFAULT_LUKS1_HASH;
+	defaults->key_size = DEFAULT_LUKS1_KEYBITS;
+
+	if (isLUKS2(type)) {
+	    defaults->integrity = "hmac-sha256";
+	    defaults->tag_size = 32;
+	}
+	return 0;
+}
+
 int crypt_get_hw_encryption_type(struct crypt_device *cd)
 {
 	if (!cd)

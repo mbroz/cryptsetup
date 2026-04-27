@@ -435,6 +435,34 @@ const char *crypt_get_type(struct crypt_device *cd);
 const char *crypt_get_default_type(void);
 
 /**
+ * Structure representing default cryptographic parameters for a device type.
+ *
+ * @see crypt_get_type_defaults
+ */
+struct crypt_type_defaults {
+	const char *cipher;       /**< cipher algorithm (e.g., "aes") */
+	const char *cipher_mode;  /**< cipher_mode cipher mode and IV (e.g. "xts-plain64") */
+	const char *hash;         /**< hash algorithm */
+	uint32_t key_size;        /**< key size in bits */
+
+	/* LUKS2 Authenticated Encryption (AEAD) specific */
+	const char *integrity;    /**< integrity algorithm or @e NULL */
+	uint32_t tag_size;        /**< authentication tag size in bytes or @e 0 */
+};
+
+/**
+ * Get default cryptographic values for a specific device type.
+ *
+ * @param type requested type (CRYPT_LUKS1 or CRYPT_LUKS2)
+ * @param defaults pointer to the structure to be filled
+ *
+ * @return @e 0 on success or negative errno value otherwise.
+ *
+ * @note Available for CRYPT_LUKS1 and CRYPT_LUKS2 only.
+ */
+int crypt_get_type_defaults(const char *type, struct crypt_type_defaults *defaults);
+
+/**
  * @defgroup crypt-hw-encryption-types HW encryption type
  * @addtogroup crypt-hw-encryption-types
  * @{
