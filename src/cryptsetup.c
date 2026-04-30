@@ -1182,6 +1182,13 @@ static int action_benchmark(void)
 		if ((c  = strchr(cipher_mode, '-')))
 			*c = '\0';
 
+		if (!ARG_SET(OPT_KEY_SIZE_ID) && !strcmp(cipher, "sm4")) {
+			if (!strncmp(cipher_mode, "xts", 3))
+				key_size = 32;
+			else
+				key_size = 16;
+		}
+
 		r = benchmark_cipher_loop(cipher, cipher_mode, key_size, &enc_mbr, &dec_mbr);
 		if (!r) {
 			if (!strncmp(cipher, "capi:", 5))
