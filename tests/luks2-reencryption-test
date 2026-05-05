@@ -2691,7 +2691,12 @@ $CRYPTSETUP close $DEV_NAME || fail
 
 # test b0rked kernel keys
 reformat_reencrypt_device
-$CRYPTSETUP -q luksErase $DEV || fail
+# erase all but one keyslot so that we verify original volume key size
+$CRYPTSETUP luksKillSlot -q $DEV 4 || fail
+$CRYPTSETUP luksKillSlot -q $DEV 6 || fail
+$CRYPTSETUP luksKillSlot -q $DEV 8 || fail
+$CRYPTSETUP luksKillSlot -q $DEV 10 || fail
+$CRYPTSETUP luksKillSlot -q $DEV 12 || fail
 
 head -c 63 $VKEY2 | keyctl padd user $KEY_NAME_VK2 %:$KEYRING > /dev/null || fail
 $CRYPTSETUP -q reencrypt --init-only --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- 2>/dev/null && fail
