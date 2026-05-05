@@ -23,7 +23,7 @@ int LUKS2_check_cipher(struct crypt_device *cd,
 
 	log_dbg(cd, "Checking if cipher %s-%s is usable (storage wrapper).", cipher, cipher_mode);
 
-	empty_key = crypt_safe_alloc(keylength);
+	empty_key = malloc(keylength);
 	if (!empty_key)
 		return -ENOMEM;
 
@@ -40,8 +40,7 @@ int LUKS2_check_cipher(struct crypt_device *cd,
 	r = crypt_storage_decrypt(s, 0, sizeof(buf), buf);
 	crypt_storage_destroy(s);
 out:
-	crypt_safe_free(empty_key);
-	crypt_safe_memzero(buf, sizeof(buf));
+	free(empty_key);
 	return r;
 }
 
