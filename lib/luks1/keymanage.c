@@ -991,6 +991,9 @@ int LUKS_verify_volume_key(const struct luks_phdr *hdr,
 	if (crypt_backend_memeq(checkHashBuf, hdr->mkDigest, LUKS_DIGESTSIZE))
 		return -EPERM;
 
+	if (hdr->keyBytes != crypt_volume_key_length(vk))
+		return -EPERM;
+
 	return 0;
 }
 
