@@ -97,16 +97,12 @@ int LUKS2_digest_by_keyslot(struct luks2_hdr *hdr, int keyslot)
 	return -ENOENT;
 }
 
-int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
+static int digest_verify(struct crypt_device *cd,
+	const digest_handler *h,
 	int digest,
 	const struct volume_key *vk)
 {
-	const digest_handler *h;
 	int r;
-
-	h = LUKS2_digest_handler(cd, digest);
-	if (!h)
-		return -EINVAL;
 
 	r = h->verify(cd, digest, crypt_volume_key_get_key(vk), crypt_volume_key_length(vk));
 	if (r < 0) {
@@ -117,20 +113,46 @@ int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
 	return digest;
 }
 
-int LUKS2_digest_verify(struct crypt_device *cd,
+int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
+	int digest,
+	const struct volume_key *vk)
+{
+	const digest_handler *h;
+
+	h = LUKS2_digest_handler(cd, digest);
+	if (!h)
+		return -EINVAL;
+
+	return digest_verify(cd, h, digest, vk);
+}
+
+static int digest_verify_by_keyslot(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const struct volume_key *vk,
 	int keyslot)
 {
+	const digest_handler *h;
 	int digest;
 
 	digest = LUKS2_digest_by_keyslot(hdr, keyslot);
 	if (digest < 0)
 		return digest;
 
+	h = LUKS2_digest_handler(cd, digest);
+	if (!h)
+		return -EINVAL;
+
 	log_dbg(cd, "Verifying key from keyslot %d, digest %d.", keyslot, digest);
 
-	return LUKS2_digest_verify_by_digest(cd, digest, vk);
+	return digest_verify(cd, h, digest, vk);
+}
+
+int LUKS2_digest_verify(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	const struct volume_key *vk,
+	int keyslot)
+{
+	return digest_verify_by_keyslot(cd, hdr, vk, keyslot);
 }
 
 int LUKS2_digest_dump(struct crypt_device *cd, int digest)
@@ -166,7 +188,8 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 	int segment,
 	const struct volume_key *vk)
 {
-	int r;
+	const digest_handler *h;
+	int digest, r;
 	unsigned s;
 
 	if (segment == CRYPT_ANY_SEGMENT) {
@@ -178,11 +201,15 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 		return -EPERM;
 	}
 
-	r = LUKS2_digest_by_segment(hdr, segment);
-	if (r < 0)
-		return r;
+	digest = LUKS2_digest_by_segment(hdr, segment);
+	if (digest < 0)
+		return digest;
 
-	return LUKS2_digest_verify_by_digest(cd, r, vk);
+	h = LUKS2_digest_handler(cd, digest);
+	if (!h)
+		return -EINVAL;
+
+	return digest_verify(cd, h, digest, vk);
 }
 
 /* FIXME: segment can have more digests */
