@@ -5161,6 +5161,11 @@ static void Luks2Reencryption(void)
 	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, key, key_size, &(struct crypt_params_luks2){ .sector_size = 512 }));
 	OK_(crypt_set_pbkdf_type(cd, &pbkdf));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 21, key, key_size, PASSPHRASE, strlen(PASSPHRASE)), 21);
+	/* FIXME: We have to drop cached volume key from cd handle before/during any
+	 * crypt_reencrypt_init* function */
+	CRYPT_FREE(cd);
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
 
 	/* add unbound key */
 	EQ_(crypt_keyslot_add_by_key(cd, 12, key2, key_size2, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 12);
