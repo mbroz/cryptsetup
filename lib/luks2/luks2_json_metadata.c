@@ -2439,6 +2439,24 @@ int LUKS2_get_keyslot_stored_key_size(struct luks2_hdr *hdr, int keyslot)
 	return LUKS2_keyslot_get_volume_key_size(hdr, keyslot_name);
 }
 
+int LUKS2_get_volume_key_size_by_digest(struct luks2_hdr *hdr, int digest)
+{
+	json_object *jobj_digest, *jobj_digest_keyslots;
+
+	jobj_digest = LUKS2_get_digest_jobj(hdr, digest);
+	if (!jobj_digest)
+		return -ENOENT;
+
+	if (!json_object_object_get_ex(jobj_digest, "keyslots", &jobj_digest_keyslots))
+		return -EINVAL;
+
+	if (json_object_array_length(jobj_digest_keyslots) <= 0)
+		return -ENOENT;
+
+	return LUKS2_keyslot_get_volume_key_size(hdr,
+			json_object_get_string(json_object_array_get_idx(jobj_digest_keyslots, 0)));
+}
+
 int LUKS2_get_volume_key_size(struct luks2_hdr *hdr, int segment)
 {
 	json_object *jobj_digests, *jobj_digest_segments, *jobj_digest_keyslots, *jobj1;
