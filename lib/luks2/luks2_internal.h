@@ -386,6 +386,11 @@ int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
 	int digest,
 	const struct volume_key *vk);
 
+int LUKS2_reencrypt_keyslot_digest_verify(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	const struct volume_key *vk,
+	int keyslot);
+
 void LUKS2_digests_erase_unused(struct crypt_device *cd,
 	struct luks2_hdr *hdr);
 
