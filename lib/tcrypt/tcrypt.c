@@ -519,14 +519,18 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			   struct tcrypt_phdr *hdr,
 			   struct crypt_params_tcrypt *params)
 {
-	unsigned char pwd[VCRYPT_KEY_POOL_LEN] = {};
+	unsigned char *pwd = NULL;
 	size_t passphrase_size, max_passphrase_size;
-	char *key;
+	char *key = NULL;
 	unsigned int i, skipped = 0, iterations;
 	int r = -EPERM, keyfiles_pool_length;
 
-	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
-		return -ENOMEM;
+	pwd = crypt_safe_alloc(VCRYPT_KEY_POOL_LEN);
+	key = crypt_safe_alloc(TCRYPT_HDR_KEY_LEN);
+	if (!pwd || !key) {
+		r = -ENOMEM;
+		goto out;
+	}
 
 	if (params->flags & CRYPT_TCRYPT_VERA_MODES &&
 	    params->passphrase_size > TCRYPT_KEY_POOL_LEN) {
@@ -626,10 +630,8 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			params->cipher, params->mode, params->key_size);
 	}
 out:
-	crypt_safe_memzero(pwd, VCRYPT_KEY_POOL_LEN);
-	if (key)
-		crypt_safe_memzero(key, TCRYPT_HDR_KEY_LEN);
-	free(key);
+	crypt_safe_free(pwd);
+	crypt_safe_free(key);
 	return r;
 }
 
