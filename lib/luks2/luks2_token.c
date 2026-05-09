@@ -184,6 +184,12 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 	dlerror();
 
 	token->name = strdup(name);
+	if (!token->name) {
+		dlclose(h);
+		memset(token, 0, sizeof(*token));
+		return -ENOMEM;
+	}
+
 	token->open = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_OPEN, CRYPT_TOKEN_ABI_VERSION1);
 	token->buffer_free = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_BUFFER_FREE, CRYPT_TOKEN_ABI_VERSION1);
 	token->validate = token_dlvsym(cd, h, CRYPT_TOKEN_ABI_VALIDATE, CRYPT_TOKEN_ABI_VERSION1);

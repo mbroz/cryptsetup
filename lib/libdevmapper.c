@@ -2919,8 +2919,13 @@ static int _dm_query_device(struct crypt_device *cd, const char *name,
 	if (!tmp_uuid)
 		dmd->flags |= CRYPT_ACTIVATE_NO_UUID;
 	else if (get_flags & DM_ACTIVE_UUID) {
-		if (!strncmp(tmp_uuid, DM_UUID_PREFIX, DM_UUID_PREFIX_LEN))
+		if (!strncmp(tmp_uuid, DM_UUID_PREFIX, DM_UUID_PREFIX_LEN)) {
 			dmd->uuid = strdup(tmp_uuid + DM_UUID_PREFIX_LEN);
+			if (!dmd->uuid) {
+				r = -ENOMEM;
+				goto out;
+			}
+		}
 	}
 
 	dmd->holders = 0;

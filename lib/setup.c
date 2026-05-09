@@ -1338,6 +1338,10 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		cd->u.plain.hdr.sector_size = tgt->u.crypt.sector_size;
 		cd->u.plain.key_size = crypt_volume_key_length(tgt->u.crypt.vk);
 		cd->u.plain.cipher = strdup(cipher);
+		if (!cd->u.plain.cipher) {
+			r = -ENOMEM;
+			goto out;
+		}
 		MOVE_REF(cd->u.plain.cipher_spec, cipher_spec);
 		cd->u.plain.cipher_mode = cd->u.plain.cipher_spec + strlen(cipher) + 1;
 		if (dmd.flags & CRYPT_ACTIVATE_KEYRING_KEY)
@@ -1345,6 +1349,10 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 	} else if (isLOOPAES(cd->type) && single_segment(&dmd) && tgt->type == DM_CRYPT) {
 		cd->u.loopaes.hdr.offset = tgt->u.crypt.offset;
 		cd->u.loopaes.cipher = strdup(cipher);
+		if (!cd->u.loopaes.cipher) {
+			r = -ENOMEM;
+			goto out;
+		}
 		MOVE_REF(cd->u.loopaes.cipher_spec, cipher_spec);
 		cd->u.loopaes.cipher_mode = cd->u.loopaes.cipher_spec + strlen(cipher) + 1;
 		/* version 3 uses last key for IV */
@@ -1682,18 +1690,25 @@ static int _crypt_format_plain(struct crypt_device *cd,
 		return -ENOMEM;
 	}
 	cd->u.plain.cipher = strdup(cipher);
+	if (!cd->u.plain.cipher)
+		return -ENOMEM;
+
 	cd->u.plain.cipher_mode = cd->u.plain.cipher_spec + strlen(cipher) + 1;
 
-	if (params && params->hash)
+	if (params && params->hash) {
 		cd->u.plain.hdr.hash = strdup(params->hash);
+		if (!cd->u.plain.hdr.hash) {
+			free(cd->u.plain.cipher);
+			cd->u.plain.cipher = NULL;
+			return -ENOMEM;
+		}
+	}
 
 	cd->u.plain.hdr.offset = params ? params->offset : 0;
 	cd->u.plain.hdr.skip = params ? params->skip : 0;
 	cd->u.plain.hdr.size = params ? params->size : 0;
 	cd->u.plain.hdr.sector_size = sector_size;
 
-	if (!cd->u.plain.cipher)
-		return -ENOMEM;
 
 	return 0;
 }
@@ -2709,9 +2724,17 @@ static int _crypt_format_loopaes(struct crypt_device *cd,
 	cd->u.loopaes.key_size = volume_key_size;
 
 	cd->u.loopaes.cipher = strdup(cipher ?: DEFAULT_LOOPAES_CIPHER);
+	if (!cd->u.loopaes.cipher)
+		return -ENOMEM;
 
-	if (params && params->hash)
+	if (params && params->hash) {
 		cd->u.loopaes.hdr.hash = strdup(params->hash);
+		if (!cd->u.loopaes.hdr.hash) {
+			free(cd->u.loopaes.cipher);
+			cd->u.loopaes.cipher = NULL;
+			return -ENOMEM;
+		}
+	}
 
 	cd->u.loopaes.hdr.offset = params ? params->offset : 0;
 	cd->u.loopaes.hdr.skip = params ? params->skip : 0;
