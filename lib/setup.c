@@ -599,10 +599,8 @@ int crypt_init(struct crypt_device **cd, const char *device)
 	log_dbg(NULL, "Running without O_CLOEXEC.");
 #endif
 
-	if (!(h = malloc(sizeof(struct crypt_device))))
+	if (!(h = crypt_zalloc(sizeof(struct crypt_device))))
 		return -ENOMEM;
-
-	memset(h, 0, sizeof(*h));
 
 	r = device_alloc(NULL, &h->device, device);
 	if (r < 0) {
