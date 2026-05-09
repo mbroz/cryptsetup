@@ -791,9 +791,12 @@ void crypt_cipher_destroy(struct crypt_cipher *ctx)
 }
 
 static int _cipher_encrypt(struct crypt_cipher *ctx, const unsigned char *in, unsigned char *out,
-			   int length, const unsigned char *iv, size_t iv_length)
+			   size_t length, const unsigned char *iv, size_t iv_length)
 {
 	int len;
+
+	if (length > INT_MAX)
+		return -EINVAL;
 
 	if (ctx->u.lib.iv_length != iv_length)
 		return -EINVAL;
@@ -801,7 +804,7 @@ static int _cipher_encrypt(struct crypt_cipher *ctx, const unsigned char *in, un
 	if (EVP_EncryptInit_ex(ctx->u.lib.hd_enc, NULL, NULL, NULL, iv) != 1)
 		return -EINVAL;
 
-	if (EVP_EncryptUpdate(ctx->u.lib.hd_enc, out, &len, in, length) != 1)
+	if (EVP_EncryptUpdate(ctx->u.lib.hd_enc, out, &len, in, (int)length) != 1)
 		return -EINVAL;
 
 	if (EVP_EncryptFinal(ctx->u.lib.hd_enc, out + len, &len) != 1)
@@ -811,9 +814,12 @@ static int _cipher_encrypt(struct crypt_cipher *ctx, const unsigned char *in, un
 }
 
 static int _cipher_decrypt(struct crypt_cipher *ctx, const unsigned char *in, unsigned char *out,
-			   int length, const unsigned char *iv, size_t iv_length)
+			   size_t length, const unsigned char *iv, size_t iv_length)
 {
 	int len;
+
+	if (length > INT_MAX)
+		return -EINVAL;
 
 	if (ctx->u.lib.iv_length != iv_length)
 		return -EINVAL;
@@ -821,7 +827,7 @@ static int _cipher_decrypt(struct crypt_cipher *ctx, const unsigned char *in, un
 	if (EVP_DecryptInit_ex(ctx->u.lib.hd_dec, NULL, NULL, NULL, iv) != 1)
 		return -EINVAL;
 
-	if (EVP_DecryptUpdate(ctx->u.lib.hd_dec, out, &len, in, length) != 1)
+	if (EVP_DecryptUpdate(ctx->u.lib.hd_dec, out, &len, in, (int)length) != 1)
 		return -EINVAL;
 
 	if (EVP_DecryptFinal(ctx->u.lib.hd_dec, out + len, &len) != 1)
