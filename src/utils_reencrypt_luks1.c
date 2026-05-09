@@ -932,16 +932,17 @@ static int initialize_uuid(struct reenc_ctx *rc)
 
 	if (ARG_SET(OPT_ENCRYPT_ID)) {
 		rc->device_uuid = strdup(NO_UUID);
-		return 0;
+		return rc->device_uuid ? 0 : -ENOMEM;
 	}
 
 	if (ARG_SET(OPT_DECRYPT_ID) && ARG_SET(OPT_UUID_ID)) {
 		r = uuid_parse(ARG_STR(OPT_UUID_ID), device_uuid);
-		if (!r)
+		if (!r) {
 			rc->device_uuid = strdup(ARG_STR(OPT_UUID_ID));
-		else
-			log_err(_("Provided UUID is invalid."));
+			return rc->device_uuid ? 0 : -ENOMEM;
+		}
 
+		log_err(_("Provided UUID is invalid."));
 		return r;
 	}
 
@@ -950,9 +951,11 @@ static int initialize_uuid(struct reenc_ctx *rc)
 		return r;
 	crypt_set_log_callback(cd, _quiet_log, NULL);
 	r = crypt_load(cd, CRYPT_LUKS1, NULL);
-	if (!r)
+	if (!r) {
 		rc->device_uuid = strdup(crypt_get_uuid(cd));
-	else
+		if (!rc->device_uuid)
+			r =-ENOMEM;
+	} else
 		/* Reencryption already in progress - magic header? */
 		r = device_check(rc, hdr_device(rc), CHECK_UNUSABLE, true);
 
