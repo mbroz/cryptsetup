@@ -614,6 +614,9 @@ static int openssl_pbkdf2(const char *password, size_t password_length,
 	if (iterations > INT_MAX)
 		return -EINVAL;
 
+	if (password_length > INT_MAX || salt_length > INT_MAX || key_length > INT_MAX)
+		return -EINVAL;
+
 	r = PKCS5_PBKDF2_HMAC(password, (int)password_length, (const unsigned char *)salt,
 		(int)salt_length, iterations, hash_id, (int)key_length, (unsigned char*) key);
 #endif
