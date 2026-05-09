@@ -135,6 +135,9 @@ static int acquire_lock_handle(struct crypt_device *cd, struct device *device, s
 	int dev_fd, fd;
 	struct stat st;
 
+	assert(device);
+	assert(h);
+
 	dev_fd = open(device_path(device), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (dev_fd < 0)
 		return -EINVAL;
@@ -182,6 +185,9 @@ static int acquire_lock_handle_by_name(struct crypt_device *cd, const char *name
 	char res[PATH_MAX];
 	int fd;
 
+	assert(name);
+	assert(h);
+
 	h->u.name.name = strdup(name);
 	if (!h->u.name.name)
 		return -ENOMEM;
@@ -207,6 +213,8 @@ static void release_lock_handle(struct crypt_device *cd, struct crypt_lock_handl
 {
 	char res[PATH_MAX];
 	struct stat buf_a, buf_b;
+
+	assert(h);
 
 	if ((h->mode == DEV_LOCK_NAME) && /* was it name lock */
 	    !flock(h->flock_fd, LOCK_EX | LOCK_NB) && /* lock to drop the file */
@@ -251,6 +259,8 @@ static int verify_lock_handle(struct crypt_lock_handle *h)
 {
 	char res[PATH_MAX];
 	struct stat lck_st, res_st;
+
+	assert(h);
 
 	/* we locked a regular file, check during device_open() instead. No reason to check now */
 	if (h->mode == DEV_LOCK_FILE)
