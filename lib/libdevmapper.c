@@ -529,9 +529,9 @@ static int cipher_dm2c(const char *org_c, const char *org_i, unsigned tag_size,
 		c_size = snprintf(c_dm, c_dm_size, "capi:authenc(%s,%s)-%s", org_i, capi, iv);
 	}
 
-	if (c_size < 0 || c_size == c_dm_size)
+	if (c_size < 0 || c_size >= c_dm_size)
 		return -EINVAL;
-	if (i_size < 0 || i_size == i_dm_size)
+	if (i_size < 0 || i_size >= i_dm_size)
 		return -EINVAL;
 
 	return 0;
