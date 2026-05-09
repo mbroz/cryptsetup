@@ -1668,8 +1668,13 @@ static int _crypt_format_plain(struct crypt_device *cd,
 	}
 
 	if (sector_size > SECTOR_SIZE && !device_size(cd->device, &dev_size)) {
-		if (params && params->offset)
+		if (params && params->offset) {
+			if (params->offset > (UINT64_MAX / SECTOR_SIZE))
+				return -EINVAL;
+			if (dev_size < (params->offset * SECTOR_SIZE))
+				return -EINVAL;
 			dev_size -= (params->offset * SECTOR_SIZE);
+		}
 		if (dev_size % sector_size) {
 			log_err(cd, _("Device size is not aligned to requested sector size."));
 			return -EINVAL;
