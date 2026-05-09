@@ -219,18 +219,24 @@ crypt_token_load_external(struct crypt_device *cd, const char *name, struct cryp
 
 void crypt_token_unload_external_all(struct crypt_device *cd)
 {
+	struct crypt_token_handler_v2 *token;
 	int i;
 
 	for (i = LUKS2_TOKENS_MAX - 1; i >= 0; i--) {
 		if (token_handlers[i].version < 2)
 			continue;
 
-		log_dbg(cd, "Unloading %s token handler.", token_handlers[i].u.v2.name);
+		token = &token_handlers[i].u.v2;
 
-		free(CONST_CAST(void *)token_handlers[i].u.v2.name);
+		log_dbg(cd, "Unloading %s token handler.", token->name);
 
-		if (dlclose(CONST_CAST(void *)token_handlers[i].u.v2.dlhandle))
+		free(CONST_CAST(void *)token->name);
+
+		if (dlclose(token->dlhandle))
 			log_dbg(cd, "%s", dlerror());
+
+		memset(token, 0, sizeof(*token));
+		token_handlers[i].version = 0;
 	}
 }
 
