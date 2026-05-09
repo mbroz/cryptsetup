@@ -2277,6 +2277,8 @@ static int _dm_target_query_verity(struct crypt_device *cd,
 		return -EINVAL;
 	if (get_flags & DM_ACTIVE_DEVICE) {
 		str2 = crypt_lookup_dev(str);
+		if (!str2)
+			return -EINVAL;
 		r = device_alloc(cd, &data_device, str2);
 		free(str2);
 		if (r < 0 && r != -ENOTBLK)
