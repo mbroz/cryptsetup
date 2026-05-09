@@ -393,11 +393,13 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 	if (EVP_DigestFinal_ex(ctx->md, tmp, &tmp_len) != 1)
 		return -EINVAL;
 
+	if (tmp_len < length) {
+		crypt_backend_memzero(tmp, sizeof(tmp));
+		return -EINVAL;
+	}
+
 	crypt_backend_memcpy(buffer, tmp, length);
 	crypt_backend_memzero(tmp, sizeof(tmp));
-
-	if (tmp_len < length)
-		return -EINVAL;
 
 	if (crypt_hash_restart(ctx))
 		return -EINVAL;
@@ -534,11 +536,13 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 	if (HMAC_Final(ctx->md, tmp, &tmp_len) != 1)
 		return -EINVAL;
 #endif
+	if (tmp_len < length) {
+		crypt_backend_memzero(tmp, sizeof(tmp));
+		return -EINVAL;
+	}
+
 	crypt_backend_memcpy(buffer, tmp, length);
 	crypt_backend_memzero(tmp, sizeof(tmp));
-
-	if (tmp_len < length)
-		return -EINVAL;
 
 	if (crypt_hmac_restart(ctx))
 		return -EINVAL;
