@@ -113,7 +113,6 @@ static inline struct cmsghdr *_CMSG_NXTHDR(struct msghdr* mhdr, struct cmsghdr* 
 #endif
 }
 
-/* The in/out should be aligned to page boundary */
 /* coverity[ -taint_source : arg-3 ] */
 static int _crypt_cipher_crypt(struct crypt_cipher_kernel *ctx,
 			       const char *in, size_t in_length,
@@ -131,10 +130,9 @@ static int _crypt_cipher_crypt(struct crypt_cipher_kernel *ctx,
 		.iov_len = in_length,
 	};
 	int iv_msg_size = iv ? CMSG_SPACE(sizeof(*alg_iv) + iv_length) : 0;
-	char buffer[CMSG_SPACE(sizeof(*type)) + iv_msg_size];
+	int buffer_size = CMSG_SPACE(sizeof(*type)) + iv_msg_size;
+	char *buffer = NULL;
 	struct msghdr msg = {
-		.msg_control = buffer,
-		.msg_controllen = sizeof(buffer),
 		.msg_iov = &iov,
 		.msg_iovlen = 1,
 	};
@@ -145,12 +143,20 @@ static int _crypt_cipher_crypt(struct crypt_cipher_kernel *ctx,
 	if ((!iv && iv_length) || (iv && !iv_length))
 		return -EINVAL;
 
-	memset(buffer, 0, sizeof(buffer));
+	buffer = malloc(buffer_size);
+	if (!buffer)
+		return -ENOMEM;
+	crypt_backend_memzero(buffer, buffer_size);
+
+	msg.msg_control = buffer;
+	msg.msg_controllen = buffer_size;
 
 	/* Set encrypt/decrypt operation */
 	header = CMSG_FIRSTHDR(&msg);
-	if (!header)
-		return -EINVAL;
+	if (!header) {
+		r = -EINVAL;
+		goto out;
+	}
 
 	header->cmsg_level = SOL_ALG;
 	header->cmsg_type = ALG_SET_OP;
@@ -161,8 +167,10 @@ static int _crypt_cipher_crypt(struct crypt_cipher_kernel *ctx,
 	/* Set IV */
 	if (iv) {
 		header = _CMSG_NXTHDR(&msg, header);
-		if (!header)
-			return -EINVAL;
+		if (!header) {
+			r = -EINVAL;
+			goto out;
+		}
 
 		header->cmsg_level = SOL_ALG;
 		header->cmsg_type = ALG_SET_IV;
@@ -180,8 +188,9 @@ static int _crypt_cipher_crypt(struct crypt_cipher_kernel *ctx,
 		if (len != (ssize_t)out_length)
 			r = -EIO;
 	}
-
-	crypt_backend_memzero(buffer, sizeof(buffer));
+out:
+	crypt_backend_memzero(buffer, buffer_size);
+	free(buffer);
 	return r;
 }
 
