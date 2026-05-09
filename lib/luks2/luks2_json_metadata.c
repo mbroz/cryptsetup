@@ -2827,9 +2827,16 @@ static bool is_reencryption_helper(const char *name)
 		return false;
 
 	len = strlen(name);
-	return (len >= 9 && (!strncmp(name + len - 8, "-hotzone-", 9) ||
-			     !strcmp(name + len - 8, "-overlay")));
+	if (len > 8 && !strcmp(name + len - 8, "-overlay"))
+		return true;
 
+	if (len > 16 && !strcmp(name + len - 16, "-hotzone-forward"))
+		return true;
+
+	if (len > 17 && !strcmp(name + len - 17, "-hotzone-backward"))
+		return true;
+
+	return false;
 }
 
 static bool contains_reencryption_helper(char **names)
