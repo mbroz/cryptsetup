@@ -478,7 +478,12 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 		return -EINVAL;
 	}
 
-	HMAC_Init_ex(h->md, key, key_length, h->hash_id, NULL);
+	if (HMAC_Init_ex(h->md, key, key_length, h->hash_id, NULL) != 1) {
+		hash_id_free(h->hash_id);
+		HMAC_CTX_free(h->md);
+		free(h);
+		return -EINVAL;
+	}
 
 	h->hash_len = EVP_MD_size(h->hash_id);
 #endif
@@ -494,7 +499,8 @@ static int crypt_hmac_restart(struct crypt_hmac *ctx)
 	if (!ctx->md)
 		return -EINVAL;
 #else
-	HMAC_Init_ex(ctx->md, NULL, 0, ctx->hash_id, NULL);
+	if (HMAC_Init_ex(ctx->md, NULL, 0, ctx->hash_id, NULL) != 1)
+		return -EINVAL;
 #endif
 	return 0;
 }
@@ -504,8 +510,7 @@ int crypt_hmac_write(struct crypt_hmac *ctx, const char *buffer, size_t length)
 #if OPENSSL3_API
 	return EVP_MAC_update(ctx->md, (const unsigned char *)buffer, length) == 1 ? 0 : -EINVAL;
 #else
-	HMAC_Update(ctx->md, (const unsigned char *)buffer, length);
-	return 0;
+	return HMAC_Update(ctx->md, (const unsigned char *)buffer, length) == 1 ? 0 : -EINVAL;
 #endif
 }
 
@@ -526,7 +531,8 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 	if (length > (size_t)ctx->hash_len)
 		return -EINVAL;
 
-	HMAC_Final(ctx->md, tmp, &tmp_len);
+	if (HMAC_Final(ctx->md, tmp, &tmp_len) != 1)
+		return -EINVAL;
 #endif
 	crypt_backend_memcpy(buffer, tmp, length);
 	crypt_backend_memzero(tmp, sizeof(tmp));
