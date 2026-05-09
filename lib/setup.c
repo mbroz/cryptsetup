@@ -1506,6 +1506,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 	crypt_status_info ci;
 	struct crypt_dm_active_device dmd;
 	struct dm_target *tgt = &dmd.segment;
+	const char *type = NULL;
 	int r;
 
 	if (!cd || !name)
@@ -1548,27 +1549,35 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 
 	if (dmd.uuid) {
 		if (!strncmp(CRYPT_PLAIN, dmd.uuid, sizeof(CRYPT_PLAIN)-1))
-			(*cd)->type = strdup(CRYPT_PLAIN);
+			type = CRYPT_PLAIN;
 		else if (!strncmp(CRYPT_LOOPAES, dmd.uuid, sizeof(CRYPT_LOOPAES)-1))
-			(*cd)->type = strdup(CRYPT_LOOPAES);
+			type = CRYPT_LOOPAES;
 		else if (!strncmp(CRYPT_LUKS1, dmd.uuid, sizeof(CRYPT_LUKS1)-1))
-			(*cd)->type = strdup(CRYPT_LUKS1);
+			type = CRYPT_LUKS1;
 		else if (!strncmp(CRYPT_LUKS2, dmd.uuid, sizeof(CRYPT_LUKS2)-1))
-			(*cd)->type = strdup(CRYPT_LUKS2);
+			type = CRYPT_LUKS2;
 		else if (!strncmp(CRYPT_VERITY, dmd.uuid, sizeof(CRYPT_VERITY)-1))
-			(*cd)->type = strdup(CRYPT_VERITY);
+			type = CRYPT_VERITY;
 		else if (!strncmp(CRYPT_TCRYPT, dmd.uuid, sizeof(CRYPT_TCRYPT)-1))
-			(*cd)->type = strdup(CRYPT_TCRYPT);
+			type = CRYPT_TCRYPT;
 		else if (!strncmp(CRYPT_INTEGRITY, dmd.uuid, sizeof(CRYPT_INTEGRITY)-1))
-			(*cd)->type = strdup(CRYPT_INTEGRITY);
+			type = CRYPT_INTEGRITY;
 		else if (!strncmp(CRYPT_BITLK, dmd.uuid, sizeof(CRYPT_BITLK)-1))
-			(*cd)->type = strdup(CRYPT_BITLK);
+			type = CRYPT_BITLK;
 		else if (!strncmp(CRYPT_FVAULT2, dmd.uuid, sizeof(CRYPT_FVAULT2)-1))
-			(*cd)->type = strdup(CRYPT_FVAULT2);
+			type = CRYPT_FVAULT2;
 		else
 			log_dbg(NULL, "Unknown UUID set, some parameters are not set.");
 	} else
 		log_dbg(NULL, "Active device has no UUID set, some parameters are not set.");
+
+	if (type) {
+		(*cd)->type = strdup(type);
+		if (!(*cd)->type) {
+			r = -ENOMEM;
+			goto out;
+		}
+	}
 
 	if (header_device) {
 		r = crypt_set_data_device(*cd, device_path(tgt->data_device));
@@ -1585,12 +1594,16 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 	else if (tgt->type == DM_INTEGRITY)
 		r = _init_by_name_integrity(*cd, name);
 out:
+	if (r == 0 && !(*cd)->type) {
+		/* For anonymous device (no header found) remember initialized name */
+		(*cd)->u.none.active_name = strdup(name);
+		if (!(*cd)->u.none.active_name)
+			r = -ENOMEM;
+	}
+
 	if (r < 0) {
 		crypt_free(*cd);
 		*cd = NULL;
-	} else if (!(*cd)->type) {
-		/* For anonymous device (no header found) remember initialized name */
-		(*cd)->u.none.active_name = strdup(name);
 	}
 
 	free(CONST_CAST(void*)dmd.uuid);
