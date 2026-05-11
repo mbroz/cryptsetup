@@ -26,6 +26,8 @@ KEY1=key1
 KEY2=key2
 KEY5=key5
 KEYE=keye
+KEY_TZERO=key_trailing_zero
+KEY_HALF_ZERO=key_half_zeroes
 PWD0="compatkey"
 PWD1="93R4P4pIqAH8"
 PWD2="mymJeD8ivEhE"
@@ -64,7 +66,7 @@ remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 	losetup -d $LOOPDEV >/dev/null 2>&1
-	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HEADER_KEYU $VK_FILE \
+	rm -f $ORIG_IMG $IMG $IMG10 $KEY1 $KEY2 $KEY5 $KEYE $KEY_TZERO $KEY_HALF_ZERO $HEADER_IMG $HEADER_KEYU $VK_FILE \
 	$HEADER_LUKS2_PV $HEADER_LUKS2_INV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* \
 	$KEY_FILE0 $KEY_FILE1 >/dev/null 2>&1
 
@@ -158,6 +160,18 @@ prepare()
 
 	if [ ! -e $KEYE ]; then
 		touch $KEYE
+	fi
+
+	if [ ! -e $KEY_TZERO ]; then
+		echo -ne '\xa6\x32\x09\x5f\xdb\xbe\xf3\xc6\xa7\xac\xed\x85\x73\xac\xa8\xfb' >$KEY_TZERO
+		echo -ne '\x09\xd4\x38\xfd\x58\x24\x17\x1b\x98\xa3\xef\x1e\xe4\x4b\xbc\x00'>>$KEY_TZERO
+	fi
+
+	if [ ! -e $KEY_HALF_ZERO ]; then
+		echo -ne '\xa6\x32\x09\x5f\xdb\xbe\xf3\xc6\xa7\xac\xed\x85\x73\xac\xa8\xfb' >$KEY_HALF_ZERO
+		echo -ne '\x09\xd4\x38\xfd\x58\x24\x17\x1b\x98\xa3\xef\x1e\xe4\x4b\xbc\xc9'>>$KEY_HALF_ZERO
+		echo -ne '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'>>$KEY_HALF_ZERO
+		echo -ne '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'>>$KEY_HALF_ZERO
 	fi
 
 	cp $IMG $ORIG_IMG
@@ -1713,6 +1727,36 @@ if ! fips_mode -a -d $LUKS2_LOCKING_DIR; then
 	echo $PWD1 | $CRYPTSETUP open --serialize-memory-hard-pbkdf --test-passphrase $LOOPDEV || fail
 	test -f $LUKS2_LOCKING_DIR/$MEMORY_HARD_LOCK_FILE && fail "The --serialize-memory-hard-pbkdf option did not remove the locking file (did not use the file)."
 fi
+
+prepare "[53] Truncated keys." wipe
+echo "$PWD1" | $CRYPTSETUP luksFormat -q --type luks2 $FAST_PBKDF_OPT --volume-key-file $KEY_TZERO -s256 $LOOPDEV || fail
+$CRYPTSETUP open -q --test-passphrase $LOOPDEV --volume-key-file $KEY_TZERO -s248 2>/dev/null && fail
+# cut the trailing zero byte
+truncate -c -s 31 $KEY_TZERO || fail
+echo $PWD1 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --volume-key-file $KEY_TZERO $LOOPDEV 2>/dev/null && fail
+echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S5 --unbound --volume-key-file $KEY_TZERO -s248 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP open --test-passphrase -S5 $LOOPDEV || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "5: luks2 (unbound)" || fail
+
+# test (doubled) AES-256-XTS key with second half of the buffer with zero bytes
+echo "$PWD1" | $CRYPTSETUP luksFormat -q --type luks2 $FAST_PBKDF_OPT --volume-key-file $KEY_HALF_ZERO -s512 $LOOPDEV || fail
+$CRYPTSETUP open -q --test-passphrase $LOOPDEV --volume-key-file $KEY_HALF_ZERO -s504 2>/dev/null && fail
+$CRYPTSETUP open -q --test-passphrase $LOOPDEV --volume-key-file $KEY_HALF_ZERO -s256 2>/dev/null && fail
+
+# cut the trailing zero byte
+truncate -c -s 63 $KEY_HALF_ZERO || fail
+echo $PWD2 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --volume-key-file $KEY_HALF_ZERO $LOOPDEV 2>/dev/null && fail
+echo $PWD2 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S5 --unbound --volume-key-file $KEY_HALF_ZERO -s504 $LOOPDEV || fail
+echo $PWD2 | $CRYPTSETUP open --test-passphrase -S5 $LOOPDEV || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "5: luks2 (unbound)" || fail
+
+# truncate entire zeroed part
+truncate -c -s 32 $KEY_HALF_ZERO || fail
+echo $PWD2 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT --volume-key-file $KEY_HALF_ZERO $LOOPDEV 2>/dev/null && fail
+echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S6 --unbound --volume-key-file $KEY_HALF_ZERO -s256 $LOOPDEV || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "6: luks2 (unbound)" || fail
+echo $PWD3 | $CRYPTSETUP open --test-passphrase -S6 $LOOPDEV || fail
+echo $PWD3 | $CRYPTSETUP open -S6 $LOOPDEV $DEV_NAME 2>/dev/null && fail
 
 remove_mapping
 exit 0
