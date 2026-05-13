@@ -3303,6 +3303,8 @@ static void Luks2KeyslotAdd(void)
 	EQ_(crypt_keyslot_add_by_key(cd, 0, key, key_size, PASSPHRASE, strlen(PASSPHRASE), 0), 0);
 	 /* keyslot 1, unbound key, digest 1 */
 	EQ_(crypt_keyslot_add_by_key(cd, 1, key2, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT), 1);
+	// the cached volume key must not suppress the wrong (unbound) keyslot being used
+	FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, PASSPHRASE1, strlen(PASSPHRASE1), 0), "Keyslot unusable for activation.");
 	 /* keyslot 2, unbound key, digest 1 */
 	EQ_(crypt_keyslot_add_by_key(cd, 2, key2, key_size, PASSPHRASE1, strlen(PASSPHRASE1), CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_DIGEST_REUSE), 2);
 	 /* keyslot 3, unbound key, digest 2 */
