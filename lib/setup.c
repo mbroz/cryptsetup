@@ -7326,6 +7326,15 @@ static int keyslot_add_by_key(struct crypt_device *cd,
 		return luks1_keyslot_add_by_volume_key(cd, keyslot_new, new_passphrase, new_passphrase_size, vk);
 	}
 
+	/* if passed key matches volume key digest tear down new vk flag */
+	if (flags & CRYPT_VOLUME_KEY_SET) {
+		digest = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
+		if (digest >= 0)
+			flags &= ~CRYPT_VOLUME_KEY_SET;
+		else if (digest != -EPERM) /* Anything other than -EPERM suggests broken metadata. Abort */
+			return digest;
+	}
+
 	/*
 	 * Drop CRYPT_VOLUME_KEY_DIGEST_REUSE flag if used without CRYPT_VOLUME_KEY_SET
 	 * or CRYPT_VOLUME_KEY_NO_SEGMENT flags. The standalone CRYPT_VOLUME_KEY_DIGEST_REUSE flag
@@ -7338,31 +7347,22 @@ static int keyslot_add_by_key(struct crypt_device *cd,
 	if (!flags)
 		return luks2_keyslot_add_by_volume_key(cd, keyslot_new, new_passphrase, new_passphrase_size, vk);
 
-	digest = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
-	if (digest >= 0) /* if key matches volume key digest tear down new vk flag */
-		flags &= ~CRYPT_VOLUME_KEY_SET;
-	else if (digest == -EPERM) {
-		/* if key matches any existing digest, do not create new digest */
-		if ((flags & CRYPT_VOLUME_KEY_DIGEST_REUSE))
-			digest = LUKS2_digest_verify_by_any_matching(cd, vk, /* exclude_default_segment= */ false);
+	digest = -ENOENT;
+	/* check if passed key matches any existing unbound digest */
+	if (flags & CRYPT_VOLUME_KEY_DIGEST_REUSE)
+		digest = LUKS2_digest_verify_by_any_matching(cd, vk, /* exclude_default_segment= */ true);
 
-		/* Anything other than -EPERM or -ENOENT suggests broken metadata. Abort */
-		if (digest < 0 && digest != -ENOENT && digest != -EPERM)
-			return digest;
-
-		/* no segment flag or new vk flag requires new key digest */
-		if (flags & (CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_SET)) {
-			if (digest < 0 || !(flags & CRYPT_VOLUME_KEY_DIGEST_REUSE))
-				digest = LUKS2_digest_create(cd, "pbkdf2", &cd->u.luks2.hdr, vk);
-		}
-	} else /* Anything other than -EPERM suggests broken metadata. Abort */
+	/* Anything other than -EPERM or -ENOENT suggests broken metadata. Abort */
+	if (digest < 0 && digest != -ENOENT && digest != -EPERM)
 		return digest;
 
+	/* no segment flag or new vk flag requires new key digest */
+	if (digest < 0 && (flags & (CRYPT_VOLUME_KEY_NO_SEGMENT | CRYPT_VOLUME_KEY_SET)))
+		digest = LUKS2_digest_create(cd, "pbkdf2", &cd->u.luks2.hdr, vk);
+
 	r = digest;
-	if (r < 0) {
-		log_err(cd, _("Volume key does not match the volume."));
+	if (r < 0)
 		return r;
-	}
 
 	crypt_volume_key_set_id(vk, digest);
 
