@@ -5335,7 +5335,7 @@ static int _verify_key(struct crypt_device *cd,
 			return -EINVAL;
 
 		if (unbound_key)
-			r = LUKS2_digest_verify_by_any_matching(cd, vk);
+			r = LUKS2_digest_verify_by_any_matching(cd, vk, /* exclude_default_segment= */ false);
 		else
 			r = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
 	} else if (isVERITY(cd->type))
@@ -7335,7 +7335,7 @@ static int keyslot_add_by_key(struct crypt_device *cd,
 	else if (digest == -EPERM) {
 		/* if key matches any existing digest, do not create new digest */
 		if ((flags & CRYPT_VOLUME_KEY_DIGEST_REUSE))
-			digest = LUKS2_digest_verify_by_any_matching(cd, vk);
+			digest = LUKS2_digest_verify_by_any_matching(cd, vk, /* exclude_default_segment= */ false);
 
 		/* Anything other than -EPERM or -ENOENT suggests broken metadata. Abort */
 		if (digest < 0 && digest != -ENOENT && digest != -EPERM)

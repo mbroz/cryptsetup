@@ -144,13 +144,19 @@ int LUKS2_digest_dump(struct crypt_device *cd, int digest)
 }
 
 int LUKS2_digest_verify_by_any_matching(struct crypt_device *cd,
-		const struct volume_key *vk)
+		const struct volume_key *vk,
+		bool exclude_default_segment)
 {
-	int digest;
+	int digest, default_segment_digest = -1;
 
-	for (digest = 0; digest < LUKS2_DIGEST_MAX; digest++)
-		if (LUKS2_digest_verify_by_digest(cd, digest, vk) == digest)
+	if (exclude_default_segment)
+		default_segment_digest = LUKS2_digest_by_segment(crypt_get_hdr(cd, CRYPT_LUKS2), CRYPT_DEFAULT_SEGMENT);
+
+	for (digest = 0; digest < LUKS2_DIGEST_MAX; digest++) {
+		if (digest != default_segment_digest &&
+		    LUKS2_digest_verify_by_digest(cd, digest, vk) == digest)
 			return digest;
+	}
 
 	return -ENOENT;
 }
