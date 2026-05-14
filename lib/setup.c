@@ -7320,12 +7320,14 @@ static int keyslot_add_by_key(struct crypt_device *cd,
 	assert(new_passphrase);
 	assert(vk);
 
-	if (!flags)
-		return is_luks1 ? luks1_keyslot_add_by_volume_key(cd, keyslot_new, new_passphrase, new_passphrase_size, vk) :
-				  luks2_keyslot_add_by_volume_key(cd, keyslot_new, new_passphrase, new_passphrase_size, vk);
+	if (is_luks1) {
+		if (flags)
+			return -EINVAL;
+		return luks1_keyslot_add_by_volume_key(cd, keyslot_new, new_passphrase, new_passphrase_size, vk);
+	}
 
-	if (is_luks1)
-		return -EINVAL;
+	if (!flags)
+		return luks2_keyslot_add_by_volume_key(cd, keyslot_new, new_passphrase, new_passphrase_size, vk);
 
 	digest = LUKS2_digest_verify_by_segment(cd, &cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, vk);
 	if (digest >= 0) /* if key matches volume key digest tear down new vk flag */
