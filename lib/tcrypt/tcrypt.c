@@ -444,8 +444,6 @@ static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 
 		if (r < 0) {
 			log_dbg(cd, "TCRYPT:   returned error %d, skipped.", r);
-			if (r == -ENOTSUP)
-				break;
 			r = -ENOENT;
 			continue;
 		}
@@ -522,7 +520,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	unsigned char *pwd = NULL;
 	size_t passphrase_size, max_passphrase_size;
 	char *key = NULL;
-	unsigned int i, skipped = 0, iterations;
+	unsigned int i, iterations;
 	int r = -EPERM, keyfiles_pool_length;
 
 	pwd = crypt_safe_alloc(VCRYPT_KEY_POOL_LEN);
@@ -592,7 +590,6 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 		if (r < 0) {
 			log_verbose(cd, _("PBKDF2 hash algorithm %s not available, skipping."),
 				      tcrypt_kdf[i].hash);
-			skipped++;
 			r = -EPERM;
 			continue;
 		}
@@ -600,7 +597,6 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 		/* Decrypt header */
 		r = TCRYPT_decrypt_hdr(cd, hdr, key, params);
 		if (r == -ENOENT) {
-			skipped++;
 			r = -EPERM;
 			continue;
 		}
@@ -608,13 +604,6 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			break;
 	}
 
-	if ((r < 0 && skipped && skipped == i) || r == -ENOTSUP) {
-		log_err(cd, _("Required kernel crypto interface not available."));
-#if ENABLE_AF_ALG
-		log_err(cd, _("Ensure you have algif_skcipher kernel module loaded."));
-#endif
-		r = -ENOTSUP;
-	}
 	if (r < 0)
 		goto out;
 
