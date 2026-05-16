@@ -17,7 +17,6 @@
     - (r=3;while ! sudo dnf -y -q install $PKGS ; do ((--r))||exit;sleep 5;echo "Retrying";done)
     - sudo -E git clean -xdf
     - ./autogen.sh
-    - ./configure --enable-fips --enable-pwquality --enable-libargon2 --with-crypto_backend=openssl --enable-asciidoc
 
 test-main-commit-job-rawhide:
   extends:
@@ -32,11 +31,15 @@ test-main-commit-job-rawhide:
     RUN_SSH_PLUGIN_TEST: "1"
     RUN_KEYRING_TRUSTED_TEST: "1"
     RUN_SYSTEMD_PLUGIN_TEST: "1"
+  parallel:
+    matrix:
+      - OPTION: [ "--enable-kernel_crypto", "--disable-kernel_crypto" ]
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
   script:
+    - ./configure --enable-fips --enable-pwquality $OPTION
     - make -j
     - make -j -C tests check-programs
     - sudo -E make check
@@ -54,11 +57,15 @@ test-mergerq-job-rawhide:
     RUN_SSH_PLUGIN_TEST: "1"
     RUN_KEYRING_TRUSTED_TEST: "1"
     RUN_SYSTEMD_PLUGIN_TEST: "1"
+  parallel:
+    matrix:
+      - OPTION: [ "--enable-kernel_crypto", "--disable-kernel_crypto" ]
   rules:
     - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
       when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
+    - ./configure --enable-fips --enable-pwquality $OPTION
     - make -j
     - make -j -C tests check-programs
     - sudo -E make check

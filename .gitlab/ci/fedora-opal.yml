@@ -13,6 +13,7 @@
   script:
     - sudo dnf install -y -q nvme-cli
     - sudo nvme list
+    - ./configure
     - make -j
     - make -j -C tests check-programs
     - sudo -E make check TESTS="00modules-test compat-test-opal"
