@@ -24,9 +24,6 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 	struct volume_key *vk, unsigned int sector,
 	struct crypt_device *cd)
 {
-#if !ENABLE_AF_ALG /* Support for old kernel without Crypto API */
-	return LUKS_encrypt_to_storage(src, srcLength, cipher, cipher_mode, vk, sector, cd);
-#else
 	struct crypt_storage *s;
 	int devfd, r;
 	struct device *device = crypt_metadata_device(cd);
@@ -67,7 +64,6 @@ static int luks2_encrypt_to_storage(char *src, size_t srcLength,
 		log_err(cd, _("IO error while encrypting keyslot."));
 
 	return r;
-#endif
 }
 
 static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
@@ -75,16 +71,6 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 	unsigned int sector, struct crypt_device *cd)
 {
 	struct device *device = crypt_metadata_device(cd);
-#if !ENABLE_AF_ALG /* Support for old kernel without Crypto API */
-	int r = device_read_lock(cd, device);
-	if (r) {
-		log_err(cd, _("Failed to acquire read lock on device %s."), device_path(device));
-		return r;
-	}
-	r = LUKS_decrypt_from_storage(dst, dstLength, cipher, cipher_mode, vk, sector, cd);
-	device_read_unlock(cd, crypt_metadata_device(cd));
-	return r;
-#else
 	struct crypt_storage *s;
 	int devfd, r;
 
@@ -129,7 +115,6 @@ static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
 
 	crypt_storage_destroy(s);
 	return r;
-#endif
 }
 
 static int luks2_keyslot_get_pbkdf_params(json_object *jobj_keyslot,
