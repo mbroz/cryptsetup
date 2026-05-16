@@ -1167,6 +1167,7 @@ static int action_benchmark(void)
 	double enc_mbr = 0, dec_mbr = 0;
 	int key_size = (ARG_UINT32(OPT_KEY_SIZE_ID) ?: DEFAULT_PLAIN_KEYBITS) / 8;
 	int skipped = 0, width, mode_len;
+	bool head_printed = false;
 	char *c;
 	int i, r;
 
@@ -1216,13 +1217,17 @@ static int action_benchmark(void)
 			r = benchmark_cipher_loop(bciphers[i].cipher, bciphers[i].mode,
 						  bciphers[i].key_size, &enc_mbr, &dec_mbr);
 			check_signal(&r);
-			if (r == -ENOTSUP || r == -EINTR)
+			if (r == -EINTR)
 				break;
-			if (r == -ENOENT)
+			if (r == -ENOENT || r == -ENOTSUP) {
 				skipped++;
-			if (i == 0)
+				continue;
+			}
+			if (!head_printed) {
 				/* TRANSLATORS: The string is header of a table and must be exactly (right side) aligned. */
 				log_std(_("#     Algorithm |       Key |      Encryption |      Decryption\n"));
+				head_printed = true;
+			}
 
 			if (snprintf(cipher, MAX_CIPHER_LEN, "%s-%s",
 				     bciphers[i].cipher, bciphers[i].mode) < 0)
@@ -1236,15 +1241,9 @@ static int action_benchmark(void)
 					bciphers[i].key_size*8, _("N/A"), _("N/A"));
 		}
 		if (skipped && skipped == i)
-			r = -ENOTSUP;
+			log_std(_("# Cipher speed test is not available.\n"));
 	}
 
-	if (r == -ENOTSUP) {
-		log_err(_("Required kernel crypto interface not available."));
-#if ENABLE_AF_ALG
-		log_err( _("Ensure you have algif_skcipher kernel module loaded."));
-#endif
-	}
 	return r;
 }
 
