@@ -5548,7 +5548,7 @@ int crypt_activate_by_keyslot_context(struct crypt_device *cd,
 		if (kc->get_integrity_volume_key)
 			r = kc->get_integrity_volume_key(cd, kc, &vk);
 	}
-	if (r < 0 && (r != -ENOENT || kc->type == CRYPT_KC_TYPE_TOKEN))
+	if (r < 0 && (r != -ENOENT || kc->type != CRYPT_KC_TYPE_KEY))
 		goto out;
 	unlocked_keyslot = r;
 
