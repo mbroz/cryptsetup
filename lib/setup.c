@@ -599,10 +599,8 @@ int crypt_init(struct crypt_device **cd, const char *device)
 	log_dbg(NULL, "Running without O_CLOEXEC.");
 #endif
 
-	if (!(h = malloc(sizeof(struct crypt_device))))
+	if (!(h = crypt_zalloc(sizeof(struct crypt_device))))
 		return -ENOMEM;
-
-	memset(h, 0, sizeof(*h));
 
 	r = device_alloc(NULL, &h->device, device);
 	if (r < 0) {
@@ -1338,6 +1336,10 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 		cd->u.plain.hdr.sector_size = tgt->u.crypt.sector_size;
 		cd->u.plain.key_size = crypt_volume_key_length(tgt->u.crypt.vk);
 		cd->u.plain.cipher = strdup(cipher);
+		if (!cd->u.plain.cipher) {
+			r = -ENOMEM;
+			goto out;
+		}
 		MOVE_REF(cd->u.plain.cipher_spec, cipher_spec);
 		cd->u.plain.cipher_mode = cd->u.plain.cipher_spec + strlen(cipher) + 1;
 		if (dmd.flags & CRYPT_ACTIVATE_KEYRING_KEY)
@@ -1345,6 +1347,10 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 	} else if (isLOOPAES(cd->type) && single_segment(&dmd) && tgt->type == DM_CRYPT) {
 		cd->u.loopaes.hdr.offset = tgt->u.crypt.offset;
 		cd->u.loopaes.cipher = strdup(cipher);
+		if (!cd->u.loopaes.cipher) {
+			r = -ENOMEM;
+			goto out;
+		}
 		MOVE_REF(cd->u.loopaes.cipher_spec, cipher_spec);
 		cd->u.loopaes.cipher_mode = cd->u.loopaes.cipher_spec + strlen(cipher) + 1;
 		/* version 3 uses last key for IV */
@@ -1506,6 +1512,7 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 	crypt_status_info ci;
 	struct crypt_dm_active_device dmd;
 	struct dm_target *tgt = &dmd.segment;
+	const char *type = NULL;
 	int r;
 
 	if (!cd || !name)
@@ -1548,27 +1555,35 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 
 	if (dmd.uuid) {
 		if (!strncmp(CRYPT_PLAIN, dmd.uuid, sizeof(CRYPT_PLAIN)-1))
-			(*cd)->type = strdup(CRYPT_PLAIN);
+			type = CRYPT_PLAIN;
 		else if (!strncmp(CRYPT_LOOPAES, dmd.uuid, sizeof(CRYPT_LOOPAES)-1))
-			(*cd)->type = strdup(CRYPT_LOOPAES);
+			type = CRYPT_LOOPAES;
 		else if (!strncmp(CRYPT_LUKS1, dmd.uuid, sizeof(CRYPT_LUKS1)-1))
-			(*cd)->type = strdup(CRYPT_LUKS1);
+			type = CRYPT_LUKS1;
 		else if (!strncmp(CRYPT_LUKS2, dmd.uuid, sizeof(CRYPT_LUKS2)-1))
-			(*cd)->type = strdup(CRYPT_LUKS2);
+			type = CRYPT_LUKS2;
 		else if (!strncmp(CRYPT_VERITY, dmd.uuid, sizeof(CRYPT_VERITY)-1))
-			(*cd)->type = strdup(CRYPT_VERITY);
+			type = CRYPT_VERITY;
 		else if (!strncmp(CRYPT_TCRYPT, dmd.uuid, sizeof(CRYPT_TCRYPT)-1))
-			(*cd)->type = strdup(CRYPT_TCRYPT);
+			type = CRYPT_TCRYPT;
 		else if (!strncmp(CRYPT_INTEGRITY, dmd.uuid, sizeof(CRYPT_INTEGRITY)-1))
-			(*cd)->type = strdup(CRYPT_INTEGRITY);
+			type = CRYPT_INTEGRITY;
 		else if (!strncmp(CRYPT_BITLK, dmd.uuid, sizeof(CRYPT_BITLK)-1))
-			(*cd)->type = strdup(CRYPT_BITLK);
+			type = CRYPT_BITLK;
 		else if (!strncmp(CRYPT_FVAULT2, dmd.uuid, sizeof(CRYPT_FVAULT2)-1))
-			(*cd)->type = strdup(CRYPT_FVAULT2);
+			type = CRYPT_FVAULT2;
 		else
 			log_dbg(NULL, "Unknown UUID set, some parameters are not set.");
 	} else
 		log_dbg(NULL, "Active device has no UUID set, some parameters are not set.");
+
+	if (type) {
+		(*cd)->type = strdup(type);
+		if (!(*cd)->type) {
+			r = -ENOMEM;
+			goto out;
+		}
+	}
 
 	if (header_device) {
 		r = crypt_set_data_device(*cd, device_path(tgt->data_device));
@@ -1585,12 +1600,16 @@ int crypt_init_by_name_and_header(struct crypt_device **cd,
 	else if (tgt->type == DM_INTEGRITY)
 		r = _init_by_name_integrity(*cd, name);
 out:
+	if (r == 0 && !(*cd)->type) {
+		/* For anonymous device (no header found) remember initialized name */
+		(*cd)->u.none.active_name = strdup(name);
+		if (!(*cd)->u.none.active_name)
+			r = -ENOMEM;
+	}
+
 	if (r < 0) {
 		crypt_free(*cd);
 		*cd = NULL;
-	} else if (!(*cd)->type) {
-		/* For anonymous device (no header found) remember initialized name */
-		(*cd)->u.none.active_name = strdup(name);
 	}
 
 	free(CONST_CAST(void*)dmd.uuid);
@@ -1647,8 +1666,13 @@ static int _crypt_format_plain(struct crypt_device *cd,
 	}
 
 	if (sector_size > SECTOR_SIZE && !device_size(cd->device, &dev_size)) {
-		if (params && params->offset)
+		if (params && params->offset) {
+			if (params->offset > (UINT64_MAX / SECTOR_SIZE))
+				return -EINVAL;
+			if (dev_size < (params->offset * SECTOR_SIZE))
+				return -EINVAL;
 			dev_size -= (params->offset * SECTOR_SIZE);
+		}
 		if (dev_size % sector_size) {
 			log_err(cd, _("Device size is not aligned to requested sector size."));
 			return -EINVAL;
@@ -1669,18 +1693,25 @@ static int _crypt_format_plain(struct crypt_device *cd,
 		return -ENOMEM;
 	}
 	cd->u.plain.cipher = strdup(cipher);
+	if (!cd->u.plain.cipher)
+		return -ENOMEM;
+
 	cd->u.plain.cipher_mode = cd->u.plain.cipher_spec + strlen(cipher) + 1;
 
-	if (params && params->hash)
+	if (params && params->hash) {
 		cd->u.plain.hdr.hash = strdup(params->hash);
+		if (!cd->u.plain.hdr.hash) {
+			free(cd->u.plain.cipher);
+			cd->u.plain.cipher = NULL;
+			return -ENOMEM;
+		}
+	}
 
 	cd->u.plain.hdr.offset = params ? params->offset : 0;
 	cd->u.plain.hdr.skip = params ? params->skip : 0;
 	cd->u.plain.hdr.size = params ? params->size : 0;
 	cd->u.plain.hdr.sector_size = sector_size;
 
-	if (!cd->u.plain.cipher)
-		return -ENOMEM;
 
 	return 0;
 }
@@ -2696,9 +2727,17 @@ static int _crypt_format_loopaes(struct crypt_device *cd,
 	cd->u.loopaes.key_size = volume_key_size;
 
 	cd->u.loopaes.cipher = strdup(cipher ?: DEFAULT_LOOPAES_CIPHER);
+	if (!cd->u.loopaes.cipher)
+		return -ENOMEM;
 
-	if (params && params->hash)
+	if (params && params->hash) {
 		cd->u.loopaes.hdr.hash = strdup(params->hash);
+		if (!cd->u.loopaes.hdr.hash) {
+			free(cd->u.loopaes.cipher);
+			cd->u.loopaes.cipher = NULL;
+			return -ENOMEM;
+		}
+	}
 
 	cd->u.loopaes.hdr.offset = params ? params->offset : 0;
 	cd->u.loopaes.hdr.skip = params ? params->skip : 0;

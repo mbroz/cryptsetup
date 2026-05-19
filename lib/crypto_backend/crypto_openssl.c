@@ -393,11 +393,13 @@ int crypt_hash_final(struct crypt_hash *ctx, char *buffer, size_t length)
 	if (EVP_DigestFinal_ex(ctx->md, tmp, &tmp_len) != 1)
 		return -EINVAL;
 
+	if (tmp_len < length) {
+		crypt_backend_memzero(tmp, sizeof(tmp));
+		return -EINVAL;
+	}
+
 	crypt_backend_memcpy(buffer, tmp, length);
 	crypt_backend_memzero(tmp, sizeof(tmp));
-
-	if (tmp_len < length)
-		return -EINVAL;
 
 	if (crypt_hash_restart(ctx))
 		return -EINVAL;
@@ -478,7 +480,12 @@ int crypt_hmac_init(struct crypt_hmac **ctx, const char *name,
 		return -EINVAL;
 	}
 
-	HMAC_Init_ex(h->md, key, key_length, h->hash_id, NULL);
+	if (HMAC_Init_ex(h->md, key, key_length, h->hash_id, NULL) != 1) {
+		hash_id_free(h->hash_id);
+		HMAC_CTX_free(h->md);
+		free(h);
+		return -EINVAL;
+	}
 
 	h->hash_len = EVP_MD_size(h->hash_id);
 #endif
@@ -494,7 +501,8 @@ static int crypt_hmac_restart(struct crypt_hmac *ctx)
 	if (!ctx->md)
 		return -EINVAL;
 #else
-	HMAC_Init_ex(ctx->md, NULL, 0, ctx->hash_id, NULL);
+	if (HMAC_Init_ex(ctx->md, NULL, 0, ctx->hash_id, NULL) != 1)
+		return -EINVAL;
 #endif
 	return 0;
 }
@@ -504,8 +512,7 @@ int crypt_hmac_write(struct crypt_hmac *ctx, const char *buffer, size_t length)
 #if OPENSSL3_API
 	return EVP_MAC_update(ctx->md, (const unsigned char *)buffer, length) == 1 ? 0 : -EINVAL;
 #else
-	HMAC_Update(ctx->md, (const unsigned char *)buffer, length);
-	return 0;
+	return HMAC_Update(ctx->md, (const unsigned char *)buffer, length) == 1 ? 0 : -EINVAL;
 #endif
 }
 
@@ -526,13 +533,16 @@ int crypt_hmac_final(struct crypt_hmac *ctx, char *buffer, size_t length)
 	if (length > (size_t)ctx->hash_len)
 		return -EINVAL;
 
-	HMAC_Final(ctx->md, tmp, &tmp_len);
+	if (HMAC_Final(ctx->md, tmp, &tmp_len) != 1)
+		return -EINVAL;
 #endif
+	if (tmp_len < length) {
+		crypt_backend_memzero(tmp, sizeof(tmp));
+		return -EINVAL;
+	}
+
 	crypt_backend_memcpy(buffer, tmp, length);
 	crypt_backend_memzero(tmp, sizeof(tmp));
-
-	if (tmp_len < length)
-		return -EINVAL;
 
 	if (crypt_hmac_restart(ctx))
 		return -EINVAL;
@@ -606,6 +616,9 @@ static int openssl_pbkdf2(const char *password, size_t password_length,
 
 	/* OpenSSL2 has iteration as signed int, avoid overflow */
 	if (iterations > INT_MAX)
+		return -EINVAL;
+
+	if (password_length > INT_MAX || salt_length > INT_MAX || key_length > INT_MAX)
 		return -EINVAL;
 
 	r = PKCS5_PBKDF2_HMAC(password, (int)password_length, (const unsigned char *)salt,
@@ -794,9 +807,12 @@ void crypt_cipher_destroy(struct crypt_cipher *ctx)
 }
 
 static int _cipher_encrypt(struct crypt_cipher *ctx, const unsigned char *in, unsigned char *out,
-			   int length, const unsigned char *iv, size_t iv_length)
+			   size_t length, const unsigned char *iv, size_t iv_length)
 {
 	int len;
+
+	if (length > INT_MAX)
+		return -EINVAL;
 
 	if (ctx->u.lib.iv_length != iv_length)
 		return -EINVAL;
@@ -804,7 +820,7 @@ static int _cipher_encrypt(struct crypt_cipher *ctx, const unsigned char *in, un
 	if (EVP_EncryptInit_ex(ctx->u.lib.hd_enc, NULL, NULL, NULL, iv) != 1)
 		return -EINVAL;
 
-	if (EVP_EncryptUpdate(ctx->u.lib.hd_enc, out, &len, in, length) != 1)
+	if (EVP_EncryptUpdate(ctx->u.lib.hd_enc, out, &len, in, (int)length) != 1)
 		return -EINVAL;
 
 	if (EVP_EncryptFinal(ctx->u.lib.hd_enc, out + len, &len) != 1)
@@ -814,9 +830,12 @@ static int _cipher_encrypt(struct crypt_cipher *ctx, const unsigned char *in, un
 }
 
 static int _cipher_decrypt(struct crypt_cipher *ctx, const unsigned char *in, unsigned char *out,
-			   int length, const unsigned char *iv, size_t iv_length)
+			   size_t length, const unsigned char *iv, size_t iv_length)
 {
 	int len;
+
+	if (length > INT_MAX)
+		return -EINVAL;
 
 	if (ctx->u.lib.iv_length != iv_length)
 		return -EINVAL;
@@ -824,7 +843,7 @@ static int _cipher_decrypt(struct crypt_cipher *ctx, const unsigned char *in, un
 	if (EVP_DecryptInit_ex(ctx->u.lib.hd_dec, NULL, NULL, NULL, iv) != 1)
 		return -EINVAL;
 
-	if (EVP_DecryptUpdate(ctx->u.lib.hd_dec, out, &len, in, length) != 1)
+	if (EVP_DecryptUpdate(ctx->u.lib.hd_dec, out, &len, in, (int)length) != 1)
 		return -EINVAL;
 
 	if (EVP_DecryptFinal(ctx->u.lib.hd_dec, out + len, &len) != 1)

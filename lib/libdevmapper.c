@@ -529,9 +529,9 @@ static int cipher_dm2c(const char *org_c, const char *org_i, unsigned tag_size,
 		c_size = snprintf(c_dm, c_dm_size, "capi:authenc(%s,%s)-%s", org_i, capi, iv);
 	}
 
-	if (c_size < 0 || c_size == c_dm_size)
+	if (c_size < 0 || c_size >= c_dm_size)
 		return -EINVAL;
-	if (i_size < 0 || i_size == i_dm_size)
+	if (i_size < 0 || i_size >= i_dm_size)
 		return -EINVAL;
 
 	return 0;
@@ -2277,6 +2277,8 @@ static int _dm_target_query_verity(struct crypt_device *cd,
 		return -EINVAL;
 	if (get_flags & DM_ACTIVE_DEVICE) {
 		str2 = crypt_lookup_dev(str);
+		if (!str2)
+			return -EINVAL;
 		r = device_alloc(cd, &data_device, str2);
 		free(str2);
 		if (r < 0 && r != -ENOTBLK)
@@ -2919,8 +2921,13 @@ static int _dm_query_device(struct crypt_device *cd, const char *name,
 	if (!tmp_uuid)
 		dmd->flags |= CRYPT_ACTIVATE_NO_UUID;
 	else if (get_flags & DM_ACTIVE_UUID) {
-		if (!strncmp(tmp_uuid, DM_UUID_PREFIX, DM_UUID_PREFIX_LEN))
+		if (!strncmp(tmp_uuid, DM_UUID_PREFIX, DM_UUID_PREFIX_LEN)) {
 			dmd->uuid = strdup(tmp_uuid + DM_UUID_PREFIX_LEN);
+			if (!dmd->uuid) {
+				r = -ENOMEM;
+				goto out;
+			}
+		}
 	}
 
 	dmd->holders = 0;

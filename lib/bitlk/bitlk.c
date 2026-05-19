@@ -774,10 +774,14 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 			memset(vmk, 0, sizeof(struct bitlk_vmk));
 
 			guid_to_string(&entry_vmk.guid, guid_buf);
-			vmk->guid = strdup (guid_buf);
+			vmk->guid = strdup(guid_buf);
+			if (!vmk->guid) {
+				BITLK_bitlk_vmk_free(vmk);
+				r = -ENOMEM;
+				goto out;
+			}
 
 			vmk->name = NULL;
-
 			vmk->protection = get_vmk_protection(le16_to_cpu(entry_vmk.protection));
 
 			/* more data in another entry list */
