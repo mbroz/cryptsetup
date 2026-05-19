@@ -7402,6 +7402,15 @@ static int keyslot_add_by_key(struct crypt_device *cd,
 		return luks1_keyslot_add_by_volume_key(cd, keyslot_new, new_passphrase, new_passphrase_size, vk);
 	}
 
+	/*
+	 * Drop CRYPT_VOLUME_KEY_DIGEST_REUSE flag if used without CRYPT_VOLUME_KEY_SET
+	 * or CRYPT_VOLUME_KEY_NO_SEGMENT flags. The standalone CRYPT_VOLUME_KEY_DIGEST_REUSE flag
+	 * is otherwise equivalent to adding new keyslot with current volume key.
+	 */
+	if ((flags & CRYPT_VOLUME_KEY_DIGEST_REUSE) &&
+	    !(flags & (CRYPT_VOLUME_KEY_SET | CRYPT_VOLUME_KEY_NO_SEGMENT)))
+		flags &= ~CRYPT_VOLUME_KEY_DIGEST_REUSE;
+
 	if (!flags)
 		return luks2_keyslot_add_by_volume_key(cd, keyslot_new, new_passphrase, new_passphrase_size, vk);
 
