@@ -227,12 +227,6 @@ export LANG=C
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 valgrind_setup
 
-# LUKS non-root-tests
-if [ $(id -u) != 0 ]; then
-	$CRYPTSETUP benchmark -c aes-xts-plain64 >/dev/null 2>&1 || \
-		skip "WARNING: Cannot run test without kernel userspace crypto API, test skipped."
-fi
-
 prepare "Image in file tests (root capabilities not required)" file
 echo "[1] format"
 echo $PWD1 | $CRYPTSETUP luksFormat --type luks1 -c 'capi:xts(aes)-plain64' $IMG $FAST_PBKDF_OPT || fail
@@ -311,12 +305,15 @@ echo "[10] uuid"
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT --uuid $TEST_UUID $IMG || fail
 $CRYPTSETUP -q luksUUID $IMG | grep -q $TEST_UUID || fail
 
-echo "[11] benchmark"
-$CRYPTSETUP benchmark -c aes-xts --key-size 128 >/dev/null 2>&1 && fail
-$CRYPTSETUP benchmark -c aes-xts >/dev/null || fail
-$CRYPTSETUP benchmark -c aes-xts-plain64 >/dev/null || fail
-$CRYPTSETUP benchmark -c capi:xts\(aes\) >/dev/null || fail
-$CRYPTSETUP benchmark -c capi:xts\(aes\)-plain64 >/dev/null || fail
+./crypto-check cipher-kernel aes xts 256
+if [ $? -eq 0 ] ; then
+	echo "[11] benchmark"
+	$CRYPTSETUP benchmark -c aes-xts --key-size 128 >/dev/null 2>&1 && fail
+	$CRYPTSETUP benchmark -c aes-xts >/dev/null || fail
+	$CRYPTSETUP benchmark -c aes-xts-plain64 >/dev/null || fail
+	$CRYPTSETUP benchmark -c capi:xts\(aes\) >/dev/null || fail
+	$CRYPTSETUP benchmark -c capi:xts\(aes\)-plain64 >/dev/null || fail
+fi
 
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
 [ -z "$LOOPDEV" ] && skip "WARNING: Cannot find free loop device, test skipped."

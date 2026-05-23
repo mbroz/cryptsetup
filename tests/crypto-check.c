@@ -20,13 +20,19 @@ static int check_cipher(const char *alg, const char *mode, unsigned long key_bit
 	if (key_bits % 8 || (key_bits / 8) > sizeof(key))
 		return EXIT_FAILURE;
 
-	/* Userspace crypto */
 	crypt_backend_rng(key, sizeof(key), CRYPT_RND_NORMAL, 0);
 	if (crypt_cipher_init(&cipher, alg, mode, key, key_bits / 8))
 		return EXIT_FAILURE;
 	crypt_cipher_destroy(cipher);
 
-	/* Kernel crypto */
+	return EXIT_SUCCESS;
+}
+
+static int check_cipher_kernel(const char *alg, const char *mode, unsigned long key_bits)
+{
+	if (key_bits % 8)
+		return EXIT_FAILURE;
+
 	if (crypt_cipher_check_kernel(alg, mode, NULL, key_bits / 8))
 		return EXIT_FAILURE;
 
@@ -49,7 +55,7 @@ static int check_hash(const char *hash)
 
 static void __attribute__((noreturn)) exit_help(bool destroy_backend)
 {
-	printf("Use: crypto_check version | fips_mode | fips_mode_kernel | hash <alg> | cipher <alg> <mode> [key_bits]\n");
+	printf("Use: crypto_check version | fips_mode | fips_mode_kernel | hash <alg> | cipher[-kernel] <alg> <mode> [key_bits]\n");
 	if (destroy_backend)
 		crypt_backend_destroy();
 	exit(EXIT_FAILURE);
@@ -57,7 +63,7 @@ static void __attribute__((noreturn)) exit_help(bool destroy_backend)
 
 int main(int argc, char *argv[])
 {
-	int r = EXIT_SUCCESS;
+	int r = EXIT_FAILURE;
 
 	if (argc < 2)
 		exit_help(false);
@@ -77,11 +83,12 @@ int main(int argc, char *argv[])
 		printf("%s%s%s\n", crypt_backend_version(),
 		       crypt_fips_mode() ? " (FIPS mode)" : "",
 		       crypt_fips_mode_kernel() ? " (FIPS kernel)" : "");
+		r = EXIT_SUCCESS;
 	} else if (!strcmp(argv[1], "hash")) {
 		if (argc != 3)
 			exit_help(true);
 		r = check_hash(argv[2]);
-	} else if (!strcmp(argv[1], "cipher")) {
+	} else if (!strcmp(argv[1], "cipher") || !strcmp(argv[1], "cipher-kernel")) {
 		unsigned long ul = 256;
 		char *ptr;
 		if (argc < 4 || argc > 5)
@@ -91,7 +98,10 @@ int main(int argc, char *argv[])
 			if (*ptr)
 				exit_help(true);
 		}
-		r = check_cipher(argv[2], argv[3], ul);
+		if (strcmp(argv[1], "cipher-kernel"))
+			r = check_cipher(argv[2], argv[3], ul);
+		else
+			r = check_cipher_kernel(argv[2], argv[3], ul);
 	}
 
 	crypt_backend_destroy();
