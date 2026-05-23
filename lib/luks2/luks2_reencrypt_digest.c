@@ -392,7 +392,8 @@ int LUKS2_reencrypt_digest_verify(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	r = LUKS2_digest_verify(cd, hdr, data, keyslot_reencrypt);
+	/* We can not check key size since reencryption keyslot contains bogus key_size=1 */
+	r = LUKS2_reencrypt_keyslot_digest_verify(cd, hdr, data, keyslot_reencrypt);
 	crypt_free_volume_key(data);
 
 	if (r < 0) {

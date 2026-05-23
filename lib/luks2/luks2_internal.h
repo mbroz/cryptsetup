@@ -363,6 +363,8 @@ int LUKS2_last_segment_by_type(struct luks2_hdr *hdr,
 
 int LUKS2_get_default_segment(struct luks2_hdr *hdr);
 
+int LUKS2_get_volume_key_size_by_digest(struct luks2_hdr *hdr, int digest);
+
 int LUKS2_reencrypt_digest_new(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_digest_old(struct luks2_hdr *hdr);
 int LUKS2_reencrypt_segment_new(struct luks2_hdr *hdr);
@@ -383,6 +385,11 @@ void LUKS2_reencrypt_protection_erase(struct reenc_protection *rp);
 int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
 	int digest,
 	const struct volume_key *vk);
+
+int LUKS2_reencrypt_keyslot_digest_verify(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	const struct volume_key *vk,
+	int keyslot);
 
 void LUKS2_digests_erase_unused(struct crypt_device *cd,
 	struct luks2_hdr *hdr);
