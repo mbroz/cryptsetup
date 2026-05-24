@@ -175,7 +175,10 @@ int crypt_storage_wrapper_init(struct crypt_device *cd,
 		goto err;
 	}
 
-	w->dev_fd = device_open(cd, device, open_flags);
+	if (flags & CSW_OPEN_LOCKED)
+		w->dev_fd = device_open_locked(cd, device, open_flags);
+	else
+		w->dev_fd = device_open(cd, device, open_flags);
 	if (w->dev_fd < 0) {
 		r = -EINVAL;
 		goto err;

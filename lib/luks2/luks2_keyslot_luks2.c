@@ -8,6 +8,7 @@
 
 #include <limits.h>
 #include "luks2_internal.h"
+#include "utils_storage_wrappers.h"
 
 /* FIXME: move keyslot encryption to crypto backend */
 #include "../luks1/af.h"
@@ -20,100 +21,73 @@
 
 /* coverity[ -taint_source : arg-0 ] */
 static int luks2_encrypt_to_storage(char *src, size_t srcLength,
-	const char *cipher, const char *cipher_mode,
-	struct volume_key *vk, unsigned int sector,
+	const char *cipher,
+	struct volume_key *vk, uint64_t offset,
 	struct crypt_device *cd)
 {
-	struct crypt_storage *s;
-	int devfd, r;
 	struct device *device = crypt_metadata_device(cd);
+	struct crypt_storage_wrapper *csw;
+	uint32_t csw_flags = CSW_OPEN_LOCKED;
+	ssize_t written;
+	int r;
 
-	/* Only whole sector writes supported */
-	if (MISALIGNED_512(srcLength))
-		return -EINVAL;
+	/* dm-crypt backend requires root access */
+	if (getuid() || geteuid())
+		csw_flags |= CSW_DISABLE_DMCRYPT;
 
-	/* Encrypt buffer */
-	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode,
-			       crypt_volume_key_get_key(vk), crypt_volume_key_length(vk), false);
+	r = crypt_storage_wrapper_init(cd, &csw, device, offset, 0, SECTOR_SIZE, cipher, vk, csw_flags);
 	if (r) {
-		log_err(cd, _("Cannot use %s-%s cipher for keyslot encryption."), cipher, cipher_mode);
+		log_err(cd, _("Cannot use %s cipher for keyslot encryption."), cipher);
 		return r;
 	}
 
-	r = crypt_storage_encrypt(s, 0, srcLength, src);
-	crypt_storage_destroy(s);
-	if (r) {
-		log_err(cd, _("IO error while encrypting keyslot."));
-		return r;
-	}
-
-	devfd = device_open_locked(cd, device, O_RDWR);
-	if (devfd >= 0) {
-		if (write_lseek_blockwise(devfd, device_block_size(cd, device),
-					  device_alignment(device), src,
-					  srcLength, sector * SECTOR_SIZE) < 0)
-			r = -EIO;
-		else
-			r = 0;
-
-		device_sync(cd, device);
-	} else
+	written = crypt_storage_wrapper_encrypt_write(csw, 0, src, srcLength);
+	if (written < 0 || (size_t)written != srcLength) {
 		r = -EIO;
-
-	if (r)
 		log_err(cd, _("IO error while encrypting keyslot."));
+	} else
+		r = 0;
 
+	crypt_storage_wrapper_destroy(csw);
 	return r;
 }
 
 static int luks2_decrypt_from_storage(char *dst, size_t dstLength,
-	const char *cipher, const char *cipher_mode, struct volume_key *vk,
-	unsigned int sector, struct crypt_device *cd)
+	const char *cipher, struct volume_key *vk,
+	uint64_t offset, struct crypt_device *cd)
 {
 	struct device *device = crypt_metadata_device(cd);
-	struct crypt_storage *s;
-	int devfd, r;
+	struct crypt_storage_wrapper *csw;
+	uint32_t csw_flags = CSW_OPEN_LOCKED | CSW_OPEN_READONLY;
+	ssize_t read;
+	int r;
 
-	/* Only whole sector writes supported */
-	if (MISALIGNED_512(dstLength))
-		return -EINVAL;
-
-	r = crypt_storage_init(&s, SECTOR_SIZE, cipher, cipher_mode,
-			       crypt_volume_key_get_key(vk),
-			       crypt_volume_key_length(vk), false);
-	if (r) {
-		log_err(cd, _("Cannot use %s-%s cipher for keyslot encryption."), cipher, cipher_mode);
-		return r;
-	}
+	/* dm-crypt backend requires root access */
+	if (getuid() || geteuid())
+		csw_flags |= CSW_DISABLE_DMCRYPT;
 
 	r = device_read_lock(cd, device);
 	if (r) {
-		log_err(cd, _("Failed to acquire read lock on device %s."),
-			device_path(device));
-		crypt_storage_destroy(s);
+		log_err(cd, _("Failed to acquire read lock on device %s."), device_path(device));
 		return r;
 	}
 
-	devfd = device_open_locked(cd, device, O_RDONLY);
-	if (devfd >= 0) {
-		if (read_lseek_blockwise(devfd, device_block_size(cd, device),
-					 device_alignment(device), dst,
-					 dstLength, sector * SECTOR_SIZE) < 0)
-			r = -EIO;
-		else
-			r = 0;
-	} else
+	r = crypt_storage_wrapper_init(cd, &csw, device, offset, 0, SECTOR_SIZE, cipher, vk, csw_flags);
+	if (r) {
+		log_err(cd, _("Cannot use %s cipher for keyslot encryption."), cipher);
+		device_read_unlock(cd, device);
+		return r;
+	}
+
+	read = crypt_storage_wrapper_read_decrypt(csw, 0, dst, dstLength);
+	if (read < 0 || (size_t)read != dstLength) {
 		r = -EIO;
+		log_err(cd, _("IO error while decrypting keyslot."));
+	} else
+		r = 0;
 
 	device_read_unlock(cd, device);
-
-	/* Decrypt buffer */
-	if (!r)
-		r = crypt_storage_decrypt(s, 0, dstLength, dst);
-	else
-		log_err(cd, _("IO error while decrypting keyslot."));
-
-	crypt_storage_destroy(s);
+	crypt_storage_wrapper_destroy(csw);
 	return r;
 }
 
@@ -177,9 +151,9 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 	const char *password, size_t passwordLen,
 	const char *volume_key, size_t volume_key_len)
 {
-	char *salt = NULL, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+	char *salt = NULL;
 	char *AfKey = NULL;
-	const char *af_hash = NULL;
+	const char *af_hash = NULL, *cipher;
 	size_t AFEKSize, keyslot_key_len;
 	json_object *jobj2, *jobj_kdf, *jobj_af, *jobj_area;
 	uint64_t area_offset;
@@ -205,9 +179,7 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 
 	if (!json_object_object_get_ex(jobj_area, "encryption", &jobj2))
 		return -EINVAL;
-	r = crypt_parse_name_and_mode(json_object_get_string(jobj2), cipher, NULL, cipher_mode);
-	if (r < 0)
-		return r;
+	cipher = json_object_get_string(jobj2);
 
 	if (!json_object_object_get_ex(jobj_area, "key_size", &jobj2))
 		return -EINVAL;
@@ -272,9 +244,8 @@ static int luks2_keyslot_set_key(struct crypt_device *cd,
 	}
 
 	log_dbg(cd, "Updating keyslot area [0x%04" PRIx64 "].", area_offset);
-	/* FIXME: sector_offset should be size_t, fix LUKS_encrypt... accordingly */
-	r = luks2_encrypt_to_storage(AfKey, AFEKSize, cipher, cipher_mode,
-			    derived_vk, (unsigned)(area_offset / SECTOR_SIZE), cd);
+
+	r = luks2_encrypt_to_storage(AfKey, AFEKSize, cipher, derived_vk, area_offset, cd);
 out:
 	crypt_safe_free(AfKey);
 	crypt_safe_free(derived_key);
@@ -293,8 +264,8 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	struct crypt_pbkdf_type pbkdf;
 	char *AfKey = NULL;
 	size_t AFEKSize;
-	const char *af_hash = NULL;
-	char *salt = NULL, cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
+	const char *af_hash = NULL, *cipher;
+	char *salt = NULL;
 	json_object *jobj2, *jobj_af, *jobj_area;
 	uint64_t area_offset;
 	size_t keyslot_key_len;
@@ -317,9 +288,8 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 
 	if (!json_object_object_get_ex(jobj_area, "encryption", &jobj2))
 		return -EINVAL;
-	r = crypt_parse_name_and_mode(json_object_get_string(jobj2), cipher, NULL, cipher_mode);
-	if (r < 0)
-		return r;
+
+	cipher = json_object_get_string(jobj2);
 
 	/* Allow only empty passphrase with null cipher */
 	if (crypt_is_cipher_null(cipher) && passwordLen)
@@ -380,10 +350,8 @@ static int luks2_keyslot_get_key(struct crypt_device *cd,
 	}
 
 	log_dbg(cd, "Reading keyslot area [0x%04" PRIx64 "].", area_offset);
-	/* FIXME: sector_offset should be size_t, fix LUKS_decrypt... accordingly */
-	r = luks2_decrypt_from_storage(AfKey, AFEKSize, cipher, cipher_mode,
-			      derived_vk, (unsigned)(area_offset / SECTOR_SIZE), cd);
 
+	r = luks2_decrypt_from_storage(AfKey, AFEKSize, cipher, derived_vk, area_offset, cd);
 	if (r == 0) {
 		r = crypt_hash_size(af_hash);
 		if (r < 0)
