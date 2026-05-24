@@ -1277,13 +1277,6 @@ HASH10=3b4417fc421cee30a9ad0fd9319220a8dae32da2
 prepare dev_size_mb=32
 setup_luks2_env
 
-# Check that we can use other ciphers than AES in userspace backend.
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c twofish-xts-plain64 $FAST_PBKDF_ARGON $DEV || skip "Cannot use Twofish cipher, test skipped"
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON 2>/dev/null || skip "Cannot use Twofish cipher, test skipped"
-echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -c serpent-xts-plain64 $FAST_PBKDF_ARGON $DEV || skip "Cannot use Serpent cipher, test skipped"
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON 2>/dev/null || skip "Cannot use Serpent cipher, test skipped."
-wipe_dev $DEV
-
 echo "[1] Reencryption"
 echo -n "[512 sector]"
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
@@ -1292,7 +1285,7 @@ check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON 2>&1 | tail -1 | grep -q "not supported" && skip " No reenryption support, test skipped."
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal $FAST_PBKDF_ARGON || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c aes-cbc-plain --resilience journal $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
@@ -1311,7 +1304,7 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha2
 wipe $PWD1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal $FAST_PBKDF_ARGON || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c aes-cbc-plain --resilience journal $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
@@ -1320,7 +1313,7 @@ check_hash $PWD1 $HASH1
 if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON --sector-size 4096 || fail
 	check_hash $PWD1 $HASH1
-	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal --sector-size 2048 $FAST_PBKDF_ARGON || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c aes-cbc-plain --resilience journal --sector-size 2048 $FAST_PBKDF_ARGON || fail
 	check_hash $PWD1 $HASH1
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON --sector-size 1024 || fail
 	check_hash $PWD1 $HASH1
@@ -1333,7 +1326,7 @@ echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 128 -c aes-cbc-essiv:sha2
 wipe $PWD1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal $FAST_PBKDF_ARGON || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c aes-cbc-plain --resilience journal $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH1
@@ -1350,7 +1343,7 @@ wipe $PWD1
 check_hash $PWD1 $HASH2
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH2
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal $FAST_PBKDF_ARGON || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c aes-cbc-plain --resilience journal $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH2
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON || fail
 check_hash $PWD1 $HASH2
@@ -1359,7 +1352,7 @@ check_hash $PWD1 $HASH2
 if [ -n "$DM_SECTOR_SIZE" ]; then
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q $FAST_PBKDF_ARGON --sector-size 4096 --force-offline-reencrypt || fail
 	check_hash $PWD1 $HASH2
-	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c twofish-cbc-essiv:sha256 --resilience journal --sector-size 2048 $FAST_PBKDF_ARGON || fail
+	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q -s 256 -c aes-cbc-plain --resilience journal --sector-size 2048 $FAST_PBKDF_ARGON || fail
 	check_hash $PWD1 $HASH2
 	echo $PWD1 | $CRYPTSETUP reencrypt $DEV -q --resilience none $FAST_PBKDF_ARGON --sector-size 1024 || fail
 	check_hash $PWD1 $HASH2
@@ -1376,11 +1369,11 @@ check_hash_dev $DEV $HASH4
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c aes-cbc-essiv:sha256 -s 128 --reduce-device-size 8M -q $FAST_PBKDF_ARGON || fail
 check_hash_head $PWD1 $((56*1024*2)) $HASH5
 wipe_dev $DEV
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c twofish-cbc-essiv:sha256 -s 128 --reduce-device-size 21M -q $FAST_PBKDF_ARGON || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c aes-cbc-plain -s 128 --reduce-device-size 21M -q $FAST_PBKDF_ARGON || fail
 check_hash_head $PWD1 $((43*1024*2)) $HASH6
 wipe_dev $DEV
 # offset 21504 equals 10,5MiBs, equals --reduce-device-size 21M from test above (30M is ignored here, we'll reduce it to 21M in cryptsetup anyway)
-echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c twofish-cbc-essiv:sha256 -s 128 --offset 21504 --reduce-device-size 30M -q $FAST_PBKDF_ARGON > /dev/null || fail
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt -c aes-cbc-plain -s 128 --offset 21504 --reduce-device-size 30M -q $FAST_PBKDF_ARGON > /dev/null || fail
 check_hash_head $PWD1 $((43*1024*2)) $HASH6
 wipe_dev $DEV
 echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --reduce-device-size 33M -q $FAST_PBKDF_ARGON || fail
@@ -1488,11 +1481,11 @@ echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --resilience journal --header $IMG_
 check_hash $PWD1 $HASH3 $IMG_HDR
 wipe_dev $DEV
 rm -f $IMG_HDR
-echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -c twofish-cbc-essiv:sha256 -s 128 --resilience none --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -c aes-cbc-plain -s 128 --resilience none --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 check_hash $PWD1 $HASH3 $IMG_HDR
 wipe_dev $DEV
 rm -f $IMG_HDR
-echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -c serpent-xts-plain --resilience checksum --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --encrypt -c aes-xts-plain --resilience checksum --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 check_hash $PWD1 $HASH3 $IMG_HDR
 rm -f $IMG_HDR
 
@@ -1545,9 +1538,9 @@ echo $PWD1 | $CRYPTSETUP reencrypt -c aes-cbc-essiv:sha256 -s 128 --header $IMG_
 check_hash $PWD1 $HASH3 $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt --resilience journal --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 check_hash $PWD1 $HASH3 $IMG_HDR
-echo $PWD1 | $CRYPTSETUP reencrypt -c twofish-cbc-essiv:sha256 -s 128 --resilience none --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP reencrypt -c aes-cbc-plain -s 128 --resilience none --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 check_hash $PWD1 $HASH3 $IMG_HDR
-echo $PWD1 | $CRYPTSETUP reencrypt -c serpent-xts-plain --resilience checksum --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP reencrypt -c aes-xts-plain --resilience checksum --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 check_hash $PWD1 $HASH3 $IMG_HDR
 # trivial check for detached header misuse
 dd if=/dev/zero of=$IMG bs=4k count=1 >/dev/null 2>&1
@@ -1571,17 +1564,17 @@ echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --header $IMG_HDR -q $FAST_PBKD
 wipe $PWD1 $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --resilience journal --header $IMG_HDR $DEV || fail
 check_hash_dev $DEV $HASH3
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c twofish-cbc-essiv:sha256 -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c aes-cbc-plain -s 128 --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1 $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --resilience none --header $IMG_HDR $DEV || fail
 check_hash_dev $DEV $HASH3
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c serpent-xts-plain --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c aes-xts-plain --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 wipe $PWD1 $IMG_HDR
 echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --resilience checksum --header $IMG_HDR $DEV || fail
 check_hash_dev $DEV $HASH3
 
 # check deferred remove works as expected after decryption
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --sector-size 512 -c serpent-xts-plain --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 --sector-size 512 -c aes-xts-plain --header $IMG_HDR -q $FAST_PBKDF_ARGON $DEV || fail
 open_crypt $PWD1 $IMG_HDR
 dmsetup create $DEV_NAME2 --table "0 1 linear /dev/mapper/$DEV_NAME 0" || fail
 echo $PWD1 | $CRYPTSETUP reencrypt -q --decrypt --resilience checksum --header $IMG_HDR --active-name $DEV_NAME || fail
@@ -1592,7 +1585,7 @@ $CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 && fail
 # check tool can block some funny user ideas
 preparebig 64
 ln -s $DEV $DEV_LINK || fail
-echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c serpent-xts-plain -q $FAST_PBKDF_ARGON $DEV || fail
+echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c aes-xts-plain -q $FAST_PBKDF_ARGON $DEV || fail
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV -q 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $DEV -q 2>/dev/null && fail
 echo $PWD1 | $CRYPTSETUP reencrypt --decrypt $DEV --header $DEV_LINK -q 2>/dev/null && fail
