@@ -29,7 +29,6 @@
 #include "utils_keyring.h"
 #include "utils_io.h"
 #include "crypto_backend/crypto_backend.h"
-#include "utils_storage_wrappers.h"
 
 #include "libcryptsetup.h"
 
