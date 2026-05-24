@@ -9,6 +9,7 @@
 #include "luks2_internal.h"
 #include "utils_device_locking.h"
 #include "keyslot_context.h"
+#include "utils_storage_wrappers.h"
 
 struct luks2_reencrypt {
 	/* reencryption window attributes */
