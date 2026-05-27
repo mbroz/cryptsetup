@@ -177,7 +177,7 @@ echo $PASSWD | $CRYPTSETUP luksFormat --type luks2 $FAST_PBKDF_OPT $IMG --force-
 echo "Enrolling the device to TPM 2 using systemd-cryptenroll.."
 LD_PRELOAD="$LD_PRELOAD:$CRYPTENROLL_LD_PRELOAD" PASSWORD="$PASSWD" $SYSTEMD_CRYPTENROLL $IMG --tpm2-device=$TPM_PATH >/dev/null 2>&1
 
-$CRYPTSETUP luksDump $CRYPTSETUP_EXTERNAL_PATH_PARAM $IMG | grep -q "tpm2-blob" || fail "Failed to dump $IMG using systemd_tpm2 token (no tpm2-blob in output)."
+$CRYPTSETUP luksDump $CRYPTSETUP_EXTERNAL_PATH_PARAM $IMG 2>&1 | grep -q "tpm2-blob" || fail "Failed to dump $IMG using systemd_tpm2 token (no tpm2-blob in output)."
 echo "Activating the device via TPM2 external token.."
 $CRYPTSETUP open $CRYPTSETUP_EXTERNAL_PATH_PARAM --token-only $IMG $MAP >/dev/null 2>&1 || fail "Failed to open $IMG using systemd_tpm2 token."
 $CRYPTSETUP close $MAP >/dev/null 2>&1 || fail "Failed to close $MAP."
