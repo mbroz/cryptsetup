@@ -404,7 +404,7 @@ AC_DEFUN([CONFIGURE_MBEDTLS], [
 		[AC_MSG_ERROR([You need mbedTLS cryptographic library.])])
 
 	saved_LIBS=$LIBS
-	AC_CHECK_LIB(mbedcrypto, mbedtls_md_init,,
+	AC_CHECK_LIB(mbedcrypto, psa_crypto_init,,
 		[AC_MSG_ERROR([You need mbedTLS cryptographic library.])])
 	AC_CHECK_FUNCS(mbedtls_pkcs5_pbkdf2_hmac_ext)
 	CRYPTO_LIBS=$LIBS
