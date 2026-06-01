@@ -741,6 +741,7 @@ case $with_crypto_backend in
 	openssl) PKGMODULES="$PKGMODULES openssl" ;;
 	nss)     PKGMODULES="$PKGMODULES nss" ;;
 	nettle)  PKGMODULES="$PKGMODULES nettle" ;;
+	mbedtls) PKGMODULES="$PKGMODULES mbedtls" ;;
 esac
 if test "x$enable_libargon2" = "xyes"; then
 	PKGMODULES="$PKGMODULES libargon2"
