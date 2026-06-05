@@ -152,6 +152,9 @@ int crypt_storage_wrapper_init(struct crypt_device *cd,
 	char _cipher[MAX_CIPHER_LEN], mode[MAX_CIPHER_LEN];
 	struct crypt_storage_wrapper *w;
 
+	if ((flags & CSW_DISABLE_DMCRYPT) && (flags & CSW_DMCRYPT_ONLY))
+		return -EINVAL;
+
 	/* device-mapper restrictions */
 	if (data_offset & ((1 << SECTOR_SHIFT) - 1))
 		return -EINVAL;
@@ -197,16 +200,18 @@ int crypt_storage_wrapper_init(struct crypt_device *cd,
 		goto err;
 	}
 
-	r = crypt_storage_backend_init(cd, w, iv_start, sector_size, _cipher, mode, vk, flags);
-	if (!r) {
-		*cw = w;
-		return 0;
+	if (!(flags & CSW_DMCRYPT_ONLY)) {
+		r = crypt_storage_backend_init(cd, w, iv_start, sector_size, _cipher, mode, vk, flags);
+		if (!r) {
+			*cw = w;
+			return 0;
+		}
+
+		log_dbg(cd, "Failed to initialize userspace block cipher.");
+
+		if ((r != -ENOTSUP && r != -ENOENT) || (flags & CSW_DISABLE_DMCRYPT))
+			goto err;
 	}
-
-	log_dbg(cd, "Failed to initialize userspace block cipher.");
-
-	if ((r != -ENOTSUP && r != -ENOENT) || (flags & CSW_DISABLE_DMCRYPT))
-		goto err;
 
 	r = crypt_storage_dmcrypt_init(cd, w, device, data_offset >> SECTOR_SHIFT, iv_start,
 			sector_size, cipher, vk, open_flags);

@@ -22,6 +22,7 @@ struct crypt_device;
 #define CSW_OPEN_READONLY   (1 << 2)
 #define CSW_LARGE_IV        (1 << 3)
 #define CSW_OPEN_LOCKED     (1 << 4)
+#define CSW_DMCRYPT_ONLY    (1 << 5)
 
 typedef enum {
 	NONE = 0,
