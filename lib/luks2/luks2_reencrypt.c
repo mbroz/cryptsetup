@@ -3889,7 +3889,7 @@ static int reencrypt_init_by_keyslot_context(struct crypt_device *cd,
 		}
 		if (r < 0)
 			return r;
-		r = LUKS2_check_cipher(cd, key_length, cipher, cipher_mode);
+		r = crypt_check_cipher(cd, key_length, cipher, cipher_mode);
 		if (r < 0) {
 			log_err(cd, _("Unable to use cipher specification %s-%s for LUKS2."), cipher, cipher_mode);
 			return r;
