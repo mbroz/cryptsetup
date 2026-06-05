@@ -420,7 +420,7 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 		need_write = 1;
 	}
 
-	r = LUKS_check_cipher(ctx, phdr->keyBytes, phdr->cipherName, phdr->cipherMode);
+	r = crypt_check_cipher(ctx, phdr->keyBytes, phdr->cipherName, phdr->cipherMode);
 	if (r < 0)
 		return -EINVAL;
 
@@ -698,27 +698,6 @@ int LUKS_write_phdr(struct luks_phdr *hdr,
 				device_path(device));
 	}
 
-	return r;
-}
-
-/* Check that kernel supports requested cipher by decryption of one sector */
-int LUKS_check_cipher(struct crypt_device *ctx, size_t keylength, const char *cipher, const char *cipher_mode)
-{
-	int r;
-	struct volume_key *empty_key;
-	char buf[SECTOR_SIZE];
-
-	log_dbg(ctx, "Checking if cipher %s-%s is usable.", cipher, cipher_mode);
-
-	/* No need to get KEY quality random but it must avoid known weak keys. */
-	empty_key = crypt_generate_volume_key(ctx, keylength, KEY_QUALITY_NORMAL);
-	if (!empty_key)
-		return -ENOMEM;
-
-	r = LUKS_decrypt_from_storage(buf, sizeof(buf), cipher, cipher_mode, empty_key, 0, ctx);
-
-	crypt_free_volume_key(empty_key);
-	crypt_safe_memzero(buf, sizeof(buf));
 	return r;
 }
 
