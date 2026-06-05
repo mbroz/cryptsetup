@@ -287,4 +287,9 @@ static inline bool uint64_mult_overflow(uint64_t *u, uint64_t b, size_t size)
 
 size_t crypt_safe_alloc_size(const void *data);
 
+int crypt_check_cipher(struct crypt_device *cd,
+		       size_t keylength,
+		       const char *cipher,
+		       const char *cipher_mode);
+
 #endif /* INTERNAL_H */
