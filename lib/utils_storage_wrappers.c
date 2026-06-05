@@ -51,11 +51,11 @@ static int crypt_storage_backend_init(struct crypt_device *cd,
 	/* iv_start, sector_size */
 	r = crypt_storage_init(&s, sector_size, cipher, cipher_mode,
 			       crypt_volume_key_get_key(vk),
-			       crypt_volume_key_length(vk), flags & LARGE_IV);
+			       crypt_volume_key_length(vk), flags & CSW_LARGE_IV);
 	if (r)
 		return r;
 
-	if ((flags & DISABLE_KCAPI) && crypt_storage_kernel_only(s)) {
+	if ((flags & CSW_DISABLE_KCAPI) && crypt_storage_kernel_only(s)) {
 		log_dbg(cd, "Could not initialize userspace block cipher and kernel fallback is disabled.");
 		crypt_storage_destroy(s);
 		return -ENOTSUP;
@@ -159,7 +159,7 @@ int crypt_storage_wrapper_init(struct crypt_device *cd,
 	if (crypt_parse_name_and_mode(cipher, _cipher, NULL, mode))
 		return -EINVAL;
 
-	open_flags = O_CLOEXEC | ((flags & OPEN_READONLY) ? O_RDONLY : O_RDWR);
+	open_flags = O_CLOEXEC | ((flags & CSW_OPEN_READONLY) ? O_RDONLY : O_RDWR);
 
 	w = malloc(sizeof(*w));
 	if (!w)
@@ -175,7 +175,10 @@ int crypt_storage_wrapper_init(struct crypt_device *cd,
 		goto err;
 	}
 
-	w->dev_fd = device_open(cd, device, open_flags);
+	if (flags & CSW_OPEN_LOCKED)
+		w->dev_fd = device_open_locked(cd, device, open_flags);
+	else
+		w->dev_fd = device_open(cd, device, open_flags);
 	if (w->dev_fd < 0) {
 		r = -EINVAL;
 		goto err;
@@ -202,7 +205,7 @@ int crypt_storage_wrapper_init(struct crypt_device *cd,
 
 	log_dbg(cd, "Failed to initialize userspace block cipher.");
 
-	if ((r != -ENOTSUP && r != -ENOENT) || (flags & DISABLE_DMCRYPT))
+	if ((r != -ENOTSUP && r != -ENOENT) || (flags & CSW_DISABLE_DMCRYPT))
 		goto err;
 
 	r = crypt_storage_dmcrypt_init(cd, w, device, data_offset >> SECTOR_SHIFT, iv_start,

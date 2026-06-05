@@ -9,6 +9,7 @@
 #include "luks2_internal.h"
 #include "utils_device_locking.h"
 #include "keyslot_context.h"
+#include "utils_storage_wrappers.h"
 
 struct luks2_reencrypt {
 	/* reencryption window attributes */
@@ -1410,7 +1411,7 @@ static int reencrypt_init_storage_wrappers(struct crypt_device *cd,
 {
 	int r;
 	struct volume_key *vk;
-	uint32_t wrapper_flags = (getuid() || geteuid()) ? 0 : DISABLE_KCAPI;
+	uint32_t wrapper_flags = (getuid() || geteuid()) ? 0 : CSW_DISABLE_KCAPI;
 
 	vk = crypt_volume_key_by_id(vks, rh->digest_old);
 	r = crypt_storage_wrapper_init(cd, &rh->cw1, crypt_data_device(cd),
@@ -1418,12 +1419,12 @@ static int reencrypt_init_storage_wrappers(struct crypt_device *cd,
 			crypt_get_iv_offset(cd),
 			reencrypt_get_sector_size_old(hdr),
 			reencrypt_segment_cipher_old(hdr),
-			vk, wrapper_flags | OPEN_READONLY);
+			vk, wrapper_flags | CSW_OPEN_READONLY);
 	if (r) {
 		log_err(cd, _("Failed to initialize old segment storage wrapper."));
 		return r;
 	}
-	rh->wflags1 = wrapper_flags | OPEN_READONLY;
+	rh->wflags1 = wrapper_flags | CSW_OPEN_READONLY;
 	log_dbg(cd, "Old cipher storage wrapper type: %d.", crypt_storage_wrapper_get_type(rh->cw1));
 
 	vk = crypt_volume_key_by_id(vks, rh->digest_new);

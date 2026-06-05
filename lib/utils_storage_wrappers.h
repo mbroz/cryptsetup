@@ -17,11 +17,11 @@ struct device;
 struct volume_key;
 struct crypt_device;
 
-#define DISABLE_USPACE	(1 << 0)
-#define DISABLE_KCAPI	(1 << 1)
-#define DISABLE_DMCRYPT	(1 << 2)
-#define OPEN_READONLY	(1 << 3)
-#define LARGE_IV	(1 << 4)
+#define CSW_DISABLE_KCAPI   (1 << 0)
+#define CSW_DISABLE_DMCRYPT (1 << 1)
+#define CSW_OPEN_READONLY   (1 << 2)
+#define CSW_LARGE_IV        (1 << 3)
+#define CSW_OPEN_LOCKED     (1 << 4)
 
 typedef enum {
 	NONE = 0,
