@@ -3537,6 +3537,8 @@ static void help(poptContext popt_context,
 		struct action_type *action;
 		const struct crypt_pbkdf_type *pbkdf_luks1, *pbkdf_luks2;
 
+		struct crypt_type_defaults luks_defaults = {};
+
 		tools_package_version(PACKAGE_NAME, true);
 		poptPrintHelp(popt_context, stdout, 0);
 
@@ -3580,13 +3582,15 @@ static void help(poptContext popt_context,
 			 pbkdf_luks2->type, pbkdf_luks2->time_ms, pbkdf_luks2->max_memory_kb,
 			 pbkdf_luks2->parallel_threads);
 
+		crypt_get_type_defaults(CRYPT_LUKS1, &luks_defaults);
+
 		log_std(_("\nDefault compiled-in device cipher parameters:\n"
 			 "\tloop-AES: %s, Key %d bits\n"
 			 "\tplain: %s, Key: %d bits, Password hashing: %s\n"
-			 "\tLUKS: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"),
+			 "\tLUKS: %s-%s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"),
 			 DEFAULT_LOOPAES_CIPHER, DEFAULT_LOOPAES_KEYBITS,
 			 DEFAULT_CIPHER(PLAIN), DEFAULT_PLAIN_KEYBITS, DEFAULT_PLAIN_HASH,
-			 DEFAULT_CIPHER(LUKS1), DEFAULT_LUKS1_KEYBITS, DEFAULT_LUKS1_HASH,
+			 luks_defaults.cipher, luks_defaults.cipher_mode, luks_defaults.key_size, luks_defaults.hash,
 			 DEFAULT_RNG);
 #if ENABLE_LUKS_ADJUST_XTS_KEYSIZE && DEFAULT_LUKS1_KEYBITS != 512
 		log_std(_("\tLUKS: Default keysize with XTS mode (two internal keys) will be doubled.\n"));
