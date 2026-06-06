@@ -2,8 +2,8 @@
 /*
  * Command line arguments helpers
  *
- * Copyright (C) 2020-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2020-2025 Ondrej Kozina
+ * Copyright (C) 2020-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2020-2026 Ondrej Kozina
  */
 
 #ifndef VERITYSETUP_ARGS_H

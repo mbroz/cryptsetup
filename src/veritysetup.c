@@ -2,8 +2,8 @@
 /*
  * veritysetup - setup cryptographic volumes for dm-verity
  *
- * Copyright (C) 2012-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2012-2025 Milan Broz
+ * Copyright (C) 2012-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012-2026 Milan Broz
  */
 
 #include "cryptsetup.h"

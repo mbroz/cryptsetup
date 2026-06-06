@@ -2,8 +2,8 @@
 /*
  * Example of LUKS2 token storing third party metadata (EXPERIMENTAL EXAMPLE)
  *
- * Copyright (C) 2016-2025 Milan Broz
- * Copyright (C) 2021-2025 Vojtech Trefny
+ * Copyright (C) 2016-2026 Milan Broz
+ * Copyright (C) 2021-2026 Vojtech Trefny
  *
  * Use:
  *  - generate ssh example token

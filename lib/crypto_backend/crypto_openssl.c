@@ -2,8 +2,8 @@
 /*
  * OPENSSL crypto backend implementation
  *
- * Copyright (C) 2010-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2010-2025 Milan Broz
+ * Copyright (C) 2010-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2010-2026 Milan Broz
  */
 
 #include <stdio.h>

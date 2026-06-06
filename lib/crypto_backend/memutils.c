@@ -2,7 +2,7 @@
 /*
  * Safe memory utilities
  *
- * Copyright (C) 2024-2025 Milan Broz
+ * Copyright (C) 2024-2026 Milan Broz
  */
 
 #include "crypto_backend_internal.h"

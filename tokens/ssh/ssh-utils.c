@@ -2,8 +2,8 @@
 /*
  * ssh plugin utilities
  *
- * Copyright (C) 2016-2025 Milan Broz
- * Copyright (C) 2020-2025 Vojtech Trefny
+ * Copyright (C) 2016-2026 Milan Broz
+ * Copyright (C) 2020-2026 Vojtech Trefny
  */
 
 #include <stdio.h>
