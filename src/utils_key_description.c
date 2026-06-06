@@ -2,9 +2,9 @@
 /*
  * Password quality check wrapper
  *
- * Copyright (C) 2023-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2023-2025 Ondrej Kozina
- * Copyright (C) 2023-2025 Milan Broz
+ * Copyright (C) 2023-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2023-2026 Ondrej Kozina
+ * Copyright (C) 2023-2026 Milan Broz
  */
 
 #include "cryptsetup.h"

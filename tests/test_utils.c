@@ -2,8 +2,8 @@
 /*
  * cryptsetup library API test utilities
  *
- * Copyright (C) 2009-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2025 Milan Broz
+ * Copyright (C) 2009-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2026 Milan Broz
  */
 
 #include <assert.h>
