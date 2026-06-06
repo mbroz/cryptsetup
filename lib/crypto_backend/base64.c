@@ -5,7 +5,7 @@
  * Copyright (C) 2010 Lennart Poettering
  *
  * cryptsetup related changes
- * Copyright (C) 2021-2025 Milan Broz
+ * Copyright (C) 2021-2026 Milan Broz
  */
 
 #include <errno.h>

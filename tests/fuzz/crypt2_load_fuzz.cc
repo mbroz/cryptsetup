@@ -3,7 +3,7 @@
  * cryptsetup LUKS2 fuzz target
  *
  * Copyright (C) 2022-2025 Daniel Zatovic <daniel.zatovic@gmail.com>
- * Copyright (C) 2022-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2022-2026 Red Hat, Inc. All rights reserved.
  */
 
 extern "C" {

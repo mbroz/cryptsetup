@@ -2,7 +2,7 @@
 /*
  * Integrity volume handling
  *
- * Copyright (C) 2016-2025 Milan Broz
+ * Copyright (C) 2016-2026 Milan Broz
  */
 
 #include <errno.h>

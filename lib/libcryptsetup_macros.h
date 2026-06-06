@@ -2,8 +2,8 @@
 /*
  * Definitions of common constant and generic macros of libcryptsetup
  *
- * Copyright (C) 2009-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2025 Milan Broz
+ * Copyright (C) 2009-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2026 Milan Broz
  */
 
 #ifndef _LIBCRYPTSETUP_MACROS_H
