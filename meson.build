@@ -549,8 +549,8 @@ elif get_option('crypto-backend') == 'mbedtls'
 
     mbedcrypto = cc.find_library('mbedcrypto',
         static: enable_static)
-    assert(cc.has_function('mbedtls_md_init',
-            prefix: '#include <mbedtls/md.h>', dependencies: mbedcrypto),
+    assert(cc.has_function('psa_crypto_init',
+            prefix: '#include <psa/crypto.h>', dependencies: mbedcrypto),
         'You need mbedcrypto library.')
 
     conf.set10('HAVE_MBEDTLS_PKCS5_PBKDF2_HMAC_EXT',
