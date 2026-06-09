@@ -34,4 +34,22 @@ if get_option('fuzz-targets')
             link_args,
         ],
         include_directories: includes_tools)
+
+    crypt_load_misc_fuzz = executable('crypt_load_misc_fuzz',
+        [
+            'crypt_load_misc_fuzz.cc',
+        ],
+        dependencies: [
+            devmapper,
+            fuzzing_engine,
+        ],
+        link_with: [
+            libcryptsetup,
+            libcrypto_backend,
+            libutils_io,
+        ],
+        link_args: [
+            link_args,
+        ],
+        include_directories: includes_tools)
 endif

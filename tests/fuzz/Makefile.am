@@ -4,7 +4,7 @@ distclean-local:
 	-rm -rf out build
 
 if ENABLE_FUZZ_TARGETS
-EXTRA_PROGRAMS  = crypt2_load_fuzz crypt2_load_ondisk_fuzz
+EXTRA_PROGRAMS  = crypt2_load_fuzz crypt2_load_ondisk_fuzz crypt_load_misc_fuzz
 CLEANFILES = $(EXTRA_PROGRAMS)
 
 LIB_FUZZING_ENGINE := $(if $(LIB_FUZZING_ENGINE),$(LIB_FUZZING_ENGINE),"-fsanitize=fuzzer")
@@ -21,6 +21,11 @@ crypt2_load_ondisk_fuzz_SOURCES = FuzzerInterface.h crypt2_load_ondisk_fuzz.cc
 crypt2_load_ondisk_fuzz_LDADD  = ../../libcryptsetup.la -L$(DEPS_PATH)/lib
 crypt2_load_ondisk_fuzz_LDFLAGS = $(AM_LDFLAGS) $(LIB_FUZZING_ENGINE) $(SANITIZER)
 crypt2_load_ondisk_fuzz_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz
+
+crypt_load_misc_fuzz_SOURCES = FuzzerInterface.h crypt_load_misc_fuzz.cc
+crypt_load_misc_fuzz_LDADD  = ../../libcryptsetup.la -L$(DEPS_PATH)/lib
+crypt_load_misc_fuzz_LDFLAGS = $(AM_LDFLAGS) $(LIB_FUZZING_ENGINE) $(SANITIZER)
+crypt_load_misc_fuzz_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz
 
 test-environment-m:
 	@ if test ! -d $(DEPS_PATH); then \
