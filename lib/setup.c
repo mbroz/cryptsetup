@@ -1799,7 +1799,7 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 				       &required_alignment,
 				       &alignment_offset, DEFAULT_DISK_ALIGNMENT);
 
-	r = LUKS_check_cipher(cd, volume_key_size, cipher, cipher_mode);
+	r = crypt_check_cipher(cd, volume_key_size, cipher, cipher_mode);
 	if (r < 0)
 		return r;
 
@@ -1898,7 +1898,7 @@ static int LUKS2_check_encryption_params(struct crypt_device *cd,
 
 	if ((!integrity || integrity_key_size) && !crypt_cipher_wrapped_key(cipher, cipher_mode) &&
 	    !INTEGRITY_tag_size(NULL, cipher, cipher_mode)) {
-		r = LUKS_check_cipher(cd, volume_key_size - integrity_key_size,
+		r = crypt_check_cipher(cd, volume_key_size - integrity_key_size,
 				      cipher, cipher_mode);
 		if (r < 0)
 			return r;
