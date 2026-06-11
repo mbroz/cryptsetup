@@ -18,6 +18,8 @@
 #include "internal.h"
 #include "utils_storage_wrappers.h"
 
+#define MAX_CAPI_LEN_STR "143" /* for sscanf of crypto API string + 16  + \0 */
+
 size_t crypt_getpagesize(void)
 {
 	long r = sysconf(_SC_PAGESIZE);
@@ -448,4 +450,90 @@ out:
 	crypt_storage_wrapper_destroy(csw);
 	crypt_free_volume_key(empty_vk);
 	return r;
+}
+
+int crypt_capi_to_cipher(char **org_c, char **org_i, const char *c_dm, const char *i_dm)
+{
+	char cipher[MAX_CAPI_ONE_LEN], mode[MAX_CAPI_ONE_LEN], iv[MAX_CAPI_ONE_LEN],
+	     auth[MAX_CAPI_ONE_LEN], tmp[MAX_CAPI_LEN], dmcrypt_tmp[MAX_CAPI_LEN*2],
+	     capi[MAX_CAPI_LEN+1];
+	size_t len;
+	int i;
+
+	if (!c_dm)
+		return -EINVAL;
+
+	/* legacy mode */
+	if (strncmp(c_dm, "capi:", 5)) {
+		if (!(*org_c = strdup(c_dm)))
+			return -ENOMEM;
+		if (i_dm) {
+			if (!(*org_i = strdup(i_dm))) {
+				free(*org_c);
+				*org_c = NULL;
+				return -ENOMEM;
+			}
+		} else
+			*org_i = NULL;
+		return 0;
+	}
+
+	/* modes with capi: prefix */
+	i = sscanf(c_dm, "capi:%" MAX_CAPI_LEN_STR "[^-]-%" MAX_CAPI_ONE_LEN_STR "s", tmp, iv);
+	if (i != 2)
+		return -EINVAL;
+
+	/* non-cryptsetup compatible mode (generic driver with dash?) */
+	if (strrchr(iv, ')')) {
+		if (i_dm)
+			return -EINVAL;
+		if (!(*org_c = strdup(c_dm)))
+			return -ENOMEM;
+		return 0;
+	}
+
+	len = strlen(tmp);
+	if (len < 2)
+		return -EINVAL;
+
+	if (tmp[len-1] == ')')
+		tmp[len-1] = '\0';
+
+	if (sscanf(tmp, "rfc4309(%" MAX_CAPI_LEN_STR "s", capi) == 1) {
+		if (!(*org_i = strdup("aead")))
+			return -ENOMEM;
+	} else if (sscanf(tmp, "rfc7539(%" MAX_CAPI_LEN_STR "[^,],%" MAX_CAPI_ONE_LEN_STR "s", capi, auth) == 2) {
+		if (!(*org_i = strdup(auth)))
+			return -ENOMEM;
+	} else if (sscanf(tmp, "authenc(%" MAX_CAPI_ONE_LEN_STR "[^,],%" MAX_CAPI_LEN_STR "s", auth, capi) == 2) {
+		if (!(*org_i = strdup(auth)))
+			return -ENOMEM;
+	} else {
+		if (i_dm) {
+			if (!(*org_i = strdup(i_dm)))
+				return -ENOMEM;
+		} else
+			*org_i = NULL;
+		memset(capi, 0, sizeof(capi));
+		strncpy(capi, tmp, sizeof(capi)-1);
+	}
+
+	i = sscanf(capi, "%" MAX_CAPI_ONE_LEN_STR "[^(](%" MAX_CAPI_ONE_LEN_STR "[^)])", mode, cipher);
+	if (i == 2)
+		i = snprintf(dmcrypt_tmp, sizeof(dmcrypt_tmp), "%s-%s-%s", cipher, mode, iv);
+	else
+		i = snprintf(dmcrypt_tmp, sizeof(dmcrypt_tmp), "%s-%s", capi, iv);
+	if (i < 0 || (size_t)i >= sizeof(dmcrypt_tmp)) {
+		free(*org_i);
+		*org_i = NULL;
+		return -EINVAL;
+	}
+
+	if (!(*org_c = strdup(dmcrypt_tmp))) {
+		free(*org_i);
+		*org_i = NULL;
+		return -ENOMEM;
+	}
+
+	return 0;
 }
