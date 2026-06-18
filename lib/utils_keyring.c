@@ -425,6 +425,16 @@ key_type_t key_type_by_name(const char *name)
 	return INVALID_KEY;
 }
 
+key_serial_t keyring_find_key_id_by_type_and_desc(key_type_t ktype, const char *key_desc)
+{
+	const char *type_name = key_type_name(ktype);
+
+	if (!type_name || !key_desc)
+		return 0;
+
+	return find_key_by_type_and_desc(type_name, key_desc, 0);
+}
+
 #else /* KERNEL_KEYRING */
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
@@ -478,6 +488,11 @@ key_serial_t keyring_find_key_id_by_name(const char *key_name)
 }
 
 key_serial_t keyring_find_keyring_id_by_name(const char *keyring_name)
+{
+	return 0;
+}
+
+key_serial_t keyring_find_key_id_by_type_and_desc(key_type_t ktype, const char *key_desc)
 {
 	return 0;
 }

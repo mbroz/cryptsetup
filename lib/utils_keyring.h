@@ -24,6 +24,7 @@ key_type_t key_type_by_name(const char *name);
 key_type_t keyring_type_and_name(const char *key_name, const char **name);
 key_serial_t keyring_find_key_id_by_name(const char *key_name);
 key_serial_t keyring_find_keyring_id_by_name(const char *keyring_name);
+key_serial_t keyring_find_key_id_by_type_and_desc(key_type_t ktype, const char *key_desc);
 
 int keyring_check(void);
 
