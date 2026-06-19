@@ -7578,6 +7578,9 @@ int crypt_volume_key_keyring(struct crypt_device *cd __attribute__((unused)), in
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
 {
 	key_serial_t keyring_id;
+	char *keyring_description;
+	char rnd[4];
+	const char *uuid;
 
 	if (!vk || !cd)
 		return -EINVAL;
@@ -7588,20 +7591,28 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 	}
 
 	if (!cd->keyring_description) {
-		cd->keyring_description = strdup("cryptsetup-keyring");
-		if (!cd->keyring_description)
+		uuid = crypt_get_uuid(cd);
+		if (!uuid)
+			return -EINVAL;
+
+		if (crypt_random_get(cd, rnd, sizeof(rnd), CRYPT_RND_NORMAL) < 0)
+			return -EINVAL;
+
+		if (asprintf(&keyring_description, "cryptsetup-%.8s-%02x%02x%02x%02x",
+			     uuid, (unsigned char)rnd[0], (unsigned char)rnd[1],
+			     (unsigned char)rnd[2], (unsigned char)rnd[3]) < 0)
 			return -ENOMEM;
 
-		log_dbg(cd, "Loading key (type keyring, name %s) in thread keyring.", cd->keyring_description);
-		keyring_id = keyring_add_key_in_thread_keyring(KEYRING_KEY, cd->keyring_description, NULL, 0);
+		log_dbg(cd, "Loading key (type keyring, name %s) in thread keyring.", keyring_description);
+		keyring_id = keyring_add_key_in_thread_keyring(KEYRING_KEY, keyring_description, NULL, 0);
 		if (keyring_id < 0) {
-			free(CONST_CAST(void*)cd->keyring_description);
-			cd->keyring_description = NULL;
+			free(keyring_description);
 			log_dbg(cd, "keyring_add_key_in_thread_keyring failed (error %d)", errno);
 			log_err(cd, _("Failed to load key in kernel keyring."));
 			return -EINVAL;
 		}
 		cd->keyring_id = keyring_id;
+		cd->keyring_description = keyring_description;
 	}
 
 	log_dbg(cd, "Loading key (type logon, name %s) in %s keyring.",
