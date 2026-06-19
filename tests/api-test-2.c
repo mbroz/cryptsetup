@@ -427,6 +427,11 @@ static key_serial_t keyctl_unlink(key_serial_t key, key_serial_t keyring)
 	return syscall(__NR_keyctl, KEYCTL_UNLINK, key, keyring);
 }
 
+static key_serial_t keyctl_revoke(key_serial_t key)
+{
+	return syscall(__NR_keyctl, KEYCTL_REVOKE, key);
+}
+
 static key_serial_t keyctl_link(key_serial_t key, key_serial_t keyring)
 {
 	return syscall(__NR_keyctl, KEYCTL_LINK, key, keyring);
@@ -504,20 +509,14 @@ static int _drop_keyring_key_from_keyring_name(const char *key_description, key_
 	return keyctl_unlink(kid, keyring);
 }
 
-static int _drop_keyring_key_from_keyring_type(struct crypt_device *_cd, int segment,
-					       key_serial_t keyring, const char* type)
+static int _revoke_keyring_key(struct crypt_device *_cd, int segment)
 {
-	key_serial_t kid = _kernel_key_by_segment_and_type(_cd, segment, type);
+	key_serial_t kid = _kernel_key_by_segment_and_type(_cd, segment, "logon");
 
 	if (kid < 0)
 		return -1;
 
-	return keyctl_unlink(kid, keyring);
-}
-
-static int _drop_keyring_key(struct crypt_device *_cd, int segment)
-{
-	return _drop_keyring_key_from_keyring_type(_cd, segment, KEY_SPEC_THREAD_KEYRING, "logon");
+	return keyctl_revoke(kid);
 }
 #endif
 
@@ -690,11 +689,11 @@ static void UseLuks2Device(void)
 	// repeat previous tests and check kernel keyring is released when not needed
 	if (t_dm_crypt_keyring_support()) {
 		OK_(crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
-		FAIL_(_drop_keyring_key(cd, 0), "");
+		FAIL_(_revoke_keyring_key(cd, 0), "");
 		OK_(crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), CRYPT_ACTIVATE_KEYRING_KEY));
-		OK_(_drop_keyring_key(cd, 0));
+		OK_(_revoke_keyring_key(cd, 0));
 		OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
-		OK_(_drop_keyring_key(cd, 0));
+		OK_(_revoke_keyring_key(cd, 0));
 		FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0), "already open");
 		FAIL_(_volume_key_in_keyring(cd, 0), "");
 		OK_(crypt_activate_by_passphrase(cd, NULL, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
@@ -704,11 +703,11 @@ static void UseLuks2Device(void)
 		if (!_fips_mode) {
 			/* keyslot 0 is PBKDF2, keyslot 1 is Argon2id */
 			EQ_(crypt_activate_by_passphrase(cd, NULL, 1, KEY2, strlen(KEY2), 0), 1);
-			FAIL_(_drop_keyring_key(cd, 0), "");
+			FAIL_(_revoke_keyring_key(cd, 0), "");
 			EQ_(crypt_activate_by_passphrase(cd, NULL, 1, KEY2, strlen(KEY2), CRYPT_ACTIVATE_KEYRING_KEY), 1);
-			OK_(_drop_keyring_key(cd, 0));
+			OK_(_revoke_keyring_key(cd, 0));
 			EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, KEY2, strlen(KEY2), 0), 1);
-			OK_(_drop_keyring_key(cd, 0));
+			OK_(_revoke_keyring_key(cd, 0));
 			FAIL_(crypt_activate_by_passphrase(cd, CDEVICE_1, 1, KEY2, strlen(KEY2), 0), "already open");
 			FAIL_(_volume_key_in_keyring(cd, 0), "");
 			EQ_(crypt_activate_by_passphrase(cd, NULL, 1, KEY2, strlen(KEY2), 0), 1);
@@ -1828,9 +1827,9 @@ static void ResizeDeviceLuks2(void)
 	OK_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0));
 	// erase volume key from kernel keyring
 	if (t_dm_crypt_keyring_support())
-		OK_(_drop_keyring_key(cd, 0));
+		OK_(_revoke_keyring_key(cd, 0));
 	else
-		FAIL_(_drop_keyring_key(cd, 0), "key not found");
+		FAIL_(_revoke_keyring_key(cd, 0), "key not found");
 	// same size is ok
 	OK_(crypt_resize(cd, CDEVICE_1, 0));
 	// kernel fails to find the volume key in keyring
