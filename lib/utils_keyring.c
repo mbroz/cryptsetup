@@ -32,6 +32,7 @@ static const struct {
 	{ BIG_KEY,       "big_key" },
 	{ TRUSTED_KEY,   "trusted" },
 	{ ENCRYPTED_KEY, "encrypted" },
+	{ KEYRING_KEY,	 "keyring" },
 };
 
 #include <linux/keyctl.h>
