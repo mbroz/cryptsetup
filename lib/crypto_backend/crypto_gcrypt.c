@@ -43,6 +43,12 @@ struct hash_alg {
 	const char *gcrypt_name;
 };
 
+struct cipher_alg {
+	const char *name;
+	size_t key_bytes;
+	const char *gcrypt_name;
+};
+
 /*
  * Test for wrong Whirlpool variant,
  * Ref: https://lists.gnupg.org/pipermail/gcrypt-devel/2014-January/002889.html
@@ -184,6 +190,37 @@ static const char *crypt_hash_compat_name(const char *name, unsigned int *flags)
 	}
 
 	return hash_name;
+}
+
+static const char *crypt_cipher_compat_name(const char *name, const char *mode, size_t key_bytes)
+{
+	const char *cipher_name = name;
+	int i;
+	static struct cipher_alg cipher_algs[] = {
+	{ "aria",     16,     "aria128" },
+	{ "aria",     24,     "aria192" },
+	{ "aria",     32,     "aria256" },
+	{ "camellia", 16, "camellia128" },
+	{ "camellia", 24, "camellia192" },
+	{ "camellia", 32, "camellia256" },
+	{ NULL,        0,         NULL }};
+
+	if (!name)
+		return NULL;
+
+	if (mode && !strcmp(mode, "xts"))
+		key_bytes /= 2;
+
+	i = 0;
+	while (cipher_algs[i].name) {
+		if (!strcasecmp(name, cipher_algs[i].name) && cipher_algs[i].key_bytes == key_bytes) {
+			cipher_name =  cipher_algs[i].gcrypt_name;
+			break;
+		}
+		i++;
+	}
+
+	return cipher_name;
 }
 
 /* HASH */
@@ -529,8 +566,13 @@ static int _cipher_init(gcry_cipher_hd_t *hd, const char *name,
 			const char *mode, const void *buffer, size_t length)
 {
 	int cipher_id, mode_id;
+	const char *gcrypt_name;
 
-	cipher_id = gcry_cipher_map_name(name);
+	if (!name)
+		return -EINVAL;
+
+	gcrypt_name = crypt_cipher_compat_name(name, mode, length);
+	cipher_id = gcry_cipher_map_name(gcrypt_name);
 	if (cipher_id == GCRY_CIPHER_MODE_NONE)
 		return -ENOENT;
 
