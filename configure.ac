@@ -346,6 +346,7 @@ AC_DEFUN([CONFIGURE_OPENSSL], [
 	saved_LIBS=$LIBS
 	AC_CHECK_DECLS([OSSL_get_max_threads], [], [], [#include <openssl/thread.h>])
 	AC_CHECK_DECLS([OSSL_KDF_PARAM_ARGON2_VERSION], [use_internal_argon2=0], [], [#include <openssl/core_names.h>])
+	AC_CHECK_DECLS([OSSL_CIPHER_PARAM_XTS_STANDARD], [], [], [#include <openssl/core_names.h>])
 	LIBS=$saved_LIBS
 ])
 

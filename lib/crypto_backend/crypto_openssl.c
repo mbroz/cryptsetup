@@ -716,20 +716,47 @@ static void _cipher_destroy(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec, co
 	*cipher_type = NULL;
 }
 
+/*
+ * SM4-XTS can have two variants of tweak calculation:
+ *     "GB": GB/T 17964-2021 tweak multiplication
+ *   "IEEE": IEEE Std 1619-2007 tweak multiplication (as used by AES-XTS)
+ *
+ * "GB" is the default, but we need to use mode implemented by the kernel here (IEEE).
+ */
+static int _cipher_xts_ieee(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec)
+{
+#if OPENSSL3_API && HAVE_DECL_OSSL_CIPHER_PARAM_XTS_STANDARD
+	OSSL_PARAM p[] = {
+		OSSL_PARAM_construct_utf8_string(OSSL_CIPHER_PARAM_XTS_STANDARD, CONST_CAST(char*)"IEEE", 0),
+		OSSL_PARAM_construct_end()
+	};
+
+	if (EVP_CIPHER_CTX_set_params(*hd_enc, p) != 1 ||
+	    EVP_CIPHER_CTX_set_params(*hd_dec, p) != 1)
+		return -EINVAL;
+#else
+	UNUSED(hd_enc);
+	UNUSED(hd_dec);
+#endif
+	return 0;
+}
+
 static int _cipher_init(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec, const EVP_CIPHER **cipher_type, const char *name,
 			const char *mode, const void *key, size_t key_length, size_t *iv_length)
 {
 	char cipher_name[256];
 	const EVP_CIPHER *type;
 	int r, key_bits;
+	bool set_xts_ieee = false;
 
 	key_bits = key_length * 8;
 	if (!strcmp(mode, "xts"))
 		key_bits /= 2;
 
-	if ((!strcmp(name, "sm4")) && key_bits == 128)
+	if ((!strcmp(name, "sm4")) && key_bits == 128) {
+		set_xts_ieee = true;
 		r = snprintf(cipher_name, sizeof(cipher_name), "%s-%s", name, mode);
-	else
+	} else
 		r = snprintf(cipher_name, sizeof(cipher_name), "%s-%d-%s", name, key_bits, mode);
 	if (r < 0 || (size_t)r >= sizeof(cipher_name))
 		return -EINVAL;
@@ -754,6 +781,11 @@ static int _cipher_init(EVP_CIPHER_CTX **hd_enc, EVP_CIPHER_CTX **hd_dec, const 
 
 	if (EVP_EncryptInit_ex(*hd_enc, type, NULL, key, NULL) != 1 ||
 	    EVP_DecryptInit_ex(*hd_dec, type, NULL, key, NULL) != 1) {
+		_cipher_destroy(hd_enc, hd_dec, &type);
+		return -EINVAL;
+	}
+
+	if (set_xts_ieee && _cipher_xts_ieee(hd_enc, hd_dec) < 0) {
 		_cipher_destroy(hd_enc, hd_dec, &type);
 		return -EINVAL;
 	}

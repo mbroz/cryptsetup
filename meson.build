@@ -499,6 +499,9 @@ elif get_option('crypto-backend') == 'openssl'
     if _have_ossl_argon2
         use_internal_argon2 = false
     endif
+    conf.set10('HAVE_DECL_OSSL_CIPHER_PARAM_XTS_STANDARD',
+        cc.has_header_symbol('openssl/core_names.h', 'OSSL_CIPHER_PARAM_XTS_STANDARD',
+            dependencies: crypto_backend_library))
 elif get_option('crypto-backend') == 'nss'
     if get_option('fips')
         error('nss crypto backend is not supported with FIPS enabled')
