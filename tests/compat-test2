@@ -499,6 +499,26 @@ test_reencrypt_vk_link_and_reactivate() {
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME --volume-key-keyring "$KEY_DESC" --volume-key-keyring "$KEY_DESC2" > /dev/null 2>&1 && fail
 }
 
+
+# $1 substring to search for in /proc/keys
+wait_key_dissapeared()
+{
+	local ret=
+	local tries=50
+
+	grep -q $1 /proc/keys
+	ret=$?
+
+	while [ $ret -eq 0 -a $tries -gt 0 ]; do
+		sleep .1
+		grep -q $1 /proc/keys
+		ret=$?
+		tries=$((tries-1))
+	done
+
+	test $ret -ne 0
+}
+
 expect_run()
 {
 	export INFOSTRING="$(basename ${BASH_SOURCE[1]})-line-${BASH_LINENO[0]}"
@@ -1757,6 +1777,21 @@ echo $PWD3 | $CRYPTSETUP luksAddKey -q $FAST_PBKDF_OPT -S6 --unbound --volume-ke
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "6: luks2 (unbound)" || fail
 echo $PWD3 | $CRYPTSETUP open --test-passphrase -S6 $LOOPDEV || fail
 echo $PWD3 | $CRYPTSETUP open -S6 $LOOPDEV $DEV_NAME 2>/dev/null && fail
+
+if dm_crypt_keyring_support && dm_crypt_keyring_new_kernel; then
+	prepare "[54] Intermediary keyring VK cleanup" wipe
+	echo $PWD1 | $CRYPTSETUP luksFormat $FAST_PBKDF_OPT --type luks2 $LOOPDEV || fail
+	UUID=$($CRYPTSETUP luksUUID $LOOPDEV)
+
+	echo $PWD1 | $CRYPTSETUP open $LOOPDEV $DEV_NAME || fail
+	$CRYPTSETUP -q status $DEV_NAME | grep "key location:" | grep -q "keyring" || fail
+
+	# after cryptsetup open exits both the intermediary keyring and VK logon key must be gone
+	wait_key_dissapeared "keyring.*cryptsetup-${UUID:0:8}" || fail "Intermediary keyring persists in /proc/keys after process exit"
+	wait_key_dissapeared "logon.*cryptsetup:${UUID}" || fail "VK logon key persists in /proc/keys after process exit"
+
+	$CRYPTSETUP close $DEV_NAME || fail
+fi
 
 remove_mapping
 exit 0
