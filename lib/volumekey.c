@@ -243,14 +243,14 @@ bool crypt_volume_key_is_set(const struct volume_key *vk)
 	return vk && vk->key;
 }
 
-bool crypt_volume_key_upload_kernel_key(struct volume_key *vk)
+bool crypt_volume_key_upload_kernel_key(struct volume_key *vk, key_serial_t keyring)
 {
 	key_serial_t kid;
 
 	assert(vk && vk->key && vk->key_description && vk->keyring_key_type != INVALID_KEY);
 
-	kid = keyring_add_key_in_thread_keyring(vk->keyring_key_type, vk->key_description,
-					 vk->key, vk->keylength);
+	kid = keyring_add_key_to_keyring(vk->keyring_key_type, vk->key_description, vk->key,
+					 vk->keylength, keyring);
 	if (kid >= 0) {
 		vk->key_id = kid;
 		return true;
@@ -265,9 +265,7 @@ void crypt_volume_key_drop_kernel_key(struct crypt_device *cd, struct volume_key
 	assert(vk->key_description || vk->keyring_key_type == INVALID_KEY);
 	assert(!vk->key_description || vk->keyring_key_type != INVALID_KEY);
 
-	crypt_unlink_key_by_description_from_thread_keyring(cd,
-							    vk->key_description,
-							    vk->keyring_key_type);
+	crypt_unlink_key_by_description_from_keyring(cd, vk->key_description, vk->keyring_key_type);
 }
 
 void crypt_volume_key_drop_uploaded_kernel_key(struct crypt_device *cd, struct volume_key *vk)
@@ -277,6 +275,6 @@ void crypt_volume_key_drop_uploaded_kernel_key(struct crypt_device *cd, struct v
 	if (vk->key_id < 0)
 		return;
 
-	crypt_unlink_key_from_thread_keyring(cd, vk->key_id);
+	crypt_unlink_key_from_keyring(cd, vk->key_id);
 	vk->key_id = -1;
 }
