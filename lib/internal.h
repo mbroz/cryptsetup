@@ -74,7 +74,7 @@ struct volume_key *crypt_volume_key_next(struct volume_key *vk);
 struct volume_key *crypt_volume_key_by_id(struct volume_key *vk, int id);
 void crypt_volume_key_pass_safe_alloc(struct volume_key *vk, void **safe_alloc);
 bool crypt_volume_key_is_set(const struct volume_key *vk);
-bool crypt_volume_key_upload_kernel_key(struct volume_key *vk);
+bool crypt_volume_key_upload_kernel_key(struct volume_key *vk, key_serial_t keyring);
 void crypt_volume_key_drop_uploaded_kernel_key(struct crypt_device *cd, struct volume_key *vk);
 void crypt_volume_key_drop_kernel_key(struct crypt_device *cd, struct volume_key *vk);
 
@@ -247,9 +247,9 @@ int crypt_keyring_get_keysize_by_name(struct crypt_device *cd,
 		size_t *r_key_size);
 
 int crypt_use_keyring_for_vk(struct crypt_device *cd);
-void crypt_unlink_key_from_thread_keyring(struct crypt_device *cd,
+void crypt_unlink_key_from_keyring(struct crypt_device *cd,
 		key_serial_t key_id);
-void crypt_unlink_key_by_description_from_thread_keyring(struct crypt_device *cd,
+void crypt_unlink_key_by_description_from_keyring(struct crypt_device *cd,
 		const char *key_description,
 		key_type_t ktype);
 void crypt_drop_uploaded_keyring_key(struct crypt_device *cd, struct volume_key *vks);
