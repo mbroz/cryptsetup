@@ -520,6 +520,36 @@ static int _revoke_keyring_key(struct crypt_device *_cd, int segment)
 
 	return keyctl_revoke(kid);
 }
+
+static long keyctl_describe(key_serial_t id, char *buffer, size_t buflen)
+{
+	return syscall(__NR_keyctl, KEYCTL_DESCRIBE, id, buffer, buflen);
+}
+
+static int _intermediary_keyring_in_thread_keyring(const char *uuid)
+{
+	key_serial_t keys[64];
+	char rdesc[256], prefix[20];
+	long r;
+	int i, count;
+
+	r = snprintf(prefix, sizeof(prefix), "cryptsetup-%.8s", uuid);
+	if (r < 0 || (size_t)r > sizeof(prefix) - 1)
+		return -1;
+
+	r = keyctl_read(KEY_SPEC_THREAD_KEYRING, (char *)keys, sizeof(keys));
+	if (r < 0)
+		return -1;
+
+	count = r / sizeof(key_serial_t);
+	for (i = 0; i < count; i++) {
+		r = keyctl_describe(keys[i], rdesc, sizeof(rdesc));
+		if (r > 0 && (size_t)r <= sizeof(rdesc) && strstr(rdesc, prefix))
+			return 0;
+	}
+
+	return -1;
+}
 #endif
 
 static void _cleanup(void)
@@ -736,8 +766,26 @@ static void UseLuks2Device(void)
 	key[1] = ~key[1];
 	FAIL_(crypt_volume_key_verify(cd, key, key_size), "key mismatch");
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "key mismatch");
-
 	CRYPT_FREE(cd);
+
+#if KERNEL_KEYRING
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	if (t_dm_crypt_keyring_support()) {
+		OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
+		OK_(_intermediary_keyring_in_thread_keyring(DEVICE_1_UUID));
+		OK_(_volume_key_in_keyring(cd, 0));
+	}
+	// All keys uploaded via current device context must be freed.
+	CRYPT_FREE(cd);
+	if (t_dm_crypt_keyring_support()) {
+		FAIL_(_intermediary_keyring_in_thread_keyring(DEVICE_1_UUID), "intermediary keyring not cleaned up");
+		FAIL_(_kernel_key_by_segment_uuid_and_type(DEVICE_1_UUID, 0, "logon"), "VK not cleaned up");
+	}
+	OK_(crypt_init_by_name(&cd, CDEVICE_1));
+	OK_(crypt_deactivate(cd, CDEVICE_1));
+	CRYPT_FREE(cd);
+#endif
 }
 
 static void SuspendDevice(void)
