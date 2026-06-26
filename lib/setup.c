@@ -4166,6 +4166,40 @@ void crypt_free(struct crypt_device *cd)
 	free(cd);
 }
 
+static void crypt_suspend_check_keyring_leak(struct crypt_device *cd, struct volume_key *vk)
+{
+	const char *key_description;
+	key_type_t key_type;
+
+	if (!vk)
+		return;
+
+	key_description = crypt_volume_key_description(vk);
+	key_type = crypt_volume_key_kernel_key_type(vk);
+
+	if (!key_description || key_type == INVALID_KEY)
+		return;
+
+	/*
+	 * Ignore a copy that is still reachable from our own keyrings, for
+	 * instance an API caller that activates and suspends within the same
+	 * process
+	 */
+	if (keyring_request_key_id(key_type, key_description) >= 0)
+		return;
+
+	/* Search /proc/keys for our key */
+	if (!keyring_find_key_id_by_type_and_desc(key_type, key_description))
+		return;
+
+	log_err(cd, _("WARNING: A copy of the volume key is still present in the kernel keyring\n"
+	              "and CANNOT be wiped from memory.\n"
+	              "\n"
+	              "This might be because the process that activated the device is still running,\n"
+	              "or because of the following bug in the Linux kernel (a regression since v6.9):\n"
+	              "https://lore.kernel.org/all/ajKwRtP8izwRsMmv@quasitopos/"));
+}
+
 int crypt_suspend(struct crypt_device *cd,
 		  const char *name)
 {
@@ -4266,6 +4300,10 @@ int crypt_suspend(struct crypt_device *cd,
 	if (crypt_cipher_wrapped_key(crypt_get_cipher(cd), crypt_get_cipher_mode(cd)) ||
 	    (dm_opal_uuid && tgt->type == DM_LINEAR))
 		dmflags &= ~DM_SUSPEND_WIPE_KEY;
+
+	/* check for a kernel keyring leak */
+	if (single_segment(&dmd) && tgt->type == DM_CRYPT && (dmflags & DM_SUSPEND_WIPE_KEY))
+		crypt_suspend_check_keyring_leak(cd, tgt->u.crypt.vk);
 
 	r = dm_suspend_device(cd, name, dmflags);
 	if (r) {
