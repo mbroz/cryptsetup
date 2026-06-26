@@ -477,25 +477,27 @@ static key_serial_t add_key_set_perm(const char *type, const char *description, 
 	return l == 0 ? kid : -EINVAL;
 }
 
-static key_serial_t _kernel_key_by_segment_and_type(struct crypt_device *_cd, int segment,
-						    const char* type)
+static key_serial_t _kernel_key_by_segment_uuid_and_type(const char *uuid, int segment,
+							 const char *type)
+
 {
 	char key_description[1024];
 
-	if (snprintf(key_description, sizeof(key_description), "cryptsetup:%s-d%u", crypt_get_uuid(_cd), segment) < 1)
+	if (snprintf(key_description, sizeof(key_description), "cryptsetup:%s-d%u", uuid, segment) < 1)
 		return -1;
 
 	return request_key(type, key_description, NULL, 0);
 }
 
-static key_serial_t _kernel_key_by_segment(struct crypt_device *_cd, int segment)
+static key_serial_t _kernel_key_by_segment_and_type(struct crypt_device *_cd, int segment,
+						    const char* type)
 {
-	return _kernel_key_by_segment_and_type(_cd, segment, "logon");
+	return _kernel_key_by_segment_uuid_and_type(crypt_get_uuid(_cd), segment, type);
 }
 
 static int _volume_key_in_keyring(struct crypt_device *_cd, int segment)
 {
-	return _kernel_key_by_segment(_cd, segment) >= 0 ? 0 : -1;
+	return _kernel_key_by_segment_and_type(_cd, segment, "logon") >= 0 ? 0 : -1;
 }
 
 static int _drop_keyring_key_from_keyring_name(const char *key_description, key_serial_t keyring, const char* type)
