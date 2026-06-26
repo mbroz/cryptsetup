@@ -34,7 +34,7 @@ export CFLAGS="${CFLAGS:-$flags} -I$DEPS_PATH/include"
 export CXXFLAGS="${CXXFLAGS:-$flags} -I$DEPS_PATH/include"
 export LDFLAGS="${LDFLAGS-} -L$DEPS_PATH/lib"
 
-ENABLED_FUZZERS=${ENABLED_FUZZERS:-crypt2_load_fuzz crypt2_load_ondisk_fuzz}
+ENABLED_FUZZERS=${ENABLED_FUZZERS:-crypt2_load_fuzz crypt2_load_ondisk_fuzz crypt_load_misc_fuzz}
 
 mkdir -p $SRC
 mkdir -p $OUT
