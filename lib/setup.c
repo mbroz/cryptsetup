@@ -54,6 +54,9 @@ struct crypt_device {
 	const char *user_key_name2;
 	key_type_t keyring_key_type;
 
+	const char *keyring_description;
+	key_serial_t keyring_id;
+
 	uint64_t data_offset;
 	uint64_t metadata_size; /* Used in LUKS2 format */
 	uint64_t keyslots_size; /* Used in LUKS2 format */
@@ -4141,6 +4144,15 @@ int crypt_header_is_detached(struct crypt_device *cd)
 	return r ? 0 : 1;
 }
 
+static void crypt_unlink_keyring_from_thread_keyring(struct crypt_device *cd,
+		key_serial_t keyring_id)
+{
+	log_dbg(cd, "Unlinking keyring (id: %" PRIi32 ") from thread keyring.", keyring_id);
+
+	if (keyring_unlink_key_from_thread_keyring(keyring_id))
+		log_dbg(cd, "keyring_unlink_key_from_thread_keyring failed with errno %d.", errno);
+}
+
 void crypt_free(struct crypt_device *cd)
 {
 	if (!cd)
@@ -4150,6 +4162,11 @@ void crypt_free(struct crypt_device *cd)
 
 	dm_backend_exit(cd);
 	crypt_free_volume_key(cd->volume_key);
+
+	if (cd->keyring_description) {
+		crypt_unlink_keyring_from_thread_keyring(cd, cd->keyring_id);
+		free(CONST_CAST(void*)cd->keyring_description);
+	}
 
 	crypt_free_type(cd, NULL);
 
@@ -4335,18 +4352,35 @@ static int resume_luks1_by_volume_key(struct crypt_device *cd,
 	return r;
 }
 
+static bool unlink_key_from_keyring(struct crypt_device *cd, key_serial_t kid, key_serial_t keyring_id)
+{
+	log_dbg(cd, "Unlinking volume key (id: %" PRIi32 ") from kernel keyring (id: %" PRIi32 ").",
+		kid, keyring_id);
+
+	if (!keyring_unlink_key_from_keyring(kid, keyring_id))
+		return true;
+
+	log_dbg(cd, "keyring_unlink_key_from_keyring failed with errno %d.", errno);
+
+	return false;
+}
+
+/* internal only */
+void crypt_unlink_key_from_keyring(struct crypt_device *cd,
+		key_serial_t key_id)
+{
+	(void)unlink_key_from_keyring(cd, key_id, cd->keyring_id);
+}
+
 static void crypt_unlink_key_from_custom_keyring(struct crypt_device *cd, key_serial_t kid)
 {
 	assert(cd);
 	assert(cd->keyring_to_link_vk);
 
-	log_dbg(cd, "Unlinking volume key (id: %" PRIi32 ") from kernel keyring (id: %" PRIi32 ").",
-		kid, cd->keyring_to_link_vk);
 
-	if (!keyring_unlink_key_from_keyring(kid, cd->keyring_to_link_vk))
+	if (unlink_key_from_keyring(cd, kid, cd->keyring_to_link_vk))
 		return;
 
-	log_dbg(cd, "keyring_unlink_key_from_keyring failed with errno %d.", errno);
 	log_err(cd, _("Failed to unlink volume key from user specified keyring."));
 }
 
@@ -7638,6 +7672,11 @@ int crypt_volume_key_keyring(struct crypt_device *cd __attribute__((unused)), in
 /* internal only */
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
 {
+	key_serial_t keyring_id;
+	char *keyring_description;
+	char rnd[4];
+	const char *uuid;
+
 	if (!vk || !cd)
 		return -EINVAL;
 
@@ -7646,14 +7685,39 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 		return -EINVAL;
 	}
 
-	log_dbg(cd, "Loading key (type logon, name %s) in thread keyring.",
-		crypt_volume_key_description(vk));
+	if (!cd->keyring_description) {
+		uuid = crypt_get_uuid(cd);
+		if (!uuid)
+			return -EINVAL;
 
-	if (crypt_volume_key_upload_kernel_key(vk)) {
+		if (crypt_random_get(cd, rnd, sizeof(rnd), CRYPT_RND_NORMAL) < 0)
+			return -EINVAL;
+
+		if (asprintf(&keyring_description, "cryptsetup-%.8s-%02x%02x%02x%02x",
+			     uuid, (unsigned char)rnd[0], (unsigned char)rnd[1],
+			     (unsigned char)rnd[2], (unsigned char)rnd[3]) < 0)
+			return -ENOMEM;
+
+		log_dbg(cd, "Loading key (type keyring, name %s) in thread keyring.", keyring_description);
+		keyring_id = keyring_add_key_in_thread_keyring(KEYRING_KEY, keyring_description, NULL, 0);
+		if (keyring_id < 0) {
+			free(keyring_description);
+			log_dbg(cd, "keyring_add_key_in_thread_keyring failed (error %d)", errno);
+			log_err(cd, _("Failed to load key in kernel keyring."));
+			return -EINVAL;
+		}
+		cd->keyring_id = keyring_id;
+		cd->keyring_description = keyring_description;
+	}
+
+	log_dbg(cd, "Loading key (type logon, name %s) in %s keyring.",
+		crypt_volume_key_description(vk), cd->keyring_description);
+
+	if (crypt_volume_key_upload_kernel_key(vk, cd->keyring_id)) {
 		crypt_set_key_in_keyring(cd, 1);
 		return 0;
 	} else {
-		log_dbg(cd, "keyring_add_key_in_thread_keyring failed (error %d)", errno);
+		log_dbg(cd, "keyring_add_key_to_keyring failed (error %d)", errno);
 		log_err(cd, _("Failed to load key in kernel keyring."));
 		return -EINVAL;
 	}
@@ -7769,17 +7833,7 @@ void crypt_set_key_in_keyring(struct crypt_device *cd, unsigned key_in_keyring)
 	cd->key_in_keyring = key_in_keyring;
 }
 
-/* internal only */
-void crypt_unlink_key_from_thread_keyring(struct crypt_device *cd,
-		key_serial_t key_id)
-{
-	log_dbg(cd, "Unlinking volume key (id: %" PRIi32 ") from thread keyring.", key_id);
-
-	if (keyring_unlink_key_from_thread_keyring(key_id))
-		log_dbg(cd, "keyring_unlink_key_from_thread_keyring failed with errno %d.", errno);
-}
-
-void crypt_unlink_key_by_description_from_thread_keyring(struct crypt_device *cd,
+void crypt_unlink_key_by_description_from_keyring(struct crypt_device *cd,
 		const char *key_description,
 		key_type_t ktype)
 {
@@ -7802,7 +7856,7 @@ void crypt_unlink_key_by_description_from_thread_keyring(struct crypt_device *cd
 		return;
 	}
 
-	crypt_unlink_key_from_thread_keyring(cd, kid);
+	crypt_unlink_key_from_keyring(cd, kid);
 }
 
 int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_description,
