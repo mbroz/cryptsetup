@@ -2,8 +2,8 @@
 /*
  * kernel keyring utilities
  *
- * Copyright (C) 2016-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2016-2025 Ondrej Kozina
+ * Copyright (C) 2016-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2016-2026 Ondrej Kozina
  */
 
 #include <assert.h>
@@ -32,6 +32,7 @@ static const struct {
 	{ BIG_KEY,       "big_key" },
 	{ TRUSTED_KEY,   "trusted" },
 	{ ENCRYPTED_KEY, "encrypted" },
+	{ KEYRING_KEY,	 "keyring" },
 };
 
 #include <linux/keyctl.h>

@@ -2,8 +2,8 @@
 /*
  * Linux kernel userspace API crypto backend implementation (skcipher)
  *
- * Copyright (C) 2012-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2012-2025 Milan Broz
+ * Copyright (C) 2012-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012-2026 Milan Broz
  */
 
 #include <stdlib.h>
@@ -355,8 +355,7 @@ int crypt_cipher_decrypt_kernel(struct crypt_cipher_kernel *ctx,
 int crypt_cipher_check_kernel(const char *name, const char *mode,
 			      const char *integrity, size_t key_length)
 {
-	/* Cannot check, expect success. */
-	return 0;
+	return -ENOTSUP;
 }
 int crypt_bitlk_decrypt_key_kernel(const void *key, size_t key_length,
 				   const char *in, char *out, size_t length,

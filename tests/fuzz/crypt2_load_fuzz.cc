@@ -3,7 +3,7 @@
  * cryptsetup LUKS2 fuzz target
  *
  * Copyright (C) 2022-2025 Daniel Zatovic <daniel.zatovic@gmail.com>
- * Copyright (C) 2022-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2022-2026 Red Hat, Inc. All rights reserved.
  */
 
 extern "C" {
@@ -43,7 +43,7 @@ static bool calculate_checksum(const char *data, size_t size, struct luks2_hdr_d
 	if (sizeof(*hdr_rw) > size)
 		return false;
 
-	hdr_size = be64_to_cpu(((struct luks2_hdr_disk *)data)->hdr_size);
+	hdr_size = be64_to_cpu(((struct luks2_hdr_disk *)(uintptr_t)data)->hdr_size);
 	if (hdr_size > size || hdr_size <= sizeof(*hdr_rw))
 		return false;
 

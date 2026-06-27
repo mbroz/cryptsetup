@@ -2,8 +2,8 @@
 /*
  * LUKS - Linux Unified Key Setup v2, keyslot handling
  *
- * Copyright (C) 2015-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2015-2025 Milan Broz
+ * Copyright (C) 2015-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2015-2026 Milan Broz
  */
 
 #include "luks2_internal.h"
@@ -968,6 +968,7 @@ int LUKS2_keyslot_swap(struct crypt_device *cd, struct luks2_hdr *hdr,
 	json_object_object_del_by_uint(jobj_keyslots, keyslot);
 	r = json_object_object_add_by_uint(jobj_keyslots, keyslot, jobj_keyslot2);
 	if (r < 0) {
+		json_object_put(jobj_keyslot);
 		json_object_put(jobj_keyslot2);
 		log_dbg(cd, "Failed to swap keyslot %d.", keyslot);
 		return r;

@@ -2,9 +2,9 @@
 /*
  * BITLK (BitLocker-compatible) volume handling
  *
- * Copyright (C) 2019-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2019-2025 Milan Broz
- * Copyright (C) 2019-2025 Vojtech Trefny
+ * Copyright (C) 2019-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2019-2026 Milan Broz
+ * Copyright (C) 2019-2026 Vojtech Trefny
  */
 
 #include <errno.h>

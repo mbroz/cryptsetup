@@ -2,8 +2,8 @@
 /*
  * LUKS - Linux Unified Key Setup v2
  *
- * Copyright (C) 2015-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2015-2025 Milan Broz
+ * Copyright (C) 2015-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2015-2026 Milan Broz
  */
 
 #ifndef _CRYPTSETUP_LUKS2_ONDISK_H
@@ -318,7 +318,8 @@ void crypt_token_unload_external_all(struct crypt_device *cd);
  * Generic LUKS2 digest
  */
 int LUKS2_digest_verify_by_any_matching(struct crypt_device *cd,
-		const struct volume_key *vk);
+		const struct volume_key *vk,
+		bool exclude_default_segment);
 
 int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 	struct luks2_hdr *hdr,

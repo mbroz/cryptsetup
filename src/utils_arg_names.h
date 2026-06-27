@@ -2,8 +2,8 @@
 /*
  * Command line arguments name list
  *
- * Copyright (C) 2020-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2020-2025 Ondrej Kozina
+ * Copyright (C) 2020-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2020-2026 Ondrej Kozina
  */
 
 #ifndef UTILS_ARG_NAMES_H

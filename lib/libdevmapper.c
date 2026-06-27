@@ -4,8 +4,8 @@
  *
  * Copyright (C) 2004 Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007 Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2025 Milan Broz
+ * Copyright (C) 2009-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2026 Milan Broz
  */
 
 #include <stdio.h>
@@ -529,9 +529,9 @@ static int cipher_dm2c(const char *org_c, const char *org_i, unsigned tag_size,
 		c_size = snprintf(c_dm, c_dm_size, "capi:authenc(%s,%s)-%s", org_i, capi, iv);
 	}
 
-	if (c_size < 0 || c_size == c_dm_size)
+	if (c_size < 0 || c_size >= c_dm_size)
 		return -EINVAL;
-	if (i_size < 0 || i_size == i_dm_size)
+	if (i_size < 0 || i_size >= i_dm_size)
 		return -EINVAL;
 
 	return 0;

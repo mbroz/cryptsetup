@@ -2,8 +2,8 @@
 /*
  * kernel keyring syscall wrappers
  *
- * Copyright (C) 2016-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2016-2025 Ondrej Kozina
+ * Copyright (C) 2016-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2016-2026 Ondrej Kozina
  */
 
 #ifndef _UTILS_KEYRING
@@ -17,7 +17,7 @@
 typedef int32_t key_serial_t;
 #endif
 
-typedef enum { LOGON_KEY = 0, USER_KEY, BIG_KEY, TRUSTED_KEY, ENCRYPTED_KEY, INVALID_KEY } key_type_t;
+typedef enum { LOGON_KEY = 0, USER_KEY, BIG_KEY, TRUSTED_KEY, ENCRYPTED_KEY, KEYRING_KEY, INVALID_KEY } key_type_t;
 
 const char *key_type_name(key_type_t ktype);
 key_type_t key_type_by_name(const char *name);

@@ -2,8 +2,8 @@
 /*
  * LUKS - Linux Unified Key Setup v2, digest handling
  *
- * Copyright (C) 2015-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2015-2025 Milan Broz
+ * Copyright (C) 2015-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2015-2026 Milan Broz
  */
 
 #include "luks2_internal.h"
@@ -97,16 +97,12 @@ int LUKS2_digest_by_keyslot(struct luks2_hdr *hdr, int keyslot)
 	return -ENOENT;
 }
 
-int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
+static int digest_verify(struct crypt_device *cd,
+	const digest_handler *h,
 	int digest,
 	const struct volume_key *vk)
 {
-	const digest_handler *h;
 	int r;
-
-	h = LUKS2_digest_handler(cd, digest);
-	if (!h)
-		return -EINVAL;
 
 	r = h->verify(cd, digest, crypt_volume_key_get_key(vk), crypt_volume_key_length(vk));
 	if (r < 0) {
@@ -117,20 +113,76 @@ int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
 	return digest;
 }
 
-int LUKS2_digest_verify(struct crypt_device *cd,
+int LUKS2_digest_verify_by_digest(struct crypt_device *cd,
+	int digest,
+	const struct volume_key *vk)
+{
+	const digest_handler *h;
+	int key_size, r;
+
+	h = LUKS2_digest_handler(cd, digest);
+	if (!h)
+		return -EINVAL;
+
+	r = digest_verify(cd, h, digest, vk);
+	if (r < 0)
+		return r;
+
+	key_size = LUKS2_get_volume_key_size_by_digest(crypt_get_hdr(cd, CRYPT_LUKS2), digest);
+
+	if (key_size > 0 && (size_t)key_size != crypt_volume_key_length(vk))
+		return -EPERM;
+
+	return r;
+}
+
+static int digest_verify_by_keyslot(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const struct volume_key *vk,
-	int keyslot)
+	int keyslot,
+	bool check_key_size)
 {
-	int digest;
+	const digest_handler *h;
+	int digest, key_size, r;
 
 	digest = LUKS2_digest_by_keyslot(hdr, keyslot);
 	if (digest < 0)
 		return digest;
 
+	h = LUKS2_digest_handler(cd, digest);
+	if (!h)
+		return -EINVAL;
+
 	log_dbg(cd, "Verifying key from keyslot %d, digest %d.", keyslot, digest);
 
-	return LUKS2_digest_verify_by_digest(cd, digest, vk);
+	r = digest_verify(cd, h, digest, vk);
+	if (r < 0 || !check_key_size)
+		return r;
+
+	key_size = LUKS2_get_keyslot_stored_key_size(hdr, keyslot);
+	if (key_size < 0)
+		return -EINVAL;
+
+	if ((size_t)key_size != crypt_volume_key_length(vk))
+		return -EPERM;
+
+	return r;
+}
+
+int LUKS2_digest_verify(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	const struct volume_key *vk,
+	int keyslot)
+{
+	return digest_verify_by_keyslot(cd, hdr, vk, keyslot, /* check_key_size= */ true);
+}
+
+int LUKS2_reencrypt_keyslot_digest_verify(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	const struct volume_key *vk,
+	int keyslot)
+{
+	return digest_verify_by_keyslot(cd, hdr, vk, keyslot, /* check_key_size= */ false);
 }
 
 int LUKS2_digest_dump(struct crypt_device *cd, int digest)
@@ -144,13 +196,19 @@ int LUKS2_digest_dump(struct crypt_device *cd, int digest)
 }
 
 int LUKS2_digest_verify_by_any_matching(struct crypt_device *cd,
-		const struct volume_key *vk)
+		const struct volume_key *vk,
+		bool exclude_default_segment)
 {
-	int digest;
+	int digest, default_segment_digest = -1;
 
-	for (digest = 0; digest < LUKS2_DIGEST_MAX; digest++)
-		if (LUKS2_digest_verify_by_digest(cd, digest, vk) == digest)
+	if (exclude_default_segment)
+		default_segment_digest = LUKS2_digest_by_segment(crypt_get_hdr(cd, CRYPT_LUKS2), CRYPT_DEFAULT_SEGMENT);
+
+	for (digest = 0; digest < LUKS2_DIGEST_MAX; digest++) {
+		if (digest != default_segment_digest &&
+		    LUKS2_digest_verify_by_digest(cd, digest, vk) == digest)
 			return digest;
+	}
 
 	return -ENOENT;
 }
@@ -160,23 +218,41 @@ int LUKS2_digest_verify_by_segment(struct crypt_device *cd,
 	int segment,
 	const struct volume_key *vk)
 {
-	int r;
+	const digest_handler *h;
+	int digest, key_size, r;
 	unsigned s;
 
 	if (segment == CRYPT_ANY_SEGMENT) {
 		for (s = 0; s < json_segments_count(LUKS2_get_segments_jobj(hdr)); s++) {
-			if ((r = LUKS2_digest_verify_by_digest(cd, LUKS2_digest_by_segment(hdr, s), vk)) >= 0)
+			if ((r = LUKS2_digest_verify_by_segment(cd, hdr, s, vk)) >= 0)
 				return r;
 		}
 
 		return -EPERM;
 	}
 
-	r = LUKS2_digest_by_segment(hdr, segment);
+	digest = LUKS2_digest_by_segment(hdr, segment);
+	if (digest < 0)
+		return digest;
+
+	h = LUKS2_digest_handler(cd, digest);
+	if (!h)
+		return -EINVAL;
+
+	r = digest_verify(cd, h, digest, vk);
 	if (r < 0)
 		return r;
 
-	return LUKS2_digest_verify_by_digest(cd, r, vk);
+	if (segment == CRYPT_DEFAULT_SEGMENT)
+		/* use default segment key size or fallback to the cached key size */
+		key_size = crypt_get_volume_key_size(cd);
+	else
+		key_size = LUKS2_get_volume_key_size(hdr, segment);
+
+	if (key_size > 0 && (size_t)key_size != crypt_volume_key_length(vk))
+		return -EPERM;
+
+	return r;
 }
 
 /* FIXME: segment can have more digests */

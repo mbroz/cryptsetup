@@ -3,7 +3,7 @@
  * LUKS - Linux Unified Key Setup
  *
  * Copyright (C) 2004-2006 Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2025 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2026 Red Hat, Inc. All rights reserved.
  */
 
 #ifndef INCLUDED_CRYPTSETUP_LUKS_LUKS_H
@@ -88,11 +88,6 @@ struct luks_phdr {
 
 int LUKS_verify_volume_key(const struct luks_phdr *hdr,
 			   const struct volume_key *vk);
-
-int LUKS_check_cipher(struct crypt_device *ctx,
-		      size_t keylength,
-		      const char *cipher,
-		      const char *cipher_mode);
 
 int LUKS_generate_phdr(struct luks_phdr *header,
 	const struct volume_key *vk,

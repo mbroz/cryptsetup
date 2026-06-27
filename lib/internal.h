@@ -4,8 +4,8 @@
  *
  * Copyright (C) 2004 Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007 Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2025 Milan Broz
+ * Copyright (C) 2009-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2026 Milan Broz
  */
 
 #ifndef INTERNAL_H
@@ -29,7 +29,6 @@
 #include "utils_keyring.h"
 #include "utils_io.h"
 #include "crypto_backend/crypto_backend.h"
-#include "utils_storage_wrappers.h"
 
 #include "libcryptsetup.h"
 
@@ -75,7 +74,7 @@ struct volume_key *crypt_volume_key_next(struct volume_key *vk);
 struct volume_key *crypt_volume_key_by_id(struct volume_key *vk, int id);
 void crypt_volume_key_pass_safe_alloc(struct volume_key *vk, void **safe_alloc);
 bool crypt_volume_key_is_set(const struct volume_key *vk);
-bool crypt_volume_key_upload_kernel_key(struct volume_key *vk);
+bool crypt_volume_key_upload_kernel_key(struct volume_key *vk, key_serial_t keyring);
 void crypt_volume_key_drop_uploaded_kernel_key(struct crypt_device *cd, struct volume_key *vk);
 void crypt_volume_key_drop_kernel_key(struct crypt_device *cd, struct volume_key *vk);
 
@@ -248,9 +247,9 @@ int crypt_keyring_get_keysize_by_name(struct crypt_device *cd,
 		size_t *r_key_size);
 
 int crypt_use_keyring_for_vk(struct crypt_device *cd);
-void crypt_unlink_key_from_thread_keyring(struct crypt_device *cd,
+void crypt_unlink_key_from_keyring(struct crypt_device *cd,
 		key_serial_t key_id);
-void crypt_unlink_key_by_description_from_thread_keyring(struct crypt_device *cd,
+void crypt_unlink_key_by_description_from_keyring(struct crypt_device *cd,
 		const char *key_description,
 		key_type_t ktype);
 void crypt_drop_uploaded_keyring_key(struct crypt_device *cd, struct volume_key *vks);
@@ -287,5 +286,10 @@ static inline bool uint64_mult_overflow(uint64_t *u, uint64_t b, size_t size)
 #define KEY_VERIFIED 0
 
 size_t crypt_safe_alloc_size(const void *data);
+
+int crypt_check_cipher(struct crypt_device *cd,
+		       size_t keylength,
+		       const char *cipher,
+		       const char *cipher_mode);
 
 #endif /* INTERNAL_H */

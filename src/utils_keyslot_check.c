@@ -2,7 +2,7 @@
 /*
  * cryptsetup - keyslot randomness check
  *
- * Copyright (C) 2024-2025 Milan Broz
+ * Copyright (C) 2024-2026 Milan Broz
  */
 
 #include <math.h>

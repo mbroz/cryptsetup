@@ -2,9 +2,9 @@
 /*
  * LUKS - Linux Unified Key Setup v2
  *
- * Copyright (C) 2015-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2015-2025 Milan Broz
- * Copyright (C) 2015-2025 Ondrej Kozina
+ * Copyright (C) 2015-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2015-2026 Milan Broz
+ * Copyright (C) 2015-2026 Ondrej Kozina
  */
 
 #include "luks2_internal.h"
@@ -2439,6 +2439,24 @@ int LUKS2_get_keyslot_stored_key_size(struct luks2_hdr *hdr, int keyslot)
 	return LUKS2_keyslot_get_volume_key_size(hdr, keyslot_name);
 }
 
+int LUKS2_get_volume_key_size_by_digest(struct luks2_hdr *hdr, int digest)
+{
+	json_object *jobj_digest, *jobj_digest_keyslots;
+
+	jobj_digest = LUKS2_get_digest_jobj(hdr, digest);
+	if (!jobj_digest)
+		return -ENOENT;
+
+	if (!json_object_object_get_ex(jobj_digest, "keyslots", &jobj_digest_keyslots))
+		return -EINVAL;
+
+	if (json_object_array_length(jobj_digest_keyslots) <= 0)
+		return -ENOENT;
+
+	return LUKS2_keyslot_get_volume_key_size(hdr,
+			json_object_get_string(json_object_array_get_idx(jobj_digest_keyslots, 0)));
+}
+
 int LUKS2_get_volume_key_size(struct luks2_hdr *hdr, int segment)
 {
 	json_object *jobj_digests, *jobj_digest_segments, *jobj_digest_keyslots, *jobj1;
@@ -2826,9 +2844,16 @@ static bool is_reencryption_helper(const char *name)
 		return false;
 
 	len = strlen(name);
-	return (len >= 9 && (!strncmp(name + len - 8, "-hotzone-", 9) ||
-			     !strcmp(name + len - 8, "-overlay")));
+	if (len > 8 && !strcmp(name + len - 8, "-overlay"))
+		return true;
 
+	if (len > 16 && !strcmp(name + len - 16, "-hotzone-forward"))
+		return true;
+
+	if (len > 17 && !strcmp(name + len - 17, "-hotzone-backward"))
+		return true;
+
+	return false;
 }
 
 static bool contains_reencryption_helper(char **names)

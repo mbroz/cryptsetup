@@ -2,8 +2,8 @@
 /*
  * Veritysetup command line arguments list
  *
- * Copyright (C) 2020-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2020-2025 Ondrej Kozina
+ * Copyright (C) 2020-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2020-2026 Ondrej Kozina
  */
 
 /* long name, short name, popt type, help description, units, internal argument type, default value, allowed actions (empty=global) */

@@ -2,9 +2,9 @@
 /*
  * LUKS - Linux Unified Key Setup v2, reencryption digest helpers
  *
- * Copyright (C) 2022-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2022-2025 Ondrej Kozina
- * Copyright (C) 2022-2025 Milan Broz
+ * Copyright (C) 2022-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2022-2026 Ondrej Kozina
+ * Copyright (C) 2022-2026 Milan Broz
  */
 
 #include "luks2_internal.h"
@@ -392,7 +392,8 @@ int LUKS2_reencrypt_digest_verify(struct crypt_device *cd,
 	if (r < 0)
 		return r;
 
-	r = LUKS2_digest_verify(cd, hdr, data, keyslot_reencrypt);
+	/* We can not check key size since reencryption keyslot contains bogus key_size=1 */
+	r = LUKS2_reencrypt_keyslot_digest_verify(cd, hdr, data, keyslot_reencrypt);
 	crypt_free_volume_key(data);
 
 	if (r < 0) {

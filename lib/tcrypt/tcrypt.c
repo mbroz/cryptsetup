@@ -2,8 +2,8 @@
 /*
  * TCRYPT (TrueCrypt-compatible) and VeraCrypt volume handling
  *
- * Copyright (C) 2012-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2012-2025 Milan Broz
+ * Copyright (C) 2012-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2012-2026 Milan Broz
  */
 
 #include <errno.h>
@@ -444,8 +444,6 @@ static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 
 		if (r < 0) {
 			log_dbg(cd, "TCRYPT:   returned error %d, skipped.", r);
-			if (r == -ENOTSUP)
-				break;
 			r = -ENOENT;
 			continue;
 		}
@@ -519,14 +517,18 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			   struct tcrypt_phdr *hdr,
 			   struct crypt_params_tcrypt *params)
 {
-	unsigned char pwd[VCRYPT_KEY_POOL_LEN] = {};
+	unsigned char *pwd = NULL;
 	size_t passphrase_size, max_passphrase_size;
-	char *key;
-	unsigned int i, skipped = 0, iterations;
+	char *key = NULL;
+	unsigned int i, iterations;
 	int r = -EPERM, keyfiles_pool_length;
 
-	if (posix_memalign((void*)&key, crypt_getpagesize(), TCRYPT_HDR_KEY_LEN))
-		return -ENOMEM;
+	pwd = crypt_safe_alloc(VCRYPT_KEY_POOL_LEN);
+	key = crypt_safe_alloc(TCRYPT_HDR_KEY_LEN);
+	if (!pwd || !key) {
+		r = -ENOMEM;
+		goto out;
+	}
 
 	if (params->flags & CRYPT_TCRYPT_VERA_MODES &&
 	    params->passphrase_size > TCRYPT_KEY_POOL_LEN) {
@@ -588,7 +590,6 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 		if (r < 0) {
 			log_verbose(cd, _("PBKDF2 hash algorithm %s not available, skipping."),
 				      tcrypt_kdf[i].hash);
-			skipped++;
 			r = -EPERM;
 			continue;
 		}
@@ -596,7 +597,6 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 		/* Decrypt header */
 		r = TCRYPT_decrypt_hdr(cd, hdr, key, params);
 		if (r == -ENOENT) {
-			skipped++;
 			r = -EPERM;
 			continue;
 		}
@@ -604,13 +604,6 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			break;
 	}
 
-	if ((r < 0 && skipped && skipped == i) || r == -ENOTSUP) {
-		log_err(cd, _("Required kernel crypto interface not available."));
-#if ENABLE_AF_ALG
-		log_err(cd, _("Ensure you have algif_skcipher kernel module loaded."));
-#endif
-		r = -ENOTSUP;
-	}
 	if (r < 0)
 		goto out;
 
@@ -626,10 +619,8 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 			params->cipher, params->mode, params->key_size);
 	}
 out:
-	crypt_safe_memzero(pwd, VCRYPT_KEY_POOL_LEN);
-	if (key)
-		crypt_safe_memzero(key, TCRYPT_HDR_KEY_LEN);
-	free(key);
+	crypt_safe_free(pwd);
+	crypt_safe_free(key);
 	return r;
 }
 

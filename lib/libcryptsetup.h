@@ -4,8 +4,8 @@
  *
  * Copyright (C) 2004 Jana Saout <jana@saout.de>
  * Copyright (C) 2004-2007 Clemens Fruhwirth <clemens@endorphin.org>
- * Copyright (C) 2009-2025 Red Hat, Inc. All rights reserved.
- * Copyright (C) 2009-2025 Milan Broz
+ * Copyright (C) 2009-2026 Red Hat, Inc. All rights reserved.
+ * Copyright (C) 2009-2026 Milan Broz
  */
 
 /**
@@ -1161,7 +1161,11 @@ int crypt_keyslot_add_by_volume_key(struct crypt_device *cd,
 /** create keyslot with new volume key and assign it to current dm-crypt segment */
 #define CRYPT_VOLUME_KEY_SET (UINT32_C(1) << 1)
 
-/** Assign key to first matching digest before creating new digest */
+/**
+ * Assign key to first matching digest not associated with current dm-crypt segment
+ * before creating new digest. The flag is effective only with
+ * CRYPT_VOLUME_KEY_NO_SEGMENT or CRYPT_VOLUME_KEY_SET flag set.
+ */
 #define CRYPT_VOLUME_KEY_DIGEST_REUSE (UINT32_C(1) << 2)
 
 /**

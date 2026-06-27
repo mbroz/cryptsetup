@@ -1,5 +1,5 @@
 AC_PREREQ([2.67])
-AC_INIT([cryptsetup],[2.8.6])
+AC_INIT([cryptsetup],[2.8.7-rc0])
 
 dnl library version from <major>.<minor>.<release>[-<suffix>]
 LIBCRYPTSETUP_VERSION=$(echo $PACKAGE_VERSION | cut -f1 -d-)
@@ -741,6 +741,7 @@ case $with_crypto_backend in
 	openssl) PKGMODULES="$PKGMODULES openssl" ;;
 	nss)     PKGMODULES="$PKGMODULES nss" ;;
 	nettle)  PKGMODULES="$PKGMODULES nettle" ;;
+	mbedtls) PKGMODULES="$PKGMODULES mbedtls" ;;
 esac
 if test "x$enable_libargon2" = "xyes"; then
 	PKGMODULES="$PKGMODULES libargon2"

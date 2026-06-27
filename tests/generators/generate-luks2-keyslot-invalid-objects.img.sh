@@ -14,7 +14,7 @@
 
 generate()
 {
-	json_str=$(jq -c 'del(.keyslots."0".kdf) | .keyslots."0".kdf = 42 |
+	json_str=$(_jq 'del(.keyslots."0".kdf) | .keyslots."0".kdf = 42 |
 		  del(.keyslots."0".af) | .keyslots."0".af = 42' $TMPDIR/json0)
 	test ${#json_str} -lt $((LUKS2_JSON_SIZE*512)) || exit 2
 
@@ -31,7 +31,7 @@ check()
 	lib_hdr1_checksum || exit 2
 
 	read_luks2_json0 $TGT_IMG $TMPDIR/json_res0
-	jq -c 'if (.keyslots."0".kdf != 42) or (.keyslots."0".af != 42)
+	_jq 'if (.keyslots."0".kdf != 42) or (.keyslots."0".af != 42)
 	       then error("Unexpected value in result json") else empty end' $TMPDIR/json_res0 || exit 5
 }
 
