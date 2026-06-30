@@ -36,10 +36,19 @@ fips_mode()
 	./crypto-check fips_mode || ./crypto-check fips_mode_kernel
 }
 
-del_scsi_device()
-{
-	rmmod scsi_debug >/dev/null 2>&1
-	sleep 1
+# $1 path to scsi debug bdev
+scsi_debug_teardown() {
+	local _tries=15;
+
+	while [ -b "$1" -a $_tries -gt 0 ]; do
+		rmmod scsi_debug >/dev/null 2>&1
+		if [ -b "$1" ]; then
+			sleep .1
+			_tries=$((_tries-1))
+		fi
+	done
+
+	test ! -b "$1" || rmmod scsi_debug >/dev/null 2>&1
 }
 
 remove_mapping()
@@ -51,7 +60,7 @@ remove_mapping()
 	umount $MNT_DIR > /dev/null 2>&1
 	rmdir $MNT_DIR > /dev/null 2>&1
 	LOOPDEV1=""
-	del_scsi_device
+	test -b "$SCSI_DEV" && scsi_debug_teardown $SCSI_DEV
 }
 
 fail()
@@ -89,7 +98,7 @@ valgrind_run()
 }
 
 add_scsi_device() {
-	del_scsi_device
+	test -b "$SCSI_DEV" && scsi_debug_teardown $SCSI_DEV
 	if [ -d /sys/module/scsi_debug ] ; then
 		echo "Cannot use scsi_debug module (in use or compiled-in), test skipped."
 		exit 77
