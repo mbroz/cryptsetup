@@ -4,11 +4,11 @@
 #      (append TESTSUITE_NOSKIP=y to avoid treating skipped tests as success)
 #
 CPPFLAGS=-I../lib/ -I../lib/luks1 -DHAVE_DECL_DM_TASK_RETRY_REMOVE -DKERNEL_KEYRING \
-	-DHAVE_SYS_SYSMACROS_H -DNO_CRYPTSETUP_PATH
+	-DHAVE_SYS_SYSMACROS_H -DNO_CRYPTSETUP_PATH -DNO_CRYPT_BACKEND
 CFLAGS=-O2 -g -Wall -D_GNU_SOURCE
 LDLIBS=-lcryptsetup -ldevmapper
 TESTS=$(wildcard *-test *-test2) api-test api-test-2 all-symbols-test unit-utils-crypt-test
-TESTS_UTILS=differ unit-utils-io unit-wipe
+TESTS_UTILS=differ unit-utils-io unit-wipe crypto-check
 
 ifneq ($(RUN_SSH_PLUGIN_TEST),)
 TESTS += ssh-test-plugin
@@ -22,6 +22,9 @@ endif
 check-programs: $(TESTS_UTILS) $(TESTS)
 
 differ: differ.o
+	$(CC) -o $@ $^
+
+crypto-check: crypto-check.o
 	$(CC) -o $@ $^
 
 api-test: api-test.o test_utils.o

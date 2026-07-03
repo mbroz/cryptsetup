@@ -6,10 +6,13 @@
  */
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 
+#ifndef NO_CRYPT_BACKEND
 #include "crypto_backend/crypto_backend.h"
 
 static int check_cipher(const char *alg, const char *mode, unsigned long key_bits)
@@ -79,6 +82,49 @@ static int check_pbkdf(const char *pbkdf)
 
 	return EXIT_FAILURE;
 }
+#else /* NO_CRYPT_BACKEND */
+/*
+ * All default backends should work with options hardcoded here
+ */
+static int crypt_backend_init(void) { return 0; };
+static void crypt_backend_destroy(void) {};
+static const char *crypt_backend_version(void) { return "none"; };
+static bool crypt_fips_mode(void) { return false; };
+static bool crypt_fips_mode_kernel(void) { return false; };
+
+static int check_cipher(const char *alg, const char *mode, unsigned long key_bits)
+{
+	if (strcmp(alg, "aes"))
+		return EXIT_FAILURE;
+
+	if (!strcmp(mode, "cbc") && (key_bits == 128 || key_bits == 256))
+		return EXIT_SUCCESS;
+
+	if (!strcmp(mode, "xts") && (key_bits == 256 || key_bits == 512))
+		return EXIT_SUCCESS;
+
+	return EXIT_FAILURE;
+}
+
+static int check_cipher_kernel(const char *alg, const char *mode, unsigned long key_bits)
+{
+	/* Expect AF_ALG not available */
+	return  EXIT_FAILURE;
+}
+
+static int check_hash(const char *hash)
+{
+	if (!strcmp(hash, "sha512") || !strcmp(hash, "sha256") || !strcmp(hash, "sha1"))
+		return EXIT_SUCCESS;
+
+	return EXIT_FAILURE;
+}
+
+static int check_pbkdf(const char *pbkdf)
+{
+	return EXIT_SUCCESS;
+}
+#endif
 
 static void __attribute__((noreturn)) exit_help(bool destroy_backend)
 {

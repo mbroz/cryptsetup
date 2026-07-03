@@ -3244,25 +3244,35 @@ static void Pbkdf(void)
 
 static void TypeDefaults(void)
 {
-	struct crypt_type_defaults defaults;
+	struct crypt_type_defaults defaults = {}, defaults2 = {};
 
 	// test valid LUKS1 defaults
 	OK_(crypt_get_type_defaults(CRYPT_LUKS1, &defaults));
+	NOTNULL_(defaults.cipher);
+	NOTNULL_(defaults.cipher_mode);
+	GE_(defaults.key_size, 128);
+#ifdef DEFAULT_LUKS1_CIPHER
 	OK_(strcmp(defaults.cipher, DEFAULT_LUKS1_CIPHER));
 	OK_(strcmp(defaults.cipher_mode, DEFAULT_LUKS1_MODE));
-	OK_(strcmp(defaults.hash, default_luks1_hash));
 	EQ_(defaults.key_size, DEFAULT_LUKS1_KEYBITS);
+#endif
+	OK_(strcmp(defaults.hash, default_luks1_hash));
 	NULL_(defaults.integrity);
 	EQ_(defaults.tag_size, 0);
 
 	// test valid LUKS2 defaults
-	OK_(crypt_get_type_defaults(CRYPT_LUKS2, &defaults));
-	OK_(strcmp(defaults.cipher, DEFAULT_LUKS1_CIPHER));
-	OK_(strcmp(defaults.cipher_mode, DEFAULT_LUKS1_MODE));
-	OK_(strcmp(defaults.hash, default_luks1_hash));
-	EQ_(defaults.key_size, DEFAULT_LUKS1_KEYBITS);
-	OK_(strcmp(defaults.integrity, "hmac-sha256"));
-	EQ_(defaults.tag_size, 32);
+	OK_(crypt_get_type_defaults(CRYPT_LUKS2, &defaults2));
+	NOTNULL_(defaults2.cipher);
+	NOTNULL_(defaults2.cipher_mode);
+	GE_(defaults2.key_size, 128);
+#ifdef DEFAULT_LUKS1_CIPHER
+	OK_(strcmp(defaults2.cipher, DEFAULT_LUKS1_CIPHER));
+	OK_(strcmp(defaults2.cipher_mode, DEFAULT_LUKS1_MODE));
+	EQ_(defaults2.key_size, DEFAULT_LUKS1_KEYBITS);
+#endif
+	OK_(strcmp(defaults2.hash, default_luks1_hash));
+	OK_(strcmp(defaults2.integrity, "hmac-sha256"));
+	EQ_(defaults2.tag_size, 32);
 
 	// test invalid type (non-LUKS)
 	FAIL_(crypt_get_type_defaults(CRYPT_PLAIN, &defaults), "Invalid type");
