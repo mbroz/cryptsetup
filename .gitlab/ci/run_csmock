@@ -17,6 +17,6 @@ $CSMOCK cryptsetup-*.src.rpm \
 
 tar xJf $CSMOCK_TXZ $CSMOCK_ERR --strip-components 1 \
        && test -s $CSMOCK_ERR \
-       && { echo "csmock discovered important errors"; echo 3; }
+       && { echo "csmock discovered important errors"; exit 3; }
 
 exit 0
