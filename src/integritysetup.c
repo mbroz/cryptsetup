@@ -120,6 +120,7 @@ static int action_format(void)
 	char *integrity_key = NULL, *msg = NULL;
 	int r;
 	size_t signatures;
+	uint32_t flags = 0;
 
 	r = crypt_parse_hash_integrity_mode(ARG_STR(OPT_INTEGRITY_ID), integrity);
 	if (r < 0) {
@@ -195,10 +196,11 @@ static int action_format(void)
 	}
 
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_PADDING_ID))
-		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING);
-
+		flags |= CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING;
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_HMAC_ID))
-		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC);
+		flags |= CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC;
+	if (flags)
+		crypt_set_compatibility(cd, flags);
 
 	if (ARG_SET(OPT_INTEGRITY_INLINE_ID))
 		r = crypt_format_inline(cd, CRYPT_INTEGRITY, NULL, NULL, NULL,
@@ -318,7 +320,7 @@ static int action_open(void)
 		.journal_commit_time = ARG_SET(OPT_INTEGRITY_BITMAP_MODE_ID) ? ARG_UINT32(OPT_BITMAP_FLUSH_TIME_ID) : ARG_UINT32(OPT_JOURNAL_COMMIT_TIME_ID),
 		.buffer_sectors = ARG_UINT32(OPT_BUFFER_SECTORS_ID),
 	};
-	uint32_t activate_flags = 0;
+	uint32_t activate_flags = 0, flags = 0;
 	char integrity[MAX_CIPHER_LEN], journal_integrity[MAX_CIPHER_LEN], journal_crypt[MAX_CIPHER_LEN];
 	char *integrity_key = NULL;
 	int r;
@@ -381,8 +383,12 @@ static int action_open(void)
 		goto out;
 	}
 
+	if (ARG_SET(OPT_INTEGRITY_LEGACY_HMAC_ID))
+		flags |= CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC;
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_RECALC_ID))
-		crypt_set_compatibility(cd, CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC);
+		flags |= CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC;
+	if (flags)
+		crypt_set_compatibility(cd, flags);
 
 	r = crypt_activate_by_volume_key(cd, action_argv[1], integrity_key,
 					 ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID), activate_flags);

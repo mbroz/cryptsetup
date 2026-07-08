@@ -148,6 +148,11 @@ kernel_param_check() # number value
 	fi
 }
 
+kernel_param_grep()
+{
+	dmsetup table $DEV_NAME | grep -q "$1"
+}
+
 valgrind_setup()
 {
 	command -v valgrind >/dev/null || fail "Cannot find valgrind."
@@ -656,25 +661,36 @@ if [ -n "$DM_INTEGRITY_HMAC_FIX" ] ; then
 	# only data HMAC
 	ARGS="--integrity hmac-sha256 --integrity-key-file $KEY_FILE --integrity-key-size 32"
 	$INTSETUP format -q $DEV --integrity-legacy-hmac --no-wipe --tag-size 32 $ARGS || fail "Cannot format device."
-	$INTSETUP open $DEV $DEV_NAME --integrity-recalculate $ARGS >/dev/null 2>&1 && fail "Cannot activate device."
-	$INTSETUP open $DEV $DEV_NAME --integrity-legacy-recalculate $ARGS || fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity-legacy-hmac --integrity-recalculate $ARGS >/dev/null 2>&1 && fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity-legacy-hmac --integrity-legacy-recalculate $ARGS || fail "Cannot activate device."
+	kernel_param_grep "fix_hmac" && fail "fix_hmac should not be set"
+	kernel_param_grep "fix_padding" || fail "Missing fix_padding"
+	kernel_param_grep "legacy_recalculate" || fail "Missing legacy_recalculate"
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	# New version - must fail (no journal HMAC)
 	$INTSETUP format -q $DEV --no-wipe --tag-size 32 $ARGS || fail "Cannot format device."
 	$INTSETUP open $DEV $DEV_NAME --integrity-recalculate $ARGS  >/dev/null 2>&1 && fail "Cannot activate device."
 	$INTSETUP open $DEV $DEV_NAME --integrity-legacy-recalculate $ARGS || fail "Cannot activate device."
+	kernel_param_grep "fix_padding" || fail "Missing fix_padding"
+	kernel_param_grep "fix_hmac" || fail "Missing fix_hmac"
+	kernel_param_grep "legacy_recalculate" || fail "Missing legacy_recalculate"
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 
 	# data and journal HMAC
 	ARGS="$ARGS --journal-integrity hmac-sha256 --journal-integrity-key-file $KEY_FILE2 --journal-integrity-key-size 32"
 	$INTSETUP format -q $DEV --integrity-legacy-hmac --no-wipe --tag-size 32 $ARGS || fail "Cannot format device."
-	$INTSETUP open $DEV $DEV_NAME --integrity-recalculate $ARGS >/dev/null 2>&1 && fail "Cannot activate device."
-	$INTSETUP open $DEV $DEV_NAME --integrity-legacy-recalculate $ARGS || fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity-legacy-hmac --integrity-recalculate $ARGS >/dev/null 2>&1 && fail "Cannot activate device."
+	$INTSETUP open $DEV $DEV_NAME --integrity-legacy-hmac --integrity-legacy-recalculate $ARGS || fail "Cannot activate device."
+	kernel_param_grep "fix_hmac" && fail "fix_hmac should not be set"
+	kernel_param_grep "fix_padding" || fail "Missing fix_padding"
+	kernel_param_grep "legacy_recalculate" || fail "Missing legacy_recalculate"
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	# New fixed version
 	$INTSETUP format -q $DEV --no-wipe --tag-size 32 $ARGS || fail "Cannot format device."
 	$INTSETUP dump $DEV | grep "flags" | grep -q "fix_hmac" || fail "Flag for HMAC not set."
 	$INTSETUP open $DEV $DEV_NAME --integrity-recalculate $ARGS || fail "Cannot activate device."
+	kernel_param_grep "fix_padding" || fail "Missing fix_padding"
+	kernel_param_grep "fix_hmac" || fail "Missing fix_hmac"
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
 	echo "[OK]"
 else
