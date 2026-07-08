@@ -27,7 +27,7 @@ void set_activation_flags(uint32_t *flags);
 
 int set_pbkdf_params(struct crypt_device *cd, const char *dev_type);
 
-int set_tries_tty(bool keyring);
+uint32_t set_tries_tty(bool keyring);
 
 int get_adjusted_key_size(const char *cipher, const char *cipher_mode, uint32_t keysize_bits,
 			  uint32_t default_size_bits, int integrity_keysize);
@@ -51,7 +51,7 @@ int luks_try_token_unlock(struct crypt_device *cd,
 			  const char *activated_name,
 			  const char *token_type,
 			  uint32_t activate_flags,
-			  int tries,
+			  uint32_t tries,
 			  bool activation,
 			  bool retry_with_pin,
 			  struct crypt_keyslot_context **r_kc);

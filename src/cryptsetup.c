@@ -358,7 +358,8 @@ out:
 
 static int tcrypt_load(struct crypt_device *cd, struct crypt_params_tcrypt *params)
 {
-	int r, tries, eperm = 0;
+	uint32_t tries;
+	int r, eperm = 0;
 
 	tries = set_tries_tty(false);
 	do {
@@ -475,8 +476,8 @@ static int action_open_bitlk(void)
 {
 	struct crypt_device *cd = NULL;
 	const char *activated_name;
-	uint32_t activate_flags = 0;
-	int r, tries, keysize;
+	uint32_t tries, activate_flags = 0;
+	int r, keysize;
 	char *password = NULL;
 	char *key = NULL;
 	size_t passwordLen;
@@ -769,8 +770,8 @@ static int action_open_fvault2(void)
 {
 	struct crypt_device *cd = NULL;
 	const char *activated_name;
-	uint32_t activate_flags = 0;
-	int r, tries, keysize;
+	uint32_t tries, activate_flags = 0;
+	int r, keysize;
 	char *password = NULL;
 	char *key = NULL;
 	size_t passwordLen;
@@ -1771,8 +1772,8 @@ static int action_open_luks(void)
 	struct crypt_active_device cad;
 	struct crypt_device *cd = NULL;
 	const char *data_device, *header_device, *activated_name;
-	uint32_t activate_flags = 0;
-	int r, tries, keysize = 0;
+	uint32_t tries, activate_flags = 0;
+	int r, keysize = 0;
 	struct stat st;
 	struct crypt_keyslot_context *kc1 = NULL, *kc2 = NULL;
 
@@ -2698,7 +2699,8 @@ static int action_luksResume(void)
 {
 	struct crypt_device *cd = NULL;
 	char *vk_description_activation = NULL;
-	int r, tries;
+	uint32_t tries;
+	int r;
 	struct crypt_active_device cad;
 	const char *req_type = luksType(device_type);
 	struct crypt_keyslot_context *kc = NULL;
@@ -3788,6 +3790,11 @@ static void basic_options_cb(poptContext popt_context,
 			usage(popt_context, EXIT_FAILURE,
 			_("Option --priority can be only ignore/normal/prefer."),
 			poptGetInvocationName(popt_context));
+		break;
+	case OPT_TRIES_ID:
+		if (ARG_UINT32(OPT_TRIES_ID) == 0)
+			usage(popt_context, EXIT_FAILURE, _("Invalid maximal tries specification."),
+			      poptGetInvocationName(popt_context));
 		break;
 	}
 }

@@ -131,7 +131,7 @@ int set_pbkdf_params(struct crypt_device *cd, const char *dev_type)
 	return crypt_set_pbkdf_type(cd, &pbkdf);
 }
 
-int set_tries_tty(bool keyring)
+uint32_t set_tries_tty(bool keyring)
 {
 	if (keyring && ARG_SET(OPT_KEY_DESCRIPTION_ID))
 		return 1;
@@ -308,7 +308,7 @@ int luks_try_token_unlock(struct crypt_device *cd,
 			  const char *activated_name,
 			  const char *token_type,
 			  uint32_t activate_flags,
-			  int tries,
+			  uint32_t tries,
 			  bool activation,
 			  bool retry_with_pin,
 			  struct crypt_keyslot_context **r_kc)

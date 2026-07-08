@@ -257,7 +257,8 @@ static int reencrypt_multi_key_unlock(struct crypt_device *cd,
 				       struct crypt_keyslot_context **r_kc1,
 				       struct crypt_keyslot_context **r_kc2)
 {
-	int r, tries, keysize_bytes, new_keysize_bytes;
+	uint32_t tries;
+	int r, keysize_bytes, new_keysize_bytes;
 	struct crypt_keyslot_context *kc1 = NULL, *kc2 = NULL;
 
 	assert(cd);
@@ -350,7 +351,8 @@ static int reencrypt_single_key_unlock(struct crypt_device *cd,
 				       const struct crypt_params_reencrypt *params,
 				       struct crypt_keyslot_context **r_kc)
 {
-	int r, tries, keysize = 0;
+	uint32_t tries;
+	int r, keysize = 0;
 	struct crypt_keyslot_context *kc = NULL, *dummy = NULL;
 
 	assert(params);
@@ -1315,7 +1317,8 @@ static int reencrypt_unlock_keyslot(struct keyslot_contexts *kcs,
 			   int slot_to_check)
 {
 	struct crypt_keyslot_context *kc;
-	int retry_count, r = -EINVAL;
+	uint32_t tries;
+	int  r = -EINVAL;
 
 	assert(cd);
 	assert(kcs);
@@ -1332,7 +1335,7 @@ static int reencrypt_unlock_keyslot(struct keyslot_contexts *kcs,
 		return slot_to_check;
 	}
 
-	retry_count = set_tries_tty(false);
+	tries = set_tries_tty(false);
 	do {
 		r = luks_init_keyslot_context(cd, msg, verify_passphrase(0), false, &kc);
 		if (r < 0)
@@ -1349,7 +1352,7 @@ static int reencrypt_unlock_keyslot(struct keyslot_contexts *kcs,
 		crypt_keyslot_context_free(kc);
 		tools_passphrase_msg(r);
 		check_signal(&r);
-	} while ((r == -EPERM || r == -ERANGE) && (--retry_count > 0));
+	} while ((r == -EPERM || r == -ERANGE) && (--tries > 0));
 
 	return r;
 }
