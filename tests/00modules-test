@@ -17,8 +17,12 @@ if [ "$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)" = "1" ] ; then
 	echo "Kernel running in FIPS mode."
 fi
 
-./crypto-check fips_mode && echo "Crypto backend running in FIPS mode."
-./crypto-check fips_mode_kernel && echo "Kernel running in FIPS mode."
+if [ ! -x ./crypto-check ]; then
+	echo  "WARNING: Cannot find crypto-check helper, cannot check FIPS mode."
+else
+	./crypto-check fips_mode && echo "Crypto backend running in FIPS mode."
+	./crypto-check fips_mode_kernel && echo "Kernel running in FIPS mode."
+fi
 
 if [ -f /etc/os-release ] ; then
 	source /etc/os-release

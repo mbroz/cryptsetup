@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <libdevmapper.h>
 #include <linux/fs.h>
 #include <sys/ioctl.h>
@@ -163,13 +164,40 @@ int t_set_readahead(const char *device, unsigned value)
 	return r;
 }
 
+static bool crypto_check_exists(void)
+{
+	struct stat st;
+	const char *path = "./crypto-check";
+
+	if (stat(path, &st) != 0)
+		return false;
+
+	if (!S_ISREG(st.st_mode))
+		return false;
+
+	if (!(st.st_mode & S_IXUSR))
+		return false;
+
+	return true;
+}
+
 int fips_mode(void)
 {
+	if (!crypto_check_exists()) {
+		printf("WARNING: Cannot find crypto-check helper, expecting non-FIPS mode.\n");
+		return 0;
+	}
+
 	return _system("./crypto-check fips_mode", 1) == 0;
 }
 
 int fips_mode_kernel(void)
 {
+	if (!crypto_check_exists()) {
+		printf("WARNING: Cannot find crypto-check helper, expecting non-FIPS mode.\n");
+		return 0;
+	}
+
 	return _system("./crypto-check fips_mode_kernel", 1) == 0;
 }
 

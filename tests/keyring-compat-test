@@ -122,6 +122,10 @@ test_and_prepare_keyring() {
 
 fips_mode_kernel()
 {
+	if [ ! -x ./crypto-check ]; then
+		echo  "WARNING: Cannot find crypto-check helper, expecting non-FIPS mode."
+		return 1
+	fi
 	./crypto-check fips_mode_kernel
 }
 

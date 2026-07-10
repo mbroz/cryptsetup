@@ -4,6 +4,7 @@ PS4='$LINENO:'
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 CRYPTSETUP_RAW=$CRYPTSETUP
+CRYPTOCHECK=./crypto-check
 
 if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 	CRYPTSETUP_VALGRIND=$CRYPTSETUP
@@ -84,7 +85,7 @@ trap _sigchld CHLD
 
 fips_mode()
 {
-	./crypto-check fips_mode
+	$CRYPTOCHECK fips_mode
 }
 
 can_fail_fips()
@@ -319,7 +320,12 @@ echo "[10] uuid"
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks1 $FAST_PBKDF_OPT --uuid $TEST_UUID $IMG || fail
 $CRYPTSETUP -q luksUUID $IMG | grep -q $TEST_UUID || fail
 
-./crypto-check cipher-kernel aes xts 256
+[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+[ -z "$LOOPDEV" ] && skip "WARNING: Cannot find free loop device, test skipped."
+[ ! -x "$DIFFER" ] && skip "Cannot find $DIFFER, test skipped."
+[ ! -x "$CRYPTOCHECK" ] && skip "Cannot find $CRYPTOCHECK, test skipped."
+
+$CRYPTOCHECK cipher-kernel aes xts 256
 if [ $? -eq 0 ] ; then
 	echo "[11] benchmark"
 	$CRYPTSETUP benchmark -c aes-xts --key-size 128 >/dev/null 2>&1 && fail
@@ -328,10 +334,6 @@ if [ $? -eq 0 ] ; then
 	$CRYPTSETUP benchmark -c capi:xts\(aes\) >/dev/null || fail
 	$CRYPTSETUP benchmark -c capi:xts\(aes\)-plain64 >/dev/null || fail
 fi
-
-[ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
-[ -z "$LOOPDEV" ] && skip "WARNING: Cannot find free loop device, test skipped."
-[ ! -x "$DIFFER" ] && skip "Cannot find $DIFFER, test skipped."
 
 # LUKS root-tests
 prepare	"[1] open - compat image - acceptance check" new
