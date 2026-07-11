@@ -600,8 +600,16 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	hdr2->seqid = 1;
 	hdr2->version = 2;
 	strncpy(hdr2->checksum_alg, "sha256", LUKS2_CHECKSUM_ALG_L);
-	crypt_random_get(cd, (char*)hdr2->salt1, sizeof(hdr2->salt1), CRYPT_RND_SALT);
-	crypt_random_get(cd, (char*)hdr2->salt2, sizeof(hdr2->salt2), CRYPT_RND_SALT);
+	r = crypt_random_get(cd, (char*)hdr2->salt1, sizeof(hdr2->salt1), CRYPT_RND_SALT);
+	if (r < 0) {
+		log_dbg(cd, "Cannot generate header salt.");
+		goto out;
+	}
+	r = crypt_random_get(cd, (char*)hdr2->salt2, sizeof(hdr2->salt2), CRYPT_RND_SALT);
+	if (r < 0) {
+		log_dbg(cd, "Cannot generate header salt.");
+		goto out;
+	}
 	strncpy(hdr2->uuid, crypt_get_uuid(cd), LUKS2_UUID_L-1); /* UUID should be max 36 chars */
 	hdr2->jobj = jobj;
 
