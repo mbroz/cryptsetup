@@ -14,7 +14,6 @@ test_files_to_copy = [
     'evil_hdr-small_luks_device.xz',
     'evil_hdr-stripes_payload_dmg.xz',
     'fvault2-images.tar.xz',
-    'generators/generate-luks2-area-in-json-hdr-space-json0.img.sh',
     'img_fs_ext4.img.xz',
     'img_fs_vfat.img.xz',
     'img_fs_xfs.img.xz',
