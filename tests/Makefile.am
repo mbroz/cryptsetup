@@ -115,13 +115,13 @@ differ_CFLAGS = $(AM_CFLAGS) -Wall -O2
 
 api_test_SOURCES = api-test.c api_test.h test_utils.c
 api_test_LDADD = ../libcryptsetup.la
-api_test_LDFLAGS = $(AM_LDFLAGS) -static
+api_test_LDFLAGS = $(AM_LDFLAGS)
 api_test_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib
 api_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
 api_test_2_SOURCES = api-test-2.c api_test.h test_utils.c
 api_test_2_LDADD = ../libcryptsetup.la
-api_test_2_LDFLAGS = $(AM_LDFLAGS) -static
+api_test_2_LDFLAGS = $(AM_LDFLAGS)
 api_test_2_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib
 api_test_2_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
@@ -145,13 +145,13 @@ unit_utils_io_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
 unit_utils_crypt_test_SOURCES = unit-utils-crypt.c ../lib/utils_crypt.c ../lib/utils_crypt.h
 unit_utils_crypt_test_LDADD = ../libcryptsetup.la
-unit_utils_crypt_test_LDFLAGS = $(AM_LDFLAGS) -static
+unit_utils_crypt_test_LDFLAGS = $(AM_LDFLAGS)
 unit_utils_crypt_test_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib
 unit_utils_crypt_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
 unit_wipe_SOURCES = unit-wipe.c
 unit_wipe_LDADD = ../libcryptsetup.la
-unit_wipe_LDFLAGS = $(AM_LDFLAGS) -static
+unit_wipe_LDFLAGS = $(AM_LDFLAGS)
 unit_wipe_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib
 unit_wipe_CPPFLAGS = $(AM_CPPFLAGS)
 
