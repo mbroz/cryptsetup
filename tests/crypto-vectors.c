@@ -1670,13 +1670,6 @@ int main(__attribute__ ((unused)) int argc, __attribute__ ((unused))char *argv[]
 {
 	setvbuf(stdout, NULL, _IONBF, 0);
 
-#ifndef NO_CRYPTSETUP_PATH
-	if (getenv("CRYPTSETUP_PATH")) {
-		printf("Cannot run this test with CRYPTSETUP_PATH set.\n");
-		exit(77);
-	}
-#endif
-
 	if (crypt_backend_init())
 		exit_test("Crypto backend init error.", EXIT_FAILURE);
 
