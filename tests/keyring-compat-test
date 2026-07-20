@@ -24,7 +24,9 @@ CHKS_KEYRING=vk_in_keyring.chk
 PWD="aaablabl"
 
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+[ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+CRYPTOCHECK=$CRYPTSETUP_TESTS_BIN_PATH/crypto-check
 
 if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 	CRYPTSETUP_VALGRIND=$CRYPTSETUP
@@ -122,11 +124,11 @@ test_and_prepare_keyring() {
 
 fips_mode_kernel()
 {
-	if [ ! -x ./crypto-check ]; then
-		echo  "WARNING: Cannot find crypto-check helper, expecting non-FIPS mode."
+	if [ ! -x $CRYPTOCHECK ]; then
+		echo  "WARNING: Cannot find $CRYPTOCHECK helper, expecting non-FIPS mode."
 		return 1
 	fi
-	./crypto-check fips_mode_kernel
+	$CRYPTOCHECK fips_mode_kernel
 }
 
 add_device() {

@@ -4,7 +4,9 @@
 # nfs. Some tests will fail because nfs is eager to write for example 4095 bytes
 # in O_DIRECT mode.
 
-BW_UNIT=./unit-utils-io
+[ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
+
+BW_UNIT=$CRYPTSETUP_TESTS_BIN_PATH/unit-utils-io
 STRACE=strace
 MNT_DIR=./mnt_bwunit
 LOCAL_FILE=./blockwise_localfile

@@ -1,7 +1,9 @@
 #!/bin/bash
 
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+[ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+CRYPTOCHECK=$CRYPTSETUP_TESTS_BIN_PATH/crypto-check
 REENC_BIN=$CRYPTSETUP
 REENC="$REENC_BIN reencrypt"
 FAST_PBKDF="--pbkdf-force-iterations 1000 --pbkdf pbkdf2"
@@ -33,11 +35,11 @@ START_DIR=$(pwd)
 
 fips_mode()
 {
-	if [ ! -x ./crypto-check ]; then
-		 echo "WARNING: Cannot find crypto-check helper, expecting non-FIPS mode."
+	if [ ! -x $CRYPTOCHECK ]; then
+		 echo "WARNING: Cannot find $CRYPTOCHECK helper, expecting non-FIPS mode."
 		return 1
 	fi
-	./crypto-check fips_mode || ./crypto-check fips_mode_kernel
+	$CRYPTOCHECK fips_mode || $CRYPTOCHECK fips_mode_kernel
 }
 
 # $1 path to scsi debug bdev

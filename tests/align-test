@@ -1,7 +1,9 @@
 #!/bin/bash
 
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+[ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+CRYPTOCHECK=$CRYPTSETUP_TESTS_BIN_PATH/crypto-check
 DEV=""
 DEV_STACKED="luks0xbabe"
 DEV_NAME="dummyalign"
@@ -20,11 +22,11 @@ fi
 
 fips_mode()
 {
-	if [ ! -x ./crypto-check ]; then
-		echo  "WARNING: Cannot find crypto-check helper, expecting non-FIPS mode."
+	if [ ! -x $CRYPTOCHECK ]; then
+		echo  "WARNING: Cannot find $CRYPTOCHECK helper, expecting non-FIPS mode."
 		return 1
 	fi
-	./crypto-check fips_mode
+	$CRYPTOCHECK fips_mode
 }
 
 cleanup() {

@@ -3,7 +3,9 @@
 # check tcrypt images parsing
 
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+[ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+CRYPTOCHECK=$CRYPTSETUP_TESTS_BIN_PATH/crypto-check
 TST_DIR=tcrypt-images
 MAP=tctst
 PASSWORD="aaaaaaaaaaaa"
@@ -12,8 +14,6 @@ PASSWORD_72C="aaaaaaaaaaaabbbbbbbbbbbbccccccccccccddddddddddddeeeeeeeeeeeeffffff
 PASSWORD_PIM="cccccccccccccccccccc"
 LOOP_SYS=""
 PART_IMG=tctst-part-img
-
-CRYPTOCHECK=./crypto-check
 
 if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 	CRYPTSETUP_VALGRIND=$CRYPTSETUP
