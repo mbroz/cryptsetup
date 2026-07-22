@@ -261,7 +261,8 @@ static int _setup(void)
 	_system("dmsetup create " DEVICE_EMPTY_name " --table \"0 10000 zero\"", 1);
 	_system("dmsetup create " DEVICE_ERROR_name " --table \"0 10000 error\"", 1);
 
-	_system(" [ ! -e " IMAGE1 " ] && xz -dk " IMAGE1 ".xz", 1);
+	if (decompress_missing_xz_image(IMAGE1))
+		return 1;
 	fd = loop_attach(&DEVICE_1, IMAGE1, 0, 0, &ro);
 	close(fd);
 
@@ -270,22 +271,29 @@ static int _setup(void)
 	close(fd);
 
 	/* Keymaterial offset is less than 8 sectors */
-	_system(" [ ! -e " EVL_HEADER_1 " ] && xz -dk " EVL_HEADER_1 ".xz", 1);
+	if (decompress_missing_xz_image(EVL_HEADER_1))
+		return 1;
 	/* keymaterial offset aims into payload area */
-	_system(" [ ! -e " EVL_HEADER_2 " ] && xz -dk " EVL_HEADER_2 ".xz", 1);
+	if (decompress_missing_xz_image(EVL_HEADER_2))
+		return 1;
 	/* keymaterial offset is valid, number of stripes causes payload area to be overwritten */
-	_system(" [ ! -e " EVL_HEADER_3 " ] && xz -dk " EVL_HEADER_3 ".xz", 1);
+	if (decompress_missing_xz_image(EVL_HEADER_3))
+		return 1;
 	/* luks device header for data and header on same device. payloadOffset is greater than
 	 * device size (crypt_load() test) */
-	_system(" [ ! -e " EVL_HEADER_4 " ] && xz -dk " EVL_HEADER_4 ".xz", 1);
+	if (decompress_missing_xz_image(EVL_HEADER_4))
+		return 1;
 	 /* two keyslots with same offset (overlapping keyslots) */
-	_system(" [ ! -e " EVL_HEADER_5 " ] && xz -dk " EVL_HEADER_5 ".xz", 1);
+	if (decompress_missing_xz_image(EVL_HEADER_5))
+		return 1;
 	/* valid header: payloadOffset=4096, key_size=32,
 	 * volume_key = bb21158c733229347bd4e681891e213d94c685be6a5b84818afe7a78a6de7a1a */
-	_system(" [ ! -e " VALID_HEADER " ] && xz -dk " VALID_HEADER ".xz", 1);
+	if (decompress_missing_xz_image(VALID_HEADER))
+		return 1;
 
 	/* Prepare tcrypt images */
-	_system("tar xJf tcrypt-images.tar.xz 2>/dev/null", 1);
+	if (untar_xz_archive_if_dir_missing( "tcrypt-images" /* .tar.xz */, "tcrypt-images"))
+		return 1;
 
 	_system("modprobe dm-crypt >/dev/null 2>&1", 0);
 	_system("modprobe dm-verity >/dev/null 2>&1", 0);

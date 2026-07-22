@@ -353,7 +353,8 @@ static int _setup(void)
 	if (t_set_readahead(DEVICE_ERROR, 0))
 		printf("cannot set read ahead on device %s\n", DEVICE_ERROR);
 
-	_system(" [ ! -e " IMAGE1 " ] && xz -dk " IMAGE1 ".xz", 1);
+	if (decompress_missing_xz_image(IMAGE1))
+		return 1;
 	fd = loop_attach(&DEVICE_1, IMAGE1, 0, 0, &ro);
 	close(fd);
 
@@ -367,20 +368,24 @@ static int _setup(void)
 
 	_system("dd if=/dev/zero of=" EMPTY_HEADER " bs=4K count=1 2>/dev/null", 1);
 
-	_system(" [ ! -e " NO_REQS_LUKS2_HEADER " ] && tar xJf " REQS_LUKS2_HEADER ".tar.xz", 1);
+	if (untar_xz_archive_if_file_missing(REQS_LUKS2_HEADER /* .tar.xz */, NO_REQS_LUKS2_HEADER))
+		return 1;
 	fd = loop_attach(&DEVICE_4, NO_REQS_LUKS2_HEADER, 0, 0, &ro);
 	close(fd);
 
-	_system(" [ ! -e " REQS_LUKS2_HEADER " ] && tar xJf " REQS_LUKS2_HEADER ".tar.xz", 1);
+	if (untar_xz_archive_if_file_missing(REQS_LUKS2_HEADER /* .tar.xz */, REQS_LUKS2_HEADER))
+		return 1;
 	fd = loop_attach(&DEVICE_5, REQS_LUKS2_HEADER, 0, 0, &ro);
 	close(fd);
 
-	_system(" [ ! -e " IMAGE_PV_LUKS2_SEC " ] && xz -dk " IMAGE_PV_LUKS2_SEC ".xz", 1);
+	if (decompress_missing_xz_image(IMAGE_PV_LUKS2_SEC))
+		return 1;
 	_system(" [ ! -e " IMAGE_PV_LUKS2_SEC ".bcp ] && cp " IMAGE_PV_LUKS2_SEC " " IMAGE_PV_LUKS2_SEC ".bcp", 1);
 	fd = loop_attach(&DEVICE_6, IMAGE_PV_LUKS2_SEC, 0, 0, &ro);
 	close(fd);
 
-	_system(" [ ! -d " CONV_DIR " ] && tar xJf " CONV_DIR ".tar.xz 2>/dev/null", 1);
+	if (untar_xz_archive_if_dir_missing(CONV_DIR /* .tar.xz */, CONV_DIR))
+		return 1;
 
 	if (_system("modprobe dm-crypt >/dev/null 2>&1", 1))
 		return 1;
