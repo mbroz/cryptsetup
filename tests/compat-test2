@@ -3,6 +3,7 @@
 PS4='$LINENO:'
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
 [ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
+[ -z "$CRYPTSETUP_TESTS_DATA_PATH" ] && CRYPTSETUP_TESTS_DATA_PATH="."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 CRYPTSETUP_RAW=$CRYPTSETUP
 CRYPTOCHECK=$CRYPTSETUP_TESTS_BIN_PATH/crypto-check
@@ -161,20 +162,20 @@ prepare()
 		;;
 	new)
 		remove_mapping
-		xz -cd compatimage.img.xz > $IMG
-		xz -dk $HEADER_KEYU.xz
+		xz -cd $CRYPTSETUP_TESTS_DATA_PATH/compatimage.img.xz > $IMG
+		xz -cd $CRYPTSETUP_TESTS_DATA_PATH/$HEADER_KEYU.xz > $HEADER_KEYU
 		# FIXME: switch to internal loop (no losetup at all)
 		echo "bad" | $CRYPTSETUP luksOpen --key-slot 0 --test-passphrase $IMG 2>&1 | \
 			grep "autoclear flag" && skip "WARNING: Too old kernel, test skipped."
 		losetup $LOOPDEV $IMG
-		xz -cd compatv10image.img.xz > $IMG10
+		xz -cd $CRYPTSETUP_TESTS_DATA_PATH/compatv10image.img.xz > $IMG10
 		;;
 	reuse | *)
 		if [ ! -e $IMG ]; then
-			xz -cd compatimage.img.xz > $IMG
+			xz -cd $CRYPTSETUP_TESTS_DATA_PATH/compatimage.img.xz > $IMG
 			losetup $LOOPDEV $IMG
 		fi
-		[ ! -e $IMG10 ] && xz -cd compatv10image.img.xz > $IMG10
+		[ ! -e $IMG10 ] && xz -cd $CRYPTSETUP_TESTS_DATA_PATH/compatv10image.img.xz > $IMG10
 		;;
 	esac
 
@@ -1121,7 +1122,7 @@ test $SIZE -eq 16777216 || fail
 $CRYPTSETUP -q luksDump  $HEADER_IMG | grep -q "offset: $((512 * 131072)) \[bytes\]" || fail
 
 prepare "[28] Repair metadata" wipe
-xz -dk $HEADER_LUKS2_PV.xz
+xz -cd $CRYPTSETUP_TESTS_DATA_PATH/$HEADER_LUKS2_PV.xz > $HEADER_LUKS2_PV
 if [ "$HAVE_BLKID" -gt 0 ]; then
 	$CRYPTSETUP isLuks --disable-locks $HEADER_LUKS2_PV && fail
 	$CRYPTSETUP isLuks $HEADER_LUKS2_PV && fail
@@ -1446,7 +1447,7 @@ $CRYPTSETUP luksKillSlot -q $LOOPDEV 3 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2 (unbound)" && fail
 
 prepare "[39] LUKS2 metadata variants" wipe
-tar xJf luks2_mda_images.tar.xz
+tar xJf $CRYPTSETUP_TESTS_DATA_PATH/luks2_mda_images.tar.xz
 echo -n "$IMPORT_TOKEN" > $TOKEN_FILE0
 for mda in 16 32 64 128 256 512 1024 2048 4096 ; do
 	echo -n "[$mda KiB]"
@@ -1597,7 +1598,7 @@ fi
 
 if dm_crypt_capi_support; then
 	prepare "[44] LUKS2 invalid cipher (kernel cipher driver name)" wipe
-	xz -dk $HEADER_LUKS2_INV.xz
+	xz -cd $CRYPTSETUP_TESTS_DATA_PATH/$HEADER_LUKS2_INV.xz > $HEADER_LUKS2_INV
 	dd if=$HEADER_LUKS2_INV of=$IMG conv=notrunc >/dev/null 2>&1
 	$CRYPTSETUP -q luksDump $LOOPDEV | grep -q "capi:xts(ecb(aes-generic))-plain64" || fail
 	echo $PWD1 | $CRYPTSETUP open $LOOPDEV --test-passphrase || fail
@@ -1695,10 +1696,10 @@ fi
 
 prepare "[46] Blkid disable check" wipe
 if [ "$HAVE_BLKID" -gt 0 ]; then
-	xz -dkf $HEADER_LUKS2_PV.xz
+	xz -cd $CRYPTSETUP_TESTS_DATA_PATH/$HEADER_LUKS2_PV.xz > $HEADER_LUKS2_PV
 	# batch mode disables blkid print, use --debug to check it
 	echo $PWD1 | $CRYPTSETUP -q --debug luksFormat $FAST_PBKDF_OPT --type luks2 $HEADER_LUKS2_PV 2>&1 | grep "signature" | grep -q "LVM2_member" || fail
-	xz -dkf $HEADER_LUKS2_PV.xz
+	xz -cd $CRYPTSETUP_TESTS_DATA_PATH/$HEADER_LUKS2_PV.xz > $HEADER_LUKS2_PV
 	echo $PWD1 | $CRYPTSETUP -q --debug --disable-blkid luksFormat $FAST_PBKDF_OPT --type luks2 $HEADER_LUKS2_PV 2>&1 | grep -q "LVM2_member" && fail
 fi
 

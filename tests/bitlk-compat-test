@@ -16,6 +16,7 @@ else
 fi
 
 [ -z "$srcdir" ] && srcdir="."
+[ -z "$CRYPTSETUP_TESTS_DATA_PATH" ] && CRYPTSETUP_TESTS_DATA_PATH=$srcdir
 
 remove_mapping()
 {
@@ -132,7 +133,7 @@ valgrind_run()
 
 export LANG=C
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
-[ ! -d $TST_DIR ] && tar xJSf $srcdir/bitlk-images.tar.xz --no-same-owner 2>/dev/null || skip "Incompatible tar."
+[ ! -d $TST_DIR ] && tar xJSf $CRYPTSETUP_TESTS_DATA_PATH/bitlk-images.tar.xz --no-same-owner 2>/dev/null || skip "Incompatible tar."
 
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 

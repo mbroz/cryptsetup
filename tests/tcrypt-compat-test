@@ -23,6 +23,7 @@ else
 fi
 
 [ -z "$srcdir" ] && srcdir="."
+[ -z "$CRYPTSETUP_TESTS_DATA_PATH" ] && CRYPTSETUP_TESTS_DATA_PATH=$srcdir
 
 remove_mapping()
 {
@@ -177,7 +178,7 @@ valgrind_run()
 
 export LANG=C
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
-[ ! -d $TST_DIR ] && tar xJf $srcdir/tcrypt-images.tar.xz --no-same-owner
+[ ! -d $TST_DIR ] && tar xJf $CRYPTSETUP_TESTS_DATA_PATH/tcrypt-images.tar.xz --no-same-owner
 
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 

@@ -1016,6 +1016,11 @@ int t_device_size_by_devno(dev_t devno, uint64_t *retval)
 	return 0;
 }
 
+static const char *get_tests_data_path(void)
+{
+	return getenv("CRYPTSETUP_TESTS_DATA_PATH") ?: ".";
+}
+
 int decompress_missing_xz_image(const char *image)
 {
 	int r;
@@ -1025,7 +1030,7 @@ int decompress_missing_xz_image(const char *image)
 	if (stat(image, &st) == 0 && S_ISREG(st.st_mode))
 		return 0;
 
-	r = snprintf(xz_image_path, sizeof(xz_image_path), "%s.xz", image);
+	r = snprintf(xz_image_path, sizeof(xz_image_path), "%s/%s.xz", get_tests_data_path(), image);
 	if (r < 0 || (size_t)r >= sizeof(xz_image_path))
 		return 1;
 
@@ -1054,7 +1059,8 @@ static int untar_xz_archive_if_missing(const char *archive, const char *dir_entr
 			return 0;
 	}
 
-	r = snprintf(archive_path, sizeof(archive_path), "%s.tar.xz", archive);
+	r = snprintf(archive_path, sizeof(archive_path), "%s/%s.tar.xz",
+		     get_tests_data_path(), archive);
 	if (r < 0 || (size_t)r >= sizeof(archive_path))
 		return 1;
 

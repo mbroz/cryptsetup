@@ -3,6 +3,7 @@
 #PS4='$LINENO:'
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
 [ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
+[ -z "$CRYPTSETUP_TESTS_DATA_PATH" ] && CRYPTSETUP_TESTS_DATA_PATH="."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 CRYPTOCHECK=$CRYPTSETUP_TESTS_BIN_PATH/crypto-check
 
@@ -1151,12 +1152,12 @@ setup_luks2_env() {
 
 check_blkid() {
 	bin_check blkid
-	xz -dkf $HEADER_LUKS2_PV.xz
+	xz -cd $CRYPTSETUP_TESTS_DATA_PATH/$HEADER_LUKS2_PV.xz > $HEADER_LUKS2_PV
 	if ! $($CRYPTSETUP --version | grep -q "BLKID"); then
 		HAVE_BLKID=0
 	elif $(blkid -p -n crypto_LUKS $HEADER_LUKS2_PV >/dev/null 2>&1); then
 		HAVE_BLKID=1
-		xz -dkf $IMG_FS.xz
+		xz -cd $CRYPTSETUP_TESTS_DATA_PATH/$IMG_FS.xz > $IMG_FS
 		blkid $IMG_FS | grep -q BLOCK_SIZE && BLKID_BLOCK_SIZE_SUPPORT=1
 	else
 		HAVE_BLKID=0
@@ -2412,7 +2413,7 @@ check_blkid
 if [ "$HAVE_BLKID" -gt 0 ]; then
 	echo "[30] Prevent nested encryption of broken LUKS device"
 	rm -f $IMG_HDR
-	xz -dkf $HEADER_LUKS2_PV.xz
+	xz -cd $CRYPTSETUP_TESTS_DATA_PATH/$HEADER_LUKS2_PV.xz > $HEADER_LUKS2_PV
 	wipe_dev $DEV
 
 	# broken header
@@ -2453,7 +2454,7 @@ if [ -n "$DM_SECTOR_SIZE" -a $HAVE_BLKID -gt 0 ]; then
 	echo $PWD1 | $CRYPTSETUP reencrypt --init-only -q --sector-size 1024 $FAST_PBKDF_ARGON $DEV || fail
 
 	if [ -n "$BLKID_BLOCK_SIZE_SUPPORT" ]; then
-		xz -dkf $IMG_FS.xz
+		xz -cd $CRYPTSETUP_TESTS_DATA_PATH/$IMG_FS.xz > $IMG_FS
 		# encryption checks must work in offline mode
 		echo $PWD1 | $CRYPTSETUP reencrypt --encrypt --force-offline-reencrypt --sector-size 1024 -q --header $IMG_HDR $IMG_FS $FAST_PBKDF_ARGON --init-only --type luks2 2>/dev/null && fail
 		test -f $IMG_HDR && fail

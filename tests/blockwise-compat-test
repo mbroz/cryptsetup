@@ -5,6 +5,7 @@
 # in O_DIRECT mode.
 
 [ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
+[ -z "$CRYPTSETUP_TESTS_DATA_PATH" ] && CRYPTSETUP_TESTS_DATA_PATH="."
 
 BW_UNIT=$CRYPTSETUP_TESTS_BIN_PATH/unit-utils-io
 STRACE=strace
@@ -84,7 +85,7 @@ falloc() {
 }
 
 run_all_in_fs() {
-	for file in $(ls img_fs_*.img.xz) ; do
+	for file in $(ls $CRYPTSETUP_TESTS_DATA_PATH/img_fs_*.img.xz) ; do
 		echo -n "Run tests in $file put on top block device. "
 		xz -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"
 		[ ! -d $MNT_DIR ] && mkdir $MNT_DIR

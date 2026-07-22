@@ -2,6 +2,7 @@
 
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
 [ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
+[ -z "$CRYPTSETUP_TESTS_DATA_PATH" ] && CRYPTSETUP_TESTS_DATA_PATH="."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 CRYPTOCHECK=$CRYPTSETUP_TESTS_BIN_PATH/crypto-check
 DEV=""
@@ -344,7 +345,7 @@ echo "# Create enterprise-class 4K drive with fs and LUKS images."
 # loop device here presents 512 block but images have 4k block
 # cryptsetup should properly use 4k block on direct-io
 add_device dev_size_mb=32 sector_size=4096 physblk_exp=0 num_tgts=1 opt_blks=64
-for file in $(ls img_fs_*.img.xz) ; do
+for file in $(ls $CRYPTSETUP_TESTS_DATA_PATH/img_fs_*.img.xz) ; do
 	echo -n "Format using fs image $file "
 	xz -d -c $file | dd of=$DEV bs=1M 2>/dev/null || fail "bad image"
 	[ ! -d $MNT_DIR ] && mkdir $MNT_DIR
