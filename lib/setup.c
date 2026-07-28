@@ -4113,12 +4113,12 @@ int crypt_header_restore(struct crypt_device *cd,
 		if (version == 1)
 			r = LUKS_hdr_restore(backup_device, &hdr1, cd);
 		else
-			r = LUKS2_hdr_restore(cd, &hdr2, backup_file);
+			r = LUKS2_hdr_restore(cd, &hdr2, backup_device);
 
 		crypt_safe_memzero(&hdr1, sizeof(hdr1));
 		crypt_safe_memzero(&hdr2, sizeof(hdr2));
 	} else if (isLUKS2(cd->type) && (!requested_type || isLUKS2(requested_type))) {
-		r = LUKS2_hdr_restore(cd, &cd->u.luks2.hdr, backup_file);
+		r = LUKS2_hdr_restore(cd, &cd->u.luks2.hdr, backup_device);
 		if (r)
 			(void) _crypt_load_luks2(cd, 1, 0);
 	} else if (isLUKS1(cd->type) && (!requested_type || isLUKS1(requested_type)))
