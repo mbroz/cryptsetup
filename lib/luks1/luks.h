@@ -56,6 +56,7 @@ converted */
 
 struct volume_key;
 struct device_backend;
+struct device;
 
 struct luks_phdr {
 	char		magic[LUKS_MAGIC_L];
@@ -107,7 +108,7 @@ int LUKS_read_phdr(
 	struct crypt_device *ctx);
 
 int LUKS_read_phdr_backup(
-	const char *backup_file,
+	struct device *backup_device,
 	struct luks_phdr *hdr,
 	int require_luks_device,
 	struct crypt_device *ctx);
@@ -122,7 +123,7 @@ int LUKS_hdr_backup(
 	struct crypt_device *ctx);
 
 int LUKS_hdr_restore(
-	const char *backup_file,
+	struct device *backup_device,
 	struct luks_phdr *hdr,
 	struct crypt_device *ctx);
 

@@ -4062,7 +4062,7 @@ int crypt_header_restore(struct crypt_device *cd,
 
 	if (!cd->type) {
 		if (version == 1)
-			r = LUKS_hdr_restore(backup_file, &hdr1, cd);
+			r = LUKS_hdr_restore(backup_device, &hdr1, cd);
 		else
 			r = LUKS2_hdr_restore(cd, &hdr2, backup_file);
 
@@ -4073,7 +4073,7 @@ int crypt_header_restore(struct crypt_device *cd,
 		if (r)
 			(void) _crypt_load_luks2(cd, 1, 0);
 	} else if (isLUKS1(cd->type) && (!requested_type || isLUKS1(requested_type)))
-		r = LUKS_hdr_restore(backup_file, &cd->u.luks1.hdr, cd);
+		r = LUKS_hdr_restore(backup_device, &cd->u.luks1.hdr, cd);
 	else
 		r = -EINVAL;
 
