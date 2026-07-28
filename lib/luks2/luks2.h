@@ -180,7 +180,7 @@ int LUKS2_hdr_backup(struct crypt_device *cd,
 		     const char *backup_file);
 int LUKS2_hdr_restore(struct crypt_device *cd,
 		      struct luks2_hdr *hdr,
-		      const char *backup_file);
+		      struct device *backup_device);
 
 uint64_t LUKS2_hdr_and_areas_size(struct luks2_hdr *hdr);
 uint64_t LUKS2_keyslots_size(struct luks2_hdr *hdr);
