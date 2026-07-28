@@ -4030,8 +4030,8 @@ int crypt_header_restore(struct crypt_device *cd,
 			 const char *backup_file)
 {
 	struct device *backup_device = NULL;
-	struct luks_phdr hdr1;
-	struct luks2_hdr hdr2;
+	struct luks_phdr hdr1 = {0};
+	struct luks2_hdr hdr2 = {0};
 	int r, version;
 
 	if (requested_type && !isLUKS(requested_type))
@@ -4059,8 +4059,6 @@ int crypt_header_restore(struct crypt_device *cd,
 		log_err(cd, _("Header backup file does not contain compatible LUKS header."));
 		return -EINVAL;
 	}
-
-	memset(&hdr2, 0, sizeof(hdr2));
 
 	if (!cd->type) {
 		if (version == 1)
