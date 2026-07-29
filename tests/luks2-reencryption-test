@@ -2152,6 +2152,23 @@ $CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt" && fail
 # check cli removed all unbound keyslots created in-before reencryption initialization
 $CRYPTSETUP luksDump $DEV | grep -q "unbound" && fail
 
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --offset 32768 -S0 $FAST_PBKDF_ARGON $DEV || fail
+KS=1
+while [ $KS -le 16 ]; do
+	echo -e "$PWD1\n$PWD1" | $CRYPTSETUP luksAddKey -S$KS $DEV -q $FAST_PBKDF_ARGON || fail
+	KS=$((KS+1))
+done
+# TODO: test compiled with e.g.: -fsanitize=address -fsanitize=undefined -fsanitize=bounds-strict -fno-omit-frame-pointer
+echo -e "$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1\n$PWD1" | $CRYPTSETUP reencrypt $DEV -q 2>/dev/null && fail
+
+TK=0
+while [ $TK -le 16 ]; do
+	$CRYPTSETUP token add --key-description "aaa" -S $TK --token-id $TK $DEV || fail
+	TK=$((TK+1))
+done
+# TODO: test compiled with e.g.: -fsanitize=address -fsanitize=undefined -fsanitize=bounds-strict -fno-omit-frame-pointer
+$CRYPTSETUP reencrypt $DEV --token-only -q 2>/dev/null && fail
+
 echo "[23] Reencryption with specified new volume key"
 prepare dev_size_mb=32
 echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 -s 256 -c aes-cbc-essiv:sha256 --offset 8192 $FAST_PBKDF_ARGON $DEV || fail
