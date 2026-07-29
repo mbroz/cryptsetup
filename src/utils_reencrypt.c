@@ -1182,20 +1182,25 @@ static struct crypt_keyslot_context *reencrypt_get_token_context(struct keyslot_
 	return NULL;
 }
 
-static void reencrypt_token_add_for_unlock(struct keyslot_contexts *kcs, int token)
+static bool reencrypt_token_add_for_unlock(struct keyslot_contexts *kcs, int token)
 {
 	assert(kcs);
 	assert(token >= 0);
 
 	if (reencrypt_token_for_unlock(kcs, token))
-		return;
+		return true;
+
+	if (kcs->last_tkn >= ARRAY_SIZE(kcs->tkns))
+		return false;
 
 	kcs->tkns[kcs->last_tkn++].id = token;
 
 	log_dbg("Token %d candidate for keyslot unlock.", token);
+
+	return true;
 }
 
-static void reencrypt_token_add(struct keyslot_contexts *kcs,
+static bool reencrypt_token_add(struct keyslot_contexts *kcs,
 				int token,
 				struct crypt_keyslot_context *token_kc)
 {
@@ -1207,12 +1212,14 @@ static void reencrypt_token_add(struct keyslot_contexts *kcs,
 
 	for (i = 0; i < kcs->last_tkn; i++) {
 		if (kcs->tkns[i].id == token) {
+			if (kcs->last_kc >= ARRAY_SIZE(kcs->kc))
+				return false;
 			kcs->kc[kcs->last_kc++] = kcs->tkns[i].p_kc = token_kc;
-			return;
+			return true;
 		}
 	}
 
-	abort();
+	return false;
 }
 
 static void reencrypt_keyslot_unlocked_by_context(struct keyslot_contexts *kcs,
@@ -1237,16 +1244,21 @@ static void reencrypt_keyslot_unlocked_by_context(struct keyslot_contexts *kcs,
 }
 
 /* Add keyslot in unlock candidates */
-static void reencrypt_keyslot_add_for_unlock(struct keyslot_contexts *kcs, int keyslot)
+static bool reencrypt_keyslot_add_for_unlock(struct keyslot_contexts *kcs, int keyslot)
 {
 	assert(kcs);
 	assert(keyslot >= 0);
 
+	if (kcs->last_ks >= ARRAY_SIZE(kcs->ks))
+		return false;
+
 	kcs->ks[kcs->last_ks].id = keyslot;
 	kcs->ks[kcs->last_ks++].new_id = -1;
+
+	return true;
 }
 
-static void reencrypt_token_unlocks_keyslot(struct keyslot_contexts *kcs,
+static bool reencrypt_token_unlocks_keyslot(struct keyslot_contexts *kcs,
 					    int token,
 					    int keyslot,
 					    struct crypt_keyslot_context *token_kc)
@@ -1254,8 +1266,12 @@ static void reencrypt_token_unlocks_keyslot(struct keyslot_contexts *kcs,
 	assert(kcs);
 	assert(token_kc);
 
-	reencrypt_token_add(kcs, token, token_kc);
+	if (!reencrypt_token_add(kcs, token, token_kc))
+		return false;
+
 	reencrypt_keyslot_unlocked_by_context(kcs, keyslot, token_kc);
+
+	return true;
 }
 
 static void reencrypt_keyslot_unlocked_by_context_new(struct keyslot_contexts *kcs,
@@ -1265,6 +1281,7 @@ static void reencrypt_keyslot_unlocked_by_context_new(struct keyslot_contexts *k
 	assert(kcs);
 	assert(kc);
 	assert(keyslot >= 0);
+	assert(kcs->last_kc < ARRAY_SIZE(kcs->kc));
 
 	kcs->kc[kcs->last_kc++] = kc;
 	reencrypt_keyslot_unlocked_by_context(kcs, keyslot, kc);
@@ -1304,8 +1321,9 @@ static int single_token(struct crypt_device *cd,
 				  ARG_STR(OPT_TOKEN_TYPE_ID), 0, /* FIXME: do we need any? */
 				  set_tries_tty(false), true, true, &kc);
 	if (r == slot_to_check) {
+		if (!reencrypt_token_unlocks_keyslot(kcs, token, slot_to_check, kc))
+			return -EINVAL;
 		log_dbg("Token %d unlocks keyslot %d", token, slot_to_check);
-		reencrypt_token_unlocks_keyslot(kcs, token, slot_to_check, kc);
 	}
 
 	return r;
@@ -1388,15 +1406,18 @@ static int reencrypt_add_token_keyslot(struct crypt_device *cd,
 	if (crypt_token_is_assigned(cd, token, keyslot))
 		return 0;
 
-	reencrypt_token_add_for_unlock(kcs, token);
+	if (!reencrypt_token_add_for_unlock(kcs, token))
+		return -EINVAL;
 
 	/* continue if keyslot is already added in unlock queue */
 	if (reencrypt_keyslot_for_unlock(kcs, keyslot))
 		return 0;
 
+	if (!reencrypt_keyslot_add_for_unlock(kcs, keyslot))
+		return -EINVAL;
+
 	log_dbg("Keyslot %d candidate for unlock.", keyslot);
 
-	reencrypt_keyslot_add_for_unlock(kcs, keyslot);
 	return 1;
 }
 
@@ -1481,8 +1502,10 @@ static int reencrypt_add_keyslots_for_unlock(struct crypt_device *cd,
 	i = reencrypt_add_token_keyslots_for_unlock(cd, kcs, ARG_INT32(OPT_TOKEN_ID_ID),
 						    ARG_STR(OPT_TOKEN_TYPE_ID),
 						    ARG_INT32(OPT_KEY_SLOT_ID));
-	if (i < 0)
+	if (i < 0) {
+		log_err(_("Not enough free keyslots for reencryption."));
 		return i;
+	}
 
 	/* token based reencryption preferred and no keyslot
 	 * could be used for reencryption */
@@ -1504,7 +1527,10 @@ static int reencrypt_add_keyslots_for_unlock(struct crypt_device *cd,
 			active++;
 			if (!only_token_keyslots && !reencrypt_keyslot_for_unlock(kcs, i) &&
 			    (!ARG_SET(OPT_KEY_SLOT_ID) || ARG_INT32(OPT_KEY_SLOT_ID) == i)) {
-				reencrypt_keyslot_add_for_unlock(kcs, i);
+				if (!reencrypt_keyslot_add_for_unlock(kcs, i)) {
+					log_err(_("Not enough free keyslots for reencryption."));
+					return -EINVAL;
+				}
 				unlocked++;
 				log_dbg("Keyslot %d candidate for unlock by passphrase prompt.", i);
 			}
