@@ -1005,6 +1005,12 @@ static int _crypt_load_integrity(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
+	/* If superblock does not use keyed discard, keep compatibility flag */
+	if (cd->u.integrity.sb_flags & SB_FLAG_DISCARD_KEYED)
+		cd->compatibility &= ~CRYPT_COMPAT_LEGACY_INTEGRITY_DISCARD;
+	else
+		cd->compatibility |= CRYPT_COMPAT_LEGACY_INTEGRITY_DISCARD;
+
 	// FIXME: add checks for fields in integrity sb vs params
 
 	r = -ENOMEM;
@@ -1502,6 +1508,10 @@ static int _init_by_name_integrity(struct crypt_device *cd, const char *name)
 		if (tgt->u.integrity.journal_crypt_key)
 			cd->u.integrity.params.journal_crypt_key_size = crypt_volume_key_length(tgt->u.integrity.journal_crypt_key);
 		MOVE_REF(cd->metadata_device, tgt->u.integrity.meta_device);
+		if (tgt->u.integrity.discard_keyed)
+			cd->compatibility &= ~CRYPT_COMPAT_LEGACY_INTEGRITY_DISCARD;
+		else
+			cd->compatibility |= CRYPT_COMPAT_LEGACY_INTEGRITY_DISCARD;
 	}
 out:
 	dm_targets_free(cd, &dmd);

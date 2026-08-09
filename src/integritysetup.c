@@ -364,7 +364,7 @@ static int action_open(void)
 	if (ARG_SET(OPT_INTEGRITY_RECALCULATE_RESET_ID))
 		activate_flags |= CRYPT_ACTIVATE_RECALCULATE_RESET;
 
-	if (ARG_SET(OPT_ALLOW_DISCARDS_ID))
+	if (ARG_SET(OPT_ALLOW_DISCARDS_ID) || ARG_SET(OPT_ALLOW_DISCARDS_KEYED_ID))
 		activate_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
 
 	if ((r = tools_check_newname(action_argv[1])))
@@ -383,12 +383,14 @@ static int action_open(void)
 		goto out;
 	}
 
+	/* Set in crypt_load according to superblock flag */
+	if (!ARG_SET(OPT_ALLOW_DISCARDS_KEYED_ID))
+		flags = crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_DISCARD;
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_HMAC_ID))
 		flags |= CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC;
 	if (ARG_SET(OPT_INTEGRITY_LEGACY_RECALC_ID))
 		flags |= CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC;
-	if (flags)
-		crypt_set_compatibility(cd, flags);
+	crypt_set_compatibility(cd, flags);
 
 	r = crypt_activate_by_volume_key(cd, action_argv[1], integrity_key,
 					 ARG_UINT32(OPT_INTEGRITY_KEY_SIZE_ID), activate_flags);
@@ -519,9 +521,10 @@ static int action_status(void)
 			if (ip.journal_crypt)
 				log_std("  journal encryption: %s\n", ip.journal_crypt);
 		}
-		if (cad.flags & (CRYPT_ACTIVATE_ALLOW_DISCARDS))
+		if (cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS)
 			log_std("  flags: %s\n",
-				(cad.flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) ? "discards " : "");
+				(crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_DISCARD) ?
+				"discards" : "discards_keyed");
 	}
 out:
 	crypt_free(cd);
@@ -786,6 +789,10 @@ int main(int argc, const char **argv)
 
 	if (ARG_SET(OPT_INTEGRITY_INLINE_ID) && ARG_SET(OPT_DATA_DEVICE_ID))
 		usage(popt_context, EXIT_FAILURE, _("Inline mode cannot be combined with separate data device."),
+		      poptGetInvocationName(popt_context));
+
+	if (ARG_SET(OPT_ALLOW_DISCARDS_KEYED_ID) && !ARG_SET(OPT_INTEGRITY_KEY_FILE_ID))
+		usage(popt_context, EXIT_FAILURE, _("Keyed discards can be enabled only with keyed algorithms like HMAC."),
 		      poptGetInvocationName(popt_context));
 
 	if (ARG_SET(OPT_CANCEL_DEFERRED_ID) && ARG_SET(OPT_DEFERRED_ID))

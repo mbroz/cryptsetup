@@ -44,7 +44,7 @@ Open a mapping with <name> backed by device <device>.
 If the integrity algorithm of the device is non-default, then the algorithm should be specified with the --integrity option.
 This will not be detected from the device.
 
-*<options>* can be [--data-device, --batch-mode, --journal-watermark, --journal-commit-time, --buffer-sectors, --integrity, --integrity-key-size, --integrity-key-file, --integrity-no-journal, --integrity-recalculate, --integrity-recalculate-reset,--integrity-recovery-mode, --allow-discards].
+*<options>* can be [--data-device, --batch-mode, --journal-watermark, --journal-commit-time, --buffer-sectors, --integrity, --integrity-key-size, --integrity-key-file, --integrity-no-journal, --integrity-recalculate, --integrity-recalculate-reset,--integrity-recovery-mode, --allow-discards, --allow-discards-keyed].
 
 === CLOSE
 *close <name>* +
@@ -81,6 +81,13 @@ Increasing the size of integrity volumes has been possible since the Linux kerne
 *--allow-discards*::
 Allow the use of discard (TRIM) requests for the device.
 This option is available since the Linux kernel version 5.7.
+
+*--allow-discards-keyed*::
+Enable secure keyed discard (TRIM) for the device.
+This option can only be specified if a keyed algorithm (like HMAC) is used.
+Once keyed discards are enabled, they are always used, even with the --allow-discard option.
+
+This option is available since Linux kernel version 7.3.
 
 *--batch-mode*, *-q*::
 Do not ask for confirmation.
