@@ -82,6 +82,7 @@ dm_integrity_features()
 	}
 	[ $VER_MIN -gt 5 ] && {
 		DM_INTEGRITY_RESIZE_SUPPORTED=1
+		DM_INTEGRITY_DISCARDS=1
 	}
 	[ $VER_MIN -gt 6 ] && {
 		DM_INTEGRITY_HMAC_FIX=1
@@ -94,6 +95,9 @@ dm_integrity_features()
 	}
 	[ $VER_MIN -ge 13 ] && {
 		DM_INTEGRITY_RECALCULATE_INLINE=1
+	}
+	[ $VER_MIN -ge 15 ] && {
+		DM_INTEGRITY_DISCARDS_KEYED=1
 	}
 }
 
@@ -692,6 +696,34 @@ if [ -n "$DM_INTEGRITY_HMAC_FIX" ] ; then
 	kernel_param_grep "fix_padding" || fail "Missing fix_padding"
 	kernel_param_grep "fix_hmac" || fail "Missing fix_hmac"
 	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+	echo "[OK]"
+else
+	echo "[N/A]"
+fi
+
+echo -n "Discards flags:"
+if [ -n "$DM_INTEGRITY_DISCARDS" ] ; then
+	add_device
+	echo -n "[DISCARDS]"
+	ARGS="--integrity hmac-sha256 --integrity-key-file $KEY_FILE --integrity-key-size 32"
+	$INTSETUP format -q $DEV --no-wipe --tag-size 32 $ARGS || fail "Cannot format device."
+	$INTSETUP open $DEV $DEV_NAME $ARGS || fail "Cannot activate device."
+	kernel_param_grep "allow_discards" && fail "allow_discards should not be set"
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+	$INTSETUP open $DEV $DEV_NAME $ARGS --allow-discards || fail "Cannot activate device."
+	kernel_param_grep "allow_discards" || fail "Missing allow_discards"
+	$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+	if [ -n "$DM_INTEGRITY_DISCARDS_KEYED" ] ; then
+		echo -n "[DISCARDS_KEYED]"
+		$INTSETUP open $DEV $DEV_NAME $ARGS --allow-discards-keyed || fail "Cannot activate device."
+		kernel_param_grep "allow_discards_keyed" || fail "Missing allow_discards_keyed"
+		$INTSETUP dump $DEV | grep "flags" | grep -q "discards_keyed" || fail "Flag for discards_keyed not set."
+		$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+		# Keyed now is permanent
+		$INTSETUP open $DEV $DEV_NAME $ARGS --allow-discards || fail "Cannot activate device."
+		kernel_param_grep "allow_discards_keyed" || fail "Missing allow_discards_keyed"
+		$INTSETUP close $DEV_NAME || fail "Cannot deactivate device."
+	fi
 	echo "[OK]"
 else
 	echo "[N/A]"

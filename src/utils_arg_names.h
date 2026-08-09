@@ -12,6 +12,7 @@
 #define OPT_ACTIVE_NAME			"active-name"
 #define OPT_ALIGN_PAYLOAD		"align-payload"
 #define OPT_ALLOW_DISCARDS		"allow-discards"
+#define OPT_ALLOW_DISCARDS_KEYED	"allow-discards-keyed"
 #define OPT_BATCH_MODE			"batch-mode"
 #define OPT_BITMAP_FLUSH_TIME		"bitmap-flush-time"
 #define OPT_BITMAP_SECTORS_PER_BIT	"bitmap-sectors-per-bit"
