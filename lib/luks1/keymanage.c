@@ -127,6 +127,11 @@ static int LUKS_check_keyslots(struct crypt_device *ctx, const struct luks_phdr 
 	int i, prev, next, sorted_areas[LUKS_NUMKEYS] = { 0, 1, 2, 3, 4, 5, 6, 7 };
 	uint32_t secs_per_stripes = AF_split_sectors(phdr->keyBytes, LUKS_STRIPES);
 
+	if (!secs_per_stripes) {
+		log_dbg(ctx, "Invalid volume key size.");
+		return -1;
+	}
+
 	LUKS_sort_keyslots(phdr, sorted_areas);
 
 	/* Check keyslot to prevent access outside of header and keyslot area */
