@@ -158,7 +158,5 @@ size_t AF_split_sectors(size_t blocksize, unsigned int blocknumbers)
 		return 0;
 
 	/* round up to sector */
-	af_size = (af_size + (SECTOR_SIZE - 1)) / SECTOR_SIZE;
-
-	return af_size;
+	return (af_size + (SECTOR_SIZE - 1)) / SECTOR_SIZE;
 }
