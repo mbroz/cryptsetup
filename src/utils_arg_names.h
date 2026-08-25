@@ -92,6 +92,7 @@
 #define OPT_KEY_SLOT			"key-slot"
 #define OPT_KEYFILE_OFFSET		"keyfile-offset"
 #define OPT_KEYFILE_SIZE		"keyfile-size"
+#define OPT_KEYS_FROM_STDIN_SIZES	"keys-from-stdin-sizes"
 #define OPT_KEYSLOT_CIPHER		"keyslot-cipher"
 #define OPT_KEYSLOT_KEY_SIZE		"keyslot-key-size"
 #define OPT_NO_SUPERBLOCK		"no-superblock"

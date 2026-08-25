@@ -3412,6 +3412,21 @@ static const char *verify_reencrypt(void)
 	if (ARG_SET(OPT_NEW_VOLUME_KEY_KEYRING_ID) && ARG_SET(OPT_KEEP_KEY_ID))
 		return _("Options --new-volume-key-keyring and --keep-key cannot be combined.");
 
+	if (isLUKS1(luksType(device_type)) && ARG_SET(OPT_KEYS_FROM_STDIN_SIZES_ID))
+		return _("Option --keys-from-stdin-sizes can be set only for LUKS2 device.");
+
+	if (ARG_SET(OPT_KEYS_FROM_STDIN_SIZES_ID) && ARG_SET(OPT_KEY_FILE_ID))
+		return _("Options --keys-from-stdin-sizes and --key-file cannot be combined");
+
+	if (ARG_SET(OPT_KEYS_FROM_STDIN_SIZES_ID) && ARG_SET(OPT_KEYFILE_OFFSET_ID))
+		return _("Options --keys-from-stdin-sizes and --keyfile-offset cannot be combined");
+
+	if (ARG_SET(OPT_KEYS_FROM_STDIN_SIZES_ID) && ARG_SET(OPT_KEYFILE_SIZE_ID))
+		return _("Options --keys-from-stdin-sizes and --keyfile-size cannot be combined");
+
+	if (ARG_SET(OPT_KEYS_FROM_STDIN_SIZES_ID) && ARG_SET(OPT_KEY_SLOT_ID))
+		return _("Options --keys-from-stdin-sizes and --key-slot cannot be combined");
+
 	return NULL;
 }
 
@@ -3795,6 +3810,13 @@ static void basic_options_cb(poptContext popt_context,
 		if (ARG_UINT32(OPT_TRIES_ID) == 0)
 			usage(popt_context, EXIT_FAILURE, _("Invalid maximal tries specification."),
 			      poptGetInvocationName(popt_context));
+		break;
+	case OPT_KEYS_FROM_STDIN_SIZES_ID:
+		if (!verify_keys_from_stdin_sizes(ARG_STR(OPT_KEYS_FROM_STDIN_SIZES_ID))) {
+			usage(popt_context, EXIT_FAILURE,
+			_("Option --keys-from-stdin-sizes must be a list of integers separated by comma(s)"),
+			poptGetInvocationName(popt_context));
+		}
 		break;
 	}
 }

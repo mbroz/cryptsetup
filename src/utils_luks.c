@@ -271,6 +271,84 @@ out:
 	return r;
 }
 
+/* Parse a string of integers (base 10) separated by commas
+ *
+ * The result is stored in 'value'.
+ *
+ * Return value:
+ *    pointer to the next token (to '\0' if the end has been reached)
+ *    or NULL if an error occurred
+ */
+static const char *get_next_int(const char *list_of_integers, size_t *value)
+{
+	assert(list_of_integers);
+	assert(value);
+
+	if (!isdigit(list_of_integers[0])) return NULL; /* invalid first character */
+
+	char *next = NULL;
+	errno = 0; /* as recommended by the strtoul man page */
+	unsigned long ul = strtoul(list_of_integers, &next, 10);
+	if (errno) return NULL; /* overflow */
+	if (!next) return NULL;
+	if (ul > SIZE_MAX) return NULL; /* overflow */
+	*value = ul;
+
+	if (*next == '\0') {
+		/* Success and end of the string */
+		return next;
+	}
+	if (*next == ',') {
+		/* Success and more tokens expected. Skip the comma. */
+		return next+1;
+	}
+	/* Other unexpected characters */
+	return NULL;
+}
+
+/* Verify that the --keys-from-stdin-sizes option is correctly formatted
+ *
+ * Examples of valid input: "10,7,32" "10" "10,7,"
+ */
+bool verify_keys_from_stdin_sizes(const char *list_of_integers)
+{
+	const char *next = list_of_integers;
+	size_t size = 0;
+	while (1) {
+		next = get_next_int(next, &size);
+		if (!next) return false; /* error */
+		if (*next == '\0') return true; /* all tokens parsed successfully */
+	}
+}
+
+/* Get the size of the next key (passphrase) to read
+ *
+ * Return value:
+ *     If --keys-from-stdin-sizes is set, each call returns the next value in the list.
+ *     When this option is not set, or a value of the list is invalid or the end of
+ *     the list has been reached, it returns zero.
+ */
+static size_t get_keysize()
+{
+	static const char *keys_from_stdin_sizes = NULL;
+
+	if (ARG_SET(OPT_KEYS_FROM_STDIN_SIZES_ID) && !keys_from_stdin_sizes) {
+		/* First call, initialize our static variable */
+		keys_from_stdin_sizes = ARG_STR(OPT_KEYS_FROM_STDIN_SIZES_ID);
+	}
+
+	if (keys_from_stdin_sizes) {
+		size_t size = 0;
+		const char *next = get_next_int(keys_from_stdin_sizes, &size);
+		if (next) {
+			/* Got a valid value */
+			keys_from_stdin_sizes = next;
+			return size;
+		}
+	}
+	return 0;
+}
+
 int luks_init_keyslot_context(struct crypt_device *cd,
 			      const char *msg,
 			      bool verify, bool pwquality,
@@ -290,9 +368,17 @@ int luks_init_keyslot_context(struct crypt_device *cd,
 							  ARG_UINT32(OPT_KEYFILE_SIZE_ID),
 							  ARG_UINT64(OPT_KEYFILE_OFFSET_ID), r_kc);
 	else {
-		r = tools_get_key(msg, &password, &passwordLen, ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
-				  ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
-				  ARG_UINT32(OPT_TIMEOUT_ID), verify, pwquality, cd);
+
+		if (ARG_SET(OPT_KEYS_FROM_STDIN_SIZES_ID)) {
+			/* Force behaving like --key-file "-" (stdin) to ignore '\n' delimiters */
+			r = tools_get_key(msg, &password, &passwordLen, 0,
+							  get_keysize(), "-",
+							  ARG_UINT32(OPT_TIMEOUT_ID), 0, 0, cd);
+		} else {
+			r = tools_get_key(msg, &password, &passwordLen, ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
+							  ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID),
+							  ARG_UINT32(OPT_TIMEOUT_ID), verify, pwquality, cd);
+		}
 		if (r < 0)
 			return r;
 		r = crypt_keyslot_context_init_by_passphrase(cd, password, passwordLen, r_kc);
