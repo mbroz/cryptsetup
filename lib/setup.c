@@ -611,7 +611,7 @@ int crypt_init(struct crypt_device **cd, const char *device)
 		return r;
 	}
 
-	dm_backend_init(NULL);
+	dm_backend_init();
 
 	h->rng_type = crypt_random_default_key_rng();
 
@@ -4176,7 +4176,6 @@ void crypt_free(struct crypt_device *cd)
 
 	log_dbg(cd, "Releasing crypt device %s context.", mdata_device_path(cd) ?: "empty");
 
-	dm_backend_exit(cd);
 	crypt_free_volume_key(cd->volume_key);
 
 	if (cd->keyring_description) {
@@ -6220,13 +6219,9 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name)
 	if (!name)
 		return CRYPT_INVALID;
 
-	if (!cd)
-		dm_backend_init(cd);
+	dm_backend_init();
 
 	r = dm_status_device(cd, name);
-
-	if (!cd)
-		dm_backend_exit(cd);
 
 	if (r < 0 && r != -ENODEV)
 		return CRYPT_INVALID;
@@ -8021,4 +8016,5 @@ static void __attribute__((destructor)) libcryptsetup_exit(void)
 
 	crypt_backend_destroy();
 	crypt_random_exit();
+	dm_backend_exit();
 }

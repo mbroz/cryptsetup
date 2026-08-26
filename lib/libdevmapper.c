@@ -39,7 +39,7 @@ static int _quiet_log = 0;
 static uint64_t _dm_flags = 0;
 
 static struct crypt_device *_context = NULL;
-static int _dm_use_count = 0;
+static bool dm_backend_initialized = false;
 
 /* Check if we have DM flag to instruct kernel to force wipe buffers */
 #if !HAVE_DECL_DM_TASK_SECURE_DATA
@@ -394,22 +394,24 @@ int dm_flags(struct crypt_device *cd, dm_target_type target, uint64_t *flags)
 }
 
 /* This doesn't run any kernel checks, just set up userspace libdevmapper */
-void dm_backend_init(struct crypt_device *cd)
+void dm_backend_init(void)
 {
-	if (!_dm_use_count++) {
-		log_dbg(cd, "Initialising device-mapper backend library.");
+	if (!dm_backend_initialized) {
+		log_dbg(NULL, "Initialising device-mapper backend library.");
 		dm_log_init(set_dm_error);
 		dm_log_init_verbose(10);
+		dm_backend_initialized = true;
 	}
 }
 
-void dm_backend_exit(struct crypt_device *cd)
+void dm_backend_exit(void)
 {
-	if (_dm_use_count && (!--_dm_use_count)) {
-		log_dbg(cd, "Releasing device-mapper backend.");
+	if (dm_backend_initialized) {
+		log_dbg(NULL, "Releasing device-mapper backend.");
 		dm_log_init_verbose(0);
 		dm_log_init(NULL);
 		dm_lib_release();
+		dm_backend_initialized = false;
 	}
 }
 
