@@ -274,7 +274,7 @@ out:
 }
 
 int LUKS_hdr_restore(
-	const char *backup_file,
+	struct device *backup_device,
 	struct luks_phdr *hdr,
 	struct crypt_device *ctx)
 {
@@ -284,7 +284,7 @@ int LUKS_hdr_restore(
 	char *buffer = NULL, msg[200];
 	struct luks_phdr hdr_file;
 
-	r = LUKS_read_phdr_backup(backup_file, &hdr_file, 0, ctx);
+	r = LUKS_read_phdr_backup(backup_device, &hdr_file, 0, ctx);
 	if (r == -ENOENT)
 		return r;
 
@@ -303,17 +303,17 @@ int LUKS_hdr_restore(
 		goto out;
 	}
 
-	fd = open(backup_file, O_RDONLY);
+	fd = device_open(ctx, backup_device, O_RDONLY);
 	if (fd == -1) {
-		log_err(ctx, _("Cannot open header backup file %s."), backup_file);
+		log_err(ctx, _("Cannot open header backup file %s."), device_path(backup_device));
 		r = -EINVAL;
 		goto out;
 	}
 
-	ret = read_buffer(fd, buffer, buffer_size);
-	close(fd);
+	ret = read_lseek_blockwise(fd, device_block_size(ctx, backup_device),
+			   device_alignment(backup_device), buffer, buffer_size, 0);
 	if (ret < buffer_size) {
-		log_err(ctx, _("Cannot read header backup file %s."), backup_file);
+		log_err(ctx, _("Cannot read header backup file %s."), device_path(backup_device));
 		r = -EIO;
 		goto out;
 	}
@@ -497,7 +497,7 @@ out:
 	return r;
 }
 
-static int _check_and_convert_hdr(const char *device,
+static int _check_and_convert_hdr(const struct device *device,
 				  struct luks_phdr *hdr,
 				  int require_luks_device,
 				  int repair,
@@ -511,7 +511,7 @@ static int _check_and_convert_hdr(const char *device,
 	if (memcmp(hdr->magic, luksMagic, LUKS_MAGIC_L)) { /* Check magic */
 		log_dbg(ctx, "LUKS header not detected.");
 		if (require_luks_device)
-			log_err(ctx, _("Device %s is not a valid LUKS device."), device);
+			log_err(ctx, _("Device %s is not a valid LUKS device."), device_path(device));
 		return -EINVAL;
 	} else if (hdr->version != 1) {
 		log_err(ctx, _("Unsupported LUKS version %d."), hdr->version);
@@ -564,31 +564,28 @@ static int _check_and_convert_hdr(const char *device,
 	return r;
 }
 
-int LUKS_read_phdr_backup(const char *backup_file,
+int LUKS_read_phdr_backup(struct device *backup_device,
 			  struct luks_phdr *hdr,
 			  int require_luks_device,
 			  struct crypt_device *ctx)
 {
 	ssize_t hdr_size = sizeof(struct luks_phdr);
-	int devfd = 0, r = 0;
+	int devfd;
 
 	log_dbg(ctx, "Reading LUKS header of size %d from backup file %s",
-		(int)hdr_size, backup_file);
+		(int)hdr_size, device_path(backup_device));
 
-	devfd = open(backup_file, O_RDONLY);
+	devfd = device_open(ctx, backup_device, O_RDONLY);
 	if (devfd == -1) {
-		log_err(ctx, _("Cannot open header backup file %s."), backup_file);
+		log_err(ctx, _("Cannot open header backup file %s."), device_path(backup_device));
 		return -ENOENT;
 	}
 
-	if (read_buffer(devfd, hdr, hdr_size) < hdr_size)
-		r = -EIO;
-	else
-		r = _check_and_convert_hdr(backup_file, hdr,
-					   require_luks_device, 0, ctx);
+	if (read_lseek_blockwise(devfd, device_block_size(ctx, backup_device),
+			   device_alignment(backup_device), hdr, hdr_size, 0) < hdr_size)
+		return -EIO;
 
-	close(devfd);
-	return r;
+	return _check_and_convert_hdr(backup_device, hdr, require_luks_device, 0, ctx);
 }
 
 int LUKS_read_phdr(struct luks_phdr *hdr,
@@ -622,8 +619,7 @@ int LUKS_read_phdr(struct luks_phdr *hdr,
 			   hdr, hdr_size, 0) < hdr_size)
 		r = -EIO;
 	else
-		r = _check_and_convert_hdr(device_path(device), hdr, require_luks_device,
-					   repair, ctx);
+		r = _check_and_convert_hdr(device, hdr, require_luks_device, repair, ctx);
 
 	if (!r)
 		r = LUKS_check_device_size(ctx, hdr, 0);
