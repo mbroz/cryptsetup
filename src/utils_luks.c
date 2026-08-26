@@ -328,7 +328,7 @@ bool verify_keys_from_stdin_sizes(const char *list_of_integers)
  *     When this option is not set, or a value of the list is invalid or the end of
  *     the list has been reached, it returns zero.
  */
-static size_t get_keysize()
+static size_t get_keysize(void)
 {
 	static const char *keys_from_stdin_sizes = NULL;
 
