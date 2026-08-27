@@ -27,7 +27,7 @@ int LUKS_keyslot_area(const struct luks_phdr *hdr,
 	uint64_t *offset,
 	uint64_t *length)
 {
-	if(keyslot >= LUKS_NUMKEYS || keyslot < 0)
+	if (keyslot >= LUKS_NUMKEYS || keyslot < 0)
 		return -EINVAL;
 
 	*offset = (uint64_t)hdr->keyblock[keyslot].keyMaterialOffset * SECTOR_SIZE;
