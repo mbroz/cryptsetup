@@ -241,6 +241,9 @@ static void _dm_set_integrity_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 12, 0, integrity_maj, integrity_min, integrity_patch))
 		_dm_flags |= DM_INTEGRITY_INLINE_MODE_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 15, 0, integrity_maj, integrity_min, integrity_patch))
+		_dm_flags |= DM_INTEGRITY_DISCARD_KEYED_SUPPORTED;
+
 	_dm_integrity_checked = true;
 }
 
@@ -875,7 +878,7 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 	if (flags & CRYPT_ACTIVATE_ALLOW_DISCARDS)
 		num_options++;
 
-	r = snprintf(features, max_size, "%d%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", num_options,
+	r = snprintf(features, max_size, "%d%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", num_options,
 		tgt->u.integrity.journal_size ? _uf(feature[0], sizeof(feature[0]), /* MAX length 17 + int32 */
 			"journal_sectors", (unsigned)(tgt->u.integrity.journal_size / SECTOR_SIZE)) : "",
 		tgt->u.integrity.journal_watermark ? _uf(feature[1], sizeof(feature[1]), /* MAX length 19 + int32 */
@@ -900,7 +903,8 @@ static char *get_dm_integrity_params(const struct dm_target *tgt, uint32_t flags
 		tgt->u.integrity.legacy_recalc ? " legacy_recalculate" : "", /* MAX length 19 */
 		flags & CRYPT_ACTIVATE_RECALCULATE ? " recalculate" : "", /* MAX length 12 */
 		flags & CRYPT_ACTIVATE_RECALCULATE_RESET ? " reset_recalculate" : "", /* MAX length 18 */
-		flags & CRYPT_ACTIVATE_ALLOW_DISCARDS ? " allow_discards" : "", /* MAX length 15 */
+		(flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) && !tgt->u.integrity.discard_keyed ? " allow_discards" : "", /* MAX length 15 */
+		(flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) && tgt->u.integrity.discard_keyed ? " allow_discards_keyed" : "", /* MAX length 21 */
 		tgt->u.integrity.meta_device ? " meta_device:" : "", /* MAX length 13 + str_device */
 		tgt->u.integrity.meta_device ? device_block_path(tgt->u.integrity.meta_device) : "");
 	if (r < 0 || r >= max_size)
@@ -2714,6 +2718,9 @@ static int _dm_target_query_integrity(struct crypt_device *cd,
 			tgt->u.integrity.legacy_recalc = true;
 		} else if (!strcmp(arg, "allow_discards")) {
 			*act_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+		} else if (!strcmp(arg, "allow_discards_keyed")) {
+			*act_flags |= CRYPT_ACTIVATE_ALLOW_DISCARDS;
+			tgt->u.integrity.discard_keyed = true;
 		} else /* unknown option */
 			goto err;
 	}
@@ -3478,6 +3485,11 @@ int dm_integrity_target_set(struct crypt_device *cd,
 	/* This flag can be backported, just try to set it always */
 	if (crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC)
 		tgt->u.integrity.legacy_recalc = true;
+
+	if (vk && !dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
+	    (dmi_flags & DM_INTEGRITY_DISCARD_KEYED_SUPPORTED) &&
+	    !(crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_DISCARD))
+		tgt->u.integrity.discard_keyed = true;
 
 	if (ip) {
 		tgt->u.integrity.journal_size = ip->journal_size;

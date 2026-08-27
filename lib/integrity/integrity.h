@@ -25,6 +25,7 @@ struct crypt_dm_active_device;
 #define SB_VERSION_4	4
 #define SB_VERSION_5	5
 #define SB_VERSION_6	6
+#define SB_VERSION_7	7
 
 #define SB_FLAG_HAVE_JOURNAL_MAC	(1 << 0)
 #define SB_FLAG_RECALCULATING		(1 << 1) /* V2 only */
@@ -32,6 +33,7 @@ struct crypt_dm_active_device;
 #define SB_FLAG_FIXED_PADDING		(1 << 3) /* V4 only */
 #define SB_FLAG_FIXED_HMAC		(1 << 4) /* V5 only */
 #define SB_FLAG_INLINE			(1 << 5) /* V6 only */
+#define SB_FLAG_DISCARD_KEYED		(1 << 6) /* V7 only */
 
 struct superblock {
 	uint8_t magic[8];
