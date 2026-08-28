@@ -4067,7 +4067,8 @@ int crypt_header_restore(struct crypt_device *cd,
 	   (requested_type && version == 1 && !isLUKS1(requested_type)) ||
 	   (requested_type && version == 2 && !isLUKS2(requested_type))) {
 		log_err(cd, _("Header backup file does not contain compatible LUKS header."));
-		return -EINVAL;
+		r = -EINVAL;
+		goto out;
 	}
 
 	if (!cd->type) {
@@ -4089,7 +4090,7 @@ int crypt_header_restore(struct crypt_device *cd,
 
 	if (!r)
 		r = _crypt_load_luks(cd, version == 1 ? CRYPT_LUKS1 : CRYPT_LUKS2, false, true);
-
+out:
 	device_free(cd, backup_device);
 	return r;
 }
