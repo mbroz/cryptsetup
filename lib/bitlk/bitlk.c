@@ -1508,6 +1508,15 @@ static int _activate(struct crypt_device *cd,
 	segments[num_segments].type = BITLK_SEGTYPE_CRYPT;
 	num_segments++;
 
+	/* reject malformed bitlk metadata. Segments out of device bounds cause infinite loop */
+	for (i = 0; i < num_segments; i++) {
+		if (segments[i].offset >= dmd.size || segments[i].iv_offset >= dmd.size ||
+		    (segments[i].length > dmd.size - segments[i].offset)) {
+			log_dbg(cd, "Malformed BITLK metadata: segment out of device bounds");
+			return -EINVAL;
+		}
+	}
+
 	/* now fill gaps between the dm-zero segments with dm-crypt */
 	last_segment = params->volume_header_size / SECTOR_SIZE;
 	while (true) {
@@ -1527,6 +1536,12 @@ static int _activate(struct crypt_device *cd,
 		/* two zero segments next to each other, just bump the last_segment
 		   so the algorithm moves */
 		if (next_end - next_start == 0) {
+			/* nothing left to add: malformed metadata */
+			if (next_start >= dmd.size) {
+				log_dbg(cd, "BITLK segment layout does not cover device.");
+				r = -EINVAL;
+				goto out;
+			}
 			last_segment = next_end + 1;
 			continue;
 		}
