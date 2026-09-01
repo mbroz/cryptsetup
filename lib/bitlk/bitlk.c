@@ -1233,13 +1233,19 @@ static int decrypt_key(struct crypt_device *cd,
 
 	if (is_fvek && strcmp(crypt_get_cipher_mode(cd), "cbc-elephant") == 0 &&
 		crypt_get_volume_key_size(cd) == 32) {
+		    if (crypt_volume_key_length(enc_key) < (2 * 16 + BITLK_OPEN_KEY_METADATA_LEN + 16)) {
+			log_dbg(cd, "Unexpected volume key size: %i, decrypted key size %zu",
+				crypt_get_volume_key_size(cd),
+				crypt_volume_key_length(enc_key));
+			r = -EINVAL;
+			goto out;
+		}
 		/* 128bit AES-CBC with Elephant -- key size is 256 bit (2 keys) but key data is 512 bits,
 		   data: 16B CBC key, 16B empty, 16B elephant key, 16B empty */
 		crypt_safe_memcpy(outbuf + 16 + BITLK_OPEN_KEY_METADATA_LEN,
 			outbuf + 2 * 16 + BITLK_OPEN_KEY_METADATA_LEN, 16);
 		key_size = 32 + BITLK_OPEN_KEY_METADATA_LEN;
 	}
-
 
 	*vk = crypt_alloc_volume_key(key_size - BITLK_OPEN_KEY_METADATA_LEN,
 					(const char *)(outbuf + BITLK_OPEN_KEY_METADATA_LEN));
