@@ -747,6 +747,8 @@ uint32_t crypt_get_compatibility(struct crypt_device *cd);
 #define CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC (UINT32_C(1) << 1)
 /** dm-integrity allow recalculating of volumes with HMAC keys (old kernels) */
 #define CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC (UINT32_C(1) << 2)
+/** dm-integrity use non-keyed discard filler (old kernels) */
+#define CRYPT_COMPAT_LEGACY_INTEGRITY_DISCARD (UINT32_C(1) << 3)
 
 /**
  * Convert to new type for already existing device.

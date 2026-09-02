@@ -1233,13 +1233,19 @@ static int decrypt_key(struct crypt_device *cd,
 
 	if (is_fvek && strcmp(crypt_get_cipher_mode(cd), "cbc-elephant") == 0 &&
 		crypt_get_volume_key_size(cd) == 32) {
+		    if (crypt_volume_key_length(enc_key) < (2 * 16 + BITLK_OPEN_KEY_METADATA_LEN + 16)) {
+			log_dbg(cd, "Unexpected volume key size: %i, decrypted key size %zu",
+				crypt_get_volume_key_size(cd),
+				crypt_volume_key_length(enc_key));
+			r = -EINVAL;
+			goto out;
+		}
 		/* 128bit AES-CBC with Elephant -- key size is 256 bit (2 keys) but key data is 512 bits,
 		   data: 16B CBC key, 16B empty, 16B elephant key, 16B empty */
 		crypt_safe_memcpy(outbuf + 16 + BITLK_OPEN_KEY_METADATA_LEN,
 			outbuf + 2 * 16 + BITLK_OPEN_KEY_METADATA_LEN, 16);
 		key_size = 32 + BITLK_OPEN_KEY_METADATA_LEN;
 	}
-
 
 	*vk = crypt_alloc_volume_key(key_size - BITLK_OPEN_KEY_METADATA_LEN,
 					(const char *)(outbuf + BITLK_OPEN_KEY_METADATA_LEN));
@@ -1508,6 +1514,15 @@ static int _activate(struct crypt_device *cd,
 	segments[num_segments].type = BITLK_SEGTYPE_CRYPT;
 	num_segments++;
 
+	/* reject malformed bitlk metadata. Segments out of device bounds cause infinite loop */
+	for (i = 0; i < num_segments; i++) {
+		if (segments[i].offset >= dmd.size || segments[i].iv_offset >= dmd.size ||
+		    (segments[i].length > dmd.size - segments[i].offset)) {
+			log_dbg(cd, "Malformed BITLK metadata: segment out of device bounds");
+			return -EINVAL;
+		}
+	}
+
 	/* now fill gaps between the dm-zero segments with dm-crypt */
 	last_segment = params->volume_header_size / SECTOR_SIZE;
 	while (true) {
@@ -1527,6 +1542,12 @@ static int _activate(struct crypt_device *cd,
 		/* two zero segments next to each other, just bump the last_segment
 		   so the algorithm moves */
 		if (next_end - next_start == 0) {
+			/* nothing left to add: malformed metadata */
+			if (next_start >= dmd.size) {
+				log_dbg(cd, "BITLK segment layout does not cover device.");
+				r = -EINVAL;
+				goto out;
+			}
 			last_segment = next_end + 1;
 			continue;
 		}

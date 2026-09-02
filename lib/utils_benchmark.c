@@ -46,14 +46,18 @@ int crypt_benchmark(struct crypt_device *cd,
 		iv = malloc(iv_size);
 		if (!iv)
 			goto out;
-		crypt_random_get(cd, iv, iv_size, CRYPT_RND_NORMAL);
+		r = crypt_random_get(cd, iv, iv_size, CRYPT_RND_NORMAL);
+		if (r < 0)
+			goto out;
 	}
 
 	key = malloc(volume_key_size);
 	if (!key)
 		goto out;
 
-	crypt_random_get(cd, key, volume_key_size, CRYPT_RND_NORMAL);
+	r = crypt_random_get(cd, key, volume_key_size, CRYPT_RND_NORMAL);
+	if (r < 0)
+		goto out;
 
 	strncpy(mode, cipher_mode, sizeof(mode)-1);
 	/* Ignore IV generator */

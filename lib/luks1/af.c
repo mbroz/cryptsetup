@@ -10,6 +10,7 @@
  */
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -147,11 +148,15 @@ size_t AF_split_sectors(size_t blocksize, unsigned int blocknumbers)
 {
 	size_t af_size;
 
+	if (!blocknumbers || blocksize >= (SIZE_MAX / blocknumbers))
+		return 0;
+
 	/* data material * stripes */
 	af_size = blocksize * blocknumbers;
 
-	/* round up to sector */
-	af_size = (af_size + (SECTOR_SIZE - 1)) / SECTOR_SIZE;
+	if (af_size >= (SIZE_MAX - SECTOR_SIZE + 1))
+		return 0;
 
-	return af_size;
+	/* round up to sector */
+	return (af_size + (SECTOR_SIZE - 1)) / SECTOR_SIZE;
 }

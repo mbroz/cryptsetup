@@ -67,6 +67,7 @@ static inline uint64_t act2dmflags(uint64_t act_flags)
 #define DM_CRYPT_INTEGRITY_KEY_SIZE_OPT_SUPPORTED (UINT64_C(1) << 30) /* dm-crypt support for integrity_key_size option */
 #define DM_VERITY_ERROR_AS_CORRUPTION_SUPPORTED (UINT64_C(1) << 31) /* dm-verity restart/panic on corruption supported */
 #define DM_INTEGRITY_INLINE_MODE_SUPPORTED (UINT64_C(1) << 32) /* dm-integrity inline mode supported */
+#define DM_INTEGRITY_DISCARD_KEYED_SUPPORTED (UINT64_C(1) << 33) /* dm-integrity discard keyed supported */
 
 typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_ZERO, DM_UNKNOWN } dm_target_type;
 enum tdirection { TARGET_EMPTY = 0, TARGET_SET, TARGET_QUERY };
@@ -147,6 +148,7 @@ struct dm_target {
 		bool fix_padding;
 		bool fix_hmac;
 		bool legacy_recalc;
+		bool discard_keyed;
 	} integrity;
 	struct {
 		uint64_t offset;
