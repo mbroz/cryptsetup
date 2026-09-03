@@ -443,23 +443,29 @@ char *dm_device_path(const char *prefix, int major, int minor)
 	const char *name;
 	char path[PATH_MAX];
 
-	if (!(dmt = dm_task_create(DM_DEVICE_STATUS)))
+	if (dm_init_context(NULL, DM_UNKNOWN))
 		return NULL;
+
+	if (!(dmt = dm_task_create(DM_DEVICE_STATUS)))
+		goto err;
 	if (!dm_task_set_minor(dmt, minor) ||
 	    !dm_task_set_major(dmt, major) ||
 	    !dm_task_no_flush(dmt) ||
 	    !dm_task_run(dmt) ||
 	    !(name = dm_task_get_name(dmt))) {
 		dm_task_destroy(dmt);
-		return NULL;
+		goto err;
 	}
 
 	if (snprintf(path, sizeof(path), "%s%s", prefix ?: "", name) < 0)
 		path[0] = '\0';
 
 	dm_task_destroy(dmt);
-
+	dm_exit_context();
 	return strdup(path);
+err:
+	dm_exit_context();
+	return NULL;
 }
 
 char *dm_device_name(const char *path)
@@ -3217,9 +3223,18 @@ out:
 	return r;
 }
 
-int dm_cancel_deferred_removal(struct crypt_device *cd __attribute__((unused)), const char *name)
+int dm_cancel_deferred_removal(struct crypt_device *cd, const char *name)
 {
-	return _dm_message(name, "@cancel_deferred_remove") ? 0 : -ENOTSUP;
+	int r;
+
+	if (dm_init_context(cd, DM_UNKNOWN))
+		return -ENOTSUP;
+
+	r = _dm_message(name, "@cancel_deferred_remove") ? 0 : -ENOTSUP;
+
+	dm_exit_context();
+
+	return r;
 }
 
 const char *dm_get_dir(void)
