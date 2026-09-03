@@ -3217,7 +3217,7 @@ out:
 	return r;
 }
 
-int dm_cancel_deferred_removal(const char *name)
+int dm_cancel_deferred_removal(struct crypt_device *cd __attribute__((unused)), const char *name)
 {
 	return _dm_message(name, "@cancel_deferred_remove") ? 0 : -ENOTSUP;
 }
