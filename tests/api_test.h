@@ -156,4 +156,10 @@ int dmdevice_error_io(const char *dm_name,
 	uint64_t length,
 	error_io_info ei);
 
+int decompress_missing_xz_image(const char *image);
+
+int untar_xz_archive_if_file_missing(const char *archive, const char *file);
+
+int untar_xz_archive_if_dir_missing(const char *archive, const char *dir);
+
 #endif
