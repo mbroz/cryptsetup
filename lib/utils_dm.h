@@ -176,7 +176,6 @@ static inline bool single_segment(const struct crypt_dm_active_device *dmd)
 	return dmd && !dmd->segment.next;
 }
 
-void dm_backend_init(void);
 void dm_backend_exit(void);
 
 int dm_targets_allocate(struct dm_target *first, unsigned count);

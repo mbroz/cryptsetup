@@ -394,7 +394,7 @@ int dm_flags(struct crypt_device *cd, dm_target_type target, uint64_t *flags)
 }
 
 /* This doesn't run any kernel checks, just set up userspace libdevmapper */
-void dm_backend_init(void)
+static void dm_backend_init(void)
 {
 	if (!dm_backend_initialized) {
 		log_dbg(NULL, "Initialising device-mapper backend library.");
@@ -418,6 +418,7 @@ void dm_backend_exit(void)
 /* libdevmapper is not context friendly, switch context on every DM call. */
 static int dm_init_context(struct crypt_device *cd, dm_target_type target)
 {
+	dm_backend_init();
 	_context = cd;
 	if (!_dm_check_versions(cd, target)) {
 		if (getuid() || geteuid())
