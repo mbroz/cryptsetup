@@ -611,8 +611,6 @@ int crypt_init(struct crypt_device **cd, const char *device)
 		return r;
 	}
 
-	dm_backend_init();
-
 	h->rng_type = crypt_random_default_key_rng();
 
 	*cd = h;
@@ -6218,8 +6216,6 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name)
 
 	if (!name)
 		return CRYPT_INVALID;
-
-	dm_backend_init();
 
 	r = dm_status_device(cd, name);
 
