@@ -38,6 +38,8 @@ PWD4="d54uVMKW-'7M"
 PWD5="oDe{yCiZ_';_"
 PWD6="T'E'Y_}<'9=q"
 PWD7="UR%]T;x*w{3V"
+PWD8=$(echo -e 'abc;\n;def') # size of 9 bytes
+PWD9=$(echo -e 'a1\nb22')    # size of 6 bytes
 
 DEV_LINK="reenc-test-link"
 KEYRING="luks2_reencryption_test_kr"
@@ -2987,6 +2989,42 @@ $CRYPTSETUP open --test-passphrase --volume-key-keyring $KEY_NAME_VK2 $DEV || fa
 head -c 31 $VKEY1 | keyctl padd user $KEY_NAME_VK1 %:$KEYRING > /dev/null || fail
 $CRYPTSETUP -q reencrypt --init-only --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- 2>/dev/null && fail
 $CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt" && fail "Failed initialization with reencryption flag"
+
+echo "[39] Multi-keyslot device reencryption with --keys-from-stdin-sizes"
+# Set an initial passphrase that has a '\n'
+echo -n "$PWD8" | $CRYPTSETUP -q luksFormat --type luks2 --keyfile-size 9 --key-file - --offset 32768 $FAST_PBKDF2 $DEV || fail
+
+# Add a passphrase that has a '\n'
+echo -n "$PWD8$PWD9" | $CRYPTSETUP -q luksAddKey --keyfile-size 9 --key-file - $FAST_PBKDF2 $DEV - || fail
+# Add a passphrase with a null byte (hardcoded as it cannot be achieved via a variable)
+echo -ne "${PWD8}1111\x00\x01\x02\x03999" | $CRYPTSETUP -q luksAddKey --keyfile-size 9 --key-file - $FAST_PBKDF2 $DEV - || fail
+
+# Check all 3 passphrases are valid
+echo -n "$PWD8" | $CRYPTSETUP open $DEV --key-file - --test-passphrase || fail
+echo -n "$PWD9" | $CRYPTSETUP open $DEV --key-file - --test-passphrase || fail
+echo -ne "1111\x00\x01\x02\x03999" | $CRYPTSETUP open $DEV --key-file - --test-passphrase || fail
+
+# Rencrypt --init-only / --resume-only
+(echo -n "$PWD8$PWD9"; echo -ne "1111\x00\x01\x02\x03999") | $CRYPTSETUP reencrypt --keys-from-stdin-sizes 9,6,11 $DEV -q --init-only || fail
+echo -n "$PWD8" | $CRYPTSETUP reencrypt $DEV --key-file - -q --resume-only || fail
+
+# Check all 3 passphrases are still valid after reencryption
+echo -n "$PWD8" | $CRYPTSETUP open $DEV --key-file - --test-passphrase || fail
+echo -n "$PWD9" | $CRYPTSETUP open $DEV --key-file - --test-passphrase || fail
+echo -ne "1111\x00\x01\x02\x03999" | $CRYPTSETUP open $DEV --key-file - --test-passphrase || fail
+
+# Check that all 3 keyslots have been retained
+$CRYPTSETUP luksDump $DEV | grep -e "3: luks2" || fail
+$CRYPTSETUP luksDump $DEV | grep -e "4: luks2" || fail
+$CRYPTSETUP luksDump $DEV | grep -e "5: luks2" || fail
+
+# Redo reencryption in one run
+(echo -n "$PWD8$PWD9"; echo -ne "1111\x00\x01\x02\x03999") | $CRYPTSETUP reencrypt --keys-from-stdin-sizes 9,6,11 $DEV -q || fail
+
+# Check that all 3 keyslots have been retained
+$CRYPTSETUP luksDump $DEV | grep -e "0: luks2" || fail
+$CRYPTSETUP luksDump $DEV | grep -e "1: luks2" || fail
+$CRYPTSETUP luksDump $DEV | grep -e "2: luks2" || fail
 
 remove_mapping
 cleanup_keyring

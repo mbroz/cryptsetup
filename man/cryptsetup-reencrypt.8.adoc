@@ -64,6 +64,7 @@ Note that for encrypt and decrypt mode, the whole device must be treated as unen
 --key-slot,
 --keyfile-offset,
 --keyfile-size,
+--keys-from-stdin-sizes,
 --tries,
 --timeout,
 --pbkdf,
@@ -154,6 +155,10 @@ Reencrypt LUKS2 device using keyslots associated with all 'systemd-tpm2' tokens.
 All other keyslots will be removed after the reencryption finishes.
 
 *cryptsetup reencrypt --token-type systemd-tpm2 /dev/encrypted_device*
+
+Reencrypt LUKS2 device with 2 keyslots (with passphrases "pass1" and "pass2222"):
+
+*echo "pass1pass2222" | cryptsetup reencrypt --keys-from-stdin-sizes 5,8 /dev/encrypted_device*
 
 === LUKS2 DECRYPTION EXAMPLES
 
