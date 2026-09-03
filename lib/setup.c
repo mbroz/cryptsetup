@@ -611,8 +611,6 @@ int crypt_init(struct crypt_device **cd, const char *device)
 		return r;
 	}
 
-	dm_backend_init(NULL);
-
 	h->rng_type = crypt_random_default_key_rng();
 
 	*cd = h;
@@ -4176,7 +4174,6 @@ void crypt_free(struct crypt_device *cd)
 
 	log_dbg(cd, "Releasing crypt device %s context.", mdata_device_path(cd) ?: "empty");
 
-	dm_backend_exit(cd);
 	crypt_free_volume_key(cd->volume_key);
 
 	if (cd->keyring_description) {
@@ -5892,7 +5889,7 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 			}
 
 			if (flags & CRYPT_DEACTIVATE_DEFERRED_CANCEL) {
-				r = dm_cancel_deferred_removal(name);
+				r = dm_cancel_deferred_removal(cd, name);
 				if (r < 0)
 					log_err(cd, _("Could not cancel deferred remove from device %s."), name);
 				break;
@@ -6220,13 +6217,7 @@ crypt_status_info crypt_status(struct crypt_device *cd, const char *name)
 	if (!name)
 		return CRYPT_INVALID;
 
-	if (!cd)
-		dm_backend_init(cd);
-
 	r = dm_status_device(cd, name);
-
-	if (!cd)
-		dm_backend_exit(cd);
 
 	if (r < 0 && r != -ENODEV)
 		return CRYPT_INVALID;
@@ -8021,4 +8012,5 @@ static void __attribute__((destructor)) libcryptsetup_exit(void)
 
 	crypt_backend_destroy();
 	crypt_random_exit();
+	dm_backend_exit();
 }
