@@ -5891,7 +5891,7 @@ int crypt_deactivate_by_name(struct crypt_device *cd, const char *name, uint32_t
 			}
 
 			if (flags & CRYPT_DEACTIVATE_DEFERRED_CANCEL) {
-				r = dm_cancel_deferred_removal(name);
+				r = dm_cancel_deferred_removal(cd, name);
 				if (r < 0)
 					log_err(cd, _("Could not cancel deferred remove from device %s."), name);
 				break;
