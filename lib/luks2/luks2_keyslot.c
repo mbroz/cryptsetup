@@ -79,7 +79,7 @@ static int _keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 	json_object *jobj_keyslots, *jobj;
 	crypt_keyslot_priority slot_priority;
 	unsigned s;
-	int keyslot_digest, count = 0;
+	int ks, keyslot_digest, count = 0;
 
 	/*
 	 * Must not be called with both keyslot == CRYPT_ANY_SLOT
@@ -100,7 +100,9 @@ static int _keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 			if (slot_priority < CRYPT_SLOT_PRIORITY_NORMAL)
 				continue;
 
-			keyslot_digest = LUKS2_digest_by_keyslot(hdr, atoi(slot));
+			if (crypt_str_to_int(slot, &ks) < 0)
+				continue;
+			keyslot_digest = LUKS2_digest_by_keyslot(hdr, ks);
 			if (keyslot_digest >= 0 &&
 			    keyslot_digest == LUKS2_digest_by_segment(hdr, segment))
 				return 1;
@@ -147,14 +149,14 @@ int LUKS2_keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 /* Number of keyslots assigned to a segment or all keyslots for CRYPT_ANY_SEGMENT */
 int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment)
 {
-	int num = 0;
+	int ks, num = 0;
 	json_object *jobj_keyslots;
 
 	json_object_object_get_ex(hdr->jobj, "keyslots", &jobj_keyslots);
 
 	json_object_object_foreach(jobj_keyslots, slot, val) {
 		UNUSED(val);
-		if (!LUKS2_keyslot_for_segment(hdr, atoi(slot), segment))
+		if (crypt_str_to_int(slot, &ks) == 0 && !LUKS2_keyslot_for_segment(hdr, ks, segment))
 			num++;
 	}
 
@@ -440,7 +442,8 @@ static int LUKS2_keyslot_open_priority(struct crypt_device *cd,
 		else
 			slot_priority = json_object_get_int(jobj);
 
-		keyslot = atoi(slot);
+		if (crypt_str_to_int(slot, &keyslot) < 0)
+			continue;
 		if (slot_priority != priority) {
 			log_dbg(cd, "Keyslot %d priority %d != %d (required), skipped.",
 				keyslot, slot_priority, priority);
@@ -866,7 +869,8 @@ int LUKS2_keyslots_validate(struct crypt_device *cd, json_object *hdr_jobj)
 	LUKS2_config_get_requirements(cd, &dummy, &reqs);
 
 	json_object_object_foreach(jobj_keyslots, slot, val) {
-		keyslot = atoi(slot);
+		if (crypt_str_to_int(slot, &keyslot) < 0)
+			return -EINVAL;
 		json_object_object_get_ex(val, "type", &jobj_type);
 		h = LUKS2_keyslot_handler_type(json_object_get_string(jobj_type));
 		if (!h)

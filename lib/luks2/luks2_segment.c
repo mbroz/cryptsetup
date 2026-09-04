@@ -367,13 +367,14 @@ uint64_t LUKS2_segment_offset(struct luks2_hdr *hdr, int segment, unsigned block
 int json_segments_segment_in_reencrypt(json_object *jobj_segments)
 {
 	json_object *jobj_flags;
+	int s;
 
 	json_object_object_foreach(jobj_segments, slot, val) {
 		if (!json_object_object_get_ex(val, "flags", &jobj_flags) ||
 		    !LUKS2_array_jobj(jobj_flags, "in-reencryption"))
 			continue;
 
-		return atoi(slot);
+		return crypt_str_to_int(slot, &s) < 0 ? -EINVAL : s;
 	}
 
 	return -1;
@@ -466,7 +467,7 @@ int LUKS2_get_opal_key_size(struct luks2_hdr *hdr, int segment)
 int LUKS2_last_segment_by_type(struct luks2_hdr *hdr, const char *type)
 {
 	json_object *jobj_segments;
-	int last_found = -1;
+	int last_found = -1, s;
 
 	if (!type)
 		return -1;
@@ -480,8 +481,8 @@ int LUKS2_last_segment_by_type(struct luks2_hdr *hdr, const char *type)
 		if (strcmp(type, json_segment_type(val) ?: ""))
 			continue;
 
-		if (atoi(slot) > last_found)
-			last_found = atoi(slot);
+		if (crypt_str_to_int(slot, &s) == 0 && s > last_found)
+			last_found = s;
 	}
 
 	return last_found;
@@ -490,7 +491,7 @@ int LUKS2_last_segment_by_type(struct luks2_hdr *hdr, const char *type)
 int LUKS2_segment_by_type(struct luks2_hdr *hdr, const char *type)
 {
 	json_object *jobj_segments;
-	int first_found = -1;
+	int first_found = -1, s;
 
 	if (!type)
 		return -EINVAL;
@@ -504,10 +505,8 @@ int LUKS2_segment_by_type(struct luks2_hdr *hdr, const char *type)
 		if (strcmp(type, json_segment_type(val) ?: ""))
 			continue;
 
-		if (first_found < 0)
-			first_found = atoi(slot);
-		else if (atoi(slot) < first_found)
-			first_found = atoi(slot);
+		if (crypt_str_to_int(slot, &s) == 0 && (first_found < 0 || s < first_found))
+			first_found = s;
 	}
 
 	return first_found;
@@ -556,6 +555,7 @@ int LUKS2_segments_set(struct crypt_device *cd, struct luks2_hdr *hdr,
 int LUKS2_get_segment_id_by_flag(struct luks2_hdr *hdr, const char *flag)
 {
 	json_object *jobj_flags, *jobj_segments = LUKS2_get_segments_jobj(hdr);
+	int s;
 
 	if (!flag || !jobj_segments)
 		return -ENOENT;
@@ -564,7 +564,7 @@ int LUKS2_get_segment_id_by_flag(struct luks2_hdr *hdr, const char *flag)
 		if (!json_object_object_get_ex(value, "flags", &jobj_flags))
 			continue;
 		if (LUKS2_array_jobj(jobj_flags, flag))
-			return atoi(key);
+			return crypt_str_to_int(key, &s) < 0 ? -EINVAL : s;
 	}
 
 	return -ENOENT;

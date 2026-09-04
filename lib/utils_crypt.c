@@ -14,11 +14,30 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 
 #include "libcryptsetup.h"
 #include "utils_crypt.h"
 
 #define MAX_CAPI_LEN_STR "143" /* for sscanf of crypto API string + 16  + \0 */
+
+int crypt_str_to_int(const char *str, int *value)
+{
+	char *endptr;
+	long l;
+
+	if (!str || !value)
+		return -EINVAL;
+
+	errno = 0;
+	l = strtol(str, &endptr, 10);
+
+	if (endptr == str || *endptr || errno || l > INT_MAX || l < INT_MIN)
+		return -EINVAL;
+
+	*value = (int)l;
+	return 0;
+}
 
 int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
 			      char *cipher_mode)
@@ -40,9 +59,11 @@ int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
 			strcpy(cipher_mode, "cbc-plain");
 		if (key_nums) {
 			char *tmp = strchr(cipher, ':');
-			*key_nums = tmp ? atoi(++tmp) : 1;
-			if (!*key_nums)
-				return -EINVAL;
+			if (tmp) {
+				if (crypt_str_to_int(++tmp, key_nums) || !*key_nums)
+					return -EINVAL;
+			} else
+				*key_nums = 1;
 		}
 
 		return 0;
