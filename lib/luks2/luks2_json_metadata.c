@@ -761,7 +761,8 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 					return 1;
 		}
 
-		i = atoi(key);
+		if (crypt_str_to_int(key, &i) < 0)
+			return 1;
 		if (json_segment_is_backup(val)) {
 			if (first_backup < 0 || i < first_backup)
 				first_backup = i;

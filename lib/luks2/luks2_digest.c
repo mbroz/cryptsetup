@@ -89,9 +89,11 @@ int LUKS2_digest_by_keyslot(struct luks2_hdr *hdr, int keyslot)
 	json_object_object_get_ex(hdr->jobj, "digests", &jobj_digests);
 
 	json_object_object_foreach(jobj_digests, key, val) {
+		int digest;
+
 		json_object_object_get_ex(val, "keyslots", &jobj_digest_keyslots);
 		if (LUKS2_array_jobj(jobj_digest_keyslots, keyslot_name))
-			return atoi(key);
+			return crypt_str_to_int(key, &digest) < 0 ? -EINVAL : digest;
 	}
 
 	return -ENOENT;
@@ -270,11 +272,13 @@ int LUKS2_digest_by_segment(struct luks2_hdr *hdr, int segment)
 		return -EINVAL;
 
 	json_object_object_foreach(jobj_digests, key, val) {
+		int digest;
+
 		json_object_object_get_ex(val, "segments", &jobj_digest_segments);
 		if (!LUKS2_array_jobj(jobj_digest_segments, segment_name))
 			continue;
 
-		return atoi(key);
+		return crypt_str_to_int(key, &digest) < 0 ? -EINVAL : digest;
 	}
 
 	return -ENOENT;
@@ -322,8 +326,12 @@ int LUKS2_digest_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 		json_object_object_get_ex(hdr->jobj, "digests", &jobj_digests);
 
 		json_object_object_foreach(jobj_digests, key, val) {
+			int d;
+
 			UNUSED(val);
-			r = assign_one_digest(cd, hdr, keyslot, atoi(key), assign);
+			r = crypt_str_to_int(key, &d);
+			if (r == 0)
+				r = assign_one_digest(cd, hdr, keyslot, d, assign);
 			if (r < 0)
 				break;
 		}
@@ -410,11 +418,16 @@ int LUKS2_digest_segment_assign(struct crypt_device *cd, struct luks2_hdr *hdr,
 		json_object_object_get_ex(hdr->jobj, "digests", &jobj_digests);
 
 		json_object_object_foreach(jobj_digests, key, val) {
+			int d;
+
 			UNUSED(val);
-			if (segment == CRYPT_ANY_SEGMENT)
-				r = assign_all_segments(hdr, atoi(key), assign);
-			else
-				r = assign_one_segment(cd, hdr, segment, atoi(key), assign);
+			r = crypt_str_to_int(key, &d);
+			if (r == 0) {
+				if (segment == CRYPT_ANY_SEGMENT)
+					r = assign_all_segments(hdr, d, assign);
+				else
+					r = assign_one_segment(cd, hdr, segment, d, assign);
+			}
 			if (r < 0)
 				break;
 		}
@@ -457,7 +470,7 @@ void LUKS2_digests_erase_unused(struct crypt_device *cd,
 
 	json_object_object_foreach(jobj_digests, key, val) {
 		if (digest_unused(val)) {
-			log_dbg(cd, "Erasing unused digest %d.", atoi(key));
+			log_dbg(cd, "Erasing unused digest %s.", key);
 			json_object_object_del(jobj_digests, key);
 		}
 	}
