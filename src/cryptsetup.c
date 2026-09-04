@@ -3946,7 +3946,12 @@ int main(int argc, const char **argv)
 	tools_check_args(action->type, tool_core_args, ARRAY_SIZE(tool_core_args), popt_context);
 
 	if (!strcmp(aname, KILLKEY_ACTION) && action_argc > 1) {
-		ARG_SET_INT32(OPT_KEY_SLOT_ID, atoi(action_argv[1]));
+		int tmp_slot;
+
+		if (crypt_str_to_int(action_argv[1], &tmp_slot) < 0)
+			usage(popt_context, EXIT_FAILURE, _("Key slot is invalid."),
+			      poptGetInvocationName(popt_context));
+		ARG_SET_INT32(OPT_KEY_SLOT_ID, tmp_slot);
 		check_key_slot_value(popt_context);
 	}
 
