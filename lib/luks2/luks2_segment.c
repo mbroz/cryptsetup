@@ -369,11 +369,13 @@ int json_segments_segment_in_reencrypt(json_object *jobj_segments)
 	json_object *jobj_flags;
 
 	json_object_object_foreach(jobj_segments, slot, val) {
+		int s;
+
 		if (!json_object_object_get_ex(val, "flags", &jobj_flags) ||
 		    !LUKS2_array_jobj(jobj_flags, "in-reencryption"))
 			continue;
 
-		return atoi(slot);
+		return crypt_str_to_int(slot, &s) < 0 ? -EINVAL : s;
 	}
 
 	return -1;
@@ -475,13 +477,15 @@ int LUKS2_last_segment_by_type(struct luks2_hdr *hdr, const char *type)
 		return -1;
 
 	json_object_object_foreach(jobj_segments, slot, val) {
+		int s;
+
 		if (json_segment_is_backup(val))
 			continue;
 		if (strcmp(type, json_segment_type(val) ?: ""))
 			continue;
 
-		if (atoi(slot) > last_found)
-			last_found = atoi(slot);
+		if (crypt_str_to_int(slot, &s) == 0 && s > last_found)
+			last_found = s;
 	}
 
 	return last_found;
@@ -499,15 +503,15 @@ int LUKS2_segment_by_type(struct luks2_hdr *hdr, const char *type)
 		return -EINVAL;
 
 	json_object_object_foreach(jobj_segments, slot, val) {
+		int s;
+
 		if (json_segment_is_backup(val))
 			continue;
 		if (strcmp(type, json_segment_type(val) ?: ""))
 			continue;
 
-		if (first_found < 0)
-			first_found = atoi(slot);
-		else if (atoi(slot) < first_found)
-			first_found = atoi(slot);
+		if (crypt_str_to_int(slot, &s) == 0 && (first_found < 0 || s < first_found))
+			first_found = s;
 	}
 
 	return first_found;
@@ -561,10 +565,12 @@ int LUKS2_get_segment_id_by_flag(struct luks2_hdr *hdr, const char *flag)
 		return -ENOENT;
 
 	json_object_object_foreach(jobj_segments, key, value) {
+		int s;
+
 		if (!json_object_object_get_ex(value, "flags", &jobj_flags))
 			continue;
 		if (LUKS2_array_jobj(jobj_flags, flag))
-			return atoi(key);
+			return crypt_str_to_int(key, &s) < 0 ? -EINVAL : s;
 	}
 
 	return -ENOENT;
