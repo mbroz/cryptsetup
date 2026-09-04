@@ -1,0 +1,69 @@
+Cryptsetup 2.8.8 Release Notes
+==============================
+Stable bug-fix release with minor extensions.
+
+All users of cryptsetup must upgrade to this version.
+
+Changes since version 2.8.7
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* integritysetup: add support for keyed discards.
+
+  An integrity device in standalone mode, with a keyed integrity algorithm like HMAC and
+  enabled discards (TRIM), could be vulnerable to wiping part of the device using a discard pattern.
+
+  This issue can be worked around by using a keyed discards filler.
+  Once set, it is set permanently for the integrity device and cannot be reverted.
+
+  Integritysetup now supports a new --allow-discards-keyed option.
+  Once used, it will upgrade the superblock and activate keyed discards.
+  After the upgrade, keyed discards are always used, even with the old --allow-discards option.
+
+  Keyed discard is available since Linux kernel 7.3.
+
+  The kernel issue was reported (and fixed) by Shukai Ni and Jo Van Bulck, DistriNet, KU Leuven.
+
+  Note: Integritysetup was intended to be used with non-cryptographic integrity protection only.
+  If you need cryptographic protection, use LUKS2 and AEAD (discards are not supported).
+
+* Avoid time-of-check/time-of-use (TOCTOU) issue in LUKS header restore.
+
+  The LUKS header restore function validates the provided header file and then reopens the same
+  file path to restore the LUKS header. In a specifically crafted environment, a symlink flip could
+  occur between validating and restoring the header, resulting in a different file being used for
+  the LUKS header restore (potentially leaking the file content).
+  The libcryptsetup now opens the device only once. The issue affects both LUKS1 and LUKS2.
+
+  The issue was reported by Vivek Parikh, BreachX Zero Day Labs.
+
+  Note: LUKS header backup/restore is a system administrative task (similar to filesystem
+  backup/restore) that must run in a secure environment. Such a backup is usually a multi-step
+  process, and it is up to the caller to ensure security of that environment.
+
+* BITLK: harden metadata validation.
+
+  If a crafted BITLK (BitLocker-compatible) image is opened, the allocated buffer size for the key
+  can be incorrect. This can happen if the encryption is changed from AES-CBC-128 to a mode with
+  an Elephant diffuser, without recalculating the stored key.
+
+  Also, the data offset can be intentionally wrong, which could lead to an infinite loop when
+  parsing metadata.
+
+  Note that creating such an incorrect image requires knowledge of the disk password, as MAC
+  protects the metadata, and this MAC is checked by cryptsetup.
+
+  These issues were reported by Aisle Research.
+
+* Fix possible integer overflow in LUKS metadata parsing.
+
+  On systems with a 32-bit integer size, the anti-forensic (AF) data size calculation could
+  overflow, causing an application crash.
+
+  The issue was reported by Aisle Research.
+
+* cryptsetup: fix local memory corruption bug in reencrypt init.
+
+  If a device intended for reencryption contains more than 16 active LUKS2 keyslots or tokens,
+  the reencryption initialization could corrupt internal memory, leading to an application crash.
+
+  The issue was reported by Aisle Research.
