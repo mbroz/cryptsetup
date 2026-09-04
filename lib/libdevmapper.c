@@ -39,7 +39,7 @@ static int _quiet_log = 0;
 static uint64_t _dm_flags = 0;
 
 static struct crypt_device *_context = NULL;
-static int _dm_use_count = 0;
+static bool dm_backend_initialized = false;
 
 /* Check if we have DM flag to instruct kernel to force wipe buffers */
 #if !HAVE_DECL_DM_TASK_SECURE_DATA
@@ -394,28 +394,31 @@ int dm_flags(struct crypt_device *cd, dm_target_type target, uint64_t *flags)
 }
 
 /* This doesn't run any kernel checks, just set up userspace libdevmapper */
-void dm_backend_init(struct crypt_device *cd)
+static void dm_backend_init(void)
 {
-	if (!_dm_use_count++) {
-		log_dbg(cd, "Initialising device-mapper backend library.");
+	if (!dm_backend_initialized) {
+		log_dbg(NULL, "Initialising device-mapper backend library.");
 		dm_log_init(set_dm_error);
 		dm_log_init_verbose(10);
+		dm_backend_initialized = true;
 	}
 }
 
-void dm_backend_exit(struct crypt_device *cd)
+void dm_backend_exit(void)
 {
-	if (_dm_use_count && (!--_dm_use_count)) {
-		log_dbg(cd, "Releasing device-mapper backend.");
+	if (dm_backend_initialized) {
+		log_dbg(NULL, "Releasing device-mapper backend.");
 		dm_log_init_verbose(0);
 		dm_log_init(NULL);
 		dm_lib_release();
+		dm_backend_initialized = false;
 	}
 }
 
 /* libdevmapper is not context friendly, switch context on every DM call. */
 static int dm_init_context(struct crypt_device *cd, dm_target_type target)
 {
+	dm_backend_init();
 	_context = cd;
 	if (!_dm_check_versions(cd, target)) {
 		if (getuid() || geteuid())
@@ -429,10 +432,6 @@ static int dm_init_context(struct crypt_device *cd, dm_target_type target)
 	}
 	return 0;
 }
-static void dm_exit_context(void)
-{
-	_context = NULL;
-}
 
 /* Return path to DM device */
 char *dm_device_path(const char *prefix, int major, int minor)
@@ -440,6 +439,9 @@ char *dm_device_path(const char *prefix, int major, int minor)
 	struct dm_task *dmt;
 	const char *name;
 	char path[PATH_MAX];
+
+	if (dm_init_context(NULL, DM_UNKNOWN))
+		return NULL;
 
 	if (!(dmt = dm_task_create(DM_DEVICE_STATUS)))
 		return NULL;
@@ -456,7 +458,6 @@ char *dm_device_path(const char *prefix, int major, int minor)
 		path[0] = '\0';
 
 	dm_task_destroy(dmt);
-
 	return strdup(path);
 }
 
@@ -1085,8 +1086,6 @@ int dm_error_device(struct crypt_device *cd, const char *name)
 
 	dm_targets_free(cd, &dmd);
 
-	dm_exit_context();
-
 	return r;
 }
 
@@ -1104,8 +1103,6 @@ int dm_clear_device(struct crypt_device *cd, const char *name)
 		r = 0;
 	else
 		r = -EINVAL;
-
-	dm_exit_context();
 
 	return r;
 }
@@ -1127,7 +1124,6 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 
 	if (deferred && !dm_flags(cd, DM_UNKNOWN, &dmt_flags) && !(dmt_flags & DM_DEFERRED_SUPPORTED)) {
 		log_err(cd, _("Requested deferred flag is not supported."));
-		dm_exit_context();
 		return -ENOTSUP;
 	}
 
@@ -1153,7 +1149,6 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 	} while (r == -EINVAL && retries);
 
 	dm_task_update_nodes();
-	dm_exit_context();
 
 	return r;
 }
@@ -1827,7 +1822,6 @@ out:
 	    crypt_is_cipher_null(dmd->segment.u.crypt.cipher))
 		log_dbg(cd, "Activated dm-crypt device with cipher_null. Device is not encrypted.");
 
-	dm_exit_context();
 	return r;
 }
 
@@ -1866,7 +1860,6 @@ int dm_reload_device(struct crypt_device *cd, const char *name,
 	if (!r && resume)
 		r = _dm_resume_device(name, dmflags | act2dmflags(dmd->flags));
 
-	dm_exit_context();
 	return r;
 }
 
@@ -1942,7 +1935,6 @@ int dm_status_device(struct crypt_device *cd, const char *name)
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 	r = dm_status_dmi(name, &dmi, NULL, NULL);
-	dm_exit_context();
 
 	if (r < 0)
 		return r;
@@ -1958,7 +1950,6 @@ int dm_status_suspended(struct crypt_device *cd, const char *name)
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 	r = dm_status_dmi(name, &dmi, NULL, NULL);
-	dm_exit_context();
 
 	if (r < 0 && r != -EEXIST)
 		return r;
@@ -1992,7 +1983,6 @@ int dm_status_verity_ok(struct crypt_device *cd, const char *name)
 	if (dm_init_context(cd, DM_VERITY))
 		return -ENOTSUP;
 	r = _dm_status_verity_ok(cd, name);
-	dm_exit_context();
 	return r;
 }
 
@@ -2007,7 +1997,6 @@ int dm_status_verity_repaired(struct crypt_device *cd, const char *name, uint64_
 		return -ENOTSUP;
 
 	r = dm_status_dmi(name, &dmi, DM_VERITY_TARGET, &status_line);
-	dm_exit_context();
 	if (r < 0 || !status_line || !*status_line) {
 		free(status_line);
 		return r;
@@ -2042,14 +2031,12 @@ int dm_status_integrity_failures(struct crypt_device *cd, const char *name, uint
 	r = dm_status_dmi(name, &dmi, DM_INTEGRITY_TARGET, &status_line);
 	if (r < 0 || !status_line) {
 		free(status_line);
-		dm_exit_context();
 		return r;
 	}
 
 	log_dbg(cd, "Integrity volume %s failure status is %s.", name, status_line ?: "");
 	*count = strtoull(status_line, NULL, 10);
 	free(status_line);
-	dm_exit_context();
 
 	return 0;
 }
@@ -2957,8 +2944,6 @@ out:
 int dm_query_device(struct crypt_device *cd, const char *name,
 		    uint64_t get_flags, struct crypt_dm_active_device *dmd)
 {
-	int r;
-
 	if (!dmd)
 		return -EINVAL;
 
@@ -2967,10 +2952,7 @@ int dm_query_device(struct crypt_device *cd, const char *name,
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
-	r = _dm_query_device(cd, name, get_flags, dmd);
-
-	dm_exit_context();
-	return r;
+	return _dm_query_device(cd, name, get_flags, dmd);
 }
 
 static int _process_deps(struct crypt_device *cd, const char *prefix, struct dm_deps *deps,
@@ -3077,7 +3059,6 @@ out:
 	if (dmt)
 		dm_task_destroy(dmt);
 
-	dm_exit_context();
 	return r;
 }
 
@@ -3137,22 +3118,15 @@ int dm_suspend_device(struct crypt_device *cd, const char *name, uint64_t dmflag
 
 	r = 0;
 out:
-	dm_exit_context();
 	return r;
 }
 
 int dm_resume_device(struct crypt_device *cd, const char *name, uint64_t dmflags)
 {
-	int r;
-
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
-	r = _dm_resume_device(name, dmflags);
-
-	dm_exit_context();
-
-	return r;
+	return _dm_resume_device(name, dmflags);
 }
 
 int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
@@ -3211,12 +3185,14 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 out:
 	crypt_safe_free(msg);
 	crypt_safe_free(key);
-	dm_exit_context();
 	return r;
 }
 
-int dm_cancel_deferred_removal(const char *name)
+int dm_cancel_deferred_removal(struct crypt_device *cd, const char *name)
 {
+	if (dm_init_context(cd, DM_UNKNOWN))
+		return -ENOTSUP;
+
 	return _dm_message(name, "@cancel_deferred_remove") ? 0 : -ENOTSUP;
 }
 
