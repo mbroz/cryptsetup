@@ -113,6 +113,15 @@ exp_pass open DEV NAME --serialize-memory-hard-pbkdf
 exp_pass reencrypt DEV --key-size 32
 exp_fail reencrypt DEV --key-size 31
 exp_fail reencrypt DEV --key-size -32
+exp_pass reencrypt DEV --keys-from-stdin-sizes 32,8,19,3
+exp_pass reencrypt DEV --keys-from-stdin-sizes 32
+exp_pass reencrypt DEV --keys-from-stdin-sizes 1,8,19,
+exp_fail reencrypt DEV --keys-from-stdin-sizes -32
+exp_fail reencrypt DEV --keys-from-stdin-sizes 1,8,,9
+exp_fail reencrypt DEV --keys-from-stdin-sizes 1,8 --key-file F
+exp_fail reencrypt DEV --keys-from-stdin-sizes 1,8 --keyfile-size 42
+exp_fail reencrypt DEV --keys-from-stdin-sizes 1,8 --keyfile-offset 16384
+exp_fail reencrypt DEV --keys-from-stdin-sizes 1,8 --key-slot 0
 exp_pass luksFormat DEV --key-size 32
 exp_fail luksFormat DEV --key-size 31
 exp_fail luksFormat DEV --key-size -32
