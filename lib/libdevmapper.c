@@ -407,7 +407,6 @@ void dm_backend_init(void)
 void dm_backend_exit(void)
 {
 	if (dm_backend_initialized) {
-		log_dbg(NULL, "Releasing device-mapper backend.");
 		dm_log_init_verbose(0);
 		dm_log_init(NULL);
 		dm_lib_release();
