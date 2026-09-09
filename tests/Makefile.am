@@ -106,6 +106,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	fake_systemd_tpm_path.c \
 	unit-wipe-test \
 	systemd-test-plugin \
+	cryptsetup-test-runner.in \
 	LUKS-d238e48a-0ed3-4169-b841-f26b44693134.tar.xz
 
 CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_systemd_tpm_path.so
@@ -222,7 +223,27 @@ cryptsetup_tests_generatorsdir = $(cryptsetup_tests_datadir)/generators
 # compiled tests are handled via check_PROGRAMS installation
 INSTALLABLE_TESTS_SCRIPT_LIST += $(filter-out $(check_PROGRAMS), $(TESTS))
 
-INSTALLABLE_TESTS_DATA_LIST += $(filter-out cryptsetup-valg-supps fake_systemd_tpm_path.c generate-symbols-list Makefile.localtest valg-api.sh valg.sh generators $(INSTALLABLE_TESTS_SCRIPT_LIST) $(check_PROGRAMS), $(EXTRA_DIST))
+INSTALLABLE_TESTS_DATA_LIST += $(filter-out cryptsetup-valg-supps cryptsetup-test-runner.in fake_systemd_tpm_path.c generate-symbols-list Makefile.localtest valg-api.sh valg.sh generators $(INSTALLABLE_TESTS_SCRIPT_LIST) $(check_PROGRAMS), $(EXTRA_DIST))
+
+# The runner is a plain script in $(sbindir); it is the only installed test
+# suite component outside of the testsuite directories. The configured paths
+# are substituted here rather than in configure, so that $(libexecdir) and
+# friends are fully expanded.
+sbin_SCRIPTS = cryptsetup-test-runner
+
+cryptsetup-test-runner: cryptsetup-test-runner.in Makefile
+	$(AM_V_GEN)rm -f $@ $@.tmp && \
+	$(SED) -e 's|%%VERSION%%|$(VERSION)|g' \
+	       -e 's|%%CRYPTSETUP_PATH%%|$(sbindir)|g' \
+	       -e 's|%%CRYPTSETUP_TESTS_BIN_PATH%%|$(cryptsetup_testsdir)|g' \
+	       -e 's|%%CRYPTSETUP_TESTS_DATA_PATH%%|$(cryptsetup_tests_datadir)|g' \
+	       -e 's|%%LIBCRYPTSETUP_DIR%%|$(libdir)|g' \
+	       -e 's|%%TESTS_LIST%%|$(TESTS)|g' \
+	       $(srcdir)/cryptsetup-test-runner.in > $@.tmp && \
+	chmod +x $@.tmp && \
+	mv -f $@.tmp $@
+
+CLEANFILES += cryptsetup-test-runner
 
 install-tests:
 	$(MKDIR_P) $(DESTDIR)$(cryptsetup_testsdir)
