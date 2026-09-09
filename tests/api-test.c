@@ -196,6 +196,7 @@ static void _cleanup(void)
 
 	_system("rm -f " IMAGE_EMPTY, 0);
 	_system("rm -f " IMAGE1, 0);
+	_system("rm -rf tcrypt-images", 0);
 
 	if (test_loop_file)
 		remove(test_loop_file);
