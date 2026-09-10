@@ -1381,8 +1381,8 @@ prepare "[43] OPAL2 + dmcrypt test." wipe
 test_device --hw-opal
 
 prepare "[44] OPAL2 + auth encryption" wipe
-test_device --hw-opal "-c aes-gcm-random --integrity aead" --integrity-no-wipe
-test_device --hw-opal "-s 280 -c aes-ccm-random --integrity aead" --integrity-no-wipe
+test_device --hw-opal "-c aes-xts-plain64 -s256 --integrity hmac-sha256" --integrity-no-wipe
+test_device --hw-opal "-c aes-xts-random  -s512 --integrity hmac-sha256" --integrity-no-wipe
 
 prepare "[45] OPAL2 HW only test (detached header)" wipe
 test_device_detached_header $HEADER_IMG --hw-opal-only
@@ -1391,8 +1391,8 @@ prepare "[46] OPAL2 + dmcrypt test (detached header)" wipe
 test_device_detached_header $HEADER_IMG --hw-opal
 
 prepare "[47] OPAL2 + auth encryption test (detached header)" wipe
-test_device_detached_header $HEADER_IMG --hw-opal "-c aes-gcm-random --integrity aead" --integrity-no-wipe
-test_device_detached_header $HEADER_IMG --hw-opal "-s 280 -c aes-ccm-random --integrity aead" --integrity-no-wipe
+test_device_detached_header $HEADER_IMG --hw-opal "-c aes-xts-plain64 -s256 --integrity hmac-sha256" --integrity-no-wipe
+test_device_detached_header $HEADER_IMG --hw-opal "-c aes-xts-random  -s512 --integrity hmac-sha256" --integrity-no-wipe
 
 # FIXME: Add partition based tests
 
