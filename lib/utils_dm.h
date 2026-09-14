@@ -176,8 +176,7 @@ static inline bool single_segment(const struct crypt_dm_active_device *dmd)
 	return dmd && !dmd->segment.next;
 }
 
-void dm_backend_init(struct crypt_device *cd);
-void dm_backend_exit(struct crypt_device *cd);
+void dm_backend_exit(void);
 
 int dm_targets_allocate(struct dm_target *first, unsigned count);
 void dm_targets_free(struct crypt_device *cd, struct crypt_dm_active_device *dmd);
@@ -222,7 +221,7 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 				const struct volume_key *vk);
 int dm_error_device(struct crypt_device *cd, const char *name);
 int dm_clear_device(struct crypt_device *cd, const char *name);
-int dm_cancel_deferred_removal(const char *name);
+int dm_cancel_deferred_removal(struct crypt_device *cd, const char *name);
 
 const char *dm_get_dir(void);
 int dm_get_iname(const char *name, char **iname, bool with_path);
