@@ -981,3 +981,67 @@ int t_device_size_by_devno(dev_t devno, uint64_t *retval)
 	*retval *= 512;
 	return 0;
 }
+
+int decompress_missing_xz_image(const char *image)
+{
+	int r;
+	struct stat st;
+	char xz_image_path[PATH_MAX], cmd[PATH_MAX];
+
+	if (stat(image, &st) == 0 && S_ISREG(st.st_mode))
+		return 0;
+
+	r = snprintf(xz_image_path, sizeof(xz_image_path), "%s.xz", image);
+	if (r < 0 || (size_t)r >= sizeof(xz_image_path))
+		return 1;
+
+	if ((stat(xz_image_path, &st) != 0) || !S_ISREG(st.st_mode)) {
+		printf("Cannot stat %s or is not a file.\n", xz_image_path);
+		return 1;
+	}
+
+	r = snprintf(cmd, sizeof(cmd), "xz -cd %s > %s", xz_image_path, image);
+	if (r < 0 || (size_t)r >= sizeof(cmd))
+		return 1;
+
+	return _system(cmd, 1);
+}
+
+static int untar_xz_archive_if_missing(const char *archive, const char *dir_entry, bool is_file)
+{
+	int r;
+	struct stat st;
+	char archive_path[PATH_MAX], cmd[PATH_MAX];
+
+	if (stat(dir_entry, &st) == 0) {
+		if (is_file && S_ISREG(st.st_mode))
+			return 0;
+		if (!is_file && S_ISDIR(st.st_mode))
+			return 0;
+	}
+
+	r = snprintf(archive_path, sizeof(archive_path), "%s.tar.xz", archive);
+	if (r < 0 || (size_t)r >= sizeof(archive_path))
+		return 1;
+
+	if ((stat(archive_path, &st) != 0) || !S_ISREG(st.st_mode)) {
+		printf("Cannot stat %s or is not a file.\n", archive_path);
+		return 1;
+	}
+
+	r = snprintf(cmd, sizeof(cmd), "tar xJf %s", archive_path);
+	if (r < 0 || (size_t)r >= sizeof(cmd))
+		return 1;
+
+	return _system(cmd, 1);
+}
+
+int untar_xz_archive_if_file_missing(const char *archive, const char *file)
+{
+	return untar_xz_archive_if_missing(archive, file, /* is_file= */ true);
+}
+
+int untar_xz_archive_if_dir_missing(const char *archive, const char *dir)
+{
+	return untar_xz_archive_if_missing(archive, dir, /* is_file= */ false);
+}
