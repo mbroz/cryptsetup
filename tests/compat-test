@@ -2,9 +2,11 @@
 
 PS4='$LINENO:'
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+[ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
+[ -z "$CRYPTSETUP_TESTS_DATA_PATH" ] && CRYPTSETUP_TESTS_DATA_PATH="."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 CRYPTSETUP_RAW=$CRYPTSETUP
-CRYPTOCHECK=./crypto-check
+CRYPTOCHECK=$CRYPTSETUP_TESTS_BIN_PATH/crypto-check
 
 if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 	CRYPTSETUP_VALGRIND=$CRYPTSETUP
@@ -13,7 +15,7 @@ else
 	CRYPTSETUP_LIB_VALGRIND=../.libs
 fi
 
-DIFFER=./differ
+DIFFER=$CRYPTSETUP_TESTS_BIN_PATH/differ
 DEV_NAME=dummy
 DEV_NAME2=dummy2
 DEV_NAME3=dummy3
@@ -118,19 +120,19 @@ prepare()
 		;;
 	new)
 		remove_mapping
-		xz -cd compatimage.img.xz > $IMG
+		xz -cd $CRYPTSETUP_TESTS_DATA_PATH/compatimage.img.xz > $IMG
 		# FIXME: switch to internal loop (no losetup at all)
 		echo "bad" | $CRYPTSETUP luksOpen --key-slot 0 --test-passphrase $IMG 2>&1 | \
 			grep "autoclear flag" && skip "WARNING: Too old kernel, test skipped."
 		losetup $LOOPDEV $IMG
-		xz -cd compatv10image.img.xz > $IMG10
+		xz -cd $CRYPTSETUP_TESTS_DATA_PATH/compatv10image.img.xz > $IMG10
 		;;
 	reuse | *)
 		if [ ! -e $IMG ]; then
-			xz -cd compatimage.img.xz > $IMG
+			xz -cd $CRYPTSETUP_TESTS_DATA_PATH/compatimage.img.xz > $IMG
 			losetup $LOOPDEV $IMG
 		fi
-		[ ! -e $IMG10 ] && xz -cd compatv10image.img.xz > $IMG10
+		[ ! -e $IMG10 ] && xz -cd $CRYPTSETUP_TESTS_DATA_PATH/compatv10image.img.xz > $IMG10
 		;;
 	esac
 

@@ -43,6 +43,7 @@ struct loop_config {
 static char last_error[256];
 static char global_log[4096];
 static uint64_t t_dm_crypt_flags = 0;
+static char crypto_check_path[256];
 
 char *THE_LOOP_DEV = NULL;
 int _debug   = 0;
@@ -164,10 +165,23 @@ int t_set_readahead(const char *device, unsigned value)
 	return r;
 }
 
+static const char *get_crypto_check_path(void)
+{
+	int r;
+
+	if (!*crypto_check_path) {
+		r = snprintf(crypto_check_path, sizeof(crypto_check_path), "%s/crypto-check",
+			 getenv("CRYPTSETUP_TESTS_BIN_PATH") ?: ".");
+		assert(r > 0 && (size_t)r < sizeof(crypto_check_path));
+	}
+
+	return crypto_check_path;
+}
+
 static bool crypto_check_exists(void)
 {
 	struct stat st;
-	const char *path = "./crypto-check";
+	const char *path = get_crypto_check_path();
 
 	if (stat(path, &st) != 0)
 		return false;
@@ -181,24 +195,44 @@ static bool crypto_check_exists(void)
 	return true;
 }
 
-int fips_mode(void)
+static bool set_crypto_check_cmd(char *cmd, size_t cmd_len, const char *params)
 {
+	int r;
+
 	if (!crypto_check_exists()) {
 		printf("WARNING: Cannot find crypto-check helper, expecting non-FIPS mode.\n");
-		return 0;
+		return false;
 	}
 
-	return _system("./crypto-check fips_mode", 1) == 0;
+	r = snprintf(cmd, cmd_len, "%s %s", get_crypto_check_path(), params);
+
+	assert(r > 0 && (size_t)r < cmd_len);
+
+	return true;
+}
+
+int fips_mode(void)
+{
+	static char fips_mode_cmd[256];
+
+	if (!*fips_mode_cmd &&
+	    !set_crypto_check_cmd(fips_mode_cmd, sizeof(fips_mode_cmd), "fips_mode"))
+		return 0;
+
+	// crypto-check fips_mode
+	return _system(fips_mode_cmd, 1) == 0;
 }
 
 int fips_mode_kernel(void)
 {
-	if (!crypto_check_exists()) {
-		printf("WARNING: Cannot find crypto-check helper, expecting non-FIPS mode.\n");
-		return 0;
-	}
+	static char fips_mode_kernel_cmd[256];
 
-	return _system("./crypto-check fips_mode_kernel", 1) == 0;
+	if (!*fips_mode_kernel_cmd &&
+	    !set_crypto_check_cmd(fips_mode_kernel_cmd, sizeof(fips_mode_kernel_cmd), "fips_mode_kernel"))
+		return 0;
+
+	// crypto-check fips_mode_kernel
+	return _system(fips_mode_kernel_cmd, 1) == 0;
 }
 
 /*
@@ -982,6 +1016,11 @@ int t_device_size_by_devno(dev_t devno, uint64_t *retval)
 	return 0;
 }
 
+static const char *get_tests_data_path(void)
+{
+	return getenv("CRYPTSETUP_TESTS_DATA_PATH") ?: ".";
+}
+
 int decompress_missing_xz_image(const char *image)
 {
 	int r;
@@ -991,7 +1030,7 @@ int decompress_missing_xz_image(const char *image)
 	if (stat(image, &st) == 0 && S_ISREG(st.st_mode))
 		return 0;
 
-	r = snprintf(xz_image_path, sizeof(xz_image_path), "%s.xz", image);
+	r = snprintf(xz_image_path, sizeof(xz_image_path), "%s/%s.xz", get_tests_data_path(), image);
 	if (r < 0 || (size_t)r >= sizeof(xz_image_path))
 		return 1;
 
@@ -1020,7 +1059,8 @@ static int untar_xz_archive_if_missing(const char *archive, const char *dir_entr
 			return 0;
 	}
 
-	r = snprintf(archive_path, sizeof(archive_path), "%s.tar.xz", archive);
+	r = snprintf(archive_path, sizeof(archive_path), "%s/%s.tar.xz",
+		     get_tests_data_path(), archive);
 	if (r < 0 || (size_t)r >= sizeof(archive_path))
 		return 1;
 

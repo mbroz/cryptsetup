@@ -19,11 +19,12 @@ IMG=luks2-backend.img
 ORIG_IMG=luks2_valid_hdr.img
 TST_IMGS=$START_DIR/luks2-images
 
-GEN_DIR=generators
-
 FAILS=0
 
 [ -z "$srcdir" ] && srcdir="."
+[ -z "$CRYPTSETUP_TESTS_DATA_PATH" ] && CRYPTSETUP_TESTS_DATA_PATH=$srcdir
+
+CRYPTSETUP_TESTS_GENERATORS_PATH=$CRYPTSETUP_TESTS_DATA_PATH/generators
 
 remove_mapping()
 {
@@ -61,7 +62,7 @@ prepare() # $1 dev1_size
 
 	test -d $TST_IMGS || mkdir $TST_IMGS
 
-	test -e $ORIG_IMG || xz -dkc $srcdir/$ORIG_IMG.xz >$ORIG_IMG
+	test -e $ORIG_IMG || xz -dc $CRYPTSETUP_TESTS_DATA_PATH/$ORIG_IMG.xz >$ORIG_IMG
 	cp $ORIG_IMG $TST_IMGS
 	cp $ORIG_IMG $IMG
 }
@@ -140,6 +141,8 @@ valgrind_run()
 
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
+[ ! -d "$CRYPTSETUP_TESTS_GENERATORS_PATH" ] && fail "Cannot find $CRYPTSETUP_TESTS_GENERATORS_PATH directory."
+[ ! -f "$CRYPTSETUP_TESTS_GENERATORS_PATH/lib.sh" ] && fail "Cannot find $CRYPTSETUP_TESTS_GENERATORS_PATH/lib.sh file."
 
 command -v jq >/dev/null || skip "Cannot find jq, test skipped."
 command -v xxd >/dev/null || skip "Cannot find xxd, test skipped."
@@ -147,13 +150,11 @@ command -v xxd >/dev/null || skip "Cannot find xxd, test skipped."
 prepare
 
 echo "[0] Generating test headers"
-cd $srcdir/$GEN_DIR
-for scr in ./generate-*.sh; do
+for scr in $CRYPTSETUP_TESTS_GENERATORS_PATH/generate-*.sh; do
 	echo -n "$(basename $scr)..."
-	$scr $TST_IMGS $TST_IMGS/$ORIG_IMG || fail "Header generator $scr failed: '$?'"
+	CRYPTSETUP_TESTS_GENERATORS_PATH=$CRYPTSETUP_TESTS_GENERATORS_PATH $scr $TST_IMGS $TST_IMGS/$ORIG_IMG || fail "Header generator $scr failed: '$?'"
 	echo "done"
 done
-cd $START_DIR
 
 echo "[1] Test basic auto-recovery"
 RUN luks2-invalid-checksum-hdr0.img "R" "Failed to recover from trivial header corruption at offset 0"

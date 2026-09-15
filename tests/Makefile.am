@@ -42,6 +42,9 @@ if SSHPLUGIN_TOKEN
 TESTS += ssh-test-plugin
 endif
 
+INSTALLABLE_TESTS_SCRIPT_LIST =
+INSTALLABLE_TESTS_DATA_LIST =
+
 if EXTERNAL_TOKENS
 TESTS += systemd-test-plugin
 endif
@@ -103,6 +106,7 @@ EXTRA_DIST = compatimage.img.xz compatv10image.img.xz \
 	fake_systemd_tpm_path.c \
 	unit-wipe-test \
 	systemd-test-plugin \
+	cryptsetup-test-runner.in \
 	LUKS-d238e48a-0ed3-4169-b841-f26b44693134.tar.xz
 
 CLEANFILES = cryptsetup-tst* valglog* *-fail-*.log test-symbols-list.h fake_systemd_tpm_path.so
@@ -114,14 +118,14 @@ differ_SOURCES = differ.c
 differ_CFLAGS = $(AM_CFLAGS) -Wall -O2
 
 api_test_SOURCES = api-test.c api_test.h test_utils.c
-api_test_LDADD = ../libcryptsetup.la
-api_test_LDFLAGS = $(AM_LDFLAGS) -static
+api_test_LDADD = ../libcryptsetup.la @DEVMAPPER_LIBS@
+api_test_LDFLAGS = $(AM_LDFLAGS)
 api_test_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib
 api_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
 api_test_2_SOURCES = api-test-2.c api_test.h test_utils.c
-api_test_2_LDADD = ../libcryptsetup.la
-api_test_2_LDFLAGS = $(AM_LDFLAGS) -static
+api_test_2_LDADD = ../libcryptsetup.la @DEVMAPPER_LIBS@
+api_test_2_LDFLAGS = $(AM_LDFLAGS)
 api_test_2_CFLAGS = -g -Wall -O0 $(AM_CFLAGS) -I$(top_srcdir)/lib
 api_test_2_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
@@ -144,14 +148,14 @@ unit_utils_io_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib
 unit_utils_io_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
 unit_utils_crypt_test_SOURCES = unit-utils-crypt.c ../lib/utils_crypt.c ../lib/utils_crypt.h
-unit_utils_crypt_test_LDADD = ../libcryptsetup.la
-unit_utils_crypt_test_LDFLAGS = $(AM_LDFLAGS) -static
+unit_utils_crypt_test_LDADD = ../libcryptsetup.la @DEVMAPPER_LIBS@
+unit_utils_crypt_test_LDFLAGS = $(AM_LDFLAGS)
 unit_utils_crypt_test_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib
 unit_utils_crypt_test_CPPFLAGS = $(AM_CPPFLAGS) -include config.h
 
 unit_wipe_SOURCES = unit-wipe.c
-unit_wipe_LDADD = ../libcryptsetup.la
-unit_wipe_LDFLAGS = $(AM_LDFLAGS) -static
+unit_wipe_LDADD = ../libcryptsetup.la @DEVMAPPER_LIBS@
+unit_wipe_LDFLAGS = $(AM_LDFLAGS)
 unit_wipe_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib
 unit_wipe_CPPFLAGS = $(AM_CPPFLAGS)
 
@@ -209,4 +213,65 @@ valgrind-check: api-test api-test-2 differ
 	@INFOSTRING="vectors-test" ./valg-api.sh ./vectors-test
 	@grep -l "ERROR SUMMARY: [^0][0-9]* errors" valglog* || echo "No leaks detected."
 
-.PHONY: valgrind-check
+# ==========================================================================
+# Installed tests support (for distribution as a subpackage)
+if INSTALL_TESTS
+cryptsetup_testsdir = $(libexecdir)/cryptsetup-testsuite
+cryptsetup_tests_datadir = $(datadir)/cryptsetup-testsuite
+cryptsetup_tests_generatorsdir = $(cryptsetup_tests_datadir)/generators
+
+# compiled tests are handled via check_PROGRAMS installation
+INSTALLABLE_TESTS_SCRIPT_LIST += $(filter-out $(check_PROGRAMS), $(TESTS))
+
+INSTALLABLE_TESTS_DATA_LIST += $(filter-out cryptsetup-valg-supps cryptsetup-test-runner.in fake_systemd_tpm_path.c generate-symbols-list Makefile.localtest valg-api.sh valg.sh generators $(INSTALLABLE_TESTS_SCRIPT_LIST) $(check_PROGRAMS), $(EXTRA_DIST))
+
+# The runner is a plain script in $(sbindir); it is the only installed test
+# suite component outside of the testsuite directories. The configured paths
+# are substituted here rather than in configure, so that $(libexecdir) and
+# friends are fully expanded.
+sbin_SCRIPTS = cryptsetup-test-runner
+
+cryptsetup-test-runner: cryptsetup-test-runner.in Makefile
+	$(AM_V_GEN)rm -f $@ $@.tmp && \
+	$(SED) -e 's|%%VERSION%%|$(VERSION)|g' \
+	       -e 's|%%CRYPTSETUP_PATH%%|$(sbindir)|g' \
+	       -e 's|%%CRYPTSETUP_TESTS_BIN_PATH%%|$(cryptsetup_testsdir)|g' \
+	       -e 's|%%CRYPTSETUP_TESTS_DATA_PATH%%|$(cryptsetup_tests_datadir)|g' \
+	       -e 's|%%LIBCRYPTSETUP_DIR%%|$(libdir)|g' \
+	       -e 's|%%TESTS_LIST%%|$(TESTS)|g' \
+	       $(srcdir)/cryptsetup-test-runner.in > $@.tmp && \
+	chmod +x $@.tmp && \
+	mv -f $@.tmp $@
+
+CLEANFILES += cryptsetup-test-runner
+
+install-tests:
+	$(MKDIR_P) $(DESTDIR)$(cryptsetup_testsdir)
+	$(MKDIR_P) $(DESTDIR)$(cryptsetup_tests_datadir)
+	$(MKDIR_P) $(DESTDIR)$(cryptsetup_tests_generatorsdir)
+	for p in $(check_PROGRAMS); do \
+		$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install \
+			$(INSTALL_PROGRAM) $$p $(DESTDIR)$(cryptsetup_testsdir)/$$p; \
+	done
+	if test -f fake_systemd_tpm_path.so; then \
+		$(INSTALL) -m 0755 fake_systemd_tpm_path.so $(DESTDIR)$(cryptsetup_testsdir)/fake_systemd_tpm_path.so; \
+	elif test -f $(srcdir)/fake_systemd_tpm_path.so; then \
+		$(INSTALL) -m 0755 $(srcdir)/fake_systemd_tpm_path.so $(DESTDIR)$(cryptsetup_testsdir)/fake_systemd_tpm_path.so; \
+	fi
+	for s in $(INSTALLABLE_TESTS_SCRIPT_LIST); do \
+		$(INSTALL_SCRIPT) $(srcdir)/$$s $(DESTDIR)$(cryptsetup_testsdir)/$$s; \
+	done
+	for d in $(INSTALLABLE_TESTS_DATA_LIST); do \
+		$(INSTALL_DATA) $(srcdir)/$$d $(DESTDIR)$(cryptsetup_tests_datadir)/$$d; \
+	done
+	for g in $(srcdir)/generators/generate-*.sh $(srcdir)/generators/lib.sh; do \
+		$(INSTALL_SCRIPT) $$g $(DESTDIR)$(cryptsetup_tests_generatorsdir)/$$(basename $$g); \
+	done
+
+
+uninstall-tests:
+	rm -rf $(DESTDIR)$(cryptsetup_testsdir) $(DESTDIR)$(cryptsetup_tests_datadir)
+
+install-data-local: install-tests
+uninstall-local: uninstall-tests
+endif
