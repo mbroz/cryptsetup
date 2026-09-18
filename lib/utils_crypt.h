@@ -39,6 +39,8 @@ void crypt_log_hex(struct crypt_device *cd,
 
 bool crypt_is_cipher_null(const char *cipher_spec);
 
+int crypt_str_to_int(const char *str, int *value);
+
 int crypt_capi_to_cipher(char **org_c, char **org_i, const char *c_dm, const char *i_dm);
 
 #endif /* _UTILS_CRYPT_H */

@@ -92,6 +92,8 @@ static int _keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 		json_object_object_get_ex(hdr->jobj, "keyslots", &jobj_keyslots);
 
 		json_object_object_foreach(jobj_keyslots, slot, val) {
+			int ks;
+
 			if (!json_object_object_get_ex(val, "priority", &jobj))
 				slot_priority = CRYPT_SLOT_PRIORITY_NORMAL;
 			else
@@ -100,7 +102,9 @@ static int _keyslot_for_segment(struct luks2_hdr *hdr, int keyslot, int segment)
 			if (slot_priority < CRYPT_SLOT_PRIORITY_NORMAL)
 				continue;
 
-			keyslot_digest = LUKS2_digest_by_keyslot(hdr, atoi(slot));
+			if (crypt_str_to_int(slot, &ks) < 0)
+				continue;
+			keyslot_digest = LUKS2_digest_by_keyslot(hdr, ks);
 			if (keyslot_digest >= 0 &&
 			    keyslot_digest == LUKS2_digest_by_segment(hdr, segment))
 				return 1;
@@ -153,8 +157,10 @@ int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment)
 	json_object_object_get_ex(hdr->jobj, "keyslots", &jobj_keyslots);
 
 	json_object_object_foreach(jobj_keyslots, slot, val) {
+		int ks;
+
 		UNUSED(val);
-		if (!LUKS2_keyslot_for_segment(hdr, atoi(slot), segment))
+		if (crypt_str_to_int(slot, &ks) == 0 && !LUKS2_keyslot_for_segment(hdr, ks, segment))
 			num++;
 	}
 
@@ -440,7 +446,8 @@ static int LUKS2_keyslot_open_priority(struct crypt_device *cd,
 		else
 			slot_priority = json_object_get_int(jobj);
 
-		keyslot = atoi(slot);
+		if (crypt_str_to_int(slot, &keyslot) < 0)
+			continue;
 		if (slot_priority != priority) {
 			log_dbg(cd, "Keyslot %d priority %d != %d (required), skipped.",
 				keyslot, slot_priority, priority);
@@ -866,7 +873,8 @@ int LUKS2_keyslots_validate(struct crypt_device *cd, json_object *hdr_jobj)
 	LUKS2_config_get_requirements(cd, &dummy, &reqs);
 
 	json_object_object_foreach(jobj_keyslots, slot, val) {
-		keyslot = atoi(slot);
+		if (crypt_str_to_int(slot, &keyslot) < 0)
+			return -EINVAL;
 		json_object_object_get_ex(val, "type", &jobj_type);
 		h = LUKS2_keyslot_handler_type(json_object_get_string(jobj_type));
 		if (!h)
