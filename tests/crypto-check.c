@@ -31,17 +31,6 @@ static int check_cipher(const char *alg, const char *mode, unsigned long key_bit
 	return EXIT_SUCCESS;
 }
 
-static int check_cipher_kernel(const char *alg, const char *mode, unsigned long key_bits)
-{
-	if (key_bits % 8)
-		return EXIT_FAILURE;
-
-	if (crypt_cipher_check_kernel(alg, mode, NULL, key_bits / 8))
-		return EXIT_FAILURE;
-
-	return EXIT_SUCCESS;
-}
-
 static int check_hash(const char *hash)
 {
 	struct crypt_hash *h;
@@ -106,12 +95,6 @@ static int check_cipher(const char *alg, const char *mode, unsigned long key_bit
 	return EXIT_FAILURE;
 }
 
-static int check_cipher_kernel(const char *alg, const char *mode, unsigned long key_bits)
-{
-	/* Expect AF_ALG not available */
-	return  EXIT_FAILURE;
-}
-
 static int check_hash(const char *hash)
 {
 	if (!strcmp(hash, "sha512") || !strcmp(hash, "sha256") || !strcmp(hash, "sha1"))
@@ -128,7 +111,7 @@ static int check_pbkdf(const char *pbkdf)
 
 static void __attribute__((noreturn)) exit_help(bool destroy_backend)
 {
-	printf("Use: crypto_check version | fips_mode | fips_mode_kernel | hash <alg> | cipher[-kernel] <alg> <mode> [key_bits] | pbkdf <alg>\n");
+	printf("Use: crypto_check version | fips_mode | fips_mode_kernel | hash <alg> | cipher <alg> <mode> [key_bits] | pbkdf <alg>\n");
 	if (destroy_backend)
 		crypt_backend_destroy();
 	exit(EXIT_FAILURE);
@@ -161,7 +144,7 @@ int main(int argc, char *argv[])
 		if (argc != 3)
 			exit_help(true);
 		r = check_hash(argv[2]);
-	} else if (!strcmp(argv[1], "cipher") || !strcmp(argv[1], "cipher-kernel")) {
+	} else if (!strcmp(argv[1], "cipher")) {
 		unsigned long ul = 256;
 		char *ptr;
 		if (argc < 4 || argc > 5)
@@ -171,10 +154,7 @@ int main(int argc, char *argv[])
 			if (*ptr)
 				exit_help(true);
 		}
-		if (strcmp(argv[1], "cipher-kernel"))
-			r = check_cipher(argv[2], argv[3], ul);
-		else
-			r = check_cipher_kernel(argv[2], argv[3], ul);
+		r = check_cipher(argv[2], argv[3], ul);
 	} else if (!strcmp(argv[1], "pbkdf")) {
 		if (argc != 3)
 			exit_help(true);
