@@ -108,6 +108,7 @@ int crypt_cipher_decrypt(struct crypt_cipher *ctx,
 			 const char *in, char *out, size_t length,
 			 const char *iv, size_t iv_length);
 bool crypt_cipher_kernel_only(struct crypt_cipher *ctx);
+bool crypt_cipher_aead_known(const char *name, const char *mode, const char *integrity, size_t key_bytes);
 
 /* Benchmark of kernel cipher performance */
 int crypt_cipher_perf_kernel(const char *name, const char *mode, char *buffer, size_t buffer_size,
