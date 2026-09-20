@@ -221,77 +221,6 @@ void crypt_cipher_destroy_kernel(struct crypt_cipher_kernel *ctx)
 	ctx->opfd = -1;
 }
 
-int crypt_cipher_check_kernel(const char *name, const char *mode,
-			      const char *integrity, size_t key_length)
-{
-	struct crypt_cipher_kernel c;
-	char mode_name[64], tmp_salg_name[180], *cipher_iv = NULL, *key;
-	const char *salg_type, *real_mode;
-	bool aead;
-	int r;
-	struct sockaddr_alg sa = {
-		.salg_family = AF_ALG,
-	};
-
-	aead = integrity && strcmp(integrity, "none");
-	real_mode = NULL;
-
-	/* Remove IV if present */
-	if (mode) {
-		strncpy(mode_name, mode, sizeof(mode_name));
-		mode_name[sizeof(mode_name) - 1] = 0;
-		cipher_iv = strchr(mode_name, '-');
-		if (cipher_iv) {
-			*cipher_iv = '\0';
-			real_mode = mode_name;
-		}
-	}
-
-	salg_type = aead ? "aead" : "skcipher";
-	r = snprintf((char *)sa.salg_type, sizeof(sa.salg_type), "%s", salg_type);
-	if (r < 0 || (size_t)r >= sizeof(sa.salg_type))
-		return -EINVAL;
-
-	memset(tmp_salg_name, 0, sizeof(tmp_salg_name));
-
-	/* FIXME: this is duplicating a part of devmapper backend */
-	if (aead) {
-		/* In AEAD, mode parameter can be just IV like "random" */
-		if (!strcmp(integrity, "poly1305"))
-			r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "rfc7539(%s,%s)", name, integrity);
-		else if (!real_mode)
-			r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s", name);
-		else if (!strcmp(real_mode, "ccm"))
-			r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "rfc4309(%s(%s))", real_mode, name);
-		else
-			r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s(%s)", real_mode, name);
-	} else {
-		if (!mode)
-			r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s", name);
-		else
-			r = snprintf(tmp_salg_name, sizeof(tmp_salg_name), "%s(%s)", real_mode ?: mode_name, name);
-	}
-
-	if (r < 0 || (size_t)r >= sizeof(tmp_salg_name))
-		return -EINVAL;
-
-	memcpy(sa.salg_name, tmp_salg_name, sizeof(sa.salg_name));
-
-	key = malloc(key_length);
-	if (!key)
-		return -ENOMEM;
-
-	/* We cannot use RNG yet, any key works here, tweak the first part if it is split key (XTS). */
-	memset(key, 0xab, key_length);
-	*key = 0xef;
-
-	r = _crypt_cipher_init(&c, key, key_length, 0, &sa);
-	crypt_cipher_destroy_kernel(&c);
-	free(key);
-
-	return r;
-}
-
 int crypt_bitlk_decrypt_key_kernel(const void *key, size_t key_length,
 				   const char *in, char *out, size_t length,
 				   const char *iv, size_t iv_length,
@@ -360,11 +289,6 @@ int crypt_cipher_decrypt_kernel(struct crypt_cipher_kernel *ctx,
 				const char *iv, size_t iv_length)
 {
 	return -EINVAL;
-}
-int crypt_cipher_check_kernel(const char *name, const char *mode,
-			      const char *integrity, size_t key_length)
-{
-	return -ENOTSUP;
 }
 int crypt_bitlk_decrypt_key_kernel(const void *key, size_t key_length,
 				   const char *in, char *out, size_t length,
