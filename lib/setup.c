@@ -1897,16 +1897,10 @@ static int LUKS2_check_encryption_params(struct crypt_device *cd,
 			log_err(cd, _("Integrity key size is too small."));
 			return -EINVAL;
 		}
-	}
 
-	/* FIXME: allow this later also for normal ciphers (check AF_ALG availability. */
-	if (integrity && integrity_key_size == 0) {
-		r = crypt_cipher_check_kernel(cipher, cipher_mode, integrity, volume_key_size);
-		if (r < 0 && r != -ENOTSUP) {
-			log_err(cd, _("Cipher %s-%s (key size %zd bits) is not available."),
+		if (integrity && integrity_key_size == 0 && !crypt_cipher_aead_known(cipher, cipher_mode, integrity, volume_key_size))
+			log_err(cd, _("Cipher %s-%s (key size %zd bits) is not recognized as a known authenticated cipher, activation could fail."),
 				cipher, cipher_mode, volume_key_size * 8);
-			return r;
-		}
 	}
 
 	if ((!integrity || integrity_key_size) && !crypt_cipher_wrapped_key(cipher, cipher_mode) &&
