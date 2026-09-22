@@ -6321,6 +6321,61 @@ int crypt_dump_json(struct crypt_device *cd, const char **json, uint32_t flags)
 	return -EINVAL;
 }
 
+int crypt_get_hw_opal_locking_ranges(struct crypt_device *cd,
+				const char *opal_pin,
+				size_t opal_pin_size,
+				struct crypt_hw_opal_range *opal_ranges,
+				size_t opal_ranges_count)
+{
+	if (!cd || !crypt_data_device(cd) || !opal_ranges || !opal_ranges_count)
+		return -EINVAL;
+
+	return opal_get_ranges_params(cd, crypt_data_device(cd), 0 /* OPAL_ADMIN1 */,
+				 opal_pin, opal_pin_size, opal_ranges, opal_ranges_count);
+}
+
+int crypt_get_hw_opal_locking_ranges_by_keyslot_context(struct crypt_device *cd,
+				int keyslot,
+				struct crypt_keyslot_context *kc,
+				struct crypt_hw_opal_range *opal_ranges,
+				size_t opal_ranges_count)
+{
+	int r;
+	uint32_t opal_segment_number;
+	struct volume_key *p_opal_key, *vk = NULL, *opal_key = NULL;
+
+	if (!cd || !kc || !kc->get_luks2_volume_key || !opal_ranges || !opal_ranges_count)
+		return -EINVAL;
+
+	r = onlyLUKS2(cd);
+	if (r < 0)
+		return r;
+
+	r = LUKS2_get_opal_segment_number(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT, &opal_segment_number);
+	if (r < 0)
+		return -EINVAL;
+
+	r = kc->get_luks2_volume_key(cd, kc, keyslot, &vk);
+	if (r < 0)
+		return r;
+
+	r = LUKS2_split_crypt_and_opal_keys(cd, &cd->u.luks2.hdr, vk, NULL, &opal_key);
+	if (r < 0)
+		goto out;
+
+	p_opal_key = opal_key ?: vk;
+
+	r = opal_get_single_range_params(cd, crypt_data_device(cd), opal_segment_number + 1,
+				 opal_segment_number,
+				 crypt_volume_key_get_key(p_opal_key),
+				 crypt_volume_key_length(p_opal_key), opal_ranges);
+out:
+	crypt_free_volume_key(vk);
+	crypt_free_volume_key(opal_key);
+
+	return r;
+}
+
 /* internal only */
 const char *crypt_get_cipher_spec(struct crypt_device *cd)
 {

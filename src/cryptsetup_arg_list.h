@@ -42,6 +42,8 @@ ARG(OPT_DISABLE_SUM, '\0', POPT_ARG_NONE, N_("Disable OPAL2 SUM (Single User Mod
 
 ARG(OPT_DISABLE_VERACRYPT, '\0', POPT_ARG_NONE, N_("Do not scan for VeraCrypt compatible device"), NULL, CRYPT_ARG_BOOL, {}, OPT_DISABLE_VERACRYPT_ACTIONS)
 
+ARG(OPT_DUMP_HW_OPAL, '\0', POPT_ARG_NONE, N_("Dump info about HW OPAL device"), NULL, CRYPT_ARG_BOOL, {}, OPT_DUMP_HW_OPAL_ACTIONS)
+
 ARG(OPT_DUMP_JSON, '\0', POPT_ARG_NONE, N_("Dump info in JSON format (LUKS2 only)"), NULL, CRYPT_ARG_BOOL, {}, {})
 
 ARG(OPT_DUMP_VOLUME_KEY, '\0', POPT_ARG_NONE, N_("Dump volume key instead of keyslots info"), NULL, CRYPT_ARG_BOOL, {}, {})

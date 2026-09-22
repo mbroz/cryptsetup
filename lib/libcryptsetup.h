@@ -3320,6 +3320,80 @@ int crypt_set_keyring_to_link(struct crypt_device* cd,
 	const char* key_type_desc,
 	const char* keyring_to_link_vk);
 
+/**
+ * State of OPAL2 locking range
+ */
+typedef enum {
+	CRYPT_HW_OPAL_RW = 0, /* unlocked for R/W */
+	CRYPT_HW_OPAL_RO,     /* unlocked only for read */
+	CRYPT_HW_OPAL_LOCKED, /* locked for all I/O */
+} crypt_hw_opal_lock_state;
+
+/**
+ * OPAL2 locking range description
+ */
+struct crypt_hw_opal_range {
+	uint8_t id; /* locking range id */
+	unsigned read_locking_enabled:1; /* read locking is enabled */
+	unsigned write_locking_enabled:1; /* write locking is enabled */
+	crypt_hw_opal_lock_state lock_state;
+	int8_t sum_enabled; /* SUM status is undefined, disabled or enabled for a negative value, zero or a positive value, respectively. */
+	int8_t range_policy; /* Range Policy is undefined, disabled or enabled for a negative value, zero or a positive value, respectively.  */
+	uint64_t offset; /* locking range offset in bytes (ignores partitions) */
+	uint64_t length; /* locking range length in bytes */
+};
+
+/**
+ * Get information about HW OPAL locking ranges used in LUKS2.
+ *
+ * The function provides status information about OPAL2 locking ranges
+ * that can be retrieved using the User authority PIN generated and stored
+ * in LUKS2 metadata.
+ *
+ * @param cd LUKS2 device handle
+ * @param keyslot requested keyslot or CRYPT_ANY_SLOT
+ * @param kc keyslot context providing a volume key or passphrase to @e keyslot.
+ * @param opal_ranges return buffer for OPAL2 locking ranges state descriptions
+ * @param opal_ranges_count number of elements in the @e opal_ranges array
+ *
+ * @note if @e opal_ranges_count, and therefore the @e opal_ranges array, is too small to contain all OPAL
+ * 	 locking range descriptions retrieved from the OPAL device, the function returns -ENOSPC.
+ *
+ * @return the number of locking ranges returned in the @e opal_ranges array on success, -EPERM if stored
+ * 	   OPAL key was wrong for OPAL User authority associated with the HW segment, or other negative errno
+ * 	   value otherwise.
+ */
+int crypt_get_hw_opal_locking_ranges_by_keyslot_context(struct crypt_device *cd,
+				int keyslot,
+				struct crypt_keyslot_context *kc,
+				struct crypt_hw_opal_range *opal_ranges,
+				size_t opal_ranges_count);
+
+/**
+ * Get information about HW OPAL locking ranges.
+ *
+ * The function provides status information about OPAL2 locking ranges
+ * that can be retrieved using the Admin1 authority PIN.
+ *
+ * @param cd opal device handle (obtained from crypt_init() when the backing device is HW OPAL device)
+ * @param opal_pin passphrase used to authenticate OPAL Admin1 authority
+ * @param opal_pin_size size of @e opal_pin (binary data)
+ * @param opal_ranges return buffer for OPAL2 locking ranges descriptions
+ * @param opal_ranges_count size of @e opal_ranges array
+ *
+ * @note if @e opal_ranges_count, and therefore the @e opal_ranges array, is too small to contain all OPAL2
+ * 	 locking range descriptions retrieved from the OPAL2 device, the function returns -ENOSPC.
+ * 	 Usually up to 9 locking ranges are defined on a SED OPAL2 device.
+ *
+ * @return the number of locking ranges returned in the @e opal_ranges array on success, -EPERM if provided
+ * 	   OPAL Admin PIN (passphrase) was incorrect, or other negative errno value otherwise.
+ */
+int crypt_get_hw_opal_locking_ranges(struct crypt_device *cd,
+				     const char *opal_pin,
+				     size_t opal_pin_size,
+				     struct crypt_hw_opal_range *opal_ranges,
+				     size_t opal_ranges_count);
+
 /** @} */
 
 #ifdef __cplusplus

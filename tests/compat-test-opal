@@ -38,6 +38,9 @@ TOKEN_FILE0=test-token-file0
 TOKEN_FILE1=test-token-file1
 KEY_FILE0=test-key-file0
 KEY_FILE1=test-key-file1
+OPALDUMP_OUT=opaldump_out
+LUKSDUMP_OUT=luksdump_out
+IMG_OPALDUMP=test_image_opaldump
 
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
 
@@ -50,7 +53,8 @@ remove_mapping()
 	[ -b /dev/mapper/"$DEV_NAME"_dif ] && dmsetup remove --retry "$DEV_NAME"_dif
 	rm -f $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $VK_FILE \
 	$HEADER_LUKS2_INV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* \
-	$KEY_FILE0 $KEY_FILE1 $KEY_PWD1 $NO_HEADER_IMG >/dev/null 2>&1
+	$KEY_FILE0 $KEY_FILE1 $KEY_PWD1 $NO_HEADER_IMG \
+	$OPALDUMP_OUT $LUKSDUMP_OUT $IMG_OPALDUMP >/dev/null 2>&1
 
 	# unlink all test keys
 	if [ -n "$TEST_KEYRING" ]; then
@@ -457,6 +461,31 @@ test_device_detached_header() #hdr, #opal_mode, #format_params, #--integrity-no-
 	echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase $OPAL2_DEV -q --header $1 || fail
 	$CRYPTSETUP isLuks --type luks2 $1 && fail
 	rm -f $1
+}
+
+# $1 opal format flag (--hw-opal | --hw-opal-only)
+# Requires an OPAL LUKS2 device formatted with $OPAL2_ADMIN_PIN already present.
+opaldump_check() #opal_mode
+{
+	echo $OPAL2_ADMIN_PIN | $CRYPTSETUP opaldump $OPAL2_DEV > $OPALDUMP_OUT 2>/dev/null || fail "opaldump failed ($1)."
+	grep -q "OPAL subsystem:" $OPALDUMP_OUT || fail "opaldump: missing OPAL subsystem info ($1)."
+	grep -q "OPAL Locking Ranges:" $OPALDUMP_OUT || fail "opaldump: missing OPAL locking ranges table ($1)."
+	rm -f $OPALDUMP_OUT
+}
+
+# $1 opal format flag (--hw-opal | --hw-opal-only)
+# Requires an OPAL LUKS2 device unlockable with $PWD1 already present.
+luksdump_opal_check() #opal_mode
+{
+	echo $PWD1 | $CRYPTSETUP luksDump --dump-hw-opal $OPAL2_DEV > $LUKSDUMP_OUT 2>/dev/null || fail "luksDump --dump-hw-opal failed ($1)."
+	grep -q "OPAL keysize:" $LUKSDUMP_OUT || fail "luksDump --dump-hw-opal: missing OPAL keysize ($1)."
+	grep -q "OPAL subsystem:" $LUKSDUMP_OUT || fail "luksDump --dump-hw-opal: missing OPAL subsystem ($1)."
+	grep -q "OPAL Locking Ranges:" $LUKSDUMP_OUT || fail "luksDump --dump-hw-opal: missing OPAL locking ranges table ($1)."
+	# Only dm-crypt over OPAL prints the software cipher info tagged as "(over HW OPAL)".
+	if [ "$1" = "--hw-opal" ]; then
+		grep -q "(over HW OPAL)" $LUKSDUMP_OUT || fail "luksDump --dump-hw-opal: missing '(over HW OPAL)' cipher info."
+	fi
+	rm -f $LUKSDUMP_OUT
 }
 
 run_token_tests() {
@@ -1393,6 +1422,35 @@ test_device_detached_header $HEADER_IMG --hw-opal
 prepare "[47] OPAL2 + auth encryption test (detached header)" wipe
 test_device_detached_header $HEADER_IMG --hw-opal "-c aes-gcm-random --integrity aead" --integrity-no-wipe
 test_device_detached_header $HEADER_IMG --hw-opal "-s 280 -c aes-ccm-random --integrity aead" --integrity-no-wipe
+
+prepare "[48] opaldump action" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV || fail
+opaldump_check --hw-opal-only
+
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+opaldump_check --hw-opal
+# A wrong OPAL Admin password must be rejected. Executed exactly ONCE on purpose:
+# every failed OPAL authenticate counts against the drive's Admin TryLimit.
+echo "$PWDW" | $CRYPTSETUP opaldump $OPAL2_DEV > $OPALDUMP_OUT 2>&1 && fail "opaldump accepted a wrong OPAL Admin password."
+grep -q "Invalid OPAL Admin password provided." $OPALDUMP_OUT || fail "opaldump did not report invalid OPAL Admin password."
+rm -f $OPALDUMP_OUT
+# opaldump on a device without OPAL support must be rejected (no drive authenticate).
+dd if=/dev/zero of=$IMG_OPALDUMP bs=1M count=16 >/dev/null 2>&1 || fail
+$CRYPTSETUP opaldump $IMG_OPALDUMP >/dev/null 2>&1 && fail "opaldump accepted a non-OPAL device."
+rm -f $IMG_OPALDUMP
+
+prepare "[49] luksDump --dump-hw-opal" wipe
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV || fail
+luksdump_opal_check --hw-opal-only
+
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal $OPAL2_DEV || fail
+luksdump_opal_check --hw-opal
+# A wrong passphrase must fail (safe: fails at LUKS unlock, never touches the OPAL SP).
+echo "$PWDW" | $CRYPTSETUP luksDump --dump-hw-opal $OPAL2_DEV >/dev/null 2>&1 && fail "luksDump --dump-hw-opal accepted a wrong passphrase."
+
+prepare "[50] luksDump --dump-hw-opal rejects SW-only LUKS2 device" wipe
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP luksDump --dump-hw-opal $OPAL2_DEV 2>&1 | grep -q "not configured for HW OPAL" || fail "luksDump --dump-hw-opal did not reject a SW-only LUKS2 device."
 
 # FIXME: Add partition based tests
 

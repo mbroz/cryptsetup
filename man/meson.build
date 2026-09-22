@@ -129,6 +129,10 @@ cryptsetup_manpages = [
         [],
     ],
     [
+        'cryptsetup-opaldump.8.adoc',
+        [],
+    ],
+    [
         'cryptsetup-repair.8.adoc',
         [],
     ],
