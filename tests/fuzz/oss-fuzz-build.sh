@@ -34,7 +34,7 @@ export CFLAGS="${CFLAGS:-$flags} -I$DEPS_PATH/include"
 export CXXFLAGS="${CXXFLAGS:-$flags} -I$DEPS_PATH/include"
 export LDFLAGS="${LDFLAGS-} -L$DEPS_PATH/lib"
 
-ENABLED_FUZZERS=${ENABLED_FUZZERS:-crypt2_load_fuzz crypt2_load_ondisk_fuzz crypt_load_misc_fuzz}
+ENABLED_FUZZERS=${ENABLED_FUZZERS:-crypt2_load_fuzz crypt2_load_ondisk_fuzz crypt_load_misc_fuzz crypt2_meta_fuzz}
 
 mkdir -p $SRC
 mkdir -p $OUT
@@ -145,12 +145,41 @@ make -j fuzz-targets
 echo "Installing fuzzers"
 for fuzzer in $ENABLED_FUZZERS; do
     cp tests/fuzz/$fuzzer $OUT
-    cp $SRC/cryptsetup_fuzzing/${fuzzer}_seed_corpus.zip $OUT
+
+    # a target keeps its own corpus in the cryptsetup_fuzzing repository; a new
+    # target may not have one there yet
+    if [ -e $SRC/cryptsetup_fuzzing/${fuzzer}_seed_corpus.zip ]; then
+        cp $SRC/cryptsetup_fuzzing/${fuzzer}_seed_corpus.zip $OUT
+    fi
 
     # optionally copy the dictionary if it exists
     if [ -e tests/fuzz/${fuzzer}.dict ]; then
         cp tests/fuzz/${fuzzer}.dict $OUT
     fi
 done
+
+# crypt2_meta_fuzz only reaches the metadata API when crypt_load() succeeds, so
+# it is seeded from the LUKS2 images the test suite already ships rather than
+# from another target's corpus. Each image is cut to its first megabyte, which
+# holds the binary header and the JSON area of the default metadata sizes.
+if [ ! -e $SRC/cryptsetup_fuzzing/crypt2_meta_fuzz_seed_corpus.zip ]; then
+    meta_corpus="$PWD/tests/fuzz/meta_corpus"
+    rm -rf "$meta_corpus"
+    mkdir -p "$meta_corpus"
+    for img in tests/luks2_valid_hdr.img.xz tests/luks2_keyslot_unassigned.img.xz \
+               tests/luks2_invalid_cipher.img.xz tests/compatimage2.img.xz; do
+        [ -e "$img" ] || continue
+        xz -dc "$img" 2>/dev/null | head -c 1048576 > "$meta_corpus/$(basename $img .img.xz).bin"
+    done
+    for arch in tests/luks2_header_requirements.tar.xz tests/luks2_mda_images.tar.xz; do
+        [ -e "$arch" ] || continue
+        tar -xJf "$arch" -C "$meta_corpus" 2>/dev/null || true
+    done
+    find "$meta_corpus" -type f -size +1M -exec truncate -s 1M {} +
+    # zip appends to an existing archive, so start from nothing
+    rm -f $OUT/crypt2_meta_fuzz_seed_corpus.zip
+    zip -j -q $OUT/crypt2_meta_fuzz_seed_corpus.zip "$meta_corpus"/* 2>/dev/null || true
+    rm -rf "$meta_corpus"
+fi
 
 cd $XPWD

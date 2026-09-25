@@ -4,7 +4,8 @@ distclean-local:
 	-rm -rf out build
 
 if ENABLE_FUZZ_TARGETS
-EXTRA_PROGRAMS  = crypt2_load_fuzz crypt2_load_ondisk_fuzz crypt_load_misc_fuzz
+EXTRA_PROGRAMS  = crypt2_load_fuzz crypt2_load_ondisk_fuzz crypt_load_misc_fuzz \
+		  crypt2_meta_fuzz
 CLEANFILES = $(EXTRA_PROGRAMS)
 
 LIB_FUZZING_ENGINE := $(if $(LIB_FUZZING_ENGINE),$(LIB_FUZZING_ENGINE),"-fsanitize=fuzzer")
@@ -27,12 +28,17 @@ crypt_load_misc_fuzz_LDADD  = ../../libcryptsetup.la -L$(DEPS_PATH)/lib
 crypt_load_misc_fuzz_LDFLAGS = $(AM_LDFLAGS) $(LIB_FUZZING_ENGINE) $(SANITIZER)
 crypt_load_misc_fuzz_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz
 
+crypt2_meta_fuzz_SOURCES = FuzzerInterface.h crypt2_meta_fuzz.cc
+crypt2_meta_fuzz_LDADD  = ../../libcryptsetup.la ../../libcrypto_backend.la -L$(DEPS_PATH)/lib
+crypt2_meta_fuzz_LDFLAGS = $(AM_LDFLAGS) $(LIB_FUZZING_ENGINE) $(SANITIZER)
+crypt2_meta_fuzz_CXXFLAGS = $(AM_CXXFLAGS) -I$(top_srcdir)/lib -I$(top_srcdir)/tests/fuzz
+
 test-environment-m:
 	@ if test ! -d $(DEPS_PATH); then \
 		echo "You need to build static libraries first; use oss-fuzz-build.sh script."; \
 		exit 1; \
 	fi
-test-environment: | test-environment-m $(DEPS_PATH)
+test-environment: | test-environment-m
 
 fuzz-targets: test-environment $(EXTRA_PROGRAMS)
 
