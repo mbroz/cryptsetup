@@ -2944,6 +2944,10 @@ static int opal_erase(struct crypt_device *cd, bool factory_reset) {
 
 	r = crypt_wipe_hw_opal(cd, factory_reset ? CRYPT_NO_SEGMENT : CRYPT_LUKS2_SEGMENT,
 			       password, password_size, 0);
+	if (r == -EPERM && !factory_reset)
+		log_err(_("Invalid OPAL Admin password provided."));
+	else if (r < 0)
+		log_err(_("OPAL erase failed."));
 
 	crypt_safe_free(password);
 	return r;
