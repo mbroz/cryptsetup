@@ -886,7 +886,12 @@ int opal_reset_segment(struct crypt_device *cd,
 	r = opal_ioctl(cd, fd, IOC_OPAL_SECURE_ERASE_LR, user_session);
 	if (r < 0)
 		goto out;
-	if (r != OPAL_STATUS_SUCCESS) {
+	else if (r == OPAL_STATUS_NOT_AUTHORIZED) {
+		log_dbg(cd, "Failed to reset (secure erase) OPAL locking range for device '%s', incorrect password?",
+			crypt_get_device_name(cd));
+		r = -EPERM;
+		goto out;
+	} else if (r != OPAL_STATUS_SUCCESS) {
 		log_dbg(cd, "Failed to reset (secure erase) OPAL locking range %u on device '%s': %s",
 			segment_number, crypt_get_device_name(cd), opal_status_to_string(r));
 		r = -EINVAL;
