@@ -3332,6 +3332,16 @@ int crypt_set_keyring_to_link(struct crypt_device* cd,
 	const char* key_type_desc,
 	const char* keyring_to_link_vk);
 
+/**
+ * Get number of OPAL locking ranges supported by the device.
+ *
+ * @param cd OPAL device handle
+ *
+ * @return OPAL locking ranges count or negative errno on error.
+ *
+ */
+int crypt_hw_opal_locking_ranges_max(struct crypt_device *cd);
+
 /** @} */
 
 #ifdef __cplusplus

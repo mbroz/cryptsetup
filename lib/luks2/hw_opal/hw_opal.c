@@ -1709,6 +1709,11 @@ int crypt_get_hw_opal_enabled(struct crypt_device *cd)
 
 	return opal_query_status_fd(cd, fd, OPAL_FL_LOCKING_ENABLED);
 }
+
+int crypt_hw_opal_locking_ranges_max(struct crypt_device *cd __attribute__((unused)))
+{
+	return OPAL_MAX_LRS;
+}
 #else
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
@@ -1799,6 +1804,11 @@ crypt_status_hw_encryption_info crypt_status_hw_encryption(struct crypt_device *
 }
 
 int crypt_get_hw_opal_enabled(struct crypt_device *cd)
+{
+	return -ENOTSUP;
+}
+
+int crypt_hw_opal_locking_ranges_max(struct crypt_device *cd)
 {
 	return -ENOTSUP;
 }
