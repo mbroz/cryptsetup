@@ -40,6 +40,7 @@ static uint64_t _dm_flags = 0;
 
 static struct crypt_device *_context = NULL;
 static bool dm_backend_initialized = false;
+static bool dm_backend_initialized_by_crypt = false;
 
 /* Check if we have DM flag to instruct kernel to force wipe buffers */
 #if !HAVE_DECL_DM_TASK_SECURE_DATA
@@ -393,24 +394,39 @@ int dm_flags(struct crypt_device *cd, dm_target_type target, uint64_t *flags)
 	return -ENODEV;
 }
 
+static void dm_backend_set_log_callback(void)
+{
+	dm_log_init(set_dm_error);
+	dm_log_init_verbose(10);
+}
+
 /* This doesn't run any kernel checks, just set up userspace libdevmapper */
 static void dm_backend_init(void)
 {
 	if (!dm_backend_initialized) {
-		log_dbg(NULL, "Initialising device-mapper backend library.");
-		dm_log_init(set_dm_error);
-		dm_log_init_verbose(10);
+		/* If someone initialized libdm log callback already, do not touch it. */
+		if (dm_log_is_non_default())
+			log_dbg(NULL, "device-mapper backend library already initialized.");
+		else {
+			log_dbg(NULL, "Initialising device-mapper backend library.");
+			dm_backend_set_log_callback();
+			dm_backend_initialized_by_crypt = true;
+		}
+
 		dm_backend_initialized = true;
-	}
+	} else if (dm_backend_initialized_by_crypt)
+		/* If we initialized libdm, reset log functions on every call. */
+		dm_backend_set_log_callback();
 }
 
 void dm_backend_exit(void)
 {
-	if (dm_backend_initialized) {
+	/* Release dm backend only if it was initialized by libcryptsetup */
+	if (dm_backend_initialized_by_crypt) {
 		dm_log_init_verbose(0);
 		dm_log_init(NULL);
 		dm_lib_release();
-		dm_backend_initialized = false;
+		dm_backend_initialized_by_crypt = false;
 	}
 }
 
