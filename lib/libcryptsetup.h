@@ -2015,6 +2015,18 @@ typedef enum {
 crypt_status_hw_encryption_info crypt_status_hw_encryption(struct crypt_device *cd);
 
 /**
+ * Get info about OPAL2 device state.
+ *
+ * @param cd crypt device handle
+ *
+ * @return Zero for valid OPAL2 device with locking disabled, 1 for
+ * 	   OPAL2 device with locking enabled and initialized (Admin PIN was selected).
+ * 	   Negative errno otherwise. Most notably if the device is not OPAL2 or kernel
+ * 	   does not support sed-opal interface.
+ */
+int crypt_get_hw_opal_enabled(struct crypt_device *cd);
+
+/**
  * Dump text-formatted information about crypt or verity device to log output.
  *
  * @param cd crypt device handle

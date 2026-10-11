@@ -1675,6 +1675,24 @@ crypt_status_hw_encryption_info crypt_status_hw_encryption(struct crypt_device *
 	return r > 0 ? CRYPT_HW_OPAL_SUM : CRYPT_HW_OPAL;
 }
 
+int crypt_get_hw_opal_enabled(struct crypt_device *cd)
+{
+	int fd, r;
+
+	if (!cd)
+		return -EINVAL;
+
+	fd = device_open(cd, crypt_data_device(cd), O_RDONLY);
+	if (fd < 0)
+		return -EIO;
+
+	/* If OPAL2 locking is not supported, return immediately */
+	r = opal_query_status_fd(cd, fd, OPAL_FL_SUPPORTED | OPAL_FL_LOCKING_SUPPORTED);
+	if (r <= 0)
+		return r;
+
+	return opal_query_status_fd(cd, fd, OPAL_FL_LOCKING_ENABLED);
+}
 #else
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
@@ -1764,4 +1782,8 @@ crypt_status_hw_encryption_info crypt_status_hw_encryption(struct crypt_device *
 	return CRYPT_HW_INVALID;
 }
 
+int crypt_get_hw_opal_enabled(struct crypt_device *cd)
+{
+	return -ENOTSUP;
+}
 #endif
