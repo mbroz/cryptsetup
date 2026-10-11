@@ -162,6 +162,8 @@ int INTEGRITY_key_size(const char *integrity, int required_key_size)
 		ks = required_key_size ?: -EINVAL;
 	else if (!strcmp(integrity, "phmac(sha512)"))
 		ks = required_key_size ?: -EINVAL;
+	else if (!strcmp(integrity, "cmac(aes)"))
+		ks = 16;
 	else if (!strcmp(integrity, "poly1305"))
 		ks = 0;
 	else if (!strcmp(integrity, "none"))
@@ -189,6 +191,9 @@ int INTEGRITY_hash_tag_size(const char *integrity)
 
 	if (!strcmp(integrity, "xxhash64"))
 		return 8;
+
+	if (!strcmp(integrity, "cmac(aes)"))
+		return 16;
 
 	r = sscanf(integrity, "hmac(%" MAX_CIPHER_LEN_STR "[^)]", hash);
 	if (r != 1)
