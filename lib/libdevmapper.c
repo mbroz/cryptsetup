@@ -3509,7 +3509,8 @@ int dm_integrity_target_set(struct crypt_device *cd,
 	if (!data_device)
 		return -EINVAL;
 
-	_dm_check_versions(cd, DM_INTEGRITY);
+	if (dm_init_context(cd, DM_INTEGRITY))
+		return -ENOTSUP;
 
 	tgt->type = DM_INTEGRITY;
 	tgt->direction = TARGET_SET;
@@ -3555,6 +3556,8 @@ int dm_integrity_target_set(struct crypt_device *cd,
 		tgt->u.integrity.journal_crypt = ip->journal_crypt;
 		tgt->u.integrity.integrity = ip->integrity;
 	}
+
+	dm_exit_context();
 
 	return 0;
 }
