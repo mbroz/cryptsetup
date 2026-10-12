@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. lib.sh
+. $CRYPTSETUP_TESTS_GENERATORS_PATH/lib.sh
 
 #
 # *** Description ***

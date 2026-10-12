@@ -17,9 +17,6 @@ LUKS2_JSON_SIZE=$((LUKS2_HDR_SIZE-LUKS2_BIN_HDR_SIZE))
 LUKS2_BIN_HDR_CHKS_OFFSET=0x1C0
 LUKS2_BIN_HDR_CHKS_LENGTH=64
 
-[ -z "$srcdir" ] && srcdir="."
-TMPDIR=$srcdir/tmp
-
 # to be set by individual generator
 TGT_IMG=""
 SRC_IMG=""
@@ -210,7 +207,13 @@ lib_prepare()
 	CHKS1=0
 
 	cp $SRC_IMG $TGT_IMG
-	test -d $TMPDIR || mkdir $TMPDIR
+	if [ -d "/tmp" ]; then
+		TMPDIR=$(mktemp -p /tmp -d generators-lib-XXXXXX)
+	else
+		TMPDIR=$(mktemp -d generators-lib-XXXXXX)
+	fi
+	[ $? -eq 0 ] || exit 1
+	# test -d $TMPDIR || mkdir $TMPDIR
 	read_luks2_json0 $TGT_IMG $TMPDIR/json0
 	read_luks2_json1 $TGT_IMG $TMPDIR/json1
 	read_luks2_bin_hdr0 $TGT_IMG $TMPDIR/hdr0

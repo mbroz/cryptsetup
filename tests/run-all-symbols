@@ -1,5 +1,6 @@
 #!/bin/bash
 
+[ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
 [ -z "$LIBCRYPTSETUP_DIR" ] && LIBCRYPTSETUP_DIR=../.libs
 FILE=$LIBCRYPTSETUP_DIR/libcryptsetup.so
 
@@ -18,4 +19,4 @@ skip()
 test -d $LIBCRYPTSETUP_DIR || fail "Directory $LIBCRYPTSETUP_DIR is missing."
 test -f $FILE || skip "WARNING: Shared $FILE is missing, test skipped."
 
-./all-symbols-test $FILE $@
+$CRYPTSETUP_TESTS_BIN_PATH/all-symbols-test $FILE $@

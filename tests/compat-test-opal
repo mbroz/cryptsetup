@@ -2,8 +2,10 @@
 
 PS4='$LINENO:'
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+[ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
 CRYPTSETUP_RAW=$CRYPTSETUP
+CRYPTOCHECK=$CRYPTSETUP_TESTS_BIN_PATH/crypto-check
 
 if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 	CRYPTSETUP_VALGRIND=$CRYPTSETUP
@@ -87,11 +89,11 @@ trap _sigchld CHLD
 
 fips_mode()
 {
-	if [ ! -x ./crypto-check ]; then
-		echo  "WARNING: Cannot find crypto-check helper, expecting non-FIPS mode."
+	if [ ! -x $CRYPTOCHECK ]; then
+		echo  "WARNING: Cannot find $CRYPTOCHECK helper, expecting non-FIPS mode."
 		return 1
 	fi
-	./crypto-check fips_mode
+	$CRYPTOCHECK fips_mode
 }
 
 can_fail_fips()
