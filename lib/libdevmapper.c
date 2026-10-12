@@ -299,6 +299,12 @@ static int _dm_check_versions(struct crypt_device *cd, dm_target_type target_typ
 	unsigned dm_maj, dm_min, dm_patch;
 	int r = 0;
 
+	/*
+	 * Backend must be initialized by the caller; if not, it's an internal
+	 * libcryptsetup error that regresses by spamming stderr with libdm warnings.
+	 */
+	assert(dm_backend_initialized);
+
 	if ((target_type == DM_CRYPT     && _dm_crypt_checked) ||
 	    (target_type == DM_VERITY    && _dm_verity_checked) ||
 	    (target_type == DM_INTEGRITY && _dm_integrity_checked) ||
@@ -375,7 +381,7 @@ out:
 	return r;
 }
 
-int dm_flags(struct crypt_device *cd, dm_target_type target, uint64_t *flags)
+static int _do_dm_flags(struct crypt_device *cd, dm_target_type target, uint64_t *flags)
 {
 	_dm_check_versions(cd, target);
 	*flags = _dm_flags;
@@ -450,6 +456,21 @@ static int dm_init_context(struct crypt_device *cd, dm_target_type target)
 static void dm_exit_context(void)
 {
 	_context = NULL;
+}
+
+int dm_flags(struct crypt_device *cd, dm_target_type target, uint64_t *flags)
+{
+	int r;
+
+	/* We have to route dm log via set_dm_error, otherwise dm_check_versions spams stderr */
+	dm_backend_init();
+	_context = cd;
+
+	r = _do_dm_flags(cd, target, flags);
+
+	dm_exit_context();
+
+	return r;
 }
 
 /* Return path to DM device */
@@ -1149,7 +1170,7 @@ int dm_remove_device(struct crypt_device *cd, const char *name, uint32_t flags)
 	if (dm_init_context(cd, DM_UNKNOWN))
 		return -ENOTSUP;
 
-	if (deferred && !dm_flags(cd, DM_UNKNOWN, &dmt_flags) && !(dmt_flags & DM_DEFERRED_SUPPORTED)) {
+	if (deferred && !_do_dm_flags(cd, DM_UNKNOWN, &dmt_flags) && !(dmt_flags & DM_DEFERRED_SUPPORTED)) {
 		log_err(cd, _("Requested deferred flag is not supported."));
 		dm_exit_context();
 		return -ENOTSUP;
@@ -1737,7 +1758,7 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 	if (!r || r == -EEXIST)
 		goto out;
 
-	if (dm_flags(cd, dmd->segment.type, &dmt_flags))
+	if (_do_dm_flags(cd, dmd->segment.type, &dmt_flags))
 		goto out;
 
 	if ((dmd->segment.type == DM_CRYPT || dmd->segment.type == DM_LINEAR || dmd->segment.type == DM_ZERO) &&
@@ -1867,23 +1888,23 @@ int dm_reload_device(struct crypt_device *cd, const char *name,
 	if (dm_init_context(cd, dmd->segment.type))
 		return -ENOTSUP;
 
-	if (dm_flags(cd, DM_INTEGRITY, &dmt_flags) || !(dmt_flags & DM_INTEGRITY_RECALC_SUPPORTED))
+	if (_do_dm_flags(cd, DM_INTEGRITY, &dmt_flags) || !(dmt_flags & DM_INTEGRITY_RECALC_SUPPORTED))
 		dmd->flags &= ~CRYPT_ACTIVATE_RECALCULATE;
 
 	r = _dm_reload_device(cd, name, dmd);
 
 	if (r == -EINVAL && (dmd->segment.type == DM_CRYPT || dmd->segment.type == DM_LINEAR)) {
 		if ((dmd->flags & (CRYPT_ACTIVATE_SAME_CPU_CRYPT|CRYPT_ACTIVATE_SUBMIT_FROM_CRYPT_CPUS)) &&
-		    !dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED | DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED)))
+		    !_do_dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & (DM_SAME_CPU_CRYPT_SUPPORTED | DM_SUBMIT_FROM_CRYPT_CPUS_SUPPORTED)))
 			log_err(cd, _("Requested dm-crypt performance options are not supported."));
 		if ((dmd->flags & (CRYPT_ACTIVATE_NO_READ_WORKQUEUE | CRYPT_ACTIVATE_NO_WRITE_WORKQUEUE)) &&
-		    !dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & DM_CRYPT_NO_WORKQUEUE_SUPPORTED))
+		    !_do_dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & DM_CRYPT_NO_WORKQUEUE_SUPPORTED))
 			log_err(cd, _("Requested dm-crypt performance options are not supported."));
 		if ((dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
-		    !dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & DM_DISCARDS_SUPPORTED))
+		    !_do_dm_flags(cd, DM_CRYPT, &dmt_flags) && !(dmt_flags & DM_DISCARDS_SUPPORTED))
 			log_err(cd, _("Discard/TRIM is not supported."));
 		if ((dmd->flags & CRYPT_ACTIVATE_ALLOW_DISCARDS) &&
-		    !dm_flags(cd, DM_INTEGRITY, &dmt_flags) && !(dmt_flags & DM_INTEGRITY_DISCARDS_SUPPORTED))
+		    !_do_dm_flags(cd, DM_INTEGRITY, &dmt_flags) && !(dmt_flags & DM_INTEGRITY_DISCARDS_SUPPORTED))
 			log_err(cd, _("Discard/TRIM is not supported."));
 	}
 
@@ -3140,7 +3161,7 @@ int dm_suspend_device(struct crypt_device *cd, const char *name, uint64_t dmflag
 		return r;
 
 	if (dmflags & DM_SUSPEND_WIPE_KEY) {
-		if (dm_flags(cd, DM_CRYPT, &dmt_flags))
+		if (_do_dm_flags(cd, DM_CRYPT, &dmt_flags))
 			goto out;
 
 		if (!(dmt_flags & DM_KEY_WIPE_SUPPORTED))
@@ -3187,7 +3208,7 @@ int dm_resume_and_reinstate_key(struct crypt_device *cd, const char *name,
 	char *msg = NULL, *key = NULL;
 	int r = -ENOTSUP;
 
-	if (dm_init_context(cd, DM_CRYPT) || dm_flags(cd, DM_CRYPT, &dmt_flags))
+	if (dm_init_context(cd, DM_CRYPT) || _do_dm_flags(cd, DM_CRYPT, &dmt_flags))
 		return -ENOTSUP;
 
 	if (!(dmt_flags & DM_KEY_WIPE_SUPPORTED))
@@ -3488,7 +3509,8 @@ int dm_integrity_target_set(struct crypt_device *cd,
 	if (!data_device)
 		return -EINVAL;
 
-	_dm_check_versions(cd, DM_INTEGRITY);
+	if (dm_init_context(cd, DM_INTEGRITY))
+		return -ENOTSUP;
 
 	tgt->type = DM_INTEGRITY;
 	tgt->direction = TARGET_SET;
@@ -3505,12 +3527,12 @@ int dm_integrity_target_set(struct crypt_device *cd,
 	tgt->u.integrity.journal_crypt_key = journal_crypt_key;
 	tgt->u.integrity.journal_integrity_key = journal_mac_key;
 
-	if (!dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
+	if (!_do_dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
 	    (dmi_flags & DM_INTEGRITY_FIX_PADDING_SUPPORTED) &&
 	    !(crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_PADDING))
 		tgt->u.integrity.fix_padding = true;
 
-	if (!dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
+	if (!_do_dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
 	    (dmi_flags & DM_INTEGRITY_FIX_HMAC_SUPPORTED) &&
 	    !(crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_HMAC))
 		tgt->u.integrity.fix_hmac = true;
@@ -3519,7 +3541,7 @@ int dm_integrity_target_set(struct crypt_device *cd,
 	if (crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_RECALC)
 		tgt->u.integrity.legacy_recalc = true;
 
-	if (vk && !dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
+	if (vk && !_do_dm_flags(cd, DM_INTEGRITY, &dmi_flags) &&
 	    (dmi_flags & DM_INTEGRITY_DISCARD_KEYED_SUPPORTED) &&
 	    !(crypt_get_compatibility(cd) & CRYPT_COMPAT_LEGACY_INTEGRITY_DISCARD))
 		tgt->u.integrity.discard_keyed = true;
@@ -3534,6 +3556,8 @@ int dm_integrity_target_set(struct crypt_device *cd,
 		tgt->u.integrity.journal_crypt = ip->journal_crypt;
 		tgt->u.integrity.integrity = ip->integrity;
 	}
+
+	dm_exit_context();
 
 	return 0;
 }
