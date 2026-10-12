@@ -501,6 +501,16 @@ This option is useful to cut trailing newlines, for example.
 If --keyfile-offset is also given, the size count starts after the offset.
 endif::[]
 
+ifdef::ACTION_REENCRYPT[]
+*--keys-from-stdin-sizes* _<list of sizes>_ (LUKS2 only)::
+The passphrases are read from stdin when reencrypting, and this options gives their sizes. It shall be a comma-separated list of integers (in base 10).
+There must be as many sizes provided as there are keyslots in the LUKS header. The passphrases must be given on stdin in the order of their keyslot index (without '\n' separators).
++
+This option is useful when there are several passphrases of different sizes that are made of random bytes and may contain newline characters.
++
+This option cannot be combined with --key-file, --keyfile-offset, --keyfile-size or --key-slot options.
+endif::[]
+
 ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT,ACTION_BENCHMARK,ACTION_LUKSADDKEY[]
 *--key-size*, *-s* _bits_::
 ifndef::ACTION_LUKSADDKEY,ACTION_REENCRYPT[]
