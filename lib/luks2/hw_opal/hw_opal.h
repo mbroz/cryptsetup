@@ -46,6 +46,12 @@ int opal_geometry(struct crypt_device *cd,
 		  uint32_t *ret_block_size,
 		  uint64_t *ret_alignment_granularity_blocks,
 		  uint64_t *ret_lowest_lba_blocks);
+int opal_range_check_locked(struct crypt_device *cd,
+		     struct device *dev,
+		     uint32_t segment_number,
+		     const struct volume_key *user_pin,
+		     bool *ret_read_locked,
+		     bool *ret_write_locked);
 int opal_range_check_attributes_and_get_lock_state(struct crypt_device *cd,
 				struct device *dev,
 				uint32_t segment_number,
@@ -74,5 +80,11 @@ int opal_get_ranges_params(struct crypt_device *cd,
 			 size_t opal_key_size,
 			 struct crypt_hw_opal_range *opal_ranges,
 			 size_t opal_ranges_count);
+
+int opal_change_pin(struct crypt_device *cd,
+		    struct device *dev,
+		    uint32_t segment_number,
+		    const struct volume_key *user_pin,
+		    const struct volume_key *new_user_pin);
 
 #endif
