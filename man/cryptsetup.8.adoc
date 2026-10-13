@@ -193,6 +193,7 @@ See *cryptsetup-isLuks*(8).
 *luksDump <device>*
 
 Dump the header information of a LUKS device.
+For a LUKS2 device with hardware OPAL2 (Self Encrypting Drive) support, the --dump-hw-opal option additionally dumps the associated OPAL2 locking range information.
 See *cryptsetup-luksDump*(8).
 
 === HEADER BACKUP
@@ -381,6 +382,15 @@ Additionally specify --hw-opal-factory-reset for a FULL factory reset of the dri
 PSID must be entered without dashes, spaces or underscores.
 
 *WARNING*: A factory reset will cause ALL data on the device to be lost, regardless of the partition it is run on, if any, and regardless of any LUKS2 header backup.
+
+=== DUMP
+*opaldump <device>*
+
+Dump the OPAL information (subsystem status and configured locking ranges) of a device that provides an *OPAL* interface.
+The device does not need to contain LUKS2 metadata; an OPAL Admin password is requested to query the drive.
+See *cryptsetup-opaldump*(8).
+
+To dump the OPAL locking range associated with an existing LUKS2 device instead, use *luksDump* with the --dump-hw-opal option.
 
 == MISCELLANEOUS ACTIONS
 

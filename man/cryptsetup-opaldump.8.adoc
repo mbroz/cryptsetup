@@ -1,0 +1,59 @@
+= cryptsetup-opaldump(8)
+:doctype: manpage
+:manmanual: Maintenance Commands
+:mansource: cryptsetup {release-version}
+:man-linkstyle: pass:[blue R < >]
+:COMMON_OPTIONS:
+:ACTION_OPALDUMP:
+
+== Name
+
+cryptsetup-opaldump - dump the OPAL information of a SED (Self Encrypting Drive) device
+
+== SYNOPSIS
+
+*cryptsetup _opaldump_ [<options>] <device>*
+
+== DESCRIPTION
+
+Dump the hardware encryption information of a SED (Self Encrypting Drive) device that provides an *OPAL* interface.
+
+Unlike *luksDump*, this action does not require the device to contain LUKS2 metadata; it queries the drive itself and can be used on any OPAL-capable device.
+
+The command first prints the OPAL subsystem status of the device (for example, whether the drive supports OPAL2, or OPAL2 with Single User Mode (SUM)).
+
+If the drive is OPAL-enabled, an OPAL Admin password is requested (interactively or with a timeout controlled by --timeout) and used to query the drive.
+On success, a table of the configured OPAL locking ranges is printed, with the following columns:
+
+*ID*::
+The locking range identifier.
+
+*Offset (bytes)*::
+The start of the locking range on the device, in bytes. Any partition table present on the device is ignored.
+
+*Length (bytes)*::
+The size of the locking range, in bytes.
+
+*ReadLocking*::
+Whether read locking is enabled for the range (enabled/disabled).
+
+*WriteLocking*::
+Whether write locking is enabled for the range (enabled/disabled).
+
+*Mode*::
+The current lock state of the range (read-write, read-only or locked).
+
+*SUM*::
+Whether the range is managed in Single User Mode (enabled/disabled, or unknown if the drive does not report it).
+
+*RangePolicy*::
+The range policy reported by the drive (enabled/disabled, or unknown).
+
+OPAL support requires at least kernel v6.4.
+
+Note that the OPAL Admin password protects the hardware encryption configuration of the whole drive; handle it with the same care as a volume key.
+
+*<options>* can be [--timeout].
+
+include::man/common_options.adoc[]
+include::man/common_footer.adoc[]

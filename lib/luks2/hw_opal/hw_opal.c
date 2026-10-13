@@ -694,25 +694,32 @@ static int opal_sum_setup(struct crypt_device *cd, int fd, const void *admin_key
 	return r > 0 ? -EINVAL : r;
 }
 
+static crypt_hw_opal_feature_state opal_segment_in_sum(uint32_t segment_number, const struct opal_sum_ranges *sranges)
+{
+	int i;
+
+	assert(sranges);
+
+	for (i = 0; i < sranges->num_lrs ; i++) {
+		if (sranges->lr[i] == segment_number)
+			return CRYPT_HW_OPAL_FEATURE_ENABLED;
+	}
+
+	return CRYPT_HW_OPAL_FEATURE_DISABLED;
+}
+
 static int opal_get_sum_status_anybody(struct crypt_device *cd, int fd, uint32_t segment_number,
 				       uint8_t *r_policy, uint8_t *r_segment_in_sum)
 {
-	int i, r;
+	int r;
 	struct opal_sum_ranges sum_ranges = {};
 
 	r = opal_get_sum_ranges_anybody(cd, fd, &sum_ranges);
 	if (r < 0)
 		return r;
 
-	if (r_segment_in_sum) {
-		*r_segment_in_sum = 0;
-		for (i = 0; i < sum_ranges.num_lrs ; i++) {
-			if (sum_ranges.lr[i] == segment_number) {
-				*r_segment_in_sum = 1;
-				break;
-			}
-		}
-	}
+	if (r_segment_in_sum)
+		*r_segment_in_sum = opal_segment_in_sum(segment_number, &sum_ranges);
 
 	if (r_policy)
 		*r_policy = sum_ranges.range_policy;
@@ -1702,6 +1709,221 @@ int crypt_get_hw_opal_enabled(struct crypt_device *cd)
 
 	return opal_query_status_fd(cd, fd, OPAL_FL_LOCKING_ENABLED);
 }
+
+int crypt_hw_opal_locking_ranges_max(struct crypt_device *cd __attribute__((unused)))
+{
+	return OPAL_MAX_LRS;
+}
+
+static crypt_hw_opal_lock_state opal_lock_state_translate(unsigned int sed_opal_lock_state)
+{
+	switch(sed_opal_lock_state) {
+	case OPAL_RW:
+		return CRYPT_HW_OPAL_RW;
+	case OPAL_RO:
+		return CRYPT_HW_OPAL_RO;
+	case OPAL_LK:
+	default: /* fall-through */
+		return CRYPT_HW_OPAL_LOCKED;
+	}
+}
+
+/* returns 1 on success, 0 if LR is not active, negative errno on fatal error */
+static int opal_get_range(struct crypt_device *cd,
+		  int fd,
+		  uint32_t opal_block_size,
+		  bool sum_undefined,
+		  struct opal_lr_status *lrs,
+		  const struct opal_sum_ranges *sum_ranges,
+		  struct crypt_hw_opal_range *ret_opal_range)
+{
+	int r;
+	crypt_hw_opal_feature_state sum, range_policy;
+
+	assert(lrs);
+	assert(sum_ranges);
+	assert(ret_opal_range);
+
+	r = opal_ioctl(cd, fd, IOC_OPAL_GET_LR_STATUS, lrs);
+	if (r < 0)
+		return r;
+	if (r == OPAL_STATUS_NOT_AUTHORIZED)
+		return -EPERM;
+	if (r != OPAL_STATUS_SUCCESS)
+		return 0;
+
+	/* FIXME: fine tune condition when do not report LR back to the caller */
+	if (!lrs->range_start && !lrs->range_length && !lrs->RLE && !lrs->WLE)
+		return 0;
+
+	if (sum_undefined)
+		sum = CRYPT_HW_OPAL_FEATURE_UNDEFINED;
+	else
+		sum = opal_segment_in_sum(lrs->session.opal_key.lr, sum_ranges);
+
+	/*
+	 * Do not confuse callers by range policy set to enabled when LR is not in
+	 * properly configured for SUM.
+	 */
+	if (sum != CRYPT_HW_OPAL_FEATURE_ENABLED)
+		range_policy = sum;
+	else if (sum_ranges->range_policy)
+		range_policy = CRYPT_HW_OPAL_FEATURE_ENABLED;
+	else
+		range_policy = CRYPT_HW_OPAL_FEATURE_DISABLED;
+
+	*ret_opal_range = (struct crypt_hw_opal_range) {
+			.id = lrs->session.opal_key.lr,
+			.offset = lrs->range_start * opal_block_size,
+			.length = lrs->range_length * opal_block_size,
+			.read_locking_enabled = lrs->RLE,
+			.write_locking_enabled = lrs->WLE,
+			.lock_state = opal_lock_state_translate(lrs->l_state),
+			.sum = sum,
+			.range_policy = range_policy,
+	};
+
+	return 1;
+}
+
+int opal_get_single_range_params(struct crypt_device *cd,
+			 struct device *dev,
+			 uint32_t opal_user_id,
+			 uint8_t opal_locking_range_id,
+			 const void *opal_key,
+			 size_t opal_key_size,
+			 struct crypt_hw_opal_range *ret_opal_range)
+{
+	int fd, r;
+	uint32_t opal_block_size;
+	struct opal_lr_status *lrs;
+	struct opal_sum_ranges sum_ranges = {};
+	bool sum_undefined = false;
+
+	assert(ret_opal_range);
+
+	if (opal_key_size > OPAL_KEY_MAX)
+		return -EINVAL;
+
+	fd = device_open(cd, dev, O_RDONLY);
+	if (fd < 0)
+		return -EIO;
+
+	r = opal_geometry_fd(cd, fd, NULL, &opal_block_size, NULL, NULL);
+	if (r != OPAL_STATUS_SUCCESS)
+		return -EINVAL;
+
+	/* check if kernel recognizes the device as SUM capable */
+	r = opal_query_status_fd(cd, fd, OPAL_FL_SUM_SUPPORTED);
+	if (r < 0)
+		return r;
+
+	/* Check locking ranges SUM state only if the device advertises SUM support */
+	if (r) {
+		r = opal_get_sum_ranges_anybody(cd, fd, &sum_ranges);
+		sum_undefined = (r < 0);
+	}
+
+	lrs = crypt_safe_alloc(sizeof(*lrs));
+	if (!lrs)
+		return -ENOMEM;
+
+	*lrs = (struct opal_lr_status) {
+		.session = {
+			.who = opal_user_id,
+			.opal_key = {
+				.lr = opal_locking_range_id,
+				.key_len = opal_key_size,
+			}
+		}
+	};
+	crypt_safe_memcpy(lrs->session.opal_key.key, opal_key, opal_key_size);
+
+	r = opal_get_range(cd, fd, opal_block_size, sum_undefined, lrs, &sum_ranges, ret_opal_range);
+
+	crypt_safe_free(lrs);
+
+	return r;
+}
+
+int opal_get_ranges_params(struct crypt_device *cd,
+			 struct device *dev,
+			 uint32_t opal_user_id,
+			 const void *opal_key,
+			 size_t opal_key_size,
+			 struct crypt_hw_opal_range *opal_ranges,
+			 size_t opal_ranges_count)
+{
+	int fd, r;
+	uint32_t opal_block_size;
+	uint8_t lr = 0;
+	struct opal_lr_status *lrs;
+	struct opal_sum_ranges sum_ranges = {};
+	struct crypt_hw_opal_range tmp = {};
+	size_t stored_ranges = 0;
+	bool sum_undefined = false;
+
+	assert(opal_ranges);
+	assert(opal_ranges_count > 0);
+
+	if (opal_key_size > OPAL_KEY_MAX)
+		return -EINVAL;
+
+	fd = device_open(cd, dev, O_RDONLY);
+	if (fd < 0)
+		return -EIO;
+
+	r = opal_geometry_fd(cd, fd, NULL, &opal_block_size, NULL, NULL);
+	if (r != OPAL_STATUS_SUCCESS)
+		return -EINVAL;
+
+	/* check if kernel recognizes the device as SUM capable */
+	r = opal_query_status_fd(cd, fd, OPAL_FL_SUM_SUPPORTED);
+	if (r < 0)
+		return r;
+
+	/* Check locking ranges SUM state only if the device advertises SUM support */
+	if (r) {
+		r = opal_get_sum_ranges_anybody(cd, fd, &sum_ranges);
+		sum_undefined = (r < 0);
+	}
+
+	lrs = crypt_safe_alloc(sizeof(*lrs));
+	if (!lrs)
+		return -ENOMEM;
+
+	*lrs = (struct opal_lr_status) {
+		.session = {
+			.who = opal_user_id,
+			.opal_key = {
+				.key_len = opal_key_size,
+			}
+		}
+	};
+	crypt_safe_memcpy(lrs->session.opal_key.key, opal_key, opal_key_size);
+
+	for (lr = 0; lr < OPAL_MAX_LRS; lr++) {
+		lrs->session.opal_key.lr = lr;
+
+		r = opal_get_range(cd, fd, opal_block_size, sum_undefined, lrs, &sum_ranges, &tmp);
+		if (r == 1) {
+			if (stored_ranges < opal_ranges_count)
+				opal_ranges[stored_ranges++] = tmp;
+			else
+				r = -ENOSPC;
+		}
+		if (r < 0)
+			goto out;
+	}
+
+	r = stored_ranges;
+out:
+	crypt_safe_free(lrs);
+	if (r < 0)
+		memset(opal_ranges, 0, opal_ranges_count * sizeof(*opal_ranges));
+
+	return r;
+}
 #else
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
@@ -1792,6 +2014,33 @@ crypt_status_hw_encryption_info crypt_status_hw_encryption(struct crypt_device *
 }
 
 int crypt_get_hw_opal_enabled(struct crypt_device *cd)
+{
+	return -ENOTSUP;
+}
+
+int crypt_hw_opal_locking_ranges_max(struct crypt_device *cd)
+{
+	return -ENOTSUP;
+}
+
+int opal_get_single_range_params(struct crypt_device *cd,
+			 struct device *dev,
+			 uint32_t opal_user_id,
+			 uint8_t opal_locking_range_id,
+			 const void *opal_key,
+			 size_t opal_key_size,
+			 struct crypt_hw_opal_range *ret_opal_range)
+{
+	return -ENOTSUP;
+}
+
+int opal_get_ranges_params(struct crypt_device *cd,
+			 struct device *dev,
+			 uint32_t opal_user_id,
+			 const void *opal_key,
+			 size_t opal_key_size,
+			 struct crypt_hw_opal_range *opal_ranges,
+			 size_t opal_ranges_count)
 {
 	return -ENOTSUP;
 }
