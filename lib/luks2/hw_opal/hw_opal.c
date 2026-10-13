@@ -1177,7 +1177,7 @@ int opal_setup_ranges(struct crypt_device *cd,
 
 	/*
 	 * In SUM we have to authenticate using the User authority (associated with the locking
-	 * range) even though it was just created and it has empty passhrase (per OPAL2 SUM std.).
+	 * range) even though it was just created and it has empty passphrase (per OPAL2 SUM std.).
 	 *
 	 * Admin authority can not change User authority passphrase. It would defeat the purpose
 	 * of the SUM extension.
