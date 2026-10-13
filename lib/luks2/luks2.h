@@ -247,6 +247,10 @@ int LUKS2_get_opal_segment_number(struct luks2_hdr *hdr, int segment,
 				  uint32_t *ret_opal_segment_number);
 int LUKS2_get_opal_key_size(struct luks2_hdr *hdr, int segment);
 
+int LUKS2_change_hw_opal_pin(struct crypt_device *cd, struct luks2_hdr *hdr,
+	int keyslot, struct volume_key *vk, struct volume_key *new_vk,
+	bool *ret_erase_slot_on_error);
+
 bool LUKS2_segments_dynamic_size(struct luks2_hdr *hdr);
 
 /*

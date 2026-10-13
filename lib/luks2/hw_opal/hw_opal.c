@@ -1541,6 +1541,32 @@ int opal_geometry(struct crypt_device *cd,
 }
 
 /* requires opal lock */
+int opal_range_check_locked(struct crypt_device *cd,
+		     struct device *dev,
+		     uint32_t segment_number,
+		     const struct volume_key *user_pin,
+		     bool *ret_read_locked,
+		     bool *ret_write_locked)
+{
+	int fd;
+
+	assert(cd);
+	assert(dev);
+	assert(user_pin);
+
+	if (device_locked(device_get_lock_handle(dev)))
+		fd = device_open_locked(cd, dev, O_RDONLY);
+	else
+		fd = device_open(cd, dev, O_RDONLY);
+	if (fd < 0)
+		return -EIO;
+
+	return opal_range_check_attributes_fd(cd, fd, segment_number, user_pin,
+					      NULL, NULL, NULL,
+					      NULL, ret_read_locked, ret_write_locked);
+}
+
+/* requires opal lock */
 int opal_range_check_attributes_and_get_lock_state(struct crypt_device *cd,
 		     struct device *dev,
 		     uint32_t segment_number,
@@ -1735,6 +1761,36 @@ int crypt_get_hw_opal_enabled(struct crypt_device *cd)
 
 	return opal_query_status_fd(cd, fd, OPAL_FL_LOCKING_ENABLED);
 }
+
+int opal_change_pin(struct crypt_device *cd,
+		    struct device *dev,
+		    uint32_t segment_number,
+		    const struct volume_key *user_pin,
+		    const struct volume_key *new_user_pin)
+{
+	int fd;
+
+	assert(user_pin);
+	assert(new_user_pin);
+
+	if (crypt_volume_key_length(new_user_pin) > OPAL_KEY_MAX ||
+	    crypt_volume_key_length(user_pin) > OPAL_KEY_MAX)
+		return -EINVAL;
+
+	if (device_locked(device_get_lock_handle(dev)))
+		fd = device_open_locked(cd, dev, O_RDONLY);
+	else
+		fd = device_open(cd, dev, O_RDONLY);
+	if (fd < 0)
+		return -EIO;
+
+	return opal_set_new_pw(cd, fd, crypt_volume_key_get_key(user_pin),
+			       crypt_volume_key_length(user_pin),
+			       crypt_get_hw_opal_sum_enabled(cd) == 1 ? 1 : 0,
+			       segment_number,
+			       segment_number + 1, /* User is already configured */
+			       new_user_pin);
+}
 #else
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
@@ -1798,6 +1854,16 @@ int opal_geometry(struct crypt_device *cd,
 	return -ENOTSUP;
 }
 
+int opal_range_check_locked(struct crypt_device *cd,
+		     struct device *dev,
+		     uint32_t segment_number,
+		     const struct volume_key *user_pin,
+		     bool *ret_read_locked,
+		     bool *ret_write_locked)
+{
+	return -ENOTSUP;
+}
+
 int opal_range_check_attributes_and_get_lock_state(struct crypt_device *cd,
 		     struct device *dev,
 		     uint32_t segment_number,
@@ -1825,6 +1891,15 @@ crypt_status_hw_encryption_info crypt_status_hw_encryption(struct crypt_device *
 }
 
 int crypt_get_hw_opal_enabled(struct crypt_device *cd)
+{
+	return -ENOTSUP;
+}
+
+int opal_change_pin(struct crypt_device *cd,
+		    struct device *dev,
+		    uint32_t segment_number,
+		    const struct volume_key *user_pin,
+		    const struct volume_key *new_user_pin)
 {
 	return -ENOTSUP;
 }

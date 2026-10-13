@@ -3332,6 +3332,54 @@ int crypt_set_keyring_to_link(struct crypt_device* cd,
 	const char* key_type_desc,
 	const char* keyring_to_link_vk);
 
+/** Also regenerate volume key for SW encryption and assign it to current segment */
+#define CRYPT_VOLUME_KEY_RESET (UINT32_C(1) << 1)
+
+/**
+ *
+ * Regenerate HW OPAL User PIN unlocking configured HW OPAL segment. The current
+ * OPAL User PIN is provided by keyslot context (kc). The new HW OPAL User PIN
+ * is generated for configured HW OPAL segment and stored in new unbound keyslot.
+ * The new keyslot will be protected by passphrase provided by
+ * new keyslot context (new_kc). Only after new keyslot is stored safely in LUKS2 metadata,
+ * the PIN gets changed in configured HW OPAL segment and the unbound keyslot is switched into
+ * regular one. If the operation is successful, all keyslots containing the old outdated
+ * HW OPAL User PIN are erased and only the new keyslot remains.
+ *
+ * Unless CRYPT_VOLUME_KEY_RESET flag is set this operation does not change volume key
+ * and does not affect encrypted data.
+ *
+ * See @link crypt-keyslot-context @endlink for context initialization routines.
+ *
+ * @param cd LUKS2 crypt device handle
+ * @param keyslot_existing existing keyslot or CRYPT_ANY_SLOT to get volume key from.
+ * @param kc keyslot context providing volume key.
+ * @param keyslot_new new keyslot or CRYPT_ANY_SLOT (first free number is used).
+ * @param new_kc keyslot context providing passphrase for new keyslot.
+ * @param flags key flags to set
+ *
+ * @return allocated new key slot number or negative errno value otherwise.
+ *
+ * @note The function requires OPAL device to be locked for all I/O and must not be
+ * 	 mounted or active.
+ *
+ * @note new_kc can not be @e CRYPT_KC_TYPE_KEY type keyslot context.
+ *
+ * @note For kc parameter with type @e CRYPT_KC_TYPE_KEY the keyslot_existing
+ *       parameter is ignored.
+ *
+ * @warning CRYPT_VOLUME_KEY_RESET flag force updates SW encryption volume key. It is @b not @b reencryption!
+ * 	    By doing so you will destroy your ciphertext data device. It's supposed
+ * 	    to be used only immediately after HW OPAL device is handed over by OPAL Admin authority so
+ * 	    that both the HW OPAL User PIN is changed together with SW encryption volume key. No real
+ * 	    data should be stored on the device yet.
+ */
+int crypt_keyslot_change_hw_opal_pin_by_keyslot_context(struct crypt_device *cd,
+						   int keyslot_existing,
+						   struct crypt_keyslot_context *kc,
+						   int keyslot_new,
+						   struct crypt_keyslot_context *new_kc,
+						   uint32_t flags);
 /** @} */
 
 #ifdef __cplusplus

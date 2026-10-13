@@ -8000,6 +8000,160 @@ crypt_reencrypt_info crypt_reencrypt_status(struct crypt_device *cd,
 	return LUKS2_reencrypt_get_params(&cd->u.luks2.hdr, params);
 }
 
+static int LUKS2_generate_new_opal_keys(struct crypt_device *cd, const struct volume_key *vk, struct volume_key **ret_new_vk)
+{
+	int r;
+	size_t opal_key_size;
+	void *new_key = NULL;
+
+	assert(ret_new_vk);
+
+	r = LUKS2_get_opal_key_size(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
+	if (r <= 0)
+		return -EINVAL;
+
+	opal_key_size = r;
+
+	if (crypt_volume_key_length(vk) <= opal_key_size)
+		return -EINVAL;
+
+	new_key = crypt_safe_alloc(crypt_volume_key_length(vk));
+	if (!new_key)
+		return -ENOMEM;
+
+	r = crypt_random_get(cd, new_key, opal_key_size, CRYPT_RND_KEY);
+	if (r) {
+		r = -EINVAL;
+		goto out;
+	}
+
+	/* copy existing dm-crypt volume key */
+	crypt_safe_memcpy((char *)new_key + opal_key_size,
+			  crypt_volume_key_get_key(vk) + opal_key_size,
+			  crypt_volume_key_length(vk) - opal_key_size);
+
+	*ret_new_vk = crypt_alloc_volume_key_by_safe_alloc(&new_key);
+
+	r = *ret_new_vk ? 0 : -ENOMEM;
+out:
+	crypt_safe_free(new_key);
+	return r;
+}
+
+int crypt_keyslot_change_hw_opal_pin_by_keyslot_context(struct crypt_device *cd,
+						   int keyslot_existing,
+						   struct crypt_keyslot_context *kc,
+						   int keyslot_new,
+						   struct crypt_keyslot_context *new_kc,
+						   uint32_t flags)
+{
+	crypt_keyslot_info ki;
+	bool erase_new_slot_on_error = false,
+	     reset_crypt_key = (flags & CRYPT_VOLUME_KEY_RESET);
+	int i, new_digest, enc_type, old_digest = -1, r = -EINVAL;
+	struct crypt_keyslot_context tmp_kc = {};
+	struct volume_key *new_vk = NULL, *vk = NULL;
+
+	if (!kc || !new_kc)
+		return -EINVAL;
+
+	if (reset_crypt_key)
+		log_dbg(cd, "Changing PIN and resetting volume key for configured OPAL device %s.",
+			device_path(crypt_data_device(cd)));
+	else
+		log_dbg(cd, "Changing PIN for configured OPAL device %s.",
+			device_path(crypt_data_device(cd)));
+
+	/* HW OPAL or SW /w HW OPAL is returned only for valid LUKS2 device */
+	enc_type = crypt_get_hw_encryption_type(cd);
+	if (enc_type < 0)
+		return enc_type;
+
+	if (enc_type == CRYPT_SW_ONLY) {
+		log_err(cd, _("Device %s not configured for HW OPAL encryption."),
+			device_path(crypt_metadata_device(cd)));
+		return -EINVAL;
+	}
+
+	if (enc_type == CRYPT_OPAL_HW_ONLY && reset_crypt_key) {
+		log_err(cd, _("Device %s not configured for SW and HW OPAL encryption."),
+			device_path(crypt_metadata_device(cd)));
+		return -EINVAL;
+	}
+
+	/* check the data device is OPAL2 device (detached header case) */
+	r = crypt_opal_supported(cd, crypt_data_device(cd));
+	if (r < 0)
+		return r;
+
+	r = kc->get_luks2_volume_key(cd, kc, keyslot_existing, &vk);
+	if (r < 0)
+		return r;
+
+	if (reset_crypt_key || LUKS2_segment_is_hw_opal_only(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT)) {
+		/* later crypt_keyslot_add_by_keyslot_context will generate entire new unbound key */
+		crypt_keyslot_context_init_by_key_internal(&tmp_kc, NULL, crypt_volume_key_length(vk));
+	} else {
+		/* generate new OPAL User PIN only and retain dm-crypt volume key */
+		r = LUKS2_generate_new_opal_keys(cd, vk, &new_vk);
+		if (r < 0)
+			goto out;
+
+		crypt_keyslot_context_init_by_key_internal(&tmp_kc, crypt_volume_key_get_key(new_vk),
+							   crypt_volume_key_length(new_vk));
+	}
+
+	/* Adds new unbound keyslot with the future User Authority PIN */
+	r = crypt_keyslot_add_by_keyslot_context(cd, CRYPT_ANY_SLOT, &tmp_kc, keyslot_new, new_kc, CRYPT_VOLUME_KEY_NO_SEGMENT);
+	crypt_keyslot_context_destroy_internal(&tmp_kc);
+	if (r < 0)
+		goto out;
+	keyslot_new = r;
+	erase_new_slot_on_error = true;
+
+	if (!new_vk) {
+		/* if the new vk was generated, retrieve it from the unbound keyslot */
+		r = new_kc->get_luks2_key(cd, new_kc, keyslot_new, CRYPT_ANY_SEGMENT, &new_vk);
+		if (r != keyslot_new) {
+			r = -EINVAL;
+			goto out;
+		}
+	}
+
+	r = LUKS2_digest_by_segment(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
+	if (r < 0)
+		goto out;
+	old_digest = r;
+
+	r = LUKS2_digest_by_keyslot(&cd->u.luks2.hdr, keyslot_new);
+	if (r < 0 || r == old_digest) {
+		r = -EINVAL;
+		goto out;
+	}
+	new_digest = r;
+
+	r = LUKS2_change_hw_opal_pin(cd, &cd->u.luks2.hdr, new_digest, vk, new_vk,
+				     &erase_new_slot_on_error);
+out:
+	crypt_free_volume_key(vk);
+	crypt_free_volume_key(new_vk);
+
+	if (r == 0 && old_digest >= 0) {
+		for (i = 0; i < LUKS2_KEYSLOTS_MAX; i++) {
+			ki = crypt_keyslot_status(cd, i);
+			if (ki == CRYPT_SLOT_UNBOUND && LUKS2_digest_by_keyslot(&cd->u.luks2.hdr, i) == old_digest)
+				crypt_keyslot_destroy(cd, i);
+		}
+		r = keyslot_new;
+	} else {
+		_luks2_rollback(cd);
+		if (erase_new_slot_on_error)
+			crypt_keyslot_destroy(cd, keyslot_new);
+	}
+
+	return r;
+}
+
 static void __attribute__((destructor)) libcryptsetup_exit(void)
 {
 	crypt_token_unload_external_all(NULL);
