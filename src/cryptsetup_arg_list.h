@@ -232,6 +232,8 @@ ARG(OPT_VOLUME_KEY_FILE, '\0', POPT_ARG_STRING, N_("Use the volume key from file
 
 ARG(OPT_VOLUME_KEY_KEYRING, '\0', POPT_ARG_STRING, N_("Use the specified keyring key as a volume key"), NULL, CRYPT_ARG_STRING, {}, {})
 
+ARG(OPT_VOLUME_KEY_RESET, '\0', POPT_ARG_NONE, N_("Reset SW encryption key"), NULL, CRYPT_ARG_BOOL, {}, OPT_VOLUME_KEY_RESET_ACTIONS)
+
 /* added for reencryption */
 
 ARG(OPT_BLOCK_SIZE, 'B', POPT_ARG_STRING, N_("Reencryption block size"), N_("MiB"), CRYPT_ARG_UINT32, { .u32_value = 4 }, {})
