@@ -79,6 +79,10 @@ cryptsetup_manpages = [
         [],
     ],
     [
+        'cryptsetup-luksChangePin.8.adoc',
+        [],
+    ],
+    [
         'cryptsetup-erase.8.adoc',
         [
             'cryptsetup-luksErase.8',

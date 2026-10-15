@@ -187,7 +187,7 @@ ifdef::ACTION_REENCRYPT[]
 Initialize (and run) the device in-place encryption mode.
 endif::[]
 
-ifdef::ACTION_RESIZE,ACTION_OPEN,ACTION_LUKSADDKEY,ACTION_LUKSDUMP,ACTION_LUKSRESUME,ACTION_TOKEN[]
+ifdef::ACTION_RESIZE,ACTION_OPEN,ACTION_LUKSADDKEY,ACTION_LUKSDUMP,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_LUKSCHANGEPIN[]
 *--external-tokens-path* _<absolute path>_::
 Override the system directory path where cryptsetup searches for external token handlers (or token plugins).
 It must be an absolute path (starting with '/' character).
@@ -216,7 +216,7 @@ It may also help in case active device auto-detection on a particular data devic
 *WARNING:* Use with extreme caution! This may destroy data if the device is activated and/or actively used.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_LUKSCHANGEPIN[]
 *--force-password*::
 Do not use password quality checking for new LUKS passwords.
 +
@@ -405,7 +405,7 @@ For example, kernel page cache can request a read of a full page that fails due 
 It is usually a bug in the application that tries to read data that was not written before.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_BENCHMARK[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_BENCHMARK,ACTION_LUKSCHANGEPIN[]
 *--iter-time*, *-i* _<number of milliseconds>_::
 ifndef::ACTION_REENCRYPT[]
 The number of milliseconds to spend with PBKDF passphrase processing.
@@ -440,19 +440,19 @@ Reencrypt only the LUKS1 header and keyslots.
 Skips data in-place reencryption.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSDUMP,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_TOKEN[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSDUMP,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_TOKEN,ACTION_LUKSCHANGEPIN[]
 *--key-description* _text_::
 Set the key description in the keyring that will be used for passphrase retrieval.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TCRYPTDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_BITLKDUMP[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_TCRYPTDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_BITLKDUMP,ACTION_LUKSCHANGEPIN[]
 *--key-file*, *-d* _file_::
 Read the passphrase from the file.
 +
 If the name given is "-", then the passphrase will be read from stdin.
 In this case, reading will not stop at newline characters.
 +
-ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY[]
+ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCHANGEPIN[]
 The passphrase supplied via --key-file is always the passphrase for the existing keyslot requested by the command.
 +
 ifdef::ACTION_LUKSADDKEY[]
@@ -460,6 +460,9 @@ If you want to set a new passphrase via key file, you have to use a positional a
 endif::[]
 ifdef::ACTION_LUKSCHANGEKEY[]
 If you want to set a new passphrase via a key file, you have to use a positional argument.
+endif::[]
+ifdef::ACTION_LUKSCHANGEPIN[]
+If you want to set a new PIN via a key file, you have to use the --new-keyfile parameter.
 endif::[]
 +
 endif::[]
@@ -486,12 +489,12 @@ In this case, reading will not stop at newline characters.
 +
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_BITLKDUMP[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_BITLKDUMP,ACTION_LUKSCHANGEPIN[]
 *--keyfile-offset* _value_::
 Skip _value_ bytes at the beginning of the key file.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_BITLKDUMP[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_BITLKDUMP,ACTION_LUKSCHANGEPIN[]
 *--keyfile-size*, *-l* _value_::
 Read a maximum of _value_ bytes from the key file.
 The default is to read the whole file up to the compiled-in maximum that can be queried with --help.
@@ -501,9 +504,9 @@ This option is useful to cut trailing newlines, for example.
 If --keyfile-offset is also given, the size count starts after the offset.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT,ACTION_BENCHMARK,ACTION_LUKSADDKEY[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_REENCRYPT,ACTION_BENCHMARK,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEPIN[]
 *--key-size*, *-s* _bits_::
-ifndef::ACTION_LUKSADDKEY,ACTION_REENCRYPT[]
+ifndef::ACTION_LUKSADDKEY,ACTION_REENCRYPT,ACTION_LUKSCHANGEPIN[]
 Sets key size in _bits_.
 The argument has to be a multiple of 8.
 The possible key sizes are limited by the cipher and mode used.
@@ -512,19 +515,21 @@ See /proc/crypto for more information.
 Note that the key size in /proc/crypto is stated in bytes.
 +
 endif::[]
-ifdef::ACTION_LUKSADDKEY[]
+ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEPIN[]
 Provide volume key size in _bits_.
 The argument has to be a multiple of 8.
 +
 This option is required when the parameter --volume-key-file is used to provide current volume key.
+ifdef::ACTION_LUKSADDKEY[]
 Also, it is used when a new unbound keyslot is created by specifying --unbound parameter.
+endif::[]
 endif::[]
 ifdef::ACTION_OPEN[]
 This option can be used for _plain_ and _luks_ devices.
 For LUKS2 devices in reencryption, you may use the parameter twice to specify both old and new volume key sizes.
 Each --key-size option corresponds to the respective --volume-key-file parameter (also allowed to be used up to two times).
 endif::[]
-ifndef::ACTION_REENCRYPT,ACTION_OPEN,ACTION_LUKSADDKEY[]
+ifndef::ACTION_REENCRYPT,ACTION_OPEN,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEPIN[]
 This option can be used for _open --type plain_ or _luksFormat_.
 All other LUKS actions will use the key size specified in the LUKS header.
 Use _cryptsetup --help_ to show the compiled-in defaults.
@@ -567,12 +572,12 @@ LUKS1 can have up to 8 keyslots.
 LUKS2 can have up to 32 keyslots based on keyslot area size and key size, but a valid keyslot ID can always be between 0 and 31 for LUKS2.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_LUKSCHANGEPIN[]
 *--keyslot-cipher* _<cipher-spec>_::
 This option can be used to set specific cipher encryption for the LUKS2 keyslot area.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_LUKSCHANGEPIN[]
 *--keyslot-key-size* _<bits>_::
 This option can be used to set a specific key size for the LUKS2 keyslot area.
 endif::[]
@@ -619,22 +624,24 @@ According to the LUKS2 specification, only these values are valid: 16, 32, 64, 1
 The <size> can be specified with a unit suffix (for example, 128k).
 endif::[]
 
-ifdef::ACTION_LUKSADDKEY[]
+ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEPIN[]
 *--new-keyfile* _name_::
 Read the passphrase for a new keyslot from a file.
 +
 If the name given is "-", then the passphrase will be read from stdin.
 In this case, reading will not stop at newline characters.
+ifdef::ACTION_LUKSADDKEY[]
 +
 This is an alternative method to positional argument when adding a new passphrase via keyfile.
 endif::[]
+endif::[]
 
-ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY[]
+ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSCHANGEPIN[]
 *--new-keyfile-offset* _value_::
 Skip _value_ bytes at the start when adding a new passphrase from the key file.
 endif::[]
 
-ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY[]
+ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSCHANGEPIN[]
 *--new-keyfile-size* _value_::
 Read a maximum of _value_ bytes when adding a new passphrase from the key file.
 The default is to read the whole file up to the compiled-in maximum length that can be queried with --help.
@@ -642,7 +649,7 @@ Supplying more than the compiled-in maximum aborts the operation.
 When --new-keyfile-offset is also given, reading starts after the offset.
 endif::[]
 
-ifdef::ACTION_LUKSADDKEY[]
+ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEPIN[]
 *--new-key-description* _text_::
 Set the key description in the keyring that will be used for new passphrase retrieval.
 endif::[]
@@ -662,7 +669,7 @@ If you are increasing key size, there must be enough space in the LUKS header fo
 If there is not enough space for keyslots with the new key size, you can destructively shrink the device with --reduce-device-size option.
 endif::[]
 
-ifdef::ACTION_LUKSADDKEY[]
+ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEPIN[]
 *--new-key-slot* _<0-N>_::
 This option allows you to specify which keyslot is selected for the new key.
 +
@@ -671,7 +678,7 @@ LUKS1 can have up to 8 keyslots.
 LUKS2 can have up to 32 keyslots based on keyslot area size and key size, but a valid keyslot ID can always be between 0 and 31 for LUKS2.
 endif::[]
 
-ifdef::ACTION_LUKSADDKEY[]
+ifdef::ACTION_LUKSADDKEY,ACTION_LUKSCHANGEPIN[]
 *--new-token-id* _<id>_::
 Specify what token to use to get the passphrase for a new keyslot.
 endif::[]
@@ -718,7 +725,7 @@ This option cannot be combined with --align-payload option.
 endif::[]
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_BENCHMARK[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_BENCHMARK,ACTION_LUKSCHANGEPIN[]
 *--pbkdf* _<PBKDF spec>_::
 Set Password-Based Key Derivation Function (PBKDF) algorithm for LUKS keyslot.
 The PBKDF can be: _pbkdf2_ (for PBKDF2 according to RFC2898), _argon2i_ for Argon2i or _argon2id_ for Argon2id (see https://www.cryptolux.org/index.php/Argon2[Argon2] for more info).
@@ -767,21 +774,21 @@ Memory management often overcommits allocations beyond available physical memory
 In such situations, as PBKDF always uses all allocated memory, it frequently causes out-of-memory failures that abort cryptsetup operations.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_LUKSCHANGEPIN[]
 *--pbkdf-force-iterations* _number_::
 Avoid the PBKDF benchmark and set the time cost (iterations) directly.
 It can be used only for a LUKS/LUKS2 device.
 See --pbkdf option for more info.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_BENCHMARK[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_BENCHMARK,ACTION_LUKSCHANGEPIN[]
 *--pbkdf-memory* _number_::
 Set the memory cost for PBKDF (for Argon2i/id, the number represents kilobytes).
 Note that it is the maximal value; PBKDF benchmark or available physical memory can decrease it.
 This option is not available for PBKDF2.
 endif::[]
 
-ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_BENCHMARK[]
+ifdef::ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_REENCRYPT,ACTION_BENCHMARK,ACTION_LUKSCHANGEPIN[]
 *--pbkdf-parallel* _number_::
 Set the parallel cost for PBKDF (number of threads, up to 4).
 Note that it is the maximal value; it is decreased automatically if the CPU online count is lower.
@@ -1035,7 +1042,7 @@ Do not activate the device, just verify the passphrase.
 The device mapping name is not mandatory if this option is used.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_LUKSRESUME,ACTION_RESIZE,ACTION_TCRYPTDUMP,ACTION_BITLKDUMP[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSKILLSLOT,ACTION_LUKSDUMP,ACTION_REENCRYPT,ACTION_REPAIR,ACTION_LUKSRESUME,ACTION_RESIZE,ACTION_TCRYPTDUMP,ACTION_BITLKDUMP,ACTION_LUKSCHANGEPIN[]
 *--timeout*, *-t* _seconds_::
 The number of seconds to wait before a timeout on passphrase input via terminal.
 It is relevant every time a passphrase is asked.
@@ -1045,7 +1052,7 @@ This option is useful when the system should not stall if the user does not inpu
 The default is a value of 0 seconds, which means to wait forever.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_LUKSADDKEY,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_TOKEN,ACTION_LUKSADDKEY,ACTION_REENCRYPT,ACTION_LUKSCHANGEPIN[]
 *--token-id*::
 ifdef::ACTION_REENCRYPT[]
 *LUKS2 reencryption initialization:*
@@ -1068,7 +1075,7 @@ If omitted, the first unused token id is used when adding or importing a new tok
 endif::[]
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_REENCRYPT,ACTION_LUKSCHANGEPIN[]
 *--token-only*::
 ifdef::ACTION_REENCRYPT[]
 *LUKS2 reencryption initialization:*
@@ -1096,7 +1103,7 @@ ifdef::ACTION_TOKEN[]
 Replace an existing token when adding or importing a token with the --token-id option.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_REENCRYPT,ACTION_LUKSCHANGEPIN[]
 *--token-type* _type_::
 ifdef::ACTION_REENCRYPT[]
 *LUKS2 reencryption initialization:*
@@ -1123,7 +1130,7 @@ How often the input of the passphrase shall be retried.
 The default is 3 tries.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSKILLSLOT,ACTION_ISLUKS,ACTION_LUKSDUMP,ACTION_LUKSUUID,ACTION_CONVERT,ACTION_REPAIR,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSKILLSLOT,ACTION_ISLUKS,ACTION_LUKSDUMP,ACTION_LUKSUUID,ACTION_CONVERT,ACTION_REPAIR,ACTION_REENCRYPT,ACTION_LUKSCHANGEPIN[]
 *--type* _type_::
 ifndef::ACTION_REENCRYPT[]
 Specifies required device type, for more info, read the _BASIC ACTIONS_ section in *cryptsetup*(8).
@@ -1218,7 +1225,7 @@ ifdef::ACTION_ISLUKS[]
 Print more information on command execution.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_REPAIR,ACTION_TCRYPTDUMP,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSFORMAT,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSREMOVEKEY,ACTION_LUKSCHANGEKEY,ACTION_LUKSCONVERTKEY,ACTION_LUKSKILLSLOT,ACTION_REPAIR,ACTION_TCRYPTDUMP,ACTION_REENCRYPT,ACTION_LUKSCHANGEPIN[]
 *--verify-passphrase*, *-y*::
 When interactively asking for a passphrase, ask for it twice and complain if both inputs do not match.
 ifdef::ACTION_OPEN[]
@@ -1232,7 +1239,7 @@ ifdef::COMMON_OPTIONS[]
 Show the program version.
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSDUMP,ACTION_BITLKDUMP,ACTION_REENCRYPT[]
+ifdef::ACTION_OPEN,ACTION_LUKSFORMAT,ACTION_LUKSADDKEY,ACTION_LUKSDUMP,ACTION_BITLKDUMP,ACTION_REENCRYPT,ACTION_LUKSCHANGEPIN[]
 *--volume-key-file* _file_::
 --master-key-file file (OBSOLETE alias)::
 ifndef::ACTION_REENCRYPT[]
@@ -1251,6 +1258,11 @@ endif::[]
 ifdef::ACTION_LUKSADDKEY[]
 This allows adding a new keyslot without having to know the passphrase to the existing one.
 It may also be used when no keyslot is active.
++
+endif::[]
+ifdef::ACTION_LUKSCHANGEPIN[]
+This provides the current volume key used to unlock the OPAL locking range, so the PIN can be changed without having to know a keyslot passphrase.
+It may also be used when no keyslot is active (pair the option with --key-size to specify the volume key size).
 +
 endif::[]
 ifdef::ACTION_OPEN[]
@@ -1274,7 +1286,7 @@ Otherwise, you can end up with a low-entropy or otherwise partially predictable 
 endif::[]
 endif::[]
 
-ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY[]
+ifdef::ACTION_OPEN,ACTION_RESIZE,ACTION_LUKSRESUME,ACTION_LUKSADDKEY,ACTION_LUKSCHANGEPIN[]
 *--volume-key-keyring* _<key description>_::
 Use a volume key stored in a keyring.
 This allows one to open _luks_ and _plain_ device types without giving a passphrase.
@@ -1289,6 +1301,17 @@ The _<key description>_ uses keyctl-compatible syntax.
 This can either be a numeric key ID or a string name in the format _%<key type>:<key name>_.
 See also the *KEY IDENTIFIERS* section of *keyctl*(1).
 When no _%<key type>:_ prefix is specified, we assume the key type is _user_ (default type).
+endif::[]
+
+ifdef::ACTION_LUKSCHANGEPIN[]
+*--volume-key-reset*::
+Regenerate the software (dm-crypt) volume key (media encryption key) together with the HW OPAL User PIN.
++
+This option can only be used for devices that use both software and hardware encryption (formatted with --hw-opal); it is rejected for OPAL-only devices (--hw-opal-only).
++
+*WARNING:* This is *not* reencryption.
+All data stored on the ciphertext device becomes permanently inaccessible.
+This option is only meant to be used immediately after an OPAL drive has been handed over by the OPAL Admin authority, before any real data is stored on the device.
 endif::[]
 
 ifdef::ACTION_REENCRYPT[]
