@@ -16,6 +16,7 @@ DEV_NAME=dummy
 DEV_NAME2=dummy2
 NO_HEADER_IMG=missing-header
 HEADER_IMG=luks-header
+HDR_BCK_IMG=luks-header-backup
 HEADER_LUKS2_INV=luks2_invalid_cipher.img
 KEY1=key1
 KEY2=key2
@@ -48,7 +49,7 @@ remove_mapping()
 	[ -b /dev/mapper/$DEV_NAME2 ] && dmsetup remove --retry $DEV_NAME2
 	[ -b /dev/mapper/$DEV_NAME ] && dmsetup remove --retry $DEV_NAME
 	[ -b /dev/mapper/"$DEV_NAME"_dif ] && dmsetup remove --retry "$DEV_NAME"_dif
-	rm -f $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $VK_FILE \
+	rm -f $KEY1 $KEY2 $KEY5 $KEYE $HEADER_IMG $HDR_BCK_IMG $VK_FILE \
 	$HEADER_LUKS2_INV missing-file $TOKEN_FILE0 $TOKEN_FILE1 test_image_* \
 	$KEY_FILE0 $KEY_FILE1 $KEY_PWD1 $NO_HEADER_IMG >/dev/null 2>&1
 
@@ -511,6 +512,53 @@ run_token_tests() {
 	$CRYPTSETUP token unassign --token-id 0 -S0 $OPAL2_DEV 2>/dev/null && fail
 	$CRYPTSETUP token unassign --token-id 0 -S44 $OPAL2_DEV 2>/dev/null && fail
 	$CRYPTSETUP token unassign --token-id 44 -S0 $OPAL2_DEV 2>/dev/null && fail
+}
+
+test_opal_change_pin_common()
+{
+	echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q $FAST_PBKDF_OPT luksFormat --type luks2 $1 $OPAL2_DEV || fail
+	echo -e "$PWD1\n$PWD2" | $CRYPTSETUP -q $FAST_PBKDF_OPT luksAddKey $OPAL2_DEV || fail
+	[ $($CRYPTSETUP luksDump $OPAL2_DEV | grep -cE "^[[:space:]]+[0-9]+: luks2$") -eq 2 ] || fail
+
+	# write test data to the OPAL locking range and remember its checksum
+	echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+	dd if=/dev/urandom of=/dev/mapper/$DEV_NAME bs=1M count=1 oflag=direct >/dev/null 2>&1 || fail
+	local data_sum=$(dd if=/dev/mapper/$DEV_NAME bs=1M count=1 iflag=direct 2>/dev/null | sha1sum | cut -d' ' -f1)
+	[ -n "$data_sum" ] || fail "Failed to compute data checksum."
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	# back up the current header (holds the old OPAL User PIN and keyslots)
+	rm -f $HDR_BCK_IMG
+	$CRYPTSETUP luksHeaderBackup $OPAL2_DEV --header-backup-file $HDR_BCK_IMG || fail
+
+	# change the OPAL User PIN (old passphrase -> new passphrase), no Admin PIN required
+	echo -e "$PWD1\n$PWD3" | $CRYPTSETUP $FAST_PBKDF_OPT luksChangePin $OPAL2_DEV || fail
+
+	# exactly one keyslot must remain active after the change
+	[ $($CRYPTSETUP luksDump $OPAL2_DEV | grep -cE "^[[:space:]]+[0-9]+: luks2$") -eq 1 ] || fail "Expected exactly one keyslot after luksChangePin."
+
+	# old passphrases must no longer unlock the device
+	echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME --test-passphrase 2>/dev/null && fail
+	echo $PWD2 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME --test-passphrase 2>/dev/null && fail
+
+	# the new passphrase must unlock and activate the device
+	echo $PWD3 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+	check_exists
+
+	# data on the OPAL locking range must be intact: luksChangePin without
+	# --volume-key-reset must not change the volume key nor destroy the data
+	local new_data_sum=$(dd if=/dev/mapper/$DEV_NAME bs=1M count=1 iflag=direct 2>/dev/null | sha1sum | cut -d' ' -f1)
+	[ -n "$new_data_sum" ] || fail "Failed to compute data checksum."
+	[ "$new_data_sum" = "$data_sum" ] || fail "Data checksum changed after luksChangePin (expected: $data_sum, got: $new_data_sum)."
+	$CRYPTSETUP close $DEV_NAME || fail
+
+	# the stale header backup must NOT unlock the device: its keyslots wrap the old OPAL
+	# User PIN, which no longer matches the PIN programmed into the drive.
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV --header $HDR_BCK_IMG $DEV_NAME 2>/dev/null && fail
+	test -b /dev/mapper/$DEV_NAME && fail "Device mapping must not exist after failed open with stale header."
+	# the OPAL locking range must remain locked (direct read must fail)
+	dd if=$OPAL2_DEV of=/dev/zero bs=1M skip=16 count=1 iflag=direct >/dev/null 2>&1 && fail
+	rm -f $HDR_BCK_IMG
 }
 
 export LANG=C
@@ -1395,6 +1443,38 @@ test_device_detached_header $HEADER_IMG --hw-opal "-c aes-gcm-random --integrity
 test_device_detached_header $HEADER_IMG --hw-opal "-s 280 -c aes-ccm-random --integrity aead" --integrity-no-wipe
 
 # FIXME: Add partition based tests
+
+prepare "[48] OPAL2 luksChangePin" wipe
+
+test_opal_change_pin_common "--hw-opal"
+test_opal_change_pin_common "--hw-opal-only"
+
+# --hw-opal specific tests
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q $FAST_PBKDF_OPT luksFormat --type luks2 --hw-opal $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+dd if=/dev/urandom of=/dev/mapper/$DEV_NAME bs=1M count=1 oflag=direct >/dev/null 2>&1 || fail
+DATA_SUM=$(dd if=/dev/mapper/$DEV_NAME bs=1M count=1 iflag=direct 2>/dev/null | sha1sum | cut -d' ' -f1)
+[ -n "$DATA_SUM" ] || fail "Failed to compute data checksum."
+$CRYPTSETUP close $DEV_NAME || fail
+echo -e "$PWD1\n$PWD3" | $CRYPTSETUP $FAST_PBKDF_OPT luksChangePin --volume-key-reset -q $OPAL2_DEV || fail
+echo $PWD3 | $CRYPTSETUP luksOpen $OPAL2_DEV $DEV_NAME || fail
+check_exists
+
+# data on the OPAL locking range must be destroyed due to --volume-key-reset
+NEW_DATA_SUM=$(dd if=/dev/mapper/$DEV_NAME bs=1M count=1 iflag=direct 2>/dev/null | sha1sum | cut -d' ' -f1)
+[ -n "$NEW_DATA_SUM" ] || fail "Failed to compute data checksum."
+[ "$NEW_DATA_SUM" != "$DATA_SUM" ] || fail "Data checksum did not change after luksChangePin (got: $NEW_DATA_SUM for both)."
+$CRYPTSETUP close $DEV_NAME || fail
+
+# --hw-opal-only specific tests
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q $FAST_PBKDF_OPT luksFormat --type luks2 --hw-opal-only $OPAL2_DEV || fail
+echo -e "$PWD1\n$PWD3" | $CRYPTSETUP $FAST_PBKDF_OPT luksChangePin --volume-key-reset -q $OPAL2_DEV 2>/dev/null && fail "luksChangePin --volume-key-reset must fail for HW OPAL only encryption."
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase -q $OPAL2_DEV || fail
+
+# refuse the action for regular LUKS2 device
+echo -e "$PWD1" | $CRYPTSETUP -q $FAST_PBKDF_OPT luksFormat --type luks2 $OPAL2_DEV || fail
+echo -e "$PWD1\n$PWD3" | $CRYPTSETUP $FAST_PBKDF_OPT luksChangePin -q $OPAL2_DEV 2>/dev/null && fail "luksChangePin must fail for regular LUKS2 device."
+echo -e "$PWD1\n$PWD3" | $CRYPTSETUP $FAST_PBKDF_OPT luksChangePin --volume-key-reset -q $OPAL2_DEV 2>/dev/null && fail "luksChangePin must fail for regular LUKS2 device."
 
 remove_mapping
 reset_device_psid_nofail

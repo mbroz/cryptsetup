@@ -3155,7 +3155,6 @@ int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd __attribute__((unuse
 	struct volume_key *opal_key, *crypt_key;
 
 	assert(vk);
-	assert(ret_crypt_key);
 	assert(ret_opal_key);
 
 	jobj_segment = LUKS2_get_segment_jobj(hdr, CRYPT_DEFAULT_SEGMENT);
@@ -3175,7 +3174,8 @@ int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd __attribute__((unuse
 
 	/* OPAL SEGMENT only */
 	if (crypt_volume_key_length(vk) == opal_user_key_size) {
-		*ret_crypt_key = NULL;
+		if (ret_crypt_key)
+			*ret_crypt_key = NULL;
 		*ret_opal_key = NULL;
 		return 0;
 	}
@@ -3184,15 +3184,120 @@ int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd __attribute__((unuse
 	if (!opal_key)
 		return -ENOMEM;
 
-	crypt_key = crypt_alloc_volume_key(crypt_volume_key_length(vk) - opal_user_key_size,
-					   crypt_volume_key_get_key(vk) + opal_user_key_size);
-	if (!crypt_key) {
-		crypt_free_volume_key(opal_key);
-		return -ENOMEM;
+	if (ret_crypt_key) {
+		crypt_key = crypt_alloc_volume_key(crypt_volume_key_length(vk) - opal_user_key_size,
+						   crypt_volume_key_get_key(vk) + opal_user_key_size);
+		if (!crypt_key) {
+			crypt_free_volume_key(opal_key);
+			return -ENOMEM;
+		}
+		*ret_crypt_key = crypt_key;
 	}
 
 	*ret_opal_key = opal_key;
-	*ret_crypt_key = crypt_key;
 
 	return 0;
+}
+
+/*
+ * Function changes HW OPAL User PIN and switches unbound keyslot (containing new PIN)
+ * into regular LUKS keyslot.
+ *
+ * 1) Opens OPAL device in exclusive mode (block fs mount and device-mapper mappings)
+ * 2) Take OPAL device lock (so that no change PIN operation clashes and device can not
+ *    be unlocked by other libcryptsetup process)
+ * 3) Take LUKS2 write lock
+ *
+ */
+int LUKS2_change_hw_opal_pin(struct crypt_device *cd, struct luks2_hdr *hdr,
+	int new_digest, struct volume_key *vk, struct volume_key *new_vk,
+	bool *ret_erase_slot_on_error)
+{
+	bool read_locked, write_locked;
+	int r;
+	struct crypt_lock_handle *opal_lock = NULL;
+	uint32_t segment_number;
+	struct volume_key *p_old_opal_key, *p_new_opal_key, *old_opal_vk = NULL,
+			  *new_opal_vk = NULL;
+
+	assert(ret_erase_slot_on_error);
+
+	if (new_digest < 0)
+		return -EINVAL;
+
+	/* block data device for filesystem mount or device activation */
+	r = device_open_excl(cd, crypt_data_device(cd), O_RDONLY);
+	if (r < 0) {
+		if (r == -EBUSY)
+			log_err(cd,_("Failed to open %s in exclusive mode (already mapped or mounted)."),
+				device_path(crypt_data_device(cd)));
+		return -EINVAL;
+	}
+
+	/* block all opal operations by libcryptsetup */
+	r = opal_exclusive_lock(cd, crypt_data_device(cd), &opal_lock);
+	if (r < 0) {
+		device_release_excl(cd, crypt_data_device(cd));
+		return r;
+	}
+
+	/* keep the mda locked for the whole operation */
+	r = LUKS2_device_write_lock(cd, hdr, crypt_metadata_device(cd));
+	if (r < 0) {
+		opal_exclusive_unlock(cd, opal_lock);
+		device_release_excl(cd, crypt_data_device(cd));
+		return r;
+	}
+
+	r = LUKS2_get_opal_segment_number(hdr, CRYPT_DEFAULT_SEGMENT, &segment_number);
+	if (r < 0)
+		goto out;
+
+	r = LUKS2_split_crypt_and_opal_keys(cd, hdr, vk, NULL, &old_opal_vk);
+	if (r < 0)
+		goto out;
+	r = LUKS2_split_crypt_and_opal_keys(cd, hdr, new_vk, NULL, &new_opal_vk);
+	if (r < 0)
+		goto out;
+
+	p_old_opal_key = old_opal_vk ?: vk;
+	p_new_opal_key = new_opal_vk ?: new_vk;
+
+	/* We do not want data to be accessible for devices unlocked using old OPAL pin */
+	r = opal_range_check_locked(cd,	crypt_data_device(cd), segment_number, p_old_opal_key,
+				    &read_locked, &write_locked);
+	if (r < 0)
+		goto out;
+
+	if (!read_locked || !write_locked) {
+		log_err(cd, _("OPAL range %d is not locked."), segment_number);
+		r = -EINVAL;
+		goto out;
+	}
+
+	/* Remove any assignments in memory only */
+	r = LUKS2_digest_segment_assign(cd, hdr, CRYPT_DEFAULT_SEGMENT, CRYPT_ANY_DIGEST, 0, 0);
+	if (r < 0)
+		goto out;
+
+	r = opal_change_pin(cd, crypt_data_device(cd), segment_number, p_old_opal_key, p_new_opal_key);
+	if (r < 0)
+		goto out;
+
+	/*
+	 * If the metadata update fails we must not delete new keyslot. Otherwise repair would
+	 * be impossible.
+	 */
+	*ret_erase_slot_on_error = false;
+
+	r = LUKS2_digest_segment_assign(cd, hdr, CRYPT_DEFAULT_SEGMENT, new_digest, 1, 1);
+out:
+	crypt_free_volume_key(old_opal_vk);
+	crypt_free_volume_key(new_opal_vk);
+
+	device_write_unlock(cd, crypt_metadata_device(cd));
+	opal_exclusive_unlock(cd, opal_lock);
+	device_release_excl(cd, crypt_data_device(cd));
+
+	return r;
 }

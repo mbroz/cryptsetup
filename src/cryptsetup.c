@@ -3312,6 +3312,224 @@ static int action_reencrypt(void)
 	return reencrypt(action_argc, action_argv);
 }
 
+static int try_change_opal_pin(struct crypt_device *cd,
+	int keyslot_existing,
+	int keyslot_new,
+	struct crypt_keyslot_context *kc,
+	struct crypt_keyslot_context *kc_new,
+	bool pin_provided,
+	bool new_pin_provided,
+	uint32_t flags)
+{
+	int r;
+
+	r = crypt_keyslot_change_hw_opal_pin_by_keyslot_context(cd, keyslot_existing, kc, keyslot_new, kc_new, flags);
+	if (crypt_keyslot_context_get_type(kc) == CRYPT_KC_TYPE_TOKEN)
+		tools_token_error_msg(crypt_keyslot_context_get_error(kc), ARG_STR(OPT_TOKEN_TYPE_ID),
+				      ARG_INT32(OPT_TOKEN_ID_ID), pin_provided);
+	if (crypt_keyslot_context_get_type(kc_new) == CRYPT_KC_TYPE_TOKEN)
+		tools_token_error_msg(crypt_keyslot_context_get_error(kc_new), NULL,
+				      ARG_INT32(OPT_NEW_TOKEN_ID_ID), new_pin_provided);
+	return r;
+}
+
+static int action_luksChangePin(void)
+{
+	char *key, *vk_description;
+	int hw_enc, keysize, keyslot_old, keyslot_new, r;
+	crypt_status_hw_encryption_info ci;
+	struct crypt_device *cd = NULL;
+	bool pin_provided = false;
+	struct crypt_keyslot_context *p_kc_new = NULL, *kc = NULL, *kc_new = NULL;
+	uint32_t changepin_flags = 0;
+
+	keyslot_old = ARG_INT32(OPT_KEY_SLOT_ID);
+	keyslot_new = ARG_INT32(OPT_NEW_KEY_SLOT_ID);
+
+	if ((r = crypt_init(&cd, uuid_or_device_header(NULL))))
+		goto out;
+
+	if ((r = crypt_load(cd, CRYPT_LUKS2, NULL))) {
+		log_err(_("Device %s is not a valid LUKS2 device."),
+			uuid_or_device_header(NULL));
+		goto out;
+	}
+
+	hw_enc = crypt_get_hw_encryption_type(cd);
+	if (hw_enc < 0) {
+		r = hw_enc;
+		goto out;
+	}
+
+	if (hw_enc == CRYPT_SW_ONLY) {
+		log_err(_("Device %s is not configured to use OPAL."),
+			crypt_get_metadata_device_name(cd) ?: crypt_get_device_name(cd));
+		r = -EINVAL;
+		goto out;
+	}
+
+	if (ARG_SET(OPT_VOLUME_KEY_RESET_ID) && (hw_enc == CRYPT_OPAL_HW_ONLY)) {
+		log_err(_("Option --volume-key-reset cannot be used with HW OPAL only encryption."));
+		r = -EINVAL;
+		goto out;
+	}
+
+	/* detached header case. Check the data device */
+	ci = crypt_status_hw_encryption(cd);
+	if (ci == CRYPT_HW_INVALID || ci == CRYPT_HW_OTHER) {
+		log_err(_("Device %s or kernel does not support OPAL2 encryption."),
+			crypt_get_device_name(cd));
+		r = -EINVAL;
+		goto out;
+	}
+
+	if (ARG_SET(OPT_EXTERNAL_TOKENS_PATH_ID)) {
+		r = crypt_token_set_external_path(ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+		if (r < 0) {
+			log_err(_("Failed to set external tokens path %s."),
+				ARG_STR(OPT_EXTERNAL_TOKENS_PATH_ID));
+			goto out;
+		}
+	}
+
+	r = _set_keyslot_encryption_params(cd);
+	if (r < 0)
+		goto out;
+
+	if (ARG_SET(OPT_VOLUME_KEY_RESET_ID)) {
+		if (!ARG_SET(OPT_BATCH_MODE_ID) &&
+		    !yesDialog(_("This will also reset SW volume key (media encryption key)\n"
+				"The encrypted data stored on device will be LOST.\n"
+			        "This operation is equivalent to luksFormat action except\n"
+				"the Admin PIN will not be required.\n"),
+				_("Operation aborted, the volume key, nor OPAL PIN were changed.\n"))) {
+			r = -EPERM;
+			goto out;
+		}
+
+		changepin_flags |= CRYPT_VOLUME_KEY_RESET;
+	}
+
+	/* Never call pwquality if using null cipher */
+	if (crypt_is_cipher_null(crypt_get_cipher(cd)))
+		ARG_SET_TRUE(OPT_FORCE_PASSWORD_ID);
+
+	keysize = crypt_get_volume_key_size(cd);
+	r = set_pbkdf_params(cd, crypt_get_type(cd));
+	if (r) {
+		log_err(_("Failed to set pbkdf parameters."));
+		goto out;
+	}
+
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		if (!keysize && !ARG_SET(OPT_KEY_SIZE_ID)) {
+			log_err(_("Cannot determine volume key size for LUKS without keyslots, please use --key-size option."));
+			r = -EINVAL;
+			goto out;
+		} else if (!keysize)
+			keysize = ARG_UINT32(OPT_KEY_SIZE_ID) / 8;
+
+		r = tools_read_vk(ARG_STR(OPT_VOLUME_KEY_FILE_ID), &key, keysize);
+		if (r < 0)
+			goto out;
+
+		r = crypt_volume_key_verify(cd, key, keysize);
+		if (r == -EPERM)
+			log_err(_("Volume key does not match the volume."));
+		check_signal(&r);
+		if (r < 0) {
+			crypt_safe_free(key);
+			goto out;
+		}
+		r = crypt_keyslot_context_init_by_volume_key(cd, key, keysize, &kc);
+		crypt_safe_free(key);
+	} else if (ARG_SET(OPT_VOLUME_KEY_KEYRING_ID)) {
+		r = tools_parse_vk_description(ARG_STR(OPT_VOLUME_KEY_KEYRING_ID), &vk_description);
+		if (r < 0)
+			goto out;
+		r = crypt_keyslot_context_init_by_vk_in_keyring(cd, vk_description, &kc);
+		free(vk_description);
+		if (r < 0)
+			goto out;
+		r = crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0);
+		if (r == -EPERM)
+			log_err(_("Volume key does not match the volume."));
+	} else if (ARG_SET(OPT_TOKEN_ID_ID) || ARG_SET(OPT_TOKEN_TYPE_ID) || ARG_SET(OPT_TOKEN_ONLY_ID)) {
+		r = crypt_keyslot_context_init_by_token(cd,
+				ARG_INT32(OPT_TOKEN_ID_ID),
+				ARG_STR(OPT_TOKEN_TYPE_ID),
+				NULL, 0, NULL, &kc);
+	} else {
+		r = luks_init_keyslot_context(cd, _("Enter any existing passphrase: "),
+					      verify_passphrase(0), false, &kc);
+		if (r < 0)
+			goto out;
+
+		/* Check password before asking for new one */
+		r = crypt_activate_by_keyslot_context(cd, NULL, keyslot_old, kc, CRYPT_ANY_SLOT, NULL, 0);
+		check_signal(&r);
+		tools_passphrase_msg(r);
+		if (r < 0)
+			goto out;
+		keyslot_old = r;
+		tools_keyslot_msg(keyslot_old, UNLOCKED);
+	}
+
+	if (r < 0)
+		goto out;
+
+	if (ARG_SET(OPT_NEW_TOKEN_ID_ID)) {
+		if (ARG_INT32(OPT_NEW_TOKEN_ID_ID) == ARG_INT32(OPT_TOKEN_ID_ID))
+			p_kc_new = kc;
+		else {
+			r = crypt_keyslot_context_init_by_token(cd,
+					ARG_INT32(OPT_NEW_TOKEN_ID_ID),
+					NULL, NULL, 0, NULL, &kc_new);
+			p_kc_new = kc_new;
+		}
+	} else
+		r = init_new_keyslot_context(cd, _("Enter new passphrase for key slot: "),
+					 verify_passphrase(1), !ARG_SET(OPT_FORCE_PASSWORD_ID), &kc_new);
+	if (r < 0)
+		goto out;
+
+	if (!p_kc_new)
+		p_kc_new = kc_new;
+
+	r = try_change_opal_pin(cd, keyslot_old, keyslot_new, kc, p_kc_new,
+				false, false, changepin_flags);
+	if (r >= 0 || r != -ENOANO)
+		goto out;
+
+	if (crypt_keyslot_context_get_error(kc) == -ENOANO) {
+		r = _ask_for_pin(cd, ARG_INT32(OPT_TOKEN_ID_ID), kc);
+		if (r < 0)
+			goto out;
+
+		pin_provided = true;
+
+		r = try_change_opal_pin(cd, keyslot_old, keyslot_new, kc, p_kc_new,
+					pin_provided, false, changepin_flags);
+		if (r >= 0 || r != -ENOANO)
+			goto out;
+	}
+
+	if (crypt_keyslot_context_get_error(p_kc_new) == -ENOANO) {
+		r = _ask_for_pin(cd, ARG_INT32(OPT_NEW_TOKEN_ID_ID), p_kc_new);
+		if (r < 0)
+			goto out;
+		r = try_change_opal_pin(cd, keyslot_old, keyslot_new, kc, p_kc_new,
+					pin_provided, true, changepin_flags);
+	}
+out:
+	tools_keyslot_msg(r, CREATED);
+	crypt_keyslot_context_free(kc);
+	crypt_keyslot_context_free(kc_new);
+	crypt_free(cd);
+
+	return r;
+}
+
 static const char *verify_tcryptdump(void)
 {
 	if ((ARG_SET(OPT_TCRYPT_HIDDEN_ID) || ARG_SET(OPT_TCRYPT_SYSTEM_ID) || ARG_SET(OPT_TCRYPT_BACKUP_ID)) && (!device_type || strcmp(device_type, "tcrypt")))
@@ -3528,6 +3746,7 @@ static struct action_type {
 	{ HEADERBACKUP_ACTION,	action_luksBackup,	NULL,			1, N_("<device>"), N_("Backup LUKS device header and keyslots") },
 	{ HEADERRESTORE_ACTION,	action_luksRestore,	NULL,			1, N_("<device>"), N_("Restore LUKS device header and keyslots") },
 	{ TOKEN_ACTION,		action_token,		verify_token,		2, N_("<add|remove|import|export> <device>"), N_("Manipulate LUKS2 tokens") },
+	{ CHANGEPIN_ACTION,	action_luksChangePin,	NULL,			1, N_("<device>"), N_("Reset HW OPAL User PIN") },
 	{}
 };
 
