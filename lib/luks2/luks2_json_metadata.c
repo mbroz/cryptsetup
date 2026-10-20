@@ -2804,10 +2804,19 @@ int LUKS2_activate(struct crypt_device *cd,
 					crypt_get_integrity(cd) ?: "none",
 					crypt_get_integrity_key_size(cd, true), crypt_get_integrity_tag_size(cd),
 					crypt_get_sector_size(cd));
-	} else
+	} else if (opal_key && LUKS2_segment_is_hw_opal_only(hdr, CRYPT_DEFAULT_SEGMENT)) {
 		r = dm_linear_target_set(&dmd.segment, 0,
 					 dmd.size, crypt_data_device(cd),
 					 crypt_get_data_offset(cd));
+	} else {
+		/*
+		 * Segment type is not authenticated by the volume key digest,
+		 * never map data segment unencrypted (linear) here. It is valid
+		 * only for hw-opal only device or in reencryption.
+		 */
+		log_err(cd, _("Unsupported data segment type for LUKS2 device activation."));
+		r = -EINVAL;
+	}
 
 	if (r < 0)
 		goto out;
