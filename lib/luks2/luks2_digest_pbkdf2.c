@@ -44,15 +44,17 @@ static int PBKDF2_digest_verify(struct crypt_device *cd,
 				json_object_get_string_len(jobj1));
 	if (r < 0)
 		goto out;
+
+	r = -EINVAL;
 	if (len != LUKS_SALTSIZE)
 		goto out;
-
 	if (!json_object_object_get_ex(jobj_digest, "digest", &jobj1))
 		goto out;
 	r = crypt_base64_decode(&mkDigest, &len, json_object_get_string(jobj1),
 				json_object_get_string_len(jobj1));
 	if (r < 0)
 		goto out;
+	r = -EINVAL;
 	if (len < LUKS_DIGESTSIZE ||
 	    len > sizeof(checkHashBuf) ||
 	    (len != LUKS_DIGESTSIZE && len != (size_t)crypt_hash_size(hashSpec)))
