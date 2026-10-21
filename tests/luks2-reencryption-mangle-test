@@ -419,6 +419,23 @@ img_prepare
 img_update_json 'del(.digests."2")'
 img_check_fail_repair_ok
 
+# Malformed digest must never pass verification.
+img_prepare
+img_update_json 'del(.digests."2".digest)'
+img_check_fail
+
+img_prepare
+img_update_json '.digests."2".digest = ""'
+img_check_fail
+
+img_prepare
+img_update_json '.digests."2".salt = "AAAA"'
+img_check_fail
+
+img_prepare
+img_update_json 'del(.digests."0".digest)'
+img_check_fail
+
 img_prepare '--reduce-device-size 2M'
 img_update_json '.keyslots."2".area.shift_size = ((.keyslots."2".area.shift_size|tonumber / 2)|tostring)'
 img_check_fail

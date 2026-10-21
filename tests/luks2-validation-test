@@ -200,6 +200,8 @@ RUN luks2-missing-segment-referenced-in-digest.img	"F" "Failed to detect missing
 RUN luks2-missing-keyslot-referenced-in-token.img	"F" "Failed to detect missing keyslots referenced in token"
 RUN luks2-keyslot-missing-digest.img			"F" "Failed to detect missing keyslot digest."
 RUN luks2-keyslot-too-many-digests.img			"F" "Failed to detect keyslot has too many digests."
+RUN luks2-digest-missing-digest.img			"F" "Failed to detect missing digest field in pbkdf2 digest."
+RUN luks2-digest-missing-salt.img			"F" "Failed to detect missing salt field in pbkdf2 digest."
 
 echo "[4] Test integers value limits"
 RUN luks2-uint64-max-segment-size.img			"R" "Validation rejected correct value"
