@@ -464,6 +464,31 @@ img_prepare
 img_update_json '.segments."2".encryption = "aes-cbc-null"'
 img_check_fail
 
+# Backup segment flags must be unique
+img_prepare
+img_update_json '
+	.segments."3" = {
+		"type" : "linear",
+		"offset" : .segments."0".offset,
+		"size" : "dynamic",
+		"flags" : ["backup-final"]
+	}'
+img_check_fail
+
+img_prepare
+img_update_json '
+	.segments."3" = {
+		"type" : "linear",
+		"offset" : .segments."0".offset,
+		"size" : "dynamic",
+		"flags" : ["backup-previous"]
+	}'
+img_check_fail
+
+img_prepare
+img_update_json '.segments."2".flags = ["backup-final", "backup-previous"]'
+img_check_fail
+
 # Mangling digests
 img_prepare
 img_update_json '
