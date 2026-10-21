@@ -988,7 +988,8 @@ static int hdr_validate_areas(struct crypt_device *cd, json_object *hdr_jobj)
 
 static int hdr_validate_digests(struct crypt_device *cd, json_object *hdr_jobj)
 {
-	json_object *jarr_keys, *jarr_segs, *jobj, *jobj_keyslots, *jobj_segments;
+	json_object *jarr_keys, *jarr_segs, *jobj, *jobj_keyslots, *jobj_segments, *jobj_type;
+	const char *type;
 
 	if (!(jobj = json_contains(cd, hdr_jobj, "", "JSON area", "digests", json_type_object)))
 		return 1;
@@ -1005,9 +1006,18 @@ static int hdr_validate_digests(struct crypt_device *cd, json_object *hdr_jobj)
 		if (!numbered_id(cd, "Digest", key, LUKS2_DIGEST_MAX))
 			return 1;
 
-		if (!json_contains_string(cd, val, key, "Digest", "type") ||
+		if (!(jobj_type = json_contains_string(cd, val, key, "Digest", "type")) ||
 		    !(jarr_keys = json_contains(cd, val, key, "Digest", "keyslots", json_type_array)) ||
 		    !(jarr_segs = json_contains(cd, val, key, "Digest", "segments", json_type_array)))
+			return 1;
+		type = json_object_get_string(jobj_type);
+
+		/* PBKDF2 digest must be complete */
+		if (!strcmp(type, "pbkdf2") &&
+		    (!json_contains_string(cd, val, key, "Digest", "hash") ||
+		     !json_contains(cd, val, key, "Digest", "iterations", json_type_int) ||
+		     !json_contains_string(cd, val, key, "Digest", "salt") ||
+		     !json_contains_string(cd, val, key, "Digest", "digest")))
 			return 1;
 
 		if (!validate_keyslots_array(cd, jarr_keys, jobj_keyslots))
