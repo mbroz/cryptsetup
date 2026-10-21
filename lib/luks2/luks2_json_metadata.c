@@ -644,7 +644,8 @@ static int reqs_inline_hw_tags(uint32_t reqs)
  */
 static int validate_reencrypt_segments(struct crypt_device *cd, json_object *hdr_jobj, json_object *jobj_segments, int first_backup, int segments_count)
 {
-	json_object *jobj, *jobj_backup_previous = NULL, *jobj_backup_final = NULL;
+	json_object *jobj, *jobj_backup_previous = NULL, *jobj_backup_final = NULL,
+		    *jobj_backup_moved = NULL;
 	uint32_t reqs;
 	int i;
 	struct luks2_hdr dummy = {
@@ -654,18 +655,47 @@ static int validate_reencrypt_segments(struct crypt_device *cd, json_object *hdr
 	LUKS2_config_get_requirements(cd, &dummy, &reqs);
 
 	if (reqs_reencrypt_online(reqs)) {
+		/*
+		 * Backup segments are looked up by flag elsewhere (reencryption
+		 * digest, reencryption context), each flag must identify
+		 * exactly one segment.
+		 */
 		for (i = first_backup; i < segments_count; i++) {
 			jobj = json_segments_get_segment(jobj_segments, i);
 			if (!jobj)
 				return 1;
-			if (json_segment_contains_flag(jobj, "backup-final", 0))
+			if (json_segment_contains_flag(jobj, "backup-final", 0)) {
+				if (jobj_backup_final) {
+					log_dbg(cd, "Too many backup final segments.");
+					return 1;
+				}
 				jobj_backup_final = jobj;
-			else if (json_segment_contains_flag(jobj, "backup-previous", 0))
+			}
+			if (json_segment_contains_flag(jobj, "backup-previous", 0)) {
+				if (jobj_backup_previous) {
+					log_dbg(cd, "Too many backup previous segments.");
+					return 1;
+				}
 				jobj_backup_previous = jobj;
+			}
+			if (json_segment_contains_flag(jobj, "backup-moved-segment", 0)) {
+				if (jobj_backup_moved) {
+					log_dbg(cd, "Too many backup moved segments.");
+					return 1;
+				}
+				jobj_backup_moved = jobj;
+			}
 		}
 
 		if (!jobj_backup_final || !jobj_backup_previous) {
 			log_dbg(cd, "Backup segment is missing.");
+			return 1;
+		}
+
+		if (jobj_backup_final == jobj_backup_previous ||
+		    jobj_backup_final == jobj_backup_moved ||
+		    jobj_backup_previous == jobj_backup_moved) {
+			log_dbg(cd, "Backup segment has conflicting flags.");
 			return 1;
 		}
 
