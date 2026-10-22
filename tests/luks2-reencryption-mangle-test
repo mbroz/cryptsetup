@@ -516,6 +516,50 @@ img_update_json '
 	.digests."1".segments = ["0","3"]'
 img_check_ok
 
+# Plaintext segment must not match any backup segment
+img_prepare
+img_update_json '
+	.segments = {
+		"0" : (.segments."0" +
+			{"size" : ((1 * 1024 * 1024)|tostring)}),
+		"1" : {"type" : "linear", "offset" : ((17 * 1024 * 1024)|tostring), "size" : "dynamic"},
+		"2" : .segments."1",
+		"3" : .segments."2"
+	} |
+	.digests."0".segments = ["0","2"] |
+	.digests."1".segments = ["3"]'
+img_check_fail
+
+# The same, hidden as backup segment by regular segment stored first but numbered last
+img_prepare
+img_update_json '
+	.segments = {
+		"4" : {"type" : "linear", "offset" : .segments."0".offset, "size" : "512"},
+		"0" : (.segments."0" +
+			{"size" : ((1 * 1024 * 1024)|tostring)}),
+		"1" : {"type" : "linear", "offset" : ((17 * 1024 * 1024)|tostring), "size" : "dynamic", "flags" : ["backup-x"]},
+		"2" : .segments."1",
+		"3" : .segments."2"
+	} |
+	.digests."0".segments = ["0","2"] |
+	.digests."1".segments = ["3"]'
+img_check_fail
+
+# The same, matching duplicate backup segment not covered by reencryption digest
+img_prepare
+img_update_json '
+	.segments = {
+		"0" : (.segments."0" +
+			{"size" : ((1 * 1024 * 1024)|tostring)}),
+		"1" : {"type" : "linear", "offset" : ((17 * 1024 * 1024)|tostring), "size" : "dynamic"},
+		"2" : .segments."1",
+		"3" : .segments."2",
+		"4" : {"type" : "linear", "offset" : .segments."0".offset, "size" : "512", "flags" : ["backup-final"]}
+	} |
+	.digests."0".segments = ["0","2"] |
+	.digests."1".segments = ["3"]'
+img_check_fail
+
 # Mangling keyslots
 
 # Set reencrypt slot to non-ignore priority
