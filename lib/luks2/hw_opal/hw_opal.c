@@ -399,6 +399,7 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 	assert(vk);
 	assert(check_offset_sectors);
 	assert(check_length_sectors);
+	assert(crypt_volume_key_length(vk) <= OPAL_KEY_LEN_MAX);
 
 	r = opal_geometry_fd(cd, fd, NULL, &opal_block_bytes, NULL, NULL);
 	if (r != OPAL_STATUS_SUCCESS)
@@ -1080,11 +1081,10 @@ int opal_setup_ranges(struct crypt_device *cd,
 	assert(dev);
 	assert(vk);
 	assert(admin_key);
-	assert(crypt_volume_key_length(vk) <= OPAL_KEY_LEN_MAX);
 	assert(opal_block_bytes >= SECTOR_SIZE);
 	assert(r_opal_req_version);
 
-	if (admin_key_len > OPAL_KEY_LEN_MAX)
+	if (admin_key_len > OPAL_KEY_LEN_MAX || crypt_volume_key_length(vk) > OPAL_KEY_LEN_MAX)
 		return -EINVAL;
 
 	if (((UINT64_MAX / opal_block_bytes) < range_start_blocks) ||
@@ -1234,7 +1234,7 @@ static int opal_lock_unlock(struct crypt_device *cd,
 
 	if (opal_supported(cd, dev) <= 0)
 		return -ENOTSUP;
-	if (!lock && !vk)
+	if (!lock && (!vk || crypt_volume_key_length(vk) > OPAL_KEY_LEN_MAX))
 		return -EINVAL;
 
 	fd = device_open(cd, dev, O_RDONLY);
@@ -1255,8 +1255,6 @@ static int opal_lock_unlock(struct crypt_device *cd,
 	};
 
 	if (!lock) {
-		assert(crypt_volume_key_length(vk) <= OPAL_KEY_LEN_MAX);
-
 		unlock->session.opal_key.key_len = crypt_volume_key_length(vk);
 		crypt_safe_memcpy(unlock->session.opal_key.key, crypt_volume_key_get_key(vk),
 				  crypt_volume_key_length(vk));
@@ -1549,6 +1547,9 @@ int opal_range_check_attributes_and_get_lock_state(struct crypt_device *cd,
 	assert(cd);
 	assert(dev);
 	assert(vk);
+
+	if (crypt_volume_key_length(vk) > OPAL_KEY_LEN_MAX)
+		return -EINVAL;
 
 	fd = device_open(cd, dev, O_RDONLY);
 	if (fd < 0)
