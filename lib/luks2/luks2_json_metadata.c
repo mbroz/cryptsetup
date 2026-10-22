@@ -793,15 +793,9 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 
 		if (crypt_str_to_int(key, &i) < 0)
 			return 1;
-		if (json_segment_is_backup(val)) {
-			if (first_backup < 0 || i < first_backup)
-				first_backup = i;
-		} else {
-			if ((first_backup >= 0) && i >= first_backup) {
-				log_dbg(cd, "Regular segment at %d is behind backup segment at %d", i, first_backup);
-				return 1;
-			}
-		}
+
+		if (json_segment_is_backup(val) && (first_backup < 0 || i < first_backup))
+			first_backup = i;
 
 		/* crypt */
 		if (!strcmp(json_object_get_string(jobj_type), "crypt") &&
@@ -874,9 +868,15 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 	if (r)
 		return 1;
 
+	/* all segments behind first backup segment must be backup segments as well */
 	for (; i < count; i++) {
-		if (!json_segments_get_segment(jobj_segments, i)) {
+		jobj = json_segments_get_segment(jobj_segments, i);
+		if (!jobj) {
 			log_dbg(cd, "Gap at key %d in segments object.", i);
+			return 1;
+		}
+		if (!json_segment_is_backup(jobj)) {
+			log_dbg(cd, "Regular segment at %d is behind backup segment at %d", i, first_backup);
 			return 1;
 		}
 	}
