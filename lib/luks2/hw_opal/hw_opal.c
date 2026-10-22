@@ -31,6 +31,14 @@
 #include <linux/sed-opal.h>
 #include <linux/fs.h>
 
+/*
+ * The key array in struct opal_key is OPAL_KEY_MAX (256 bytes) long, but the
+ * key_len member is __u8, max value 255, so OPAL_KEY_MAX would be truncated to empty key.
+ */
+#define OPAL_KEY_LEN_MAX UINT8_MAX
+/* Never use OPAL_KEY_MAX in hw_opal.c again */
+#undef OPAL_KEY_MAX
+
 /* Error codes are defined in the specification:
  * TCG_Storage_Architecture_Core_Spec_v2.01_r1.00
  * Section 5.1.5: Method Status Codes
@@ -456,10 +464,10 @@ int opal_setup_ranges(struct crypt_device *cd,
 	assert(dev);
 	assert(vk);
 	assert(admin_key);
-	assert(crypt_volume_key_length(vk) <= OPAL_KEY_MAX);
+	assert(crypt_volume_key_length(vk) <= OPAL_KEY_LEN_MAX);
 	assert(opal_block_bytes >= SECTOR_SIZE);
 
-	if (admin_key_len > OPAL_KEY_MAX)
+	if (admin_key_len > OPAL_KEY_LEN_MAX)
 		return -EINVAL;
 
 	if (((UINT64_MAX / opal_block_bytes) < range_start_blocks) ||
@@ -752,7 +760,7 @@ static int opal_lock_unlock(struct crypt_device *cd,
 		return -EIO;
 
 	if (!lock) {
-		assert(crypt_volume_key_length(vk) <= OPAL_KEY_MAX);
+		assert(crypt_volume_key_length(vk) <= OPAL_KEY_LEN_MAX);
 
 		unlock.session.opal_key.key_len = crypt_volume_key_length(vk);
 		crypt_safe_memcpy(unlock.session.opal_key.key, crypt_volume_key_get_key(vk),
@@ -843,7 +851,7 @@ int opal_factory_reset(struct crypt_device *cd,
 	assert(dev);
 	assert(password);
 
-	if (password_len > OPAL_KEY_MAX)
+	if (password_len > OPAL_KEY_LEN_MAX)
 		return -EINVAL;
 
 	/*
@@ -897,7 +905,7 @@ int opal_reset_segment(struct crypt_device *cd,
 	assert(dev);
 	assert(password);
 
-	if (password_len > OPAL_KEY_MAX)
+	if (password_len > OPAL_KEY_LEN_MAX)
 		return -EINVAL;
 
 	if (opal_enabled(cd, dev) <= 0)
