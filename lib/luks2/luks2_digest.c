@@ -97,20 +97,101 @@ int LUKS2_digest_by_keyslot(struct luks2_hdr *hdr, int keyslot)
 	return -ENOENT;
 }
 
+/*
+ * The digest assigned to OPAL segment is calculated from the volume key together
+ * with the segment metadata. Legacy OPAL metadata (digest of the volume key only)
+ * triggers warning or rejects it completely, see LUKS2_split_crypt_and_opal_keys().
+*/
+static int digest_opal_data(struct luks2_hdr *hdr,
+	int digest,
+	const struct volume_key *vk,
+	struct volume_key **r_data)
+{
+	uint8_t version;
+
+	*r_data = NULL;
+
+	if (!LUKS2_segment_is_hw_opal(hdr, CRYPT_DEFAULT_SEGMENT) ||
+	    LUKS2_digest_by_segment(hdr, CRYPT_DEFAULT_SEGMENT) != digest ||
+	    LUKS2_config_get_opal_version(hdr, &version) ||
+	    version < LUKS2_OPAL_DIGEST_REQ_VERSION)
+		return 0;
+
+	return LUKS2_opal_assembly_verification_data(hdr, vk, version, r_data);
+}
+
 static int digest_verify(struct crypt_device *cd,
 	const digest_handler *h,
 	int digest,
 	const struct volume_key *vk)
 {
 	int r;
+	struct volume_key *opal_data;
+
+	r = digest_opal_data(crypt_get_hdr(cd, CRYPT_LUKS2), digest, vk, &opal_data);
+	if (r < 0)
+		return r;
+
+	if (opal_data)
+		vk = opal_data;
 
 	r = h->verify(cd, digest, crypt_volume_key_get_key(vk), crypt_volume_key_length(vk));
+	crypt_free_volume_key(opal_data);
 	if (r < 0) {
 		log_dbg(cd, "Digest %d (%s) verify failed with %d.", digest, h->name, r);
 		return r;
 	}
 
 	return digest;
+}
+
+/*
+ * Recalculates the digest assigned to OPAL segment so that it covers also
+ * the segment metadata. The digest id and its assignments are preserved.
+ */
+int LUKS2_digest_opal_update(struct crypt_device *cd,
+	struct luks2_hdr *hdr,
+	const struct volume_key *vk)
+{
+	const digest_handler *h;
+	int digest, r;
+	json_object *jobj_digest, *jobj_keyslots, *jobj_segments;
+	struct volume_key *opal_data;
+
+	digest = LUKS2_digest_by_segment(hdr, CRYPT_DEFAULT_SEGMENT);
+	if (digest < 0)
+		return digest;
+
+	h = LUKS2_digest_handler(cd, digest);
+	if (!h)
+		return -EINVAL;
+
+	r = digest_opal_data(hdr, digest, vk, &opal_data);
+	if (r < 0)
+		return r;
+	if (!opal_data)
+		return -EINVAL;
+
+	/* digest store resets keyslots and segments assignments, keep them */
+	jobj_digest = LUKS2_get_digest_jobj(hdr, digest);
+	if (!json_object_object_get_ex(jobj_digest, "keyslots", &jobj_keyslots) ||
+	    !json_object_object_get_ex(jobj_digest, "segments", &jobj_segments)) {
+		crypt_free_volume_key(opal_data);
+		return -EINVAL;
+	}
+	json_object_get(jobj_keyslots);
+	json_object_get(jobj_segments);
+
+	log_dbg(cd, "Updating digest %d (%s) assigned to OPAL segment.", digest, h->name);
+
+	r = h->store(cd, digest, crypt_volume_key_get_key(opal_data),
+		     crypt_volume_key_length(opal_data));
+	crypt_free_volume_key(opal_data);
+
+	json_object_object_add(jobj_digest, "keyslots", jobj_keyslots);
+	json_object_object_add(jobj_digest, "segments", jobj_segments);
+
+	return r;
 }
 
 int LUKS2_digest_verify_by_digest(struct crypt_device *cd,

@@ -46,6 +46,7 @@ option('kernel_crypto', type : 'boolean', description : 'kernel userspace crypto
 option('keyring', type : 'boolean', description : 'kernel keyring support and builtin kernel keyring token', value : true)
 option('luks2-external-tokens-path', type : 'string', description : 'path to directory with LUKSv2 external token handlers (plugins)')
 option('luks2-reencryption', type : 'boolean', description : 'LUKS2 online reencryption extension', value : true)
+option('enforce-opal-segment-digest', type : 'boolean', description : 'Enforce LUKS2 OPAL segment verification upon activation', value : false)
 option('luks_adjust_xts_keysize', type : 'boolean', description : 'XTS mode requires two keys, double default LUKS keysize if needed', value : true)
 option('nls', type : 'boolean', description : 'use Native Language Support', value : true)
 option('passwdqc', type : 'string', description : 'enable password quality checking using passwdqc library (optionally with CONFIG_PATH)', value : 'false')

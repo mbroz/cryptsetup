@@ -2505,11 +2505,6 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	if (r < 0)
 		goto out;
 
-	log_dbg(cd, "Adding LUKS2 OPAL requirement flag.");
-	r = LUKS2_config_set_requirement_version(cd, &cd->u.luks2.hdr, CRYPT_REQUIREMENT_OPAL, 1, false);
-	if (r < 0)
-		goto out;
-
 	if (params->label || params->subsystem) {
 		r = LUKS2_hdr_labels(cd, &cd->u.luks2.hdr,
 				     params->label, params->subsystem, 0);
@@ -2549,6 +2544,16 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	}
 
 	opal_range_reset = true;
+
+	log_dbg(cd, "Adding LUKS2 OPAL requirement flag (version: %u).", LUKS2_OPAL_DIGEST_REQ_VERSION);
+	r = LUKS2_config_set_requirement_version(cd, &cd->u.luks2.hdr, CRYPT_REQUIREMENT_OPAL,
+						 LUKS2_OPAL_DIGEST_REQ_VERSION, false);
+	if (r < 0)
+		goto out;
+
+	r = LUKS2_digest_opal_update(cd, &cd->u.luks2.hdr, cd->volume_key);
+	if (r < 0)
+		goto out;
 
 	/* integrity metadata goes in unlocked OPAL locking range */
 	if (crypt_get_integrity_tag_size(cd)) {
@@ -3225,6 +3230,66 @@ int crypt_repair(struct crypt_device *cd,
 		crypt_set_null_type(cd);
 
 	return r;
+}
+
+int crypt_repair_opal(struct crypt_device *cd,
+			    int keyslot,
+			    struct crypt_keyslot_context *kc)
+{
+	int r;
+	uint8_t version;
+	struct luks2_hdr *hdr;
+	struct volume_key *vk = NULL;
+
+	assert(cd);
+
+	/* this will block unknown requirements */
+	if ((r = onlyLUKS2(cd)))
+		return r;
+
+	hdr = &cd->u.luks2.hdr;
+
+	if (!LUKS2_segment_is_hw_opal(hdr, CRYPT_DEFAULT_SEGMENT) ||
+	    LUKS2_config_get_opal_version(hdr, &version))
+		return -EINVAL;
+
+	/* Already repaired. Nothing to do */
+	if (version >= LUKS2_OPAL_DIGEST_REQ_VERSION)
+		return 0;
+
+	if (!kc)
+		return 1;
+
+	if (!kc->get_luks2_volume_key)
+		return -EINVAL;
+
+	log_dbg(cd, "Upgrading legacy LUKS2 OPAL metadata (version: %u).", version);
+
+	r = kc->get_luks2_volume_key(cd, kc, keyslot, &vk);
+	if (r < 0)
+		return r;
+
+	r = LUKS2_digest_verify_by_segment(cd, hdr, CRYPT_DEFAULT_SEGMENT, vk);
+	if (r < 0)
+		goto out;
+
+	/* legacy versions 1 is upgraded to 2 (base with digest) */
+	r = LUKS2_config_set_requirement_version(cd, hdr, CRYPT_REQUIREMENT_OPAL,
+						 LUKS2_OPAL_DIGEST_REQ_VERSION, false);
+	if (r < 0)
+		goto out;
+
+	r = LUKS2_digest_opal_update(cd, hdr, vk);
+	if (r < 0)
+		goto out;
+
+	r = LUKS2_hdr_write(cd, hdr);
+out:
+	crypt_free_volume_key(vk);
+	if (r < 0)
+		_luks2_rollback(cd);
+
+	return r < 0 ? r : 0;
 }
 
 /* compare volume keys */

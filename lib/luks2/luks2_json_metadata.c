@@ -1639,7 +1639,8 @@ static const struct requirement_flag requirements_flags[] = {
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 3, "online-reencrypt-v3" },
 	{ CRYPT_REQUIREMENT_ONLINE_REENCRYPT, 1, "online-reencrypt" },
 	{ CRYPT_REQUIREMENT_INLINE_HW_TAGS,   1, "inline-hw-tags" },
-	{ CRYPT_REQUIREMENT_OPAL,	      1, "opal" },
+	{ CRYPT_REQUIREMENT_OPAL,	      2, "opal-v2" },
+	{ CRYPT_REQUIREMENT_OPAL,	      1, "opal" }, /* metadata not authenticated */
 	{ 0, 0, NULL }
 };
 
@@ -3140,13 +3141,14 @@ int json_object_copy(json_object *jobj_src, json_object **jobj_dst)
 #endif
 }
 
-int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd __attribute__((unused)),
+int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd,
 		struct luks2_hdr *hdr,
 		const struct volume_key *vk,
 		struct volume_key **ret_crypt_key,
 		struct volume_key **ret_opal_key)
 {
 	int r;
+	uint8_t version;
 	uint32_t opal_segment_number;
 	size_t opal_user_key_size;
 	json_object *jobj_segment;
@@ -3158,6 +3160,21 @@ int LUKS2_split_crypt_and_opal_keys(struct crypt_device *cd __attribute__((unuse
 
 	jobj_segment = LUKS2_get_segment_jobj(hdr, CRYPT_DEFAULT_SEGMENT);
 	if (!jobj_segment)
+		return -EINVAL;
+
+	if (LUKS2_config_get_opal_version(hdr, &version) ||
+	    version < LUKS2_OPAL_DIGEST_REQ_VERSION) {
+		log_err(cd, _("LUKS2 OPAL segment metadata is not protected by digest."));
+		log_err(cd, _("Run \"cryptsetup repair\" to upgrade the metadata."));
+#if STRICT_OPAL_SEGMENT_POLICY
+		return -EINVAL;
+#else
+		log_err(cd, _("WARNING: OPAL segment digest verification not enforced, continuing."));
+#endif
+	}
+
+	if (crypt_volume_key_get_id(vk) < 0 ||
+	    crypt_volume_key_get_id(vk) != LUKS2_digest_by_segment(hdr, CRYPT_DEFAULT_SEGMENT))
 		return -EINVAL;
 
 	r = json_segment_get_opal_segment_id(jobj_segment, &opal_segment_number);

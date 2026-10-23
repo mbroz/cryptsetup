@@ -225,6 +225,11 @@ if get_option('luks2-reencryption')
         description: 'Use LUKS2 online reencryption extension')
 endif
 
+if get_option('enforce-opal-segment-digest')
+    conf.set10('STRICT_OPAL_SEGMENT_POLICY', true,
+        description: 'Enforce LUKS2 OPAL segment verification upon activation')
+endif
+
 # ==========================================================================
 
 popt = dependency('popt',

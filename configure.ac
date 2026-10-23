@@ -168,6 +168,14 @@ if test "x$enable_luks2_reencryption" = "xyes"; then
 	AC_DEFINE(USE_LUKS2_REENCRYPTION, 1, [Use LUKS2 online reencryption extension])
 fi
 
+dnl Enforce LUKS2 OPAL segment verification
+AC_ARG_ENABLE([enforce-opal-segment-digest],
+	AS_HELP_STRING([--enable-enforce-opal-segment-digest], [enforce LUKS2 OPAL segment verification upon device activation]),
+	[enforce_opal_segment_digest=yes], [])
+if test "x$enforce_opal_segment_digest" = "xyes"; then
+	AC_DEFINE(STRICT_OPAL_SEGMENT_POLICY, 1, [Enforce LUKS2 OPAL segment verification upon activation])
+fi
+
 dnl ==========================================================================
 
 AM_GNU_GETTEXT([external],[need-ngettext])
