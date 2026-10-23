@@ -59,6 +59,15 @@
 /* see reencrypt_assembly_verification_data() in luks2_reencrypt_digest.c */
 /*	LUKS2_REENCRYPT_MAX_VERSION         UINT8_C(207) */
 
+/*
+ * Supported OPAL requirement versions:
+ *
+ * OPAL requirement versions 1 is legacy. Since versions 2 (base)
+ * volume key digest protects also the OPAL segment metadata.
+ */
+#define LUKS2_OPAL_BASE_REQ_VERSION         UINT8_C(2)
+#define LUKS2_OPAL_SUM_REQ_VERSION          UINT8_C(3) /* Device is configured with SUM */
+
 struct device;
 struct luks2_reencrypt;
 struct reenc_protection;
@@ -351,6 +360,10 @@ int LUKS2_digest_by_segment(struct luks2_hdr *hdr, int segment);
 
 int LUKS2_digest_create(struct crypt_device *cd,
 	const char *type,
+	struct luks2_hdr *hdr,
+	const struct volume_key *vk);
+
+int LUKS2_digest_opal_update(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const struct volume_key *vk);
 

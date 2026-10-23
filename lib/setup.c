@@ -2346,7 +2346,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 			      struct crypt_params_luks2 *params,
 			      struct crypt_params_hw_opal *opal_params)
 {
-	bool opal_range_reset = false, subsystem_overridden = false, sector_size_autodetect = cipher != NULL;
+	bool sum_in_use, opal_range_reset = false, subsystem_overridden = false, sector_size_autodetect = cipher != NULL;
 	int r;
 	char cipher_spec[128];
 	const char *integrity = params ? params->integrity : NULL;
@@ -2587,7 +2587,7 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 					opal_block_bytes, opal_segment_number,
 					opal_params->admin_key, opal_params->admin_key_size,
 					!!(cd->compatibility & CRYPT_COMPAT_DISABLE_HW_OPAL_SUM),
-					&opal_requirement_version);
+					&sum_in_use);
 	if (r < 0) {
 		if (r == -EPERM)
 			log_err(cd, _("Incorrect OPAL Admin key."));
@@ -2598,9 +2598,15 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 
 	opal_range_reset = true;
 
+	opal_requirement_version = sum_in_use ? LUKS2_OPAL_SUM_REQ_VERSION : LUKS2_OPAL_BASE_REQ_VERSION;
+
 	log_dbg(cd, "Adding LUKS2 OPAL requirement flag (version: %u).", opal_requirement_version);
 	r = LUKS2_config_set_requirement_version(cd, &cd->u.luks2.hdr, CRYPT_REQUIREMENT_OPAL,
 						 opal_requirement_version, false);
+	if (r < 0)
+		goto out;
+
+	r = LUKS2_digest_opal_update(cd, &cd->u.luks2.hdr, cd->volume_key);
 	if (r < 0)
 		goto out;
 
@@ -3287,6 +3293,66 @@ int crypt_repair(struct crypt_device *cd,
 		crypt_set_null_type(cd);
 
 	return r;
+}
+
+int crypt_repair_opal(struct crypt_device *cd,
+			    int keyslot,
+			    struct crypt_keyslot_context *kc)
+{
+	int r;
+	uint8_t version;
+	struct luks2_hdr *hdr;
+	struct volume_key *vk = NULL;
+
+	assert(cd);
+
+	/* this will block unknown requirements */
+	if ((r = onlyLUKS2(cd)))
+		return r;
+
+	hdr = &cd->u.luks2.hdr;
+
+	if (!LUKS2_segment_is_hw_opal(hdr, CRYPT_DEFAULT_SEGMENT) ||
+	    LUKS2_config_get_opal_version(hdr, &version))
+		return -EINVAL;
+
+	/* Already repaired. Nothing to do */
+	if (version >= LUKS2_OPAL_BASE_REQ_VERSION)
+		return 0;
+
+	if (!kc)
+		return 1;
+
+	if (!kc->get_luks2_volume_key)
+		return -EINVAL;
+
+	log_dbg(cd, "Upgrading legacy LUKS2 OPAL metadata (version: %u).", version);
+
+	r = kc->get_luks2_volume_key(cd, kc, keyslot, &vk);
+	if (r < 0)
+		return r;
+
+	r = LUKS2_digest_verify_by_segment(cd, hdr, CRYPT_DEFAULT_SEGMENT, vk);
+	if (r < 0)
+		goto out;
+
+	/* legacy versions 1 is upgraded to 2 (base with digest) */
+	r = LUKS2_config_set_requirement_version(cd, hdr, CRYPT_REQUIREMENT_OPAL,
+						 LUKS2_OPAL_BASE_REQ_VERSION, false);
+	if (r < 0)
+		goto out;
+
+	r = LUKS2_digest_opal_update(cd, hdr, vk);
+	if (r < 0)
+		goto out;
+
+	r = LUKS2_hdr_write(cd, hdr);
+out:
+	crypt_free_volume_key(vk);
+	if (r < 0)
+		_luks2_rollback(cd);
+
+	return r < 0 ? r : 0;
 }
 
 /* compare volume keys */
@@ -6998,7 +7064,7 @@ int crypt_get_hw_opal_sum_enabled(struct crypt_device* cd)
 	if (LUKS2_config_get_opal_version(&cd->u.luks2.hdr, &version) < 0)
 		return -ENOTSUP;
 
-	return version > 1 ? 1 : 0;
+	return version >= LUKS2_OPAL_SUM_REQ_VERSION ? 1 : 0;
 }
 
 int crypt_get_verity_info(struct crypt_device *cd,
