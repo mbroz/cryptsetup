@@ -237,6 +237,8 @@ RUN luks2-segment-opal-number-0.img			"F" "Failed to detect invalid opal_segment
 RUN luks2-segment-wrong-backup-order-0.img		"F" "Failed to detect regular segment behind backup segment"
 RUN luks2-segment-wrong-backup-order-1.img		"F" "Failed to detect regular segment behind backup segment"
 RUN luks2-segment-crypt-whitespace-encryption.img	"F" "Failed to detect whitespace in encryption field"
+RUN luks2-segment-crypt-multikey-encryption-0.img	"F" "Failed to detect multi-key encryption field"
+RUN luks2-segment-crypt-multikey-encryption-1.img	"F" "Failed to detect multi-key encryption field"
 
 echo "[6] Test metadata size and keyslots size (config section)"
 RUN luks2-invalid-keyslots-size-c0.img			"F" "Failed to detect too large keyslots_size in config section"
@@ -280,6 +282,7 @@ RUN luks2-token-id-not-canonical.img			"F" "Token id not in canonical form not r
 RUN luks2-token-id-out-of-range.img			"F" "Token id out of range not rejected"
 RUN luks2-digest-id-not-canonical.img			"F" "Digest id not in canonical form not rejected"
 RUN luks2-keyslot-whitespace-encryption.img		"F" "Failed to detect whitespace in keyslot encryption field"
+RUN luks2-keyslot-multikey-encryption.img		"F" "Multi-key keyslot area encryption not rejected"
 
 echo "[8] Test non compact json does not break write optimization"
 RUN luks2-non-compact-json-token-0.img			"T" "Non compact json area corrupted after write"
