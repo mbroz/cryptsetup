@@ -549,6 +549,16 @@ static int _check_and_convert_hdr(const struct device *device,
 	hdr->cipherMode[LUKS_CIPHERMODE_L - 1] = '\0';
 	hdr->uuid[UUID_STRING_L - 1] = '\0';
 
+	if (!crypt_is_cipher_valid(hdr->cipherName)) {
+		log_err(ctx, _("LUKS cipher name %s is invalid."), hdr->cipherName);
+		r = -EINVAL;
+	}
+
+	if (!crypt_is_cipher_valid(hdr->cipherMode)) {
+		log_err(ctx, _("LUKS cipher mode %s is invalid."), hdr->cipherMode);
+		r = -EINVAL;
+	}
+
 	if (repair) {
 		if (!strncmp(hdr->cipherMode, "ecb-", 4)) {
 			log_err(ctx, _("LUKS cipher mode %s is invalid."), hdr->cipherMode);

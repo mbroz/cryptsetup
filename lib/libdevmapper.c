@@ -534,6 +534,12 @@ static int cipher_dm2c(const char *org_c, const char *org_i, unsigned tag_size,
 	if (!c_dm || !c_dm_size || !i_dm || !i_dm_size)
 		return -EINVAL;
 
+	if (!crypt_is_cipher_valid(org_c))
+		return -EINVAL;
+
+	if (org_i && !crypt_is_cipher_valid(org_i))
+		return -EINVAL;
+
 	i = sscanf(org_c, "%" MAX_CAPI_ONE_LEN_STR "[^-]-%" MAX_CAPI_ONE_LEN_STR "s", cipher, tmp);
 	if (i != 2)
 		return -EINVAL;

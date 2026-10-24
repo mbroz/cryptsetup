@@ -720,10 +720,13 @@ static int luks2_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 	type = json_object_get_string(jobj1);
 
 	if (!strcmp(type, "raw")) {
-		if (!json_contains_string(cd, jobj_area, "area", "raw type", "encryption") ||
+		if (!(jobj1 = json_contains_string(cd, jobj_area, "area", "raw type", "encryption")) ||
 		    !json_contains(cd, jobj_area, "area", "raw type", "key_size", json_type_int) ||
 		    !json_contains_string(cd, jobj_area, "area", "raw type", "offset") ||
 		    !json_contains_string(cd, jobj_area, "area", "raw type", "size"))
+			return -EINVAL;
+
+		if (!crypt_is_cipher_valid(json_object_get_string(jobj1)))
 			return -EINVAL;
 	} else
 		return -EINVAL;

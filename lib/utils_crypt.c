@@ -307,3 +307,42 @@ bool crypt_is_cipher_null(const char *cipher_spec)
 		!strcmp(cipher_spec, "null") ||
 		!strncmp(cipher_spec, "null-", 5));
 }
+
+/*
+ * Validate cipher specification (valid characters, length)
+ */
+bool crypt_is_cipher_valid(const char *cipher_spec)
+{
+	unsigned char c;
+	size_t len = 0;
+
+	if (!cipher_spec || !*cipher_spec)
+		return false;
+
+	for (; *cipher_spec; cipher_spec++) {
+		c = (unsigned char)*cipher_spec;
+
+		if (++len >= MAX_CAPI_LEN)
+			return false;
+
+		if (c >= 'A' && c <= 'Z')
+			continue;
+		if (c >= 'a' && c <= 'z')
+			continue;
+		if (c >= '0' && c <= '9')
+			continue;
+		switch (c) {
+		case '-':
+		case '_':
+		case '(':
+		case ')':
+		case ',':
+		case ':':
+			continue;
+		}
+
+		return false;
+	}
+
+	return true;
+}
