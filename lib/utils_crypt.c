@@ -304,7 +304,10 @@ bool crypt_is_cipher_null(const char *cipher_spec)
 {
 	if (!cipher_spec)
 		return false;
-	return (strstr(cipher_spec, "cipher_null") || !strcmp(cipher_spec, "null"));
+
+	return (strstr(cipher_spec, "cipher_null") ||
+		!strcmp(cipher_spec, "null") ||
+		!strncmp(cipher_spec, "null-", 5));
 }
 
 int crypt_capi_to_cipher(char **org_c, char **org_i, const char *c_dm, const char *i_dm)
