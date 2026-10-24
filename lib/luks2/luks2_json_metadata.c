@@ -545,21 +545,27 @@ static int hdr_validate_crypt_segment(struct crypt_device *cd, json_object *jobj
 				      uint64_t size)
 {
 	int r;
-	json_object *jobj_ivoffset, *jobj_sector_size, *jobj_integrity;
+	json_object *jobj_ivoffset, *jobj_encryption, *jobj_sector_size, *jobj_integrity, *jobj_type;
 	uint32_t sector_size;
 	uint64_t ivoffset;
 
 	if (!(jobj_ivoffset = json_contains_string(cd, jobj, key, "Segment", "iv_tweak")) ||
-	    !json_contains_string(cd, jobj, key, "Segment", "encryption") ||
+	    !(jobj_encryption = json_contains_string(cd, jobj, key, "Segment", "encryption")) ||
 	    !(jobj_sector_size = json_contains(cd, jobj, key, "Segment", "sector_size", json_type_int)))
+		return 1;
+
+	if (!crypt_is_cipher_valid(json_object_get_string(jobj_encryption)))
 		return 1;
 
 	/* integrity */
 	if (json_object_object_get_ex(jobj, "integrity", &jobj_integrity)) {
 		if (!json_contains(cd, jobj, key, "Segment", "integrity", json_type_object) ||
-		    !json_contains_string(cd, jobj_integrity, key, "Segment integrity", "type") ||
+		    !(jobj_type = json_contains_string(cd, jobj_integrity, key, "Segment integrity", "type")) ||
 		    !json_contains_string(cd, jobj_integrity, key, "Segment integrity", "journal_encryption") ||
 		    !json_contains_string(cd, jobj_integrity, key, "Segment integrity", "journal_integrity"))
+			return 1;
+
+		if (!crypt_is_cipher_valid(json_object_get_string(jobj_type)))
 			return 1;
 	}
 
