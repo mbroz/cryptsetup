@@ -39,6 +39,7 @@ void crypt_log_hex(struct crypt_device *cd,
 
 bool crypt_is_cipher_null(const char *cipher_spec);
 bool crypt_is_cipher_valid(const char *cipher_spec);
+bool crypt_is_cipher_multikey(const char *cipher_spec);
 
 int crypt_str_to_int(const char *str, int *value);
 

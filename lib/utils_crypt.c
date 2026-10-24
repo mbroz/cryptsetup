@@ -434,3 +434,26 @@ bool crypt_is_cipher_valid(const char *cipher_spec)
 
 	return true;
 }
+
+/*
+ * Check if cipher_spec uses multikey (N == 1 is here multikey too)
+ * "cipher:N-mode-iv[:ivopts]" or "capi:<spec>-lmk[:ivopts]"
+ */
+bool crypt_is_cipher_multikey(const char *cipher_spec)
+{
+	const char *ivopts;
+	size_t len;
+
+	if (!cipher_spec || !*cipher_spec)
+		return false;
+
+	if (strncmp(cipher_spec, "capi:", 5))
+		return strcspn(cipher_spec, ":") < strcspn(cipher_spec, "-");
+
+	cipher_spec += 5; /* "capi:" */
+	ivopts = strrchr(cipher_spec, ':');
+	len = ivopts ? (size_t)(ivopts - cipher_spec) : strlen(cipher_spec);
+
+	/* "-lmk" means 64 keys */
+	return len >= 4 && !strncmp(cipher_spec + len - 4, "-lmk", 4);
+}

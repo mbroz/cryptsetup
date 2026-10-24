@@ -728,6 +728,9 @@ static int luks2_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 
 		if (!crypt_is_cipher_valid(json_object_get_string(jobj1)))
 			return -EINVAL;
+
+		if (crypt_is_cipher_multikey(json_object_get_string(jobj1)))
+			return -EINVAL;
 	} else
 		return -EINVAL;
 

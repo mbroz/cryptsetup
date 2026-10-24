@@ -511,6 +511,7 @@ static int _check_and_convert_hdr(const struct device *device,
 	int r = 0;
 	unsigned int i;
 	char luksMagic[] = LUKS_MAGIC;
+	char cipher_spec[LUKS_CIPHERNAME_L + LUKS_CIPHERMODE_L];
 
 	hdr->version = be16_to_cpu(hdr->version);
 	if (memcmp(hdr->magic, luksMagic, LUKS_MAGIC_L)) { /* Check magic */
@@ -549,12 +550,10 @@ static int _check_and_convert_hdr(const struct device *device,
 	hdr->cipherMode[LUKS_CIPHERMODE_L - 1] = '\0';
 	hdr->uuid[UUID_STRING_L - 1] = '\0';
 
-	if (!crypt_is_cipher_valid(hdr->cipherName)) {
-		log_err(ctx, _("LUKS cipher name %s is invalid."), hdr->cipherName);
+	if (snprintf(cipher_spec, sizeof(cipher_spec), "%s-%s", hdr->cipherName, hdr->cipherMode) < 0)
 		r = -EINVAL;
-	}
-
-	if (!crypt_is_cipher_valid(hdr->cipherMode)) {
+	else if (!crypt_is_cipher_valid(cipher_spec) ||
+		 crypt_is_cipher_multikey(cipher_spec)) {
 		log_err(ctx, _("LUKS cipher mode %s is invalid."), hdr->cipherMode);
 		r = -EINVAL;
 	}
