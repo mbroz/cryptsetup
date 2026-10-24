@@ -177,7 +177,7 @@ int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd, const char *ciphe
 	if (!strncmp(cipher_spec, "capi:", 5))
 		return 1;
 
-	if (crypt_is_cipher_null(cipher_spec))
+	if (crypt_is_cipher_null(cipher_spec) || crypt_is_cipher_multikey(cipher_spec))
 		return 1;
 
 	if (crypt_parse_name_and_mode(cipher_spec, cipher, NULL, cipher_mode) < 0)

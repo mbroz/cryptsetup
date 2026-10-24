@@ -557,6 +557,9 @@ static int hdr_validate_crypt_segment(struct crypt_device *cd, json_object *jobj
 	if (!crypt_is_cipher_valid(json_object_get_string(jobj_encryption)))
 		return 1;
 
+	if (crypt_is_cipher_multikey(json_object_get_string(jobj_encryption)))
+		return 1;
+
 	/* integrity */
 	if (json_object_object_get_ex(jobj, "integrity", &jobj_integrity)) {
 		if (!json_contains(cd, jobj, key, "Segment", "integrity", json_type_object) ||
