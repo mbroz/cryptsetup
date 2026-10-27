@@ -561,7 +561,7 @@ int LUKS2_luks1_to_luks2(struct crypt_device *cd, struct luks_phdr *hdr1, struct
 	r = snprintf(cipher_spec, sizeof(cipher_spec), "%s-%s", hdr1->cipherName, hdr1->cipherMode);
 	if (r < 0 || (size_t)r >= sizeof(cipher_spec))
 		return -EINVAL;
-	if (LUKS2_keyslot_cipher_incompatible(cd, cipher_spec)) {
+	if (LUKS2_keyslot_cipher_incompatible(cd, cipher_spec, hdr1->keyBytes)) {
 		log_err(cd, _("Unable to use cipher specification %s-%s for LUKS2 keyslot."),
 			hdr1->cipherName, hdr1->cipherMode);
 		return -EINVAL;

@@ -667,7 +667,7 @@ static int luks2_keyslot_dump(struct crypt_device *cd, int keyslot)
 
 static int luks2_keyslot_validate(struct crypt_device *cd, json_object *jobj_keyslot)
 {
-	json_object *jobj_kdf, *jobj_af, *jobj_area, *jobj1;
+	json_object *jobj_kdf, *jobj_af, *jobj_area, *jobj1, *jobj2;
 	const char *type;
 	int count;
 
@@ -721,7 +721,7 @@ static int luks2_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 
 	if (!strcmp(type, "raw")) {
 		if (!(jobj1 = json_contains_string(cd, jobj_area, "area", "raw type", "encryption")) ||
-		    !json_contains(cd, jobj_area, "area", "raw type", "key_size", json_type_int) ||
+		    !(jobj2 = json_contains(cd, jobj_area, "area", "raw type", "key_size", json_type_int)) ||
 		    !json_contains_string(cd, jobj_area, "area", "raw type", "offset") ||
 		    !json_contains_string(cd, jobj_area, "area", "raw type", "size"))
 			return -EINVAL;
@@ -730,6 +730,9 @@ static int luks2_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 			return -EINVAL;
 
 		if (crypt_is_cipher_multikey(json_object_get_string(jobj1)))
+			return -EINVAL;
+
+		if (json_object_get_int(jobj2) < LUKS2_MIN_KEYSLOT_KEY_BYTES)
 			return -EINVAL;
 	} else
 		return -EINVAL;

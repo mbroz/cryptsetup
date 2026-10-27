@@ -163,7 +163,9 @@ int LUKS2_keyslot_active_count(struct luks2_hdr *hdr, int segment)
 	return num;
 }
 
-int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd, const char *cipher_spec)
+int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd,
+				      const char *cipher_spec,
+				      size_t key_bytes)
 {
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 
@@ -193,6 +195,9 @@ int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd, const char *ciphe
 
 	/* Check if crypto backend can use the cipher */
 	if (crypt_cipher_ivsize(cipher, cipher_mode) < 0)
+		return 1;
+
+	if (key_bytes < LUKS2_MIN_KEYSLOT_KEY_BYTES)
 		return 1;
 
 	return 0;

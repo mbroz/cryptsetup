@@ -6755,7 +6755,7 @@ int crypt_keyslot_set_encryption(struct crypt_device *cd,
 	if (!cd || !cipher || !key_size || !isLUKS2(cd->type))
 		return -EINVAL;
 
-	if (LUKS2_keyslot_cipher_incompatible(cd, cipher))
+	if (LUKS2_keyslot_cipher_incompatible(cd, cipher, key_size))
 		return -EINVAL;
 
 	if (!(tmp = strdup(cipher)))
@@ -6800,11 +6800,9 @@ const char *crypt_keyslot_get_encryption(struct crypt_device *cd, int keyslot, s
 
 	/* Try to reuse volume encryption parameters */
 	cipher =  LUKS2_get_cipher(&cd->u.luks2.hdr, CRYPT_DEFAULT_SEGMENT);
-	if (!LUKS2_keyslot_cipher_incompatible(cd, cipher)) {
-		*key_size = crypt_get_volume_key_size(cd);
-		if (*key_size)
-			return cipher;
-	}
+	*key_size = crypt_get_volume_key_size(cd);
+	if (!LUKS2_keyslot_cipher_incompatible(cd, cipher, *key_size))
+		return cipher;
 
 	/* Fallback to default LUKS2 keyslot encryption */
 	*key_size = DEFAULT_LUKS2_KEYSLOT_KEYBITS / 8;
