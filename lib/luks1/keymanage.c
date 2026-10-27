@@ -879,6 +879,10 @@ int LUKS_set_key(unsigned int keyIndex,
 	         return -EINVAL;
 	}
 
+	/* Allow only empty passphrase with null cipher */
+	if (crypt_is_cipher_null(crypt_get_cipher_spec(ctx)) && passwordLen)
+		return -EINVAL;
+
 	log_dbg(ctx, "Calculating data for key slot %d", keyIndex);
 	pbkdf = crypt_get_pbkdf(ctx);
 	r = crypt_benchmark_pbkdf_internal(ctx, pbkdf, crypt_volume_key_length(vk));
@@ -1069,7 +1073,7 @@ static int LUKS_open_key(unsigned int keyIndex,
 		goto out;
 
 	/* Allow only empty passphrase with null cipher */
-	if (crypt_is_cipher_null(hdr->cipherName) && passwordLen)
+	if (crypt_is_cipher_null(crypt_get_cipher_spec(ctx)) && passwordLen)
 		r = -EPERM;
 	else
 		*r_vk = vk;

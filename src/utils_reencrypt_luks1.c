@@ -585,8 +585,8 @@ static int backup_fake_header(struct reenc_ctx *rc)
 	if (r < 0)
 		goto out;
 
-	r = crypt_keyslot_add_by_volume_key(cd_new, rc->keyslot, NULL, 0,
-			rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen);
+	/* Fake header uses null cipher, it must use empty passphrase */
+	r = crypt_keyslot_add_by_volume_key(cd_new, rc->keyslot, NULL, 0, "", 0);
 	check_signal(&r);
 	if (r < 0)
 		goto out;
