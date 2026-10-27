@@ -3509,6 +3509,7 @@ static void Luks2KeyslotParams(void)
 	EQ_(6, crypt_keyslot_add_by_keyfile(cd, 6, KEYFILE1, 0, KEYFILE2, 0));
 
 	// Slots with different encryption type
+	FAIL_(crypt_keyslot_set_encryption(cd, cipher_keyslot, 1), "keyslot key size is too small");
 	OK_(crypt_keyslot_set_encryption(cd, cipher_keyslot, keyslot_key_size));
 	OK_(strcmp(crypt_keyslot_get_encryption(cd, CRYPT_ANY_SLOT, &key_size_ret), cipher_keyslot));
 	EQ_(key_size_ret, keyslot_key_size);

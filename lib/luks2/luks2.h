@@ -39,6 +39,8 @@
 
 #define LUKS2_MIN_INTEGRITY_KEY_BYTES 16
 
+#define LUKS2_MIN_KEYSLOT_KEY_BYTES 8
+
 #define CRYPT_ANY_SEGMENT -1
 #define CRYPT_DEFAULT_SEGMENT -2
 #define CRYPT_ONE_SEGMENT -3
@@ -192,7 +194,9 @@ uint64_t LUKS2_hdr_and_areas_size(struct luks2_hdr *hdr);
 uint64_t LUKS2_keyslots_size(struct luks2_hdr *hdr);
 uint64_t LUKS2_metadata_size(struct luks2_hdr *hdr);
 
-int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd, const char *cipher_spec);
+int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd,
+				      const char *cipher_spec,
+				      size_t key_bytes);
 
 /*
  * Generic LUKS2 keyslot
