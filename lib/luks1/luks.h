@@ -36,6 +36,8 @@
 #define LUKS_KEY_DISABLED 0x0000DEAD
 #define LUKS_KEY_ENABLED  0x00AC71F3
 
+#define LUKS_KEY_BYTES_MIN 8
+
 #define LUKS_STRIPES 4000
 
 // partition header starts with magic
