@@ -544,8 +544,8 @@ static int hdr_validate_crypt_segment(struct crypt_device *cd, json_object *jobj
 				      const char *key, json_object *jobj_digests,
 				      uint64_t size)
 {
-	int r;
-	json_object *jobj_ivoffset, *jobj_encryption, *jobj_sector_size, *jobj_integrity, *jobj_type = NULL;
+	int r, ks;
+	json_object *jobj_ivoffset, *jobj_encryption, *jobj_sector_size, *jobj_integrity, *jobj_type = NULL, *jobj_key_size = NULL;
 	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	uint32_t sector_size;
 	uint64_t ivoffset;
@@ -561,6 +561,10 @@ static int hdr_validate_crypt_segment(struct crypt_device *cd, json_object *jobj
 	if (crypt_is_cipher_multikey(json_object_get_string(jobj_encryption)))
 		return 1;
 
+	/* Encryption must not include nested integrity algorithm */
+	if (strstr(json_object_get_string(jobj_encryption), "authenc"))
+		return 1;
+
 	/* integrity */
 	if (json_object_object_get_ex(jobj, "integrity", &jobj_integrity)) {
 		if (!json_contains(cd, jobj, key, "Segment", "integrity", json_type_object) ||
@@ -570,6 +574,19 @@ static int hdr_validate_crypt_segment(struct crypt_device *cd, json_object *jobj
 			return 1;
 
 		if (!crypt_is_cipher_valid(json_object_get_string(jobj_type)))
+			return 1;
+
+		/* key_size is optional */
+		ks = 0;
+		if (json_object_object_get_ex(jobj_integrity, "key_size", NULL)) {
+			jobj_key_size = json_contains(cd, jobj_integrity, key, "Segment integrity", "key_size", json_type_int);
+			if (!jobj_key_size)
+				return 1;
+			ks = json_object_get_int(jobj_key_size);
+		}
+
+		r = INTEGRITY_key_size(json_object_get_string(jobj_type), ks);
+		if (r < 0 || (r && r < LUKS2_MIN_INTEGRITY_KEY_BYTES))
 			return 1;
 	}
 
@@ -2781,6 +2798,7 @@ int LUKS2_activate(struct crypt_device *cd,
 		.uuid   = crypt_get_uuid(cd)
 	};
 	struct crypt_lock_handle *opal_lh = NULL;
+	size_t ki_bytes;
 
 	/* do not allow activation when particular requirements detected */
 	if ((r = LUKS2_unmet_requirements(cd, hdr,
@@ -2790,6 +2808,12 @@ int LUKS2_activate(struct crypt_device *cd,
 	/* Check that cipher is in compatible format */
 	if (!crypt_get_cipher(cd)) {
 		log_err(cd, _("No known cipher specification pattern detected in LUKS2 header."));
+		return -EINVAL;
+	}
+
+	if (crypt_key && (ki_bytes = crypt_get_integrity_key_size(cd, false)) &&
+	    crypt_volume_key_length(crypt_key) < ki_bytes + LUKS2_MIN_KEYSLOT_KEY_BYTES) {
+		log_err(cd, _("Volume key is too small for encryption with integrity extensions."));
 		return -EINVAL;
 	}
 

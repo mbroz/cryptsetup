@@ -1873,7 +1873,8 @@ static int LUKS2_check_encryption_params(struct crypt_device *cd,
 				return -EINVAL;
 		}
 		integrity_key_size = INTEGRITY_key_size(integrity, required_integrity_key_size);
-		if ((integrity_key_size < 0) || (integrity_key_size >= (int)volume_key_size)) {
+		if ((integrity_key_size < 0) || (integrity_key_size >= (int)volume_key_size) ||
+		    (integrity_key_size && (volume_key_size - integrity_key_size) < LUKS2_MIN_KEYSLOT_KEY_BYTES)) {
 			log_err(cd, _("Volume key is too small for encryption with integrity extensions."));
 			return -EINVAL;
 		}
