@@ -239,6 +239,8 @@ RUN luks2-segment-crypt-multikey-encryption-0.img	"F" "Failed to detect multi-ke
 RUN luks2-segment-crypt-multikey-encryption-1.img	"F" "Failed to detect multi-key encryption field"
 RUN luks2-segment-crypt-random-iv-integrity-none.img	"F" "Failed to detect random IV with integrity type none"
 RUN luks2-segment-crypt-random-iv-no-integrity.img	"F" "Failed to detect random IV without integrity"
+RUN luks2-segment-crypt-unknown-integrity-key-size.img	"F" "Failed to detect integrity type with unknown key size"
+RUN luks2-segment-crypt-wrong-integrity-key-size.img	"F" "Failed to detect wrong integrity key size"
 
 echo "[6] Test metadata size and keyslots size (config section)"
 RUN luks2-invalid-keyslots-size-c0.img			"F" "Failed to detect too large keyslots_size in config section"
