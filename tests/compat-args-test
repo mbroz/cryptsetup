@@ -251,10 +251,15 @@ exp_fail luksFormat DEV --type luks1 --pbkdf-force-iterations 1001 -i1
 
 exp_fail open DEV NAME --sector-size 1024
 exp_pass open DEV NAME --type plain --sector-size 1024
+exp_pass open DEV NAME --type plain --sector-size 65536
+exp_fail open DEV NAME --type plain --sector-size 131072
+exp_fail open DEV NAME --type plain --sector-size 12288
 # bug
 # exp_fail luksFormat DEV --sector-size 0
 exp_fail luksFormat DEV --sector-size 511
 exp_fail luksFormat DEV --sector-size 8192
+exp_fail luksFormat DEV --sector-size 65536
+exp_fail reencrypt DEV --sector-size 8192
 exp_pass reencrypt DEV --sector-size 1024
 exp_pass luksFormat DEV --sector-size 1024
 

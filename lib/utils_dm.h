@@ -68,6 +68,7 @@ static inline uint64_t act2dmflags(uint64_t act_flags)
 #define DM_VERITY_ERROR_AS_CORRUPTION_SUPPORTED (UINT64_C(1) << 31) /* dm-verity restart/panic on corruption supported */
 #define DM_INTEGRITY_INLINE_MODE_SUPPORTED (UINT64_C(1) << 32) /* dm-integrity inline mode supported */
 #define DM_INTEGRITY_DISCARD_KEYED_SUPPORTED (UINT64_C(1) << 33) /* dm-integrity discard keyed supported */
+#define DM_CRYPT_PLAIN_SECTOR_SIZE_UP_TO_PAGE_SUPPORTED (UINT64_C(1) << 34) /* dm-crypt sector size up to page size supported, used for plain devices only */
 
 typedef enum { DM_CRYPT = 0, DM_VERITY, DM_INTEGRITY, DM_LINEAR, DM_ERROR, DM_ZERO, DM_UNKNOWN } dm_target_type;
 enum tdirection { TARGET_EMPTY = 0, TARGET_SET, TARGET_QUERY };

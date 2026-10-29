@@ -38,6 +38,7 @@
 #define SECTOR_SHIFT       9
 #define SECTOR_SIZE     (1 << SECTOR_SHIFT)
 #define MAX_SECTOR_SIZE 4096 /* min page size among all platforms */
+#define MAX_PLAIN_SECTOR_SIZE 65536 /* plain only, kernel requires page size >= sector size */
 #define ROUND_SECTOR(x) (((x) + SECTOR_SIZE - 1) / SECTOR_SIZE)
 
 #define MISALIGNED(a, b)	((a) & ((b) - 1))
