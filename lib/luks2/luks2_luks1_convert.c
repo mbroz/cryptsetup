@@ -664,8 +664,9 @@ static int keyslot_LUKS1_compatible(struct crypt_device *cd, struct luks2_hdr *h
 {
 	json_object *jobj_keyslot, *jobj, *jobj_kdf, *jobj_af;
 	uint64_t l2_offset, l2_length;
-	size_t ks_key_size;
+	size_t ks_key_size, salt_len;
 	const char *ks_cipher, *data_cipher;
+	char *salt;
 
 	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, keyslot);
 	if (!jobj_keyslot)
@@ -697,6 +698,19 @@ static int keyslot_LUKS1_compatible(struct crypt_device *cd, struct luks2_hdr *h
 	if (strcmp(json_object_get_string(jobj), hash)) {
 		log_dbg(cd, "Keyslot %d PBKDF uses different hash %s than digest hash %s.",
 			keyslot, json_object_get_string(jobj), hash);
+		return 0;
+	}
+
+	/* Keyslot KDF salt has LUKS1 salt size. */
+	jobj = NULL;
+	if (!json_object_object_get_ex(jobj_kdf, "salt", &jobj))
+		return 0;
+	if (crypt_base64_decode(&salt, &salt_len, json_object_get_string(jobj),
+				json_object_get_string_len(jobj)))
+		return 0;
+	free(salt);
+	if (salt_len != LUKS_SALTSIZE) {
+		log_dbg(cd, "Keyslot %d PBKDF salt size is not compatible.", keyslot);
 		return 0;
 	}
 
@@ -888,10 +902,7 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		if (crypt_base64_decode(&buf, &len, json_object_get_string(jobj1),
 					json_object_get_string_len(jobj1)))
 			continue;
-		if (len > 0 && len != LUKS_SALTSIZE) {
-			free(buf);
-			continue;
-		}
+		/* keyslot_LUKS1_compatible() guarantees len == LUKS_SALTSIZE here */
 		memcpy(hdr1->keyblock[i].passwordSalt, buf, LUKS_SALTSIZE);
 		free(buf);
 	}
