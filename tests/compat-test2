@@ -1320,6 +1320,12 @@ echo -n "$IMPORT_TOKEN" | $CRYPTSETUP token import $LOOPDEV --token-id 11 --json
 echo -n "$IMPORT_TOKEN" > $TOKEN_FILE0
 $CRYPTSETUP token import $LOOPDEV --token-id 12 --json-file $TOKEN_FILE0 || fail
 $CRYPTSETUP token import $LOOPDEV --token-id 12 --json-file $TOKEN_FILE0 2>/dev/null && fail
+# token nested too deep to be parsed again once stored in metadata must be rejected
+NEST="[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
+echo -n "{\"type\":\"some_type\",\"keyslots\":[],\"data\":[$NEST]}" | $CRYPTSETUP token import $LOOPDEV --token-id 13 2>/dev/null && fail
+echo -n "{\"type\":\"some_type\",\"keyslots\":[],\"data\":$NEST}" | $CRYPTSETUP token import $LOOPDEV --token-id 13 || fail
+echo $PWD1 | $CRYPTSETUP open $LOOPDEV --test-passphrase || fail
+$CRYPTSETUP token remove $LOOPDEV --token-id 13 || fail
 $CRYPTSETUP token export $LOOPDEV --token-id 10 >$TOKEN_FILE1 || fail
 diff $TOKEN_FILE0 $TOKEN_FILE1 || fail
 $CRYPTSETUP token export $LOOPDEV --token-id 11 >$TOKEN_FILE1 || fail
