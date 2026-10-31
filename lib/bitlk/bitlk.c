@@ -858,6 +858,11 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 
 		start += entry_size;
 	}
+
+	if (!params->fvek) {
+		log_err(cd, _("Failed to find FVEK entry in BITLK FVE metadata from %s."), device_path(device));
+		r = -EINVAL;
+	}
 out:
 	free(fve_entries);
 	free(fve_validated_block);
@@ -1304,6 +1309,11 @@ int BITLK_get_volume_key(struct crypt_device *cd,
 	const struct bitlk_vmk *next_vmk = NULL;
 
 	next_vmk = params->vmks;
+	if (!next_vmk) {
+		log_dbg(cd, "No VMK found in BITLK FVE metadata.");
+		return -EPERM;
+	}
+
 	while (next_vmk) {
 		bool is_decrypted = false;
 
