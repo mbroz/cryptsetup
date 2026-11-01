@@ -1252,6 +1252,14 @@ static int decrypt_key(struct crypt_device *cd,
 		key_size = 32 + BITLK_OPEN_KEY_METADATA_LEN;
 	}
 
+	if (is_fvek && (key_size - BITLK_OPEN_KEY_METADATA_LEN) != crypt_get_volume_key_size(cd)) {
+		log_dbg(cd, "Unexpected volume key size: %i, decrypted key size %i",
+			crypt_get_volume_key_size(cd),
+			key_size - BITLK_OPEN_KEY_METADATA_LEN);
+		r = -EINVAL;
+		goto out;
+	}
+
 	*vk = crypt_alloc_volume_key(key_size - BITLK_OPEN_KEY_METADATA_LEN,
 					(const char *)(outbuf + BITLK_OPEN_KEY_METADATA_LEN));
 	r = *vk ? 0 : -ENOMEM;

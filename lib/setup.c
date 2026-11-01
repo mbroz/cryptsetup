@@ -6140,8 +6140,14 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 	}
 
 	if (r >= 0 && vk) {
-		crypt_safe_memcpy(volume_key, crypt_volume_key_get_key(vk), crypt_volume_key_length(vk));
-		*volume_key_size = crypt_volume_key_length(vk);
+		/* Unlocked key size can differ from the size announced by metadata */
+		if (crypt_volume_key_length(vk) > *volume_key_size) {
+			log_err(cd, _("Volume key buffer too small."));
+			r = -ENOMEM;
+		} else {
+			crypt_safe_memcpy(volume_key, crypt_volume_key_get_key(vk), crypt_volume_key_length(vk));
+			*volume_key_size = crypt_volume_key_length(vk);
+		}
 	}
 
 	crypt_free_volume_key(vk);
