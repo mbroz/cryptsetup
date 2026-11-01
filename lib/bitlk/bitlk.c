@@ -326,6 +326,8 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 		/* clear key for a partially decrypted volume */
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_KEY) {
 			/* For clearkey protection, we need to store this key */
+			if (key_entry_size < (BITLK_ENTRY_HEADER_LEN + 4))
+				return -EINVAL;
 			key_size = key_entry_size - (BITLK_ENTRY_HEADER_LEN + 4);
 			key = (const char *) data + start + BITLK_ENTRY_HEADER_LEN + 4;
 			vk = crypt_alloc_volume_key(key_size, key);
