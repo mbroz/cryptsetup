@@ -265,6 +265,22 @@ static bool numbered(struct crypt_device *cd, const char *name, const char *key)
 	return true;
 }
 
+static bool numbered_id(struct crypt_device *cd, const char *name, const char *key, unsigned int max)
+{
+	int id;
+
+	if (!numbered(cd, name, key))
+		return false;
+
+	if (!key[0] || (key[0] == '0' && key[1]))
+		return false;
+
+	if (crypt_str_to_int(key, &id) != 0 || id >= (int)max)
+		return false;
+
+	return true;
+}
+
 json_object *json_contains(struct crypt_device *cd, json_object *jobj, const char *name,
 			   const char *section, const char *key, json_type type)
 {
@@ -498,7 +514,7 @@ static int hdr_validate_keyslots(struct crypt_device *cd, json_object *hdr_jobj)
 		return 1;
 
 	json_object_object_foreach(jobj, key, val) {
-		if (!numbered(cd, "Keyslot", key))
+		if (!numbered_id(cd, "Keyslot", key, LUKS2_KEYSLOTS_MAX))
 			return 1;
 		if (LUKS2_keyslot_validate(cd, val, key))
 			return 1;
@@ -515,7 +531,7 @@ static int hdr_validate_tokens(struct crypt_device *cd, json_object *hdr_jobj)
 		return 1;
 
 	json_object_object_foreach(jobj, key, val) {
-		if (!numbered(cd, "Token", key))
+		if (!numbered_id(cd, "Token", key, LUKS2_TOKENS_MAX))
 			return 1;
 		if (LUKS2_token_validate(cd, hdr_jobj, val, key))
 			return 1;
@@ -986,7 +1002,7 @@ static int hdr_validate_digests(struct crypt_device *cd, json_object *hdr_jobj)
 		return 1;
 
 	json_object_object_foreach(jobj, key, val) {
-		if (!numbered(cd, "Digest", key))
+		if (!numbered_id(cd, "Digest", key, LUKS2_DIGEST_MAX))
 			return 1;
 
 		if (!json_contains_string(cd, val, key, "Digest", "type") ||
