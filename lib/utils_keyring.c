@@ -86,6 +86,7 @@ static key_serial_t keyring_process_proc_keys_line(char *line, const char *type,
 {
 	char typebuf[41], rdesc[1024], *kdesc, *cp;
 	int ndesc, n;
+	unsigned int uid;
 	key_serial_t id;
 	int dlen;
 
@@ -118,6 +119,13 @@ static key_serial_t keyring_process_proc_keys_line(char *line, const char *type,
 		if ((size_t)n >= sizeof(rdesc) - 1)
 			return 0;
 		rdesc[n] = '\0';
+
+		/* /proc/keys lists also keys of other users (any key with
+		 * view permission for others). Such a key is not reachable
+		 * via our keyrings, so never trust it by description only
+		 * and accept just keys owned by us (type;uid;gid;perm;desc). */
+		if (sscanf(rdesc, "%*[^;];%u;", &uid) != 1 || uid != geteuid())
+			return 0;
 
 		cp = strrchr(rdesc, ';');
 		if (!cp)
