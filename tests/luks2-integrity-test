@@ -320,4 +320,9 @@ if dm_integrity_inline_support; then
 	intformat aegis128-random  aead aead 128 0 4096 cfadd44a103cbd6d5726fa07b27d7aad2f67ed3930ff96901c486a5beaf7e723 1
 fi
 
+echo -n "[RANDOM IV WITHOUT AUTHENTICATION]"
+$CRYPTSETUP luksFormat --type luks2 -q -c aes-xts-random -s 512 $FAST_PBKDF_OPT -d $KEY_FILE $DEV >/dev/null 2>&1 && fail "Random IV not rejected."
+$CRYPTSETUP luksFormat --type luks2 -q -c aes-xts-random --integrity none -s 512 $FAST_PBKDF_OPT -d $KEY_FILE $DEV >/dev/null 2>&1 && fail "Random IV not rejected."
+echo "[OK]"
+
 cleanup

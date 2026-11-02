@@ -237,6 +237,8 @@ RUN luks2-segment-crypt-empty-encryption.img		"F" "Failed to detect empty encryp
 RUN luks2-segment-crypt-whitespace-encryption.img	"F" "Failed to detect whitespace in encryption field"
 RUN luks2-segment-crypt-multikey-encryption-0.img	"F" "Failed to detect multi-key encryption field"
 RUN luks2-segment-crypt-multikey-encryption-1.img	"F" "Failed to detect multi-key encryption field"
+RUN luks2-segment-crypt-random-iv-integrity-none.img	"F" "Failed to detect random IV with integrity type none"
+RUN luks2-segment-crypt-random-iv-no-integrity.img	"F" "Failed to detect random IV without integrity"
 
 echo "[6] Test metadata size and keyslots size (config section)"
 RUN luks2-invalid-keyslots-size-c0.img			"F" "Failed to detect too large keyslots_size in config section"
