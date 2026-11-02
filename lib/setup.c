@@ -1884,6 +1884,12 @@ static int LUKS2_check_encryption_params(struct crypt_device *cd,
 	assert(cipher_mode);
 	assert(ret_integrity);
 
+	/* If cipher requires integrity tag, integrity must be used */
+	if (INTEGRITY_tag_size(NULL, cipher, cipher_mode) && (!integrity || !strcmp(integrity, "none"))) {
+		log_err(cd, _("Cipher %s-%s requires authenticated integrity mode."), cipher, cipher_mode);
+		return -EINVAL;
+	}
+
 	if (integrity) {
 		if (params->integrity_params) {
 			/* Standalone dm-integrity must not be used */

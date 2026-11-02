@@ -545,7 +545,8 @@ static int hdr_validate_crypt_segment(struct crypt_device *cd, json_object *jobj
 				      uint64_t size)
 {
 	int r;
-	json_object *jobj_ivoffset, *jobj_encryption, *jobj_sector_size, *jobj_integrity, *jobj_type;
+	json_object *jobj_ivoffset, *jobj_encryption, *jobj_sector_size, *jobj_integrity, *jobj_type = NULL;
+	char cipher[MAX_CIPHER_LEN], cipher_mode[MAX_CIPHER_LEN];
 	uint32_t sector_size;
 	uint64_t ivoffset;
 
@@ -570,6 +571,14 @@ static int hdr_validate_crypt_segment(struct crypt_device *cd, json_object *jobj
 
 		if (!crypt_is_cipher_valid(json_object_get_string(jobj_type)))
 			return 1;
+	}
+
+	/* If cipher requires integrity tag, integrity must be used */
+	if (!crypt_parse_name_and_mode(json_object_get_string(jobj_encryption), cipher, NULL, cipher_mode) &&
+	    INTEGRITY_tag_size(NULL, cipher, cipher_mode) &&
+	    (!jobj_type || !strcmp(json_object_get_string(jobj_type), "none"))) {
+		log_dbg(cd, "Segment encryption %s requires authenticated integrity type.", json_object_get_string(jobj_encryption));
+		return 1;
 	}
 
 	/* enforce uint32_t type */
