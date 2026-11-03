@@ -3982,6 +3982,11 @@ int crypt_resize(struct crypt_device *cd, const char *name, uint64_t new_size)
 		else if (isLUKS2(cd->type))
 			r = LUKS2_unmet_requirements(cd, &cd->u.luks2.hdr, 0, 0);
 
+		/* the key uploaded earlier may have been replaced by another context */
+		if (!r && isLUKS2(cd->type) && crypt_key_in_keyring(cd) &&
+		    !crypt_volume_key_loaded_in_keyring(cd, tgt->u.crypt.vk))
+			r = -EPERM;
+
 		if (!r) {
 			/* Skip flush and lockfs if extending device */
 			if (new_size > dmdq.size)
@@ -7746,6 +7751,59 @@ int crypt_volume_key_keyring(struct crypt_device *cd __attribute__((unused)), in
 	return 0;
 }
 
+/*
+ * This function detects if key with same type and description is already loaded in
+ * kernel keyring from another crypt context and it's reachable from current thread
+ * keyring tree. IOW it's reachable from thread, process or session keyring.
+ */
+static bool crypt_volume_key_kernel_conflict(struct crypt_device *cd, const struct volume_key *vk)
+{
+	key_serial_t kid, kid_in_cd;
+
+	/* this is invalid use of the function so return true to stop the key upload */
+	if (!cd || !vk || !crypt_volume_key_description(vk) || crypt_volume_key_kernel_key_type(vk) == INVALID_KEY)
+		return true;
+
+	kid = keyring_request_key_id(crypt_volume_key_kernel_key_type(vk),
+				     crypt_volume_key_description(vk));
+
+	/* key was unreachable from thread keyring tree */
+	if (kid < 0)
+		return false;
+
+	log_dbg(cd, "Key (type %s, name %s) reachable in keyring search tree.",
+		key_type_name(crypt_volume_key_kernel_key_type(vk)),
+		crypt_volume_key_description(vk));
+
+	/* key was reachable and current context does not have intermediary keyring yet */
+	if (!cd->keyring_description) {
+		log_dbg(cd, "Per context keyring is missing.");
+		return true;
+	}
+
+	kid_in_cd = keyring_search_key_id(cd->keyring_id, crypt_volume_key_kernel_key_type(vk),
+					    crypt_volume_key_description(vk));
+	if (kid_in_cd < 0) {
+		log_dbg(cd, "keyring_search_key_id failed with errno %d.", errno);
+		log_dbg(cd, "Key (type %s, name %s) is missing in %s keyring.",
+			    key_type_name(crypt_volume_key_kernel_key_type(vk)),
+			    crypt_volume_key_description(vk),
+			    cd->keyring_description);
+		return true;
+	}
+
+	if (kid_in_cd != kid) {
+		log_dbg(cd, "Duplicate key (type %s, name %s) reachable from keyring tree and %s keyring.",
+			    key_type_name(crypt_volume_key_kernel_key_type(vk)),
+			    crypt_volume_key_description(vk),
+			    cd->keyring_description);
+
+		return true;
+	}
+
+	return false;
+}
+
 /* internal only */
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk)
 {
@@ -7759,6 +7817,11 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 
 	if (!crypt_volume_key_description(vk)) {
 		log_dbg(cd, "Invalid key description");
+		return -EINVAL;
+	}
+
+	if (crypt_volume_key_kernel_conflict(cd, vk)) {
+		log_err(cd, _("Failed to load key in kernel keyring."));
 		return -EINVAL;
 	}
 
@@ -7791,13 +7854,46 @@ int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key 
 		crypt_volume_key_description(vk), cd->keyring_description);
 
 	if (crypt_volume_key_upload_kernel_key(vk, cd->keyring_id)) {
-		crypt_set_key_in_keyring(cd, 1);
-		return 0;
+		if (crypt_volume_key_loaded_in_keyring(cd, vk)) {
+			crypt_set_key_in_keyring(cd, 1);
+			return 0;
+		} else {
+			crypt_volume_key_drop_uploaded_kernel_key(cd, vk);
+			log_err(cd, _("Failed to load key in kernel keyring."));
+			return -EINVAL;
+		}
 	} else {
 		log_dbg(cd, "keyring_add_key_to_keyring failed (error %d)", errno);
 		log_err(cd, _("Failed to load key in kernel keyring."));
 		return -EINVAL;
 	}
+}
+
+/*
+ * internal only
+ *
+ * Check the key description (as looked up by dm-crypt) still resolves
+ * to the key loaded by this context and not to a key loaded later by
+ * another context (in the same thread) for a device with the same UUID.
+ */
+bool crypt_volume_key_loaded_in_keyring(struct crypt_device *cd, const struct volume_key *vk)
+{
+	key_serial_t kid;
+
+	if (!cd || !cd->keyring_description || !vk || !crypt_volume_key_description(vk))
+		return false;
+
+	kid = keyring_search_key_id(cd->keyring_id, crypt_volume_key_kernel_key_type(vk),
+				    crypt_volume_key_description(vk));
+	if (kid < 0) {
+		log_dbg(cd, "Key (type %s, name %s) is no longer loaded in %s keyring.",
+			key_type_name(crypt_volume_key_kernel_key_type(vk)),
+			crypt_volume_key_description(vk), cd->keyring_description);
+		return false;
+	}
+
+	return kid == keyring_request_key_id(crypt_volume_key_kernel_key_type(vk),
+					     crypt_volume_key_description(vk));
 }
 
 /* internal only */
