@@ -80,6 +80,13 @@ static long keyctl_invalidate(key_serial_t key)
 	return syscall(__NR_keyctl, KEYCTL_INVALIDATE, key);
 }
 
+/* keyctl_search */
+static long keyctl_search(key_serial_t keyring, const char *type,
+			  const char *description, key_serial_t destringid)
+{
+	return syscall(__NR_keyctl, KEYCTL_SEARCH, keyring, type, description, destringid);
+}
+
 /* inspired by keyutils written by David Howells (dhowells@redhat.com) */
 static key_serial_t keyring_process_proc_keys_line(char *line, const char *type, const char *desc)
 {
@@ -137,6 +144,18 @@ static key_serial_t keyring_process_proc_keys_line(char *line, const char *type,
 	}
 
 	return 0;
+}
+
+key_serial_t keyring_search_key_id(key_serial_t keyring_id,
+				   key_type_t key_type,
+				   const char *key_description)
+{
+	const char *type_name = key_type_name(key_type);
+
+	if (!type_name || !key_description)
+		return -EINVAL;
+
+	return keyctl_search(keyring_id, type_name, key_description, 0);
 }
 
 /* inspired by keyutils written by David Howells (dhowells@redhat.com), returns 0 ID on failure */
@@ -449,6 +468,13 @@ key_serial_t keyring_add_key_in_thread_keyring(key_type_t ktype, const char *key
 
 key_serial_t keyring_request_key_id(key_type_t key_type,
 		const char *key_description)
+{
+	return -ENOTSUP;
+}
+
+key_serial_t keyring_search_key_id(key_serial_t keyring_id,
+				   key_type_t key_type,
+				   const char *key_description)
 {
 	return -ENOTSUP;
 }

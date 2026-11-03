@@ -1961,9 +1961,23 @@ static void ResizeDeviceLuks2(void)
 	/* create second LUKS2 device */
 	OK_(crypt_init(&cd2, DMDIR L_DEVICE_WRONG));
 	OK_(crypt_format(cd2, CRYPT_LUKS2, cipher, cipher_mode, crypt_get_uuid(cd), key, key_size, &params));
+
+	/* drop keys held by cd context */
+	CRYPT_FREE(cd);
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, NULL, NULL));
+
 	OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, key, key_size, 0));
 	/* do not allow resize of other device */
 	FAIL_(crypt_resize(cd2, CDEVICE_1, 1), "Device got resized by wrong device context.");
+#if KERNEL_KEYRING
+	/* must not allow resize with foreign key reachable from other context */
+	if (t_dm_crypt_keyring_support()) {
+		EQ_(crypt_resize(cd, CDEVICE_1, 42), -EPERM);
+		/* do not upload conflicting keys (type and description) with other contexts in same keyring tree */
+		FAIL_(crypt_activate_by_volume_key(cd, NULL, key, key_size, CRYPT_ACTIVATE_KEYRING_KEY), "Uploaded duplicate key by type and description.");
+	}
+#endif
 	OK_(crypt_deactivate(cd2, CDEVICE_2));
 	CRYPT_FREE(cd2);
 

@@ -4330,6 +4330,7 @@ int crypt_reencrypt_run(
 	crypt_reencrypt_info ri;
 	struct luks2_hdr *hdr;
 	struct luks2_reencrypt *rh;
+	struct volume_key *vk;
 	reenc_status_t rs;
 	bool quit = false;
 
@@ -4348,6 +4349,14 @@ int crypt_reencrypt_run(
 	if (!rh || (!rh->reenc_lock && crypt_metadata_locking_enabled())) {
 		log_err(cd, _("Missing or invalid reencrypt context."));
 		return -EINVAL;
+	}
+
+	/* keys uploaded in keyring on reencryption init may have been replaced by another context */
+	for (vk = rh->vks; vk; vk = crypt_volume_key_next(vk)) {
+		if (crypt_volume_key_description(vk) && !crypt_volume_key_loaded_in_keyring(cd, vk)) {
+			log_err(cd, _("Missing or invalid reencrypt context."));
+			return -EINVAL;
+		}
 	}
 
 	log_dbg(cd, "Resuming LUKS2 reencryption.");
