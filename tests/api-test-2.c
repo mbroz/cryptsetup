@@ -785,6 +785,23 @@ static void UseLuks2Device(void)
 	OK_(crypt_init_by_name(&cd, CDEVICE_1));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
+
+	/*
+	 * Volume key must be dropped from the kernel keyring when the device is
+	 * deactivated through a second context while the activating context is
+	 * still alive.
+	 */
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	if (t_dm_crypt_keyring_support()) {
+		OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
+		OK_(_volume_key_in_keyring(cd, 0));
+		OK_(crypt_init_by_name(&cd2, CDEVICE_1));
+		OK_(crypt_deactivate(cd2, CDEVICE_1));
+		FAIL_(_volume_key_in_keyring(cd, 0), "VK not dropped on deactivation via second context");
+		CRYPT_FREE(cd2);
+	}
+	CRYPT_FREE(cd);
 #endif
 }
 
@@ -831,6 +848,25 @@ static void SuspendDevice(void)
 	FAIL_(crypt_resume_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0), "not suspended");
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
+
+#if KERNEL_KEYRING
+	/* Volume key uploaded via another (still existing) context must be dropped too */
+	if (t_dm_crypt_keyring_support()) {
+		OK_(crypt_init(&cd, DEVICE_1));
+		OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+		OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
+		OK_(_volume_key_in_keyring(cd, 0));
+		OK_(crypt_init_by_name(&cd2, CDEVICE_1));
+		OK_(crypt_suspend(cd2, CDEVICE_1));
+		FAIL_(_volume_key_in_keyring(cd, 0), "VK not dropped on suspend");
+		OK_(crypt_resume_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1)));
+		OK_(_volume_key_in_keyring(cd, 0));
+		OK_(crypt_deactivate(cd2, CDEVICE_1));
+		FAIL_(_volume_key_in_keyring(cd, 0), "VK not dropped on deactivation");
+		CRYPT_FREE(cd2);
+		CRYPT_FREE(cd);
+	}
+#endif
 
 	/* create LUKS device with detached header */
 	OK_(crypt_init(&cd, DEVICE_1));

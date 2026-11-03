@@ -74,6 +74,12 @@ static long keyctl_unlink(key_serial_t key, key_serial_t keyring)
 	return syscall(__NR_keyctl, KEYCTL_UNLINK, key, keyring);
 }
 
+/* keyctl_invalidate */
+static long keyctl_invalidate(key_serial_t key)
+{
+	return syscall(__NR_keyctl, KEYCTL_INVALIDATE, key);
+}
+
 /* inspired by keyutils written by David Howells (dhowells@redhat.com) */
 static key_serial_t keyring_process_proc_keys_line(char *line, const char *type, const char *desc)
 {
@@ -282,6 +288,11 @@ int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id)
 int keyring_unlink_key_from_thread_keyring(key_serial_t kid)
 {
 	return keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING) < 0 ? -EINVAL : 0;
+}
+
+int keyring_invalidate_key(key_serial_t kid)
+{
+	return keyctl_invalidate(kid) < 0 ? -EINVAL : 0;
 }
 
 const char *key_type_name(key_type_t type)
@@ -500,6 +511,11 @@ int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id)
 }
 
 int keyring_unlink_key_from_thread_keyring(key_serial_t kid)
+{
+	return -ENOTSUP;
+}
+
+int keyring_invalidate_key(key_serial_t kid)
 {
 	return -ENOTSUP;
 }
