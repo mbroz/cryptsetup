@@ -21,7 +21,7 @@ static int hash(const char *hash_name, size_t key_size, char *key,
 	size_t len;
 	int round, i, r = 0;
 
-	if (crypt_hash_init(&md, hash_name))
+	if (crypt_hash_size(hash_name) <= 0 || crypt_hash_init(&md, hash_name))
 		return -ENOENT;
 
 	len = crypt_hash_size(hash_name);
@@ -30,16 +30,16 @@ static int hash(const char *hash_name, size_t key_size, char *key,
 		/* hack from hashalot to avoid null bytes in key */
 		for(i = 0; i < round; i++)
 			if (crypt_hash_write(md, "A", 1))
-				r = 1;
+				r = -EINVAL;
 
 		if (crypt_hash_write(md, passphrase, passphrase_size))
-			r = 1;
+			r = -EINVAL;
 
 		if (len > key_size)
 			len = key_size;
 
 		if (crypt_hash_final(md, key, len))
-			r = 1;
+			r = -EINVAL;
 
 		key += len;
 		key_size -= len;
