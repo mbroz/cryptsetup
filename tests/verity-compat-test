@@ -135,6 +135,21 @@ check_root_hash_fail()
 	echo "[OK]"
 }
 
+check_verify_no_alloc()
+{
+	echo -n "Verify does not grow hash image "
+	ROOT_HASH=$($VERITYSETUP format $IMG $IMG_HASH -h sha256 | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
+	HASH_SIZE=$(stat --printf="%s" $IMG_HASH)
+
+	# Set data_blocks in superblock to 2^21 (hash image would need 64MiB)
+	echo -n -e "\x00\x00\x20\x00\x00\x00\x00\x00" | dd of=$IMG_HASH bs=1 seek=72 conv=notrunc >/dev/null 2>&1
+	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH >/dev/null 2>&1 && fail
+	[ $(stat --printf="%s" $IMG_HASH) -eq $HASH_SIZE ] || fail "Hash image size changed."
+	rm -f $IMG_HASH >/dev/null 2>&1
+
+	echo "[OK]"
+}
+
 check_root_hash() # $1 size, $2 hash, $3 salt, $4 version, $5 hash, [$6 offset]
 {
 	local FORMAT_PARAMS
@@ -471,6 +486,7 @@ SALT=e48da609055204e89ae53b655ca2216dd983cf3cb829f34f63a297d106d53e2d
 echo "Verity tests [separate devices]"
 prepare 8192 1024
 check_root_hash_fail
+check_verify_no_alloc
 
 check_root_hash  512 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 $SALT 1 sha256
 check_root_hash 1024 54d92778750495d1f80832b486ebd007617d746271511bbf0e295e143da2b3df $SALT 1 sha256
