@@ -68,6 +68,9 @@ Verifies data on data_device using hash blocks stored on hash_device.
 
 This command performs userspace verification; no kernel device is created.
 
+If --fec-device is used and the verification fails, the command also checks whether the detected errors are repairable with the FEC data and reports the result.
+This check is only informational, the repaired data is not verified again, so the verification still fails.
+
 The <root_hash> is a hexadecimal string.
 
 If option --root-hash-file is used, the root hash is read from <path> instead of the command line parameter.
