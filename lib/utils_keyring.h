@@ -47,5 +47,6 @@ key_serial_t keyring_add_key_to_keyring(key_type_t ktype, const char *key_desc, 
 				      size_t key_size, key_serial_t keyring_to_link);
 int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id);
 int keyring_unlink_key_from_thread_keyring(key_serial_t kid);
+int keyring_invalidate_key(key_serial_t kid);
 
 #endif

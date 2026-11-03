@@ -7933,7 +7933,24 @@ void crypt_unlink_key_by_description_from_keyring(struct crypt_device *cd,
 		return;
 	}
 
-	crypt_unlink_key_from_keyring(cd, kid);
+	while (kid >= 0) {
+		if (!cd->keyring_id || !unlink_key_from_keyring(cd, kid, cd->keyring_id)) {
+			/*
+			 * If the key was not loaded by a current context but it is still
+			 * reachable from the keyring tree, invalidate it. It searches
+			 * thread-specific keyring, process-specific keyring, and
+			 * then session keyring.
+			 */
+			log_dbg(cd, "Invalidating volume key (id: %" PRIi32 ").", kid);
+
+			if (keyring_invalidate_key(kid)) {
+				log_dbg(cd, "keyring_invalidate_key failed with errno %d.", errno);
+				return;
+			}
+		}
+
+		kid = keyring_request_key_id(ktype, key_description);
+	}
 }
 
 int crypt_set_keyring_to_link(struct crypt_device *cd, const char *key_description,
