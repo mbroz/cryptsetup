@@ -2567,6 +2567,9 @@ static void LuksConvert(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	OK_(crypt_convert(cd, CRYPT_LUKS1, NULL));
 	OK_(strcmp(crypt_get_type(cd), CRYPT_LUKS1));
+	// LUKSv2 default PBKDF must not stay in LUKSv1 context
+	NOTNULL_(crypt_get_pbkdf_type(cd));
+	OK_(strcmp(crypt_get_pbkdf_type(cd)->type, CRYPT_KDF_PBKDF2));
 	CRYPT_FREE(cd);
 
 	// check result
@@ -3102,6 +3105,17 @@ static void Pbkdf(void)
 	OK_(crypt_set_pbkdf_type(cd, NULL));
 	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
 	EQ_(pbkdf->time_ms, default_luks1_iter_time);
+	CRYPT_FREE(cd);
+	// test unsupported PBKDF set before load is replaced by LUKSv1 default
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_set_pbkdf_type(cd, &argon2));
+	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
+	OK_(strcmp(crypt_get_type(cd), CRYPT_LUKS1));
+	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
+	OK_(strcmp(pbkdf->type, CRYPT_KDF_PBKDF2));
+	EQ_(pbkdf->time_ms, default_luks1_iter_time);
+	EQ_(pbkdf->max_memory_kb, 0);
+	EQ_(pbkdf->parallel_threads, 0);
 	CRYPT_FREE(cd);
 	// test value set in crypt_set_iteration_time() can be obtained via following crypt_get_pbkdf_type()
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
