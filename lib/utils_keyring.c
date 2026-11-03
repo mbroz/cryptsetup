@@ -68,12 +68,6 @@ static long keyctl_read(key_serial_t key, char *buffer, size_t buflen)
 	return syscall(__NR_keyctl, KEYCTL_READ, key, buffer, buflen);
 }
 
-/* keyctl_link */
-static long keyctl_link(key_serial_t key, key_serial_t keyring)
-{
-	return syscall(__NR_keyctl, KEYCTL_LINK, key, keyring);
-}
-
 /* keyctl_unlink */
 static long keyctl_unlink(key_serial_t key, key_serial_t keyring)
 {
@@ -81,8 +75,7 @@ static long keyctl_unlink(key_serial_t key, key_serial_t keyring)
 }
 
 /* inspired by keyutils written by David Howells (dhowells@redhat.com) */
-static key_serial_t keyring_process_proc_keys_line(char *line, const char *type, const char *desc,
-						   key_serial_t destringid)
+static key_serial_t keyring_process_proc_keys_line(char *line, const char *type, const char *desc)
 {
 	char typebuf[41], rdesc[1024], *kdesc, *cp;
 	int ndesc, n;
@@ -134,10 +127,6 @@ static key_serial_t keyring_process_proc_keys_line(char *line, const char *type,
 		if (strcmp(cp, desc) != 0)
 			return 0;
 
-
-		if (destringid && keyctl_link(id, destringid) == -1)
-			return 0;
-
 		return id;
 	}
 
@@ -146,7 +135,7 @@ static key_serial_t keyring_process_proc_keys_line(char *line, const char *type,
 
 /* inspired by keyutils written by David Howells (dhowells@redhat.com), returns 0 ID on failure */
 
-static key_serial_t find_key_by_type_and_desc(const char *type, const char *desc, key_serial_t destringid)
+static key_serial_t find_key_by_type_and_desc(const char *type, const char *desc)
 {
 	key_serial_t id;
 	int f;
@@ -178,7 +167,7 @@ static key_serial_t find_key_by_type_and_desc(const char *type, const char *desc
 		while (newline != NULL && buffer_len != 0) {
 			*newline = '\0';
 
-			if ((id = keyring_process_proc_keys_line(buf, type, desc, destringid))) {
+			if ((id = keyring_process_proc_keys_line(buf, type, desc))) {
 				close(f);
 				return id;
 			}
@@ -384,7 +373,7 @@ key_serial_t keyring_find_key_id_by_name(const char *key_name)
 		if (!*name_copy_p)
 			goto out;
 
-		id = find_key_by_type_and_desc(type, name_copy_p, 0);
+		id = find_key_by_type_and_desc(type, name_copy_p);
 		goto out;
 	}
 
