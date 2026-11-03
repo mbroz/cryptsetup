@@ -845,7 +845,7 @@ static int _crypt_load_luks(struct crypt_device *cd, const char *requested_type,
 			return -EINVAL;
 		}
 
-		if (verify_pbkdf_params(cd, &cd->pbkdf)) {
+		if (verify_pbkdf_params(cd, &cd->pbkdf) || strcmp(cd->pbkdf.type, CRYPT_KDF_PBKDF2)) {
 			r = init_pbkdf_type(cd, NULL, CRYPT_LUKS1);
 			if (r)
 				return r;
@@ -1787,7 +1787,7 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 	if (!cd->volume_key)
 		return -ENOMEM;
 
-	if (verify_pbkdf_params(cd, &cd->pbkdf)) {
+	if (verify_pbkdf_params(cd, &cd->pbkdf) || strcmp(cd->pbkdf.type, CRYPT_KDF_PBKDF2)) {
 		r = init_pbkdf_type(cd, NULL, CRYPT_LUKS1);
 		if (r)
 			return r;
