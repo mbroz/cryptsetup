@@ -318,10 +318,12 @@ check_fec()
 		echo -n "[userspace verify failed]"
 		RET=1
 	else
-		echo -n "[repaired in kernel]"
-		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 || fail "Userspace verify failed"
-		echo "[userspace verify][OK]"
 		RET=0
+		echo -n "[repaired in kernel]"
+		# Userspace FEC check is only advisory, verify of corrupted device must still fail
+		OUT=$($VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS 2>&1) && { RET=5; echo "Userspace verify should fail"; }
+		echo "$OUT" | grep -q "repairable errors" || { RET=5; echo "Userspace FEC check failed"; }
+		echo "[userspace verify][OK]"
 	fi
 	rm $1 $2 $3 $IMG_TMP > /dev/null 2>&1
 	return $RET
@@ -428,9 +430,11 @@ checkUserSpaceRepair()
 
 	echo -n "[Errors can be corrected]"
 	corrupt_device $IMG $(($BS*$COUNT)) $7
-	$VERITYSETUP verify $IMG $HASH_DEV $ROOT_HASH --fec-device=$FEC $PARAMS >/dev/null 2>&1
+	# Userspace FEC check is only advisory, verify of corrupted device must still fail
+	OUT=$($VERITYSETUP verify $IMG $HASH_DEV $ROOT_HASH --fec-device=$FEC $PARAMS 2>&1)
 	RET=$?
-	[ "$RET" -ne 0 ] && fail "Device can be corrected, but it wasn't."
+	[ "$RET" -eq 0 ] && fail "Device is corrupted, but verify didn't fail."
+	echo "$OUT" | grep -q "repairable errors" || fail "Device can be corrected, but it wasn't."
 	echo -n "[OK]"
 
 	echo -n "[Errors cannot be corrected]"
