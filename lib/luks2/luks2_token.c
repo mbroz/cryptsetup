@@ -795,7 +795,7 @@ int LUKS2_token_unlock_key(struct crypt_device *cd,
 	size_t buffer_size;
 	json_object *jobj_token;
 	crypt_keyslot_priority min_priority;
-	int r = -ENOENT;
+	int r;
 
 	assert(vk);
 
@@ -828,7 +828,8 @@ int LUKS2_token_unlock_key(struct crypt_device *cd,
 								min_priority, buffer, buffer_size, vk);
 				LUKS2_token_buffer_free(cd, token, buffer, buffer_size);
 			}
-		}
+		} else
+			r = -ENOENT;
 	} else if (token == CRYPT_ANY_TOKEN)
 		/*
 		 * return priorities (ordered form least to most significant):
