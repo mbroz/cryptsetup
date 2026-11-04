@@ -101,7 +101,7 @@ struct crypt_device {
 	} verity;
 	struct { /* used in CRYPT_TCRYPT */
 		struct crypt_params_tcrypt params;
-		struct tcrypt_phdr hdr;
+		struct tcrypt_phdr *hdr; /* contains volume keys, safe allocation */
 	} tcrypt;
 	struct { /* used in CRYPT_INTEGRITY */
 		struct crypt_params_integrity params;
@@ -740,6 +740,8 @@ static void crypt_free_type(struct crypt_device *cd, const char *force_type)
 	} else if (isBITLK(type)) {
 		free(cd->u.bitlk.cipher_spec);
 		BITLK_bitlk_metadata_free(&cd->u.bitlk.params);
+	} else if (isTCRYPT(type)) {
+		crypt_safe_free(cd->u.tcrypt.hdr);
 	} else if (!type) {
 		free(cd->u.none.active_name);
 		cd->u.none.active_name = NULL;
@@ -918,9 +920,16 @@ static int _crypt_load_tcrypt(struct crypt_device *cd, struct crypt_params_tcryp
 	if (r < 0)
 		return r;
 
+	/* Decrypted header contains volume keys, keep it in locked memory */
+	if (!cd->type) {
+		cd->u.tcrypt.hdr = crypt_safe_alloc(sizeof(*cd->u.tcrypt.hdr));
+		if (!cd->u.tcrypt.hdr)
+			return -ENOMEM;
+	}
+
 	memcpy(&cd->u.tcrypt.params, params, sizeof(*params));
 
-	r = TCRYPT_read_phdr(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
+	r = TCRYPT_read_phdr(cd, cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 
 	cd->u.tcrypt.params.passphrase = NULL;
 	cd->u.tcrypt.params.passphrase_size = 0;
@@ -1389,9 +1398,15 @@ static int _init_by_name_crypt(struct crypt_device *cd, const char *name)
 			crypt_set_null_type(cd);
 			r = 0;
 		}
-	} else if (isTCRYPT(cd->type) && single_segment(&dmd) && tgt->type == DM_CRYPT) {
-		r = TCRYPT_init_by_name(cd, name, dmd.uuid, tgt, &cd->device,
-					&cd->u.tcrypt.params, &cd->u.tcrypt.hdr);
+	} else if (isTCRYPT(cd->type)) {
+		cd->u.tcrypt.hdr = crypt_safe_alloc(sizeof(*cd->u.tcrypt.hdr));
+		if (!cd->u.tcrypt.hdr) {
+			r = -ENOMEM;
+			goto out;
+		}
+		if (single_segment(&dmd) && tgt->type == DM_CRYPT)
+			r = TCRYPT_init_by_name(cd, name, dmd.uuid, tgt, &cd->device,
+						&cd->u.tcrypt.params, cd->u.tcrypt.hdr);
 	} else if (isBITLK(cd->type)) {
 		r = _crypt_load_bitlk(cd);
 		if (r < 0) {
@@ -5483,7 +5498,7 @@ static int _activate_by_volume_key(struct crypt_device *cd,
 				    &cd->u.verity.hdr, flags);
 	} else if (isTCRYPT(cd->type)) {
 		assert(!external_key);
-		r = TCRYPT_activate(cd, name, &cd->u.tcrypt.hdr,
+		r = TCRYPT_activate(cd, name, cd->u.tcrypt.hdr,
 				    &cd->u.tcrypt.params, flags);
 	} else if (isINTEGRITY(cd->type)) {
 		assert(!external_key);
@@ -5954,8 +5969,8 @@ int crypt_get_active_device(struct crypt_device *cd, const char *name,
 	}
 
 	if (cd && isTCRYPT(cd->type)) {
-		cad->offset	= TCRYPT_get_data_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
-		cad->iv_offset	= TCRYPT_get_iv_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
+		cad->offset	= TCRYPT_get_data_offset(cd, cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
+		cad->iv_offset	= TCRYPT_get_iv_offset(cd, cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 	} else {
 		while (tgt) {
 			if (tgt->type == DM_CRYPT && (min_offset > tgt->u.crypt.offset)) {
@@ -6098,7 +6113,7 @@ int crypt_volume_key_get_by_keyslot_context(struct crypt_device *cd,
 		} else
 			log_err(cd, _("Cannot retrieve root hash for verity device."));
 	} else if (isTCRYPT(cd->type)) {
-		r = TCRYPT_get_volume_key(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params, &vk);
+		r = TCRYPT_get_volume_key(cd, cd->u.tcrypt.hdr, &cd->u.tcrypt.params, &vk);
 	} else if (isBITLK(cd->type)) {
 		if (kc && kc->get_bitlk_volume_key)
 			r = kc->get_bitlk_volume_key(cd, kc, &cd->u.bitlk.params, &vk);
@@ -6289,7 +6304,7 @@ int crypt_dump(struct crypt_device *cd)
 				   cd->u.verity.root_hash, cd->u.verity.root_hash_size,
 				   cd->u.verity.fec_device);
 	else if (isTCRYPT(cd->type))
-		return TCRYPT_dump(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
+		return TCRYPT_dump(cd, cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 	else if (isINTEGRITY(cd->type))
 		return INTEGRITY_dump(cd, crypt_data_device(cd), 0);
 	else if (isBITLK(cd->type))
@@ -6822,7 +6837,7 @@ uint64_t crypt_get_data_offset(struct crypt_device *cd)
 		return cd->u.loopaes.hdr.offset;
 
 	if (isTCRYPT(cd->type))
-		return TCRYPT_get_data_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
+		return TCRYPT_get_data_offset(cd, cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 
 	if (isBITLK(cd->type))
 		return cd->u.bitlk.params.volume_header_size / SECTOR_SIZE;
@@ -6845,7 +6860,7 @@ uint64_t crypt_get_iv_offset(struct crypt_device *cd)
 		return cd->u.loopaes.hdr.skip;
 
 	if (isTCRYPT(cd->type))
-		return TCRYPT_get_iv_offset(cd, &cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
+		return TCRYPT_get_iv_offset(cd, cd->u.tcrypt.hdr, &cd->u.tcrypt.params);
 
 	return 0;
 }
