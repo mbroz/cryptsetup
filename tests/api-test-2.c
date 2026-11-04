@@ -2979,6 +2979,16 @@ static void LuksConvert(void)
 	OK_(crypt_convert(cd, CRYPT_LUKS2, NULL));
 	CRYPT_FREE(cd);
 
+	// header file replaced (rename + symlink) after load must not be written to
+	OK_(_system("cp " IMAGE_EMPTY_SMALL " " IMAGE_EMPTY_SMALL ".bcp", 1));
+	OK_(crypt_init(&cd, IMAGE_EMPTY_SMALL_2));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	OK_(_system("mv " IMAGE_EMPTY_SMALL_2 " " IMAGE_EMPTY_SMALL_2 ".orig && ln -s " IMAGE_EMPTY_SMALL " " IMAGE_EMPTY_SMALL_2, 1));
+	FAIL_(crypt_convert(cd, CRYPT_LUKS1, NULL), "Header file was replaced.");
+	CRYPT_FREE(cd);
+	OK_(_system("cmp " IMAGE_EMPTY_SMALL " " IMAGE_EMPTY_SMALL ".bcp", 1));
+	OK_(_system("rm -f " IMAGE_EMPTY_SMALL ".bcp " IMAGE_EMPTY_SMALL_2 " && mv " IMAGE_EMPTY_SMALL_2 ".orig " IMAGE_EMPTY_SMALL_2, 1));
+
 	_cleanup_dmdevices();
 }
 
