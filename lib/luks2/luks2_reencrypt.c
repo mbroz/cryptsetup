@@ -1330,8 +1330,10 @@ static int reencrypt_make_segments(struct crypt_device *cd,
 	r = reencrypt_make_hot_segments(cd, hdr, rh, device_size, data_offset);
 	if (!r) {
 		r = reencrypt_make_post_segments(cd, hdr, rh, data_offset);
-		if (r)
+		if (r) {
 			json_object_put(rh->jobj_segs_hot);
+			rh->jobj_segs_hot = NULL;
+		}
 	}
 
 	if (r)
@@ -4078,6 +4080,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 
 	if (!rh->offset && rp->type == REENC_PROTECTION_DATASHIFT && rh->jobj_segment_moved) {
 		crypt_storage_wrapper_destroy(rh->cw1);
+		rh->cw1 = NULL;
 		log_dbg(cd, "Reinitializing old segment storage wrapper for moved segment.");
 		r = crypt_storage_wrapper_init(cd, &rh->cw1, crypt_data_device(cd),
 				LUKS2_reencrypt_get_data_offset_moved(hdr),
