@@ -2447,6 +2447,12 @@ static void Tokens(void)
 	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0), 5);
 	crypt_keyslot_context_free(kc);
 
+	/* token 2 does not exist */
+	OK_(crypt_keyslot_context_init_by_token(cd, 2, NULL, NULL, 0, NULL, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0), -ENOENT);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, 1, kc, CRYPT_ANY_SLOT, NULL, 0), -ENOENT);
+	crypt_keyslot_context_free(kc);
+
 	CRYPT_FREE(cd);
 
 	EQ_(crypt_token_max(CRYPT_LUKS2), 32);
