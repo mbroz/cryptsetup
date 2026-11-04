@@ -418,8 +418,12 @@ out:
 static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 			       const char *key, struct crypt_params_tcrypt *params)
 {
-	struct tcrypt_phdr hdr2;
+	struct tcrypt_phdr *hdr2;
 	int i, j, r = -EINVAL;
+
+	hdr2 = crypt_safe_alloc(sizeof(*hdr2));
+	if (!hdr2)
+		return -ENOMEM;
 
 	for (i = 0; tcrypt_cipher[i].chain_count; i++) {
 		if (params->cipher && !strstr(tcrypt_cipher[i].long_name, params->cipher))
@@ -429,15 +433,15 @@ static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 		log_dbg(cd, "TCRYPT:  trying cipher %s-%s",
 			tcrypt_cipher[i].long_name, tcrypt_cipher[i].mode);
 
-		memcpy(&hdr2.e, &hdr->e, TCRYPT_HDR_LEN);
+		memcpy(&hdr2->e, &hdr->e, TCRYPT_HDR_LEN);
 
 		if (!strncmp(tcrypt_cipher[i].mode, "cbci", 4))
-			r = TCRYPT_decrypt_cbci(&tcrypt_cipher[i], key, &hdr2);
+			r = TCRYPT_decrypt_cbci(&tcrypt_cipher[i], key, hdr2);
 		else for (j = tcrypt_cipher[i].chain_count - 1; j >= 0 ; j--) {
 			if (!tcrypt_cipher[i].cipher[j].name)
 				continue;
 			r = TCRYPT_decrypt_hdr_one(&tcrypt_cipher[i].cipher[j],
-					    tcrypt_cipher[i].mode, key, &hdr2);
+					    tcrypt_cipher[i].mode, key, hdr2);
 			if (r < 0)
 				break;
 		}
@@ -448,23 +452,23 @@ static int TCRYPT_decrypt_hdr(struct crypt_device *cd, struct tcrypt_phdr *hdr,
 			continue;
 		}
 
-		if (!strncmp(hdr2.d.magic, TCRYPT_HDR_MAGIC, TCRYPT_HDR_MAGIC_LEN)) {
+		if (!strncmp(hdr2->d.magic, TCRYPT_HDR_MAGIC, TCRYPT_HDR_MAGIC_LEN)) {
 			log_dbg(cd, "TCRYPT: Signature magic detected.");
-			memcpy(&hdr->e, &hdr2.e, TCRYPT_HDR_LEN);
+			crypt_safe_memcpy(&hdr->e, &hdr2->e, TCRYPT_HDR_LEN);
 			r = i;
 			break;
 		}
 		if ((params->flags & CRYPT_TCRYPT_VERA_MODES) &&
-		     !strncmp(hdr2.d.magic, VCRYPT_HDR_MAGIC, TCRYPT_HDR_MAGIC_LEN)) {
+		     !strncmp(hdr2->d.magic, VCRYPT_HDR_MAGIC, TCRYPT_HDR_MAGIC_LEN)) {
 			log_dbg(cd, "TCRYPT: Signature magic detected (Veracrypt).");
-			memcpy(&hdr->e, &hdr2.e, TCRYPT_HDR_LEN);
+			crypt_safe_memcpy(&hdr->e, &hdr2->e, TCRYPT_HDR_LEN);
 			r = i;
 			break;
 		}
 		r = -EPERM;
 	}
 
-	crypt_safe_memzero(&hdr2, sizeof(hdr2));
+	crypt_safe_free(hdr2);
 	return r;
 }
 
