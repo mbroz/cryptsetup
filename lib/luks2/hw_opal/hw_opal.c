@@ -972,9 +972,13 @@ int opal_reset_segment(struct crypt_device *cd,
 		.range_length = 0,
 		.session = {
 			.who = OPAL_ADMIN1,
-			.opal_key = user_session->opal_key,
+			.opal_key = {
+				.lr = segment_number,
+				.key_len = password_len,
+			},
 		},
 	};
+	crypt_safe_memcpy(setup->session.opal_key.key, password, password_len);
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_LR_SETUP, setup);
 	if (r < 0)
