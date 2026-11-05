@@ -739,15 +739,7 @@ static int opal_lock_unlock(struct crypt_device *cd,
 			    const struct volume_key *vk,
 			    bool lock)
 {
-	struct opal_lock_unlock unlock = {
-		.l_state = lock ? OPAL_LK : OPAL_RW,
-		.session = {
-			.who = segment_number + 1,
-			.opal_key = {
-				.lr = segment_number,
-			},
-		},
-	};
+	struct opal_lock_unlock *unlock;
 	int r, fd;
 
 	if (opal_supported(cd, dev) <= 0)
@@ -759,15 +751,28 @@ static int opal_lock_unlock(struct crypt_device *cd,
 	if (fd < 0)
 		return -EIO;
 
+	unlock = crypt_safe_alloc(sizeof(struct opal_lock_unlock));
+	if (!unlock)
+		return -ENOMEM;
+	*unlock = (struct opal_lock_unlock) {
+		.l_state = lock ? OPAL_LK : OPAL_RW,
+		.session = {
+			.who = segment_number + 1,
+			.opal_key = {
+				.lr = segment_number,
+			},
+		},
+	};
+
 	if (!lock) {
 		assert(crypt_volume_key_length(vk) <= OPAL_KEY_LEN_MAX);
 
-		unlock.session.opal_key.key_len = crypt_volume_key_length(vk);
-		crypt_safe_memcpy(unlock.session.opal_key.key, crypt_volume_key_get_key(vk),
+		unlock->session.opal_key.key_len = crypt_volume_key_length(vk);
+		crypt_safe_memcpy(unlock->session.opal_key.key, crypt_volume_key_get_key(vk),
 				  crypt_volume_key_length(vk));
 	}
 
-	r = opal_ioctl(cd, fd, IOC_OPAL_LOCK_UNLOCK, &unlock);
+	r = opal_ioctl(cd, fd, IOC_OPAL_LOCK_UNLOCK, unlock);
 	if (r < 0) {
 		r = -ENOTSUP;
 		log_dbg(cd, "OPAL not supported on this kernel version, refusing.");
@@ -796,9 +801,9 @@ static int opal_lock_unlock(struct crypt_device *cd,
 	 * on purpose (crypt_deactivate* or crypt_suspend)
 	 */
 	if (!lock)
-		unlock.flags = OPAL_SAVE_FOR_LOCK;
+		unlock->flags = OPAL_SAVE_FOR_LOCK;
 
-	r = opal_ioctl(cd, fd, IOC_OPAL_SAVE, &unlock);
+	r = opal_ioctl(cd, fd, IOC_OPAL_SAVE, unlock);
 	if (r < 0)
 		goto out;
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -811,8 +816,7 @@ static int opal_lock_unlock(struct crypt_device *cd,
 		r = 0;
 	}
 out:
-	if (!lock)
-		crypt_safe_memzero(unlock.session.opal_key.key, unlock.session.opal_key.key_len);
+	crypt_safe_free(unlock);
 
 	return r;
 }
@@ -842,9 +846,7 @@ int opal_factory_reset(struct crypt_device *cd,
 		       const char *password,
 		       size_t password_len)
 {
-	struct opal_key reset = {
-		.key_len = password_len,
-	};
+	struct opal_key *reset;
 	int r, fd;
 
 	assert(cd);
@@ -862,9 +864,15 @@ int opal_factory_reset(struct crypt_device *cd,
 	if (fd < 0)
 		return -EIO;
 
-	crypt_safe_memcpy(reset.key, password, password_len);
+	reset = crypt_safe_alloc(sizeof(struct opal_key));
+	if (!reset)
+		return -ENOMEM;
+	*reset = (struct opal_key) {
+		.key_len = password_len,
+	};
+	crypt_safe_memcpy(reset->key, password, password_len);
 
-	r = opal_ioctl(cd, fd, IOC_OPAL_PSID_REVERT_TPR, &reset);
+	r = opal_ioctl(cd, fd, IOC_OPAL_PSID_REVERT_TPR, reset);
 	if (r < 0) {
 		r = -ENOTSUP;
 		log_dbg(cd, "OPAL not supported on this kernel version, refusing.");
@@ -883,7 +891,7 @@ int opal_factory_reset(struct crypt_device *cd,
 		goto out;
 	}
 out:
-	crypt_safe_memzero(reset.key, reset.key_len);
+	crypt_safe_free(reset);
 
 	return r;
 }
