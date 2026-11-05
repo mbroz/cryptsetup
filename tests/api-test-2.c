@@ -772,6 +772,7 @@ static void UseLuks2Device(void)
 	FAIL_(crypt_volume_key_verify(cd, key, key_size), "key mismatch");
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "key mismatch");
 	CRYPT_FREE(cd);
+	key[1] = ~key[1];
 
 #if KERNEL_KEYRING
 	OK_(crypt_init(&cd, DEVICE_1));
@@ -779,6 +780,9 @@ static void UseLuks2Device(void)
 	if (t_dm_crypt_keyring_support()) {
 		OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
 		OK_(_intermediary_keyring_in_thread_keyring(DEVICE_1_UUID));
+		OK_(_volume_key_in_keyring(cd, 0));
+		/* check same context can reupload kernel key w/ same description and type */
+		OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, CRYPT_ACTIVATE_KEYRING_KEY));
 		OK_(_volume_key_in_keyring(cd, 0));
 	}
 	// All keys uploaded via current device context must be freed.
@@ -4211,6 +4215,11 @@ static void Luks2Refresh(void)
 	OK_(check_flag(cad.flags, CRYPT_ACTIVATE_READONLY));
 	cad.flags = 0;
 
+	/* drop kernel keys held by cd */
+	CRYPT_FREE(cd);
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+
 	/* check LUKS2 with auth. enc. reload */
 	OK_(crypt_init(&cd2, DMDIR L_DEVICE_WRONG));
 	if (!crypt_format(cd2, CRYPT_LUKS2, "aes", "gcm-random", crypt_get_uuid(cd), key, 32, &params)) {
@@ -5034,6 +5043,13 @@ static void Luks2Reencryption(void)
 	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 6, PASSPHRASE, strlen(PASSPHRASE), 0), 6);
+
+	/* drop keyring in cd, we do not allow duplicate UUID in thread keyring */
+	CRYPT_FREE(cd);
+	OK_(crypt_init(&cd, IMAGE_EMPTY_SMALL));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_WRONG));
+
 	/* activate second device using same header */
 	OK_(crypt_init_data_device(&cd2, IMAGE_EMPTY_SMALL, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd2, CRYPT_LUKS2, NULL));
