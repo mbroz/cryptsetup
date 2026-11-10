@@ -1236,6 +1236,13 @@ $CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail
 $CRYPTSETUP close $DEV_NAME
 echo $PWD1 | $CRYPTSETUP open $DEV --test-passphrase || fail
 
+# Original data must not remain between LUKS2 header (smaller than data offset) and data offset
+tr '\0' 'x' < /dev/zero | dd of=$DEV bs=1M iflag=fullblock conv=notrunc >/dev/null 2>&1
+HASH_X=$(dd if=$DEV bs=512 count=$((56*1024*2)) 2>/dev/null | sha1sum | cut -d' ' -f1)
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --luks2-keyslots-size 1M --reduce-device-size 8M -q $FAST_PBKDF_ARGON || fail
+check_hash_head $PWD1 $((56*1024*2)) $HASH_X
+grep -q -a "xxxxxxxxxxxxxxxx" $DEV && fail "Original data not wiped."
+
 # Small device encryption test
 preparebig 65
 # wipe only 1st MiB (final data size after encryption)
