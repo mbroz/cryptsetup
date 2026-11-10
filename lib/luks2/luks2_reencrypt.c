@@ -1381,6 +1381,11 @@ static int reencrypt_load_crashed(struct crypt_device *cd,
 	if (LUKS2_get_data_size(hdr, &required_device_size, &dynamic))
 		return -EINVAL;
 
+	if (!dynamic && required_device_size > device_size) {
+		log_dbg(cd, "Segments size exceeds data device size.");
+		return -EINVAL;
+	}
+
 	if (dynamic)
 		required_device_size = 0;
 	else
@@ -1394,6 +1399,15 @@ static int reencrypt_load_crashed(struct crypt_device *cd,
 			r = -EINVAL;
 		else
 			(*rh)->length = LUKS2_segment_size(hdr, reenc_seg, 0);
+	}
+
+	/*
+	 * Segment in reencryption is not protected by reencryption digest.
+	 * Recovery must never write hotzone beyond data device end.
+	 */
+	if (!r && (*rh)->length > (*rh)->device_size - (*rh)->offset) {
+		log_dbg(cd, "Segment in reencryption exceeds data device size.");
+		r = -EINVAL;
 	}
 
 	if (!r)
