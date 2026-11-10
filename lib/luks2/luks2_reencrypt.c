@@ -4201,18 +4201,38 @@ static int reencrypt_erase_backup_segments(struct crypt_device *cd,
 	return 0;
 }
 
-static int reencrypt_wipe_unused_device_area(struct crypt_device *cd, struct luks2_reencrypt *rh)
+static int reencrypt_wipe_unused_device_area(struct crypt_device *cd,
+		struct luks2_hdr *hdr,
+		struct luks2_reencrypt *rh)
 {
 	uint64_t offset, length, dev_size;
 	int r = 0;
 
 	assert(cd);
+	assert(hdr);
 	assert(rh);
 
 	if (rh->jobj_segment_moved && rh->mode == CRYPT_REENCRYPT_ENCRYPT) {
 		offset = json_segment_get_offset(rh->jobj_segment_moved, 0);
 		length = json_segment_get_size(rh->jobj_segment_moved, 0);
 		log_dbg(cd, "Wiping %" PRIu64 " bytes of backup segment data at offset %" PRIu64,
+			length, offset);
+		r = crypt_wipe_device(cd, crypt_data_device(cd), CRYPT_WIPE_RANDOM,
+				offset, length, 1024 * 1024, NULL, NULL);
+	}
+
+	if (r < 0)
+		return r;
+
+	/*
+	 * After encryption, if the LUKS2 header is placed on data device, wipe any remaining
+	 * plaintext data between LUKS2 header and the data offset.
+	 */
+	if (rh->mode == CRYPT_REENCRYPT_ENCRYPT && !crypt_header_is_detached(cd) &&
+	    LUKS2_hdr_and_areas_size(hdr) < reencrypt_get_data_offset_new(hdr)) {
+		offset = LUKS2_hdr_and_areas_size(hdr);
+		length = reencrypt_get_data_offset_new(hdr) - offset;
+		log_dbg(cd, "Wiping %" PRIu64 " bytes of remaining plaintext data at offset %" PRIu64,
 			length, offset);
 		r = crypt_wipe_device(cd, crypt_data_device(cd), CRYPT_WIPE_RANDOM,
 				offset, length, 1024 * 1024, NULL, NULL);
@@ -4344,7 +4364,7 @@ static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr,
 	}
 
 	if (finished) {
-		if (reencrypt_wipe_unused_device_area(cd, rh))
+		if (reencrypt_wipe_unused_device_area(cd, hdr, rh))
 			log_err(cd, _("Failed to wipe unused data device area."));
 		if (reencrypt_get_data_offset_new(hdr) && LUKS2_set_keyslots_size(hdr, reencrypt_get_data_offset_new(hdr)))
 			log_dbg(cd, "Failed to set new keyslots area size.");
