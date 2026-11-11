@@ -12,7 +12,6 @@
 
 #include "cryptsetup.h"
 #include "cryptsetup_args.h"
-#include "libcryptsetup.h"
 #include "utils_luks.h"
 
 static char *keyfiles[MAX_KEYFILES];
