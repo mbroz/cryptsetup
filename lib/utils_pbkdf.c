@@ -268,7 +268,7 @@ int init_pbkdf_type(struct crypt_device *cd,
 		}
 	}
 
-	if (!strcmp(pbkdf->type, CRYPT_KDF_PBKDF2))
+	if (!strcmp(cd_pbkdf->type, CRYPT_KDF_PBKDF2))
 		log_dbg(cd, "PBKDF %s-%s, time_ms %u (iterations %u).",
 			cd_pbkdf->type, cd_pbkdf->hash, cd_pbkdf->time_ms, cd_pbkdf->iterations);
 	else
