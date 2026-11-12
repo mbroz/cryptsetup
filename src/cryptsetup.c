@@ -2054,6 +2054,8 @@ static int action_luksKillSlot(void)
 	}
 
 	r = crypt_keyslot_destroy(cd, ARG_INT32(OPT_KEY_SLOT_ID));
+	if (r < 0)
+		goto out;
 	tools_keyslot_msg(ARG_INT32(OPT_KEY_SLOT_ID), REMOVED);
 out:
 	crypt_free(cd);
@@ -2106,6 +2108,8 @@ static int action_luksRemoveKey(void)
 	}
 
 	r = crypt_keyslot_destroy(cd, ARG_INT32(OPT_KEY_SLOT_ID));
+	if (r < 0)
+		goto out;
 	tools_keyslot_msg(ARG_INT32(OPT_KEY_SLOT_ID), REMOVED);
 out:
 	crypt_safe_free(password);

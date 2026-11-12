@@ -210,9 +210,10 @@ int crypt_wipe_device(struct crypt_device *cd,
 		}
 	}
 
-	r = posix_memalign((void **)&sf, alignment, wipe_block_size);
-	if (r)
+	if (posix_memalign((void **)&sf, alignment, wipe_block_size)) {
+		r = -ENOMEM;
 		goto out;
+	}
 
 	if (lseek(devfd, offset, SEEK_SET) < 0) {
 		log_err(cd, _("Cannot seek to device offset."));
@@ -230,6 +231,7 @@ int crypt_wipe_device(struct crypt_device *cd,
 		pattern = CRYPT_WIPE_RANDOM;
 	}
 
+	r = -EINVAL;
 	while (offset < dev_size) {
 		if ((offset + wipe_block_size) > dev_size)
 			wipe_block_size = dev_size - offset;
