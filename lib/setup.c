@@ -951,6 +951,7 @@ out:
 static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verity *params)
 {
 	int r;
+	unsigned int root_hash_size;
 	uint64_t sb_offset = 0;
 
 	r = init_crypto(cd);
@@ -962,6 +963,14 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 
 	if (params)
 		sb_offset = params->hash_area_offset;
+
+	/* Context can be already initialized, wipe it */
+	free(CONST_CAST(void*)cd->u.verity.hdr.hash_name);
+	free(CONST_CAST(void*)cd->u.verity.hdr.salt);
+	free(cd->u.verity.uuid);
+	cd->u.verity.hdr.hash_name = NULL;
+	cd->u.verity.hdr.salt = NULL;
+	cd->u.verity.uuid = NULL;
 
 	r = VERITY_read_sb(cd, sb_offset, &cd->u.verity.uuid, &cd->u.verity.hdr);
 	if (r < 0)
@@ -976,11 +985,17 @@ static int _crypt_load_verity(struct crypt_device *cd, struct crypt_params_verit
 		cd->u.verity.hdr.flags = params->flags;
 
 	/* Hash availability checked in sb load */
-	cd->u.verity.root_hash_size = crypt_hash_size(cd->u.verity.hdr.hash_name);
-	if (cd->u.verity.root_hash_size > 4096) {
+	root_hash_size = crypt_hash_size(cd->u.verity.hdr.hash_name);
+	if (root_hash_size > 4096) {
 		r = -EINVAL;
 		goto out;
 	}
+
+	if (cd->u.verity.root_hash && cd->u.verity.root_hash_size != root_hash_size) {
+		free(CONST_CAST(void*)cd->u.verity.root_hash);
+		cd->u.verity.root_hash = NULL;
+	}
+	cd->u.verity.root_hash_size = root_hash_size;
 
 	if (params && params->data_device &&
 	    (r = crypt_set_data_device(cd, params->data_device)) < 0)
