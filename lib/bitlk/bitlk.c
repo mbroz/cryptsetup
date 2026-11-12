@@ -1160,12 +1160,11 @@ static int bitlk_kdf(const char *password,
 			r = -ENOMEM;
 			goto out;
 		}
-		r = crypt_utf8_to_utf16(&utf16Password, CONST_CAST(char*)password, passwordLen);
+		r = crypt_utf8_to_utf16(&utf16Password, &utf16Len, CONST_CAST(char*)password, passwordLen);
 		if (r < 0)
 			goto out;
 
-		utf16Len = crypt_char16_strlen(utf16Password);
-		crypt_hash_write(hd, (char*)utf16Password, utf16Len * 2);
+		crypt_hash_write(hd, (char*)utf16Password, utf16Len);
 		r = crypt_hash_final(hd, kdf.initial_sha256, len);
 		if (r < 0)
 			goto out;
