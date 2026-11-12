@@ -780,6 +780,11 @@ int LUKS2_luks2_to_luks1(struct crypt_device *cd, struct luks2_hdr *hdr2, struct
 		return -EINVAL;
 	}
 
+	if (LUKS2_get_integrity(hdr2, CRYPT_DEFAULT_SEGMENT)) {
+		log_err(cd, _("Cannot convert to LUKS1 format - device uses integrity protection."));
+		return -EINVAL;
+	}
+
 	json_object_object_get_ex(hdr2->jobj, "digests", &jobj1);
 	if (!json_object_object_get_ex(jobj_digest, "type", &jobj2) ||
 	    strcmp(json_object_get_string(jobj2), "pbkdf2") ||

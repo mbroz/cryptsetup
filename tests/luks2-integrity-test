@@ -296,6 +296,21 @@ intformat chacha20-random  poly1305 poly1305 256 0 4096 358d6beceddf593aff6b22c3
 intformat aegis128-random  aead aead 128 0  512 ee501705a084cd0ab6f4a28014bcf62b8bfa3434de00b82743c50b3abf06232c 1
 intformat aegis128-random  aead aead 128 0 4096 358d6beceddf593aff6b22c31684e0df9c226330aff5812e060950215217d21b 1
 
+echo "LUKS2 authenticated mode test (conversion to LUKS1)"
+add_device
+# LUKS1 cannot store integrity, conversion must fail even if keyslot is LUKS1 compatible
+echo -n "[aes-xts-plain64:hmac-sha256:256:512:256][FORMAT]"
+if $CRYPTSETUP luksFormat --type luks2 -q -c aes-xts-plain64 -s 256 --integrity hmac-sha256 --sector-size 512 \
+	$FAST_PBKDF_OPT -d $KEY_FILE $DEV >/dev/null 2>&1 ; then
+	echo -n "[CONVERT]"
+	$CRYPTSETUP -q convert --type luks1 $DEV >/dev/null 2>&1 && fail "Conversion to LUKS1 should fail."
+	$CRYPTSETUP isLuks --type luks2 $DEV || fail
+	dump_check "integrity" hmac\(sha256\)
+	echo "[OK]"
+else
+	echo "[N/A]"
+fi
+
 if dm_integrity_inline_support; then
 	echo "LUKS2 authenticated mode test (inline tags)"
 	add_device_inline
