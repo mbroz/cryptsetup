@@ -3072,7 +3072,7 @@ static void Pbkdf(void)
 	}, bad = {
 		.type = "hamster_pbkdf",
 		.hash = default_luks1_hash
-	};
+	}, copy;
 	struct crypt_params_plain params = {
 		.hash = "sha256",
 		.skip = 0,
@@ -3309,6 +3309,26 @@ static void Pbkdf(void)
 	EQ_(pbkdf->max_memory_kb, 2 * 1024 *1024);
 	EQ_(pbkdf->parallel_threads, 4); /* hard maximum*/
 	EQ_(pbkdf->flags, CRYPT_PBKDF_NO_BENCHMARK);
+
+	// test a modified copy of crypt_get_pbkdf_type() can be set back (strings are owned by context)
+	copy = *pbkdf;
+	copy.iterations = 7;
+	OK_(crypt_set_pbkdf_type(cd, &copy));
+	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
+	OK_(strcmp(pbkdf->type, CRYPT_KDF_ARGON2I));
+	EQ_(pbkdf->iterations, 7);
+	EQ_(pbkdf->max_memory_kb, 2 * 1024 *1024);
+	EQ_(pbkdf->parallel_threads, 4);
+
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
+	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
+	copy = *pbkdf;
+	copy.time_ms = 11;
+	OK_(crypt_set_pbkdf_type(cd, &copy));
+	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
+	OK_(strcmp(pbkdf->type, CRYPT_KDF_PBKDF2));
+	OK_(strcmp(pbkdf->hash, "sha256"));
+	EQ_(pbkdf->time_ms, 11);
 
 	CRYPT_FREE(cd);
 
