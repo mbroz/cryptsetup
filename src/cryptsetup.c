@@ -732,6 +732,11 @@ static int fvault2Dump_with_volume_key(struct crypt_device *cd)
 	if (r < 0)
 		goto out;
 
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		log_std("Key stored to file %s.\n", ARG_STR(OPT_VOLUME_KEY_FILE_ID));
+		goto out;
+	}
+
 	log_std("Volume key:       \t");
 	crypt_log_hex(cd, vk, vk_size, " ", 0, NULL);
 	log_std("\n");
