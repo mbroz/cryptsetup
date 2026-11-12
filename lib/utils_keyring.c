@@ -288,7 +288,8 @@ int keyring_read_key(key_serial_t kid,
 
 	/* retrieve actual payload data */
 	r = keyctl_read(kid, buf, len);
-	if (r < 0) {
+	/* key payload size may change between the two reads (key update) */
+	if (r < 0 || (size_t)r != len) {
 		crypt_safe_free(buf);
 		return -EINVAL;
 	}
