@@ -204,6 +204,7 @@ static int _activate(const char *dm_device,
 		root_hash_fd = open(ARG_STR(OPT_ROOT_HASH_FILE_ID), O_RDONLY);
 		if (root_hash_fd == -1) {
 			log_err(_("Cannot read root hash file %s."), ARG_STR(OPT_ROOT_HASH_FILE_ID));
+			r = -EINVAL;
 			goto out;
 		}
 
@@ -220,7 +221,8 @@ static int _activate(const char *dm_device,
 		}
 
 		if (read_buffer(root_hash_fd, root_hash_from_file, hash_size_hex) != hash_size_hex) {
-			log_err(_("Cannot read root hash file %s."), root_hash_from_file);
+			log_err(_("Cannot read root hash file %s."), ARG_STR(OPT_ROOT_HASH_FILE_ID));
+			r = -EIO;
 			goto out;
 		}
 
