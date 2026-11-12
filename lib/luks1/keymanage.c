@@ -724,6 +724,7 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 {
 	int i, r;
 	size_t keyslot_sectors, header_sectors;
+	uint64_t payload_sectors;
 	uuid_t partitionUuid;
 	struct crypt_pbkdf_type *pbkdf;
 	double PBKDF2_temp;
@@ -754,12 +755,18 @@ int LUKS_generate_phdr(struct luks_phdr *header,
 
 	/* Data offset has priority */
 	if (data_offset)
-		header->payloadOffset = data_offset / SECTOR_SIZE;
+		payload_sectors = data_offset / SECTOR_SIZE;
 	else if (required_alignment) {
-		header->payloadOffset = size_round_up(header_sectors, (required_alignment / SECTOR_SIZE));
-		header->payloadOffset += (align_offset / SECTOR_SIZE);
+		payload_sectors = size_round_up(header_sectors, (required_alignment / SECTOR_SIZE));
+		payload_sectors += (align_offset / SECTOR_SIZE);
 	} else
-		header->payloadOffset = 0;
+		payload_sectors = 0;
+
+	if (payload_sectors > UINT32_MAX) {
+		log_err(ctx, _("Data offset is too large for LUKS1 header."));
+		return -EINVAL;
+	}
+	header->payloadOffset = payload_sectors;
 
 	if (header->payloadOffset && header->payloadOffset < header_sectors) {
 		log_err(ctx, _("Data offset for LUKS header must be "
