@@ -25,9 +25,11 @@ DEBIAN_FRONTEND=noninteractive apt-get -yq install software-properties-common wg
 RELEASE="$(lsb_release -cs)"
 
 if [[ $COMPILER == "gcc" ]]; then
-	# Latest gcc stack deb packages provided by
-	# https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test
-	add-apt-repository -y ppa:ubuntu-toolchain-r/test
+	# Use distribution gcc if available, otherwise latest gcc stack deb packages
+	# provided by https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test
+	if ! apt-cache show gcc-$COMPILER_VERSION >/dev/null 2>&1; then
+		add-apt-repository -y ppa:ubuntu-toolchain-r/test
+	fi
 	PACKAGES+=(gcc-$COMPILER_VERSION)
 elif [[ $COMPILER == "clang" ]]; then
 	wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
