@@ -110,7 +110,7 @@ err:
 static int keyfile_is_gpg(char *buffer, size_t buffer_len)
 {
 	int r = 0;
-	int index = buffer_len < 100 ? buffer_len - 1 : 100;
+	int index = buffer_len <= 100 ? buffer_len - 1 : 100;
 	char eos = buffer[index];
 
 	buffer[index] = '\0';
