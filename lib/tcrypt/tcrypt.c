@@ -566,6 +566,7 @@ static int TCRYPT_init_hdr(struct crypt_device *cd,
 	for (i = 0; i < params->passphrase_size; i++)
 		pwd[i] += params->passphrase[i];
 
+	r = -EPERM;
 	for (i = 0; tcrypt_kdf[i].name; i++) {
 		if (params->hash_name && !strstr(tcrypt_kdf[i].hash, params->hash_name))
 			continue;
