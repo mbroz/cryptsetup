@@ -1775,6 +1775,11 @@ static int _crypt_format_luks1(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	if (cd->data_offset > UINT32_MAX) {
+		log_err(cd, _("Data offset is too large for LUKS1 header."));
+		return -EINVAL;
+	}
+
 	if (!(cd->type = strdup(CRYPT_LUKS1)))
 		return -ENOMEM;
 
