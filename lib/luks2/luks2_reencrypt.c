@@ -784,7 +784,7 @@ static int reencrypt_make_post_segments(struct crypt_device *cd,
 
 static uint64_t reencrypt_data_shift(struct luks2_hdr *hdr)
 {
-	json_object *jobj_keyslot, *jobj_area, *jobj_data_shift;
+	json_object *jobj_keyslot, *jobj_area, *jobj_type, *jobj_data_shift;
 	int ks = LUKS2_find_keyslot(hdr, "reencrypt");
 
 	if (ks < 0)
@@ -793,6 +793,13 @@ static uint64_t reencrypt_data_shift(struct luks2_hdr *hdr)
 	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, ks);
 
 	json_object_object_get_ex(jobj_keyslot, "area", &jobj_area);
+	if (!json_object_object_get_ex(jobj_area, "type", &jobj_type))
+		return 0;
+
+	/* shift_size is validated for datashift based resilience types only */
+	if (strncmp(json_object_get_string(jobj_type), "datashift", 9))
+		return 0;
+
 	if (!json_object_object_get_ex(jobj_area, "shift_size", &jobj_data_shift))
 		return 0;
 

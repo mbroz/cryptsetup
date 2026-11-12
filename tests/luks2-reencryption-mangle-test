@@ -675,5 +675,17 @@ img_json_save $IMG_HDR_BCP
 img_update_json '.keyslots."1".area.shift_size = (((.keyslots."1".area.shift_size | tonumber) - 4096) | tostring)' $IMG_HDR
 $CRYPTSETUP reencrypt --header $IMG_HDR $IMG $CS_PARAMS --force-offline-reencrypt 2>/dev/null && fail
 
+# invalid datashift value must fail metadata validation
+for SHIFT_SIZE in '"1000"' '"0"' '4096' 'null' ; do
+	img_json_save $IMG_HDR_BCP
+	img_update_json ".keyslots.\"1\".area.shift_size = $SHIFT_SIZE" $IMG_HDR
+	$CRYPTSETUP luksDump $IMG_HDR >/dev/null 2>&1 && fail
+done
+
+# missing datashift value must fail metadata validation
+img_json_save $IMG_HDR_BCP
+img_update_json 'del(.keyslots."1".area.shift_size)' $IMG_HDR
+$CRYPTSETUP luksDump $IMG_HDR >/dev/null 2>&1 && fail
+
 remove_mapping
 exit 0
