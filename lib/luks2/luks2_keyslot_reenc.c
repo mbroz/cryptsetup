@@ -343,9 +343,11 @@ static int reenc_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 				sector_size);
 			return -EINVAL;
 		}
-	} else if (!strcmp(type, "datashift") ||
-		   !strcmp(type, "datashift-checksum") ||
-		   !strcmp(type, "datashift-journal")) {
+	}
+
+	if (!strcmp(type, "datashift") ||
+	    !strcmp(type, "datashift-checksum") ||
+	    !strcmp(type, "datashift-journal")) {
 		if (!(jobj_shift_size = json_contains_string(cd, jobj_area, "type:datashift",
 						      "Keyslot area", "shift_size")))
 			return -EINVAL;
