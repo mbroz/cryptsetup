@@ -1998,6 +1998,7 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot, crypt_keyslot_i
 			goto out;
 		max = r;
 
+		r = -ENOENT;
 		for (i = 0; i < max ; i++) {
 			if (i == key_slot)
 				continue;

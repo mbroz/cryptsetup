@@ -1464,6 +1464,18 @@ echo $PWD3 | $CRYPTSETUP luksDump --unbound --volume-key-file $KEY_FILE1 -S3 $LO
 echo $PWD3 | $CRYPTSETUP luksDump --unbound -S3 $LOOPDEV | grep -q "Unbound Key:" || fail
 $CRYPTSETUP luksKillSlot -q $LOOPDEV 3 || fail
 $CRYPTSETUP luksDump $LOOPDEV | grep -q "3: luks2 (unbound)" && fail
+# provided passphrase must be rejected if there is no other active keyslot to verify it
+$CRYPTSETUP luksKillSlot -q $LOOPDEV 8 || fail
+$CRYPTSETUP luksKillSlot -q $LOOPDEV 5 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "0: luks2 (unbound)" || fail
+echo "badpw" | $CRYPTSETUP luksKillSlot $LOOPDEV 0 2>/dev/null && fail
+[ $? -ne 2 ] && fail "luksKillSlot should return EPERM exit code"
+echo "badpw" | $CRYPTSETUP luksKillSlot $LOOPDEV 0 -q 2>/dev/null && fail
+echo "badpw" | $CRYPTSETUP luksKillSlot $LOOPDEV 0 --key-file=- 2>/dev/null && fail
+echo "badpw" | $CRYPTSETUP luksKillSlot $LOOPDEV 0 --key-file=- -q 2>/dev/null && fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "0: luks2 (unbound)" || fail
+$CRYPTSETUP luksKillSlot -q $LOOPDEV 0 || fail
+$CRYPTSETUP luksDump $LOOPDEV | grep -q "0: luks2 (unbound)" && fail
 
 prepare "[39] LUKS2 metadata variants" wipe
 tar xJf luks2_mda_images.tar.xz
