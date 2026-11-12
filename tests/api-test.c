@@ -1694,6 +1694,10 @@ static void VerityTest(void)
 	params.salt_size = 257;
 	FAIL_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params),
 		"Too large salt.");
+	params.flags = 0;
+	FAIL_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params),
+		"Too large salt (superblock only).");
+	params.flags = CRYPT_VERITY_CREATE_HASH;
 	params.salt_size = 32;
 
 	/* hash_type */

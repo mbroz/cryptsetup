@@ -13,6 +13,7 @@
 #include <stdbool.h>
 
 #define VERITY_MAX_HASH_TYPE 1
+#define VERITY_MAX_SALT_SIZE 256
 #define VERITY_BLOCK_SIZE_OK(x)	((x) % 512 || (x) < 512 || \
 				(x) > (512 * 1024) || (x) & ((x)-1))
 

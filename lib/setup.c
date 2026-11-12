@@ -2839,6 +2839,13 @@ static int _crypt_format_verity(struct crypt_device *cd,
 		return -EINVAL;
 	}
 
+	/* Salt must fit into the fixed-size field of the on-disk header */
+	if (!(params->flags & CRYPT_VERITY_NO_HEADER) &&
+	    params->salt_size > VERITY_MAX_SALT_SIZE) {
+		log_err(cd, _("Unsupported VERITY salt size."));
+		return -EINVAL;
+	}
+
 	if (!(cd->type = strdup(CRYPT_VERITY)))
 		return -ENOMEM;
 
