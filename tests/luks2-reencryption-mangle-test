@@ -687,5 +687,11 @@ img_json_save $IMG_HDR_BCP
 img_update_json 'del(.keyslots."1".area.shift_size)' $IMG_HDR
 $CRYPTSETUP luksDump $IMG_HDR >/dev/null 2>&1 && fail
 
+# datashift value not aligned to checksum block size must fail metadata validation
+img_json_save $IMG_HDR_BCP
+img_update_json '.keyslots."1".area.sector_size = 4096 |
+		 .keyslots."1".area.shift_size = "5120"' $IMG_HDR
+$CRYPTSETUP luksDump $IMG_HDR >/dev/null 2>&1 && fail
+
 remove_mapping
 exit 0
