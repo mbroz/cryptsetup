@@ -22,19 +22,20 @@ int decode_rs_char(struct rs* rs, data_t* data)
 	data_t lambda[MAX_NR_BUF], s[MAX_NR_BUF]; /* Err+Eras Locator poly and syndrome poly */
 	data_t b[MAX_NR_BUF], t[MAX_NR_BUF], omega[MAX_NR_BUF];
 	data_t root[MAX_NR_BUF], reg[MAX_NR_BUF], loc[MAX_NR_BUF];
+	const int nroots = rs->nroots;
 
-	if (rs->nroots >= MAX_NR_BUF)
+	if (nroots >= MAX_NR_BUF)
 		return -1;
 
-	memset(s, 0, rs->nroots * sizeof(data_t));
-	memset(b, 0, (rs->nroots + 1) * sizeof(data_t));
+	memset(s, 0, nroots * sizeof(data_t));
+	memset(b, 0, (nroots + 1) * sizeof(data_t));
 
 	/* form the syndromes; i.e., evaluate data(x) at roots of g(x) */
-	for (i = 0; i < rs->nroots; i++)
+	for (i = 0; i < nroots; i++)
 		s[i] = data[0];
 
 	for (j = 1; j < rs->nn - rs->pad; j++) {
-		for (i = 0; i < rs->nroots; i++) {
+		for (i = 0; i < nroots; i++) {
 			if (s[i] == 0) {
 				s[i] = data[j];
 			} else {
@@ -45,7 +46,7 @@ int decode_rs_char(struct rs* rs, data_t* data)
 
 	/* Convert syndromes to index form, checking for nonzero condition */
 	syn_error = 0;
-	for (i = 0; i < rs->nroots; i++) {
+	for (i = 0; i < nroots; i++) {
 		syn_error |= s[i];
 		s[i] = rs->index_of[s[i]];
 	}
@@ -57,10 +58,10 @@ int decode_rs_char(struct rs* rs, data_t* data)
 	if (!syn_error)
 		return 0;
 
-	memset(&lambda[1], 0, rs->nroots * sizeof(lambda[0]));
+	memset(&lambda[1], 0, nroots * sizeof(lambda[0]));
 	lambda[0] = 1;
 
-	for (i   = 0; i < rs->nroots + 1; i++)
+	for (i   = 0; i < nroots + 1; i++)
 		b[i] = rs->index_of[lambda[i]];
 
 	/*
@@ -69,7 +70,7 @@ int decode_rs_char(struct rs* rs, data_t* data)
 	 */
 	r  = 0;
 	el = 0;
-	while (++r <= rs->nroots) { /* r is the step number */
+	while (++r <= nroots) { /* r is the step number */
 		/* Compute discrepancy at the r-th step in poly-form */
 		discr_r = 0;
 		for (i = 0; i < r; i++) {
@@ -80,12 +81,12 @@ int decode_rs_char(struct rs* rs, data_t* data)
 		discr_r = rs->index_of[discr_r]; /* Index form */
 		if (discr_r == A0) {
 			/* 2 lines below: B(x) <-- x*B(x) */
-			memmove(&b[1], b, rs->nroots * sizeof(b[0]));
+			memmove(&b[1], b, nroots * sizeof(b[0]));
 			b[0] = A0;
 		} else {
 			/* 7 lines below: T(x) <-- lambda(x) - discr_r*x*b(x) */
 			t[0] = lambda[0];
-			for (i = 0; i < rs->nroots; i++) {
+			for (i = 0; i < nroots; i++) {
 				if (b[i] != A0)
 					t[i + 1] = lambda[i + 1] ^ rs->alpha_to[modnn(rs, discr_r + b[i])];
 				else
@@ -97,26 +98,26 @@ int decode_rs_char(struct rs* rs, data_t* data)
 				 * 2 lines below: B(x) <-- inv(discr_r) *
 				 * lambda(x)
 				 */
-				for (i   = 0; i <= rs->nroots; i++)
+				for (i   = 0; i <= nroots; i++)
 					b[i] = (lambda[i] == 0) ? A0 : modnn(rs, rs->index_of[lambda[i]] - discr_r + rs->nn);
 			} else {
 				/* 2 lines below: B(x) <-- x*B(x) */
-				memmove(&b[1], b, rs->nroots * sizeof(b[0]));
+				memmove(&b[1], b, nroots * sizeof(b[0]));
 				b[0] = A0;
 			}
-			memcpy(lambda, t, (rs->nroots + 1) * sizeof(t[0]));
+			memcpy(lambda, t, (nroots + 1) * sizeof(t[0]));
 		}
 	}
 
 	/* Convert lambda to index form and compute deg(lambda(x)) */
 	deg_lambda = 0;
-	for (i = 0; i < rs->nroots + 1; i++) {
+	for (i = 0; i < nroots + 1; i++) {
 		lambda[i] = rs->index_of[lambda[i]];
 		if (lambda[i] != A0)
 			deg_lambda = i;
 	}
 	/* Find roots of the error+erasure locator polynomial by Chien search */
-	memcpy(&reg[1], &lambda[1], rs->nroots * sizeof(reg[0]));
+	memcpy(&reg[1], &lambda[1], nroots * sizeof(reg[0]));
 	count = 0; /* Number of roots of lambda(x) */
 	for (i = 1, k = rs->iprim - 1; i <= rs->nn; i++, k = modnn(rs, k + rs->iprim)) {
 		q = 1; /* lambda[0] is always 0 */
@@ -172,7 +173,7 @@ int decode_rs_char(struct rs* rs, data_t* data)
 		den  = 0;
 
 		/* lambda[i+1] for i even is the formal derivative lambda_pr of lambda[i] */
-		for (i = RS_MIN(deg_lambda, rs->nroots - 1) & ~1; i >= 0; i -= 2) {
+		for (i = RS_MIN(deg_lambda, nroots - 1) & ~1; i >= 0; i -= 2) {
 			if (lambda[i + 1] != A0)
 				den ^= rs->alpha_to[modnn(rs, lambda[i + 1] + i * root[j])];
 		}
