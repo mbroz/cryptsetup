@@ -119,6 +119,7 @@ check_root_hash_fail()
 	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH || fail
 	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH_BAD >/dev/null 2>&1 && fail
 	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH_BAD --fec-device $FEC_DEV --fec-roots 2 >/dev/null 2>&1 && fail
+	$VERITYSETUP verify $IMG $IMG_HASH --root-hash-file $IMG.missing >/dev/null 2>&1 && fail
 
 	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH $ROOT_HASH || fail
 	check_exists
