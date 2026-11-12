@@ -705,6 +705,12 @@ static int validate_reencrypt_segments(struct crypt_device *cd, json_object *hdr
 
 	LUKS2_config_get_requirements(cd, &dummy, &reqs);
 
+	/* backup segments are reencryption metadata, never valid without the requirement flag */
+	if (first_backup < segments_count && !LUKS2_reencrypt_requirement_candidate(&dummy)) {
+		log_dbg(cd, "Backup segment without reencryption requirement flag.");
+		return 1;
+	}
+
 	if (reqs_reencrypt_online(reqs)) {
 		/*
 		 * Backup segments are looked up by flag elsewhere (reencryption
