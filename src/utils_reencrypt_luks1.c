@@ -1209,8 +1209,8 @@ static void destroy_context(struct reenc_ctx *rc)
 
 	if (!rc->stained) {
 		unlink(rc->log_file);
-		unlink(rc->header_file_org);
-		unlink(rc->header_file_new);
+		luks_remove_header_file(rc->header_file_org);
+		luks_remove_header_file(rc->header_file_new);
 	}
 
 	for (i = 0; i < MAX_SLOT; i++)

@@ -828,7 +828,7 @@ static int encrypt_luks2_init(struct crypt_device **cd, const char *data_device,
 out:
 	crypt_keyslot_context_free(kc);
 	if (*header_file)
-		unlink(header_file);
+		luks_remove_header_file(header_file);
 	return r;
 }
 
@@ -1017,7 +1017,7 @@ out:
 		log_err(_("Reencryption initialization failed. Header backup is available in %s."),
 			expheader);
 	if (remove_header)
-		unlink(expheader);
+		luks_remove_header_file(expheader);
 
 	return r;
 }
