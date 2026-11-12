@@ -209,6 +209,7 @@ ssize_t write_lseek_blockwise(int fd, size_t bsize, size_t alignment,
 	if (frontHang && length) {
 		if (posix_memalign(&frontPadBuf, alignment, bsize))
 			return -1;
+		memset(frontPadBuf, 0, bsize);
 
 		innerCount = bsize - frontHang;
 		if (innerCount > length)
