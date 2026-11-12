@@ -1383,19 +1383,21 @@ int LUKS2_hdr_uuid(struct crypt_device *cd, struct luks2_hdr *hdr, const char *u
 int LUKS2_hdr_labels(struct crypt_device *cd, struct luks2_hdr *hdr,
 		     const char *label, const char *subsystem, int commit)
 {
+	char new_label[LUKS2_LABEL_L] = {}, new_subsystem[LUKS2_LABEL_L] = {};
+
 	if ((label && strlen(label) >= LUKS2_LABEL_L) ||
 	    (subsystem && strlen(subsystem) >= LUKS2_LABEL_L)) {
 		log_err(cd, _("Label is too long."));
 		return -EINVAL;
 	}
 
-	memset(hdr->label, 0, LUKS2_LABEL_L);
 	if (label)
-		strncpy(hdr->label, label, LUKS2_LABEL_L-1);
-
-	memset(hdr->subsystem, 0, LUKS2_LABEL_L);
+		strncpy(new_label, label, LUKS2_LABEL_L-1);
 	if (subsystem)
-		strncpy(hdr->subsystem, subsystem, LUKS2_LABEL_L-1);
+		strncpy(new_subsystem, subsystem, LUKS2_LABEL_L-1);
+
+	memcpy(hdr->label, new_label, LUKS2_LABEL_L);
+	memcpy(hdr->subsystem, new_subsystem, LUKS2_LABEL_L);
 
 	return commit ? LUKS2_hdr_write(cd, hdr) : 0;
 }

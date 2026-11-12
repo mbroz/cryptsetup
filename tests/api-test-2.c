@@ -4306,6 +4306,17 @@ static void Luks2Flags(void)
 	OK_(strcmp("label", crypt_get_label(cd)));
 	OK_(strcmp("subsystem", crypt_get_subsystem(cd)));
 
+	/* values returned by getters (pointers to the header) can be passed back */
+	OK_(crypt_set_label(cd, crypt_get_label(cd), "subsystem2"));
+	OK_(strcmp("label", crypt_get_label(cd)));
+	OK_(strcmp("subsystem2", crypt_get_subsystem(cd)));
+	OK_(crypt_set_label(cd, "label2", crypt_get_subsystem(cd)));
+	OK_(strcmp("label2", crypt_get_label(cd)));
+	OK_(strcmp("subsystem2", crypt_get_subsystem(cd)));
+	OK_(crypt_set_label(cd, crypt_get_subsystem(cd), crypt_get_label(cd)));
+	OK_(strcmp("subsystem2", crypt_get_label(cd)));
+	OK_(strcmp("label2", crypt_get_subsystem(cd)));
+
 	OK_(crypt_set_label(cd, NULL, NULL));
 	OK_(strcmp("", crypt_get_label(cd)));
 	OK_(strcmp("", crypt_get_subsystem(cd)));
