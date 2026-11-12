@@ -283,7 +283,7 @@ static int reenc_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 	json_object *jobj_mode, *jobj_area, *jobj_type, *jobj_shift_size, *jobj_hash,
 		    *jobj_sector_size, *jobj_direction, *jobj_key_size;
 	const char *mode, *type, *direction;
-	uint32_t sector_size;
+	uint32_t sector_size = 0;
 	uint64_t shift_size;
 
 	/* mode (string: encrypt,reencrypt,decrypt)
@@ -358,6 +358,16 @@ static int reenc_keyslot_validate(struct crypt_device *cd, json_object *jobj_key
 
 		if (MISALIGNED_512(shift_size)) {
 			log_dbg(cd, "Shift size field has to be aligned to 512 bytes.");
+			return -EINVAL;
+		}
+
+		/*
+		 * With datashift-checksum type moved segment hotzone (shift_size) is hashed in
+		 * whole checksum blocks.
+		 */
+		if (sector_size && MISALIGNED(shift_size, sector_size)) {
+			log_dbg(cd, "Shift size field has to be aligned to checksum block size (%" PRIu32 " bytes).",
+				sector_size);
 			return -EINVAL;
 		}
 	}
