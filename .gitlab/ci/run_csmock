@@ -15,8 +15,13 @@ $CSMOCK cryptsetup-*.src.rpm \
        --cppcheck-add-flag=--check-level=exhaustive \
        || { echo "csmock command failed"; exit 2; }
 
-tar xJf $CSMOCK_TXZ $CSMOCK_ERR --strip-components 1 \
-       && test -s $CSMOCK_ERR \
-       && { echo "csmock discovered important errors"; exit 3; }
+tar xJf $CSMOCK_TXZ $CSMOCK_ERR \
+       || { echo "cannot extract $CSMOCK_ERR from $CSMOCK_TXZ"; exit 2; }
+
+if [ -s $CSMOCK_ERR ]; then
+	cat $CSMOCK_ERR
+	echo "csmock discovered important errors"
+	exit 3
+fi
 
 exit 0
