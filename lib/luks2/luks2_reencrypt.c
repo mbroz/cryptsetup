@@ -3895,6 +3895,11 @@ static int reencrypt_init_by_keyslot_context(struct crypt_device *cd,
 	if (flags & CRYPT_REENCRYPT_RECOVERY)
 		return reencrypt_recovery_by_keyslot_context(cd, hdr, keyslot_old, keyslot_new, kc_old, kc_new);
 
+	if (crypt_get_integrity_tag_size(cd)) {
+		log_err(cd, _("Reencryption of device with integrity profile is not supported."));
+		return -ENOTSUP;
+	}
+
 	if (name && !device_direct_io(crypt_data_device(cd))) {
 		log_dbg(cd, "Device %s does not support direct I/O.", device_path(crypt_data_device(cd)));
 		/* FIXME: Add more specific error message for translation later. */

@@ -4051,6 +4051,15 @@ static void Luks2Integrity(void)
 	struct crypt_params_luks2 params = {
 		.sector_size = 512,
 		.integrity = "hmac(sha256)"
+	}, params2 = {
+		.sector_size = 512
+	};
+	struct crypt_params_reencrypt rparams = {
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "checksum",
+		.hash = "sha256",
+		.luks2 = &params2,
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY
 	};
 	size_t key_size = 32 + 32;
 	const char *cipher = "aes";
@@ -4079,6 +4088,17 @@ static void Luks2Integrity(void)
 	EQ_(32, ip.integrity_key_size);
 	EQ_(32+16, ip.tag_size);
 	OK_(crypt_deactivate(cd, CDEVICE_2));
+	CRYPT_FREE(cd);
+
+	/* reencryption must be refused before any metadata is written */
+	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
+	EQ_(crypt_keyslot_add_by_key(cd, 8, NULL, key_size, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 8);
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 7, 8, cipher, "xts-plain64", &rparams), "Reencryption of device with integrity profile is not supported.");
+	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 7, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Decryption of device with integrity profile is not supported.");
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
 	CRYPT_FREE(cd);
 
 	OK_(crypt_init(&cd, DEVICE_2));
