@@ -1457,7 +1457,7 @@ int LUKS2_hdr_backup(struct crypt_device *cd, struct luks2_hdr *hdr,
 	hdr_size = LUKS2_hdr_and_areas_size(hdr);
 	buffer_size = size_round_up(hdr_size, crypt_getpagesize());
 
-	buffer = malloc(buffer_size);
+	buffer = crypt_zalloc(buffer_size);
 	if (!buffer)
 		return -ENOMEM;
 
