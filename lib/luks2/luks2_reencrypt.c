@@ -3067,7 +3067,7 @@ static int reencrypt_init(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	r = device_check_size(cd, crypt_data_device(cd), data_offset_bytes, 1);
+	r = device_check_size(cd, crypt_data_device(cd), data_offset_bytes, 0);
 	if (r)
 		return r;
 
@@ -4526,7 +4526,7 @@ int LUKS2_reencrypt_check_device_size(struct crypt_device *cd, struct luks2_hdr 
 
 	data_offset = LUKS2_reencrypt_data_offset(hdr, false);
 
-	r = device_check_size(cd, crypt_data_device(cd), data_offset, 1);
+	r = device_check_size(cd, crypt_data_device(cd), data_offset, 0);
 	if (r)
 		return r;
 
