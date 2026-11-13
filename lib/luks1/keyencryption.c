@@ -179,7 +179,7 @@ int LUKS_encrypt_to_storage(char *src, size_t srcLength,
 
 	if (write_lseek_blockwise(devfd, device_block_size(ctx, device),
 				  device_alignment(device), src, srcLength,
-				  sector * SECTOR_SIZE) < 0)
+				  (uint64_t)sector * SECTOR_SIZE) < 0)
 		goto out;
 
 	r = 0;
@@ -240,7 +240,7 @@ int LUKS_decrypt_from_storage(char *dst, size_t dstLength,
 
 	if (read_lseek_blockwise(devfd, device_block_size(ctx, device),
 				 device_alignment(device), dst, dstLength,
-				 sector * SECTOR_SIZE) < 0) {
+				 (uint64_t)sector * SECTOR_SIZE) < 0) {
 		if (!fstat(devfd, &st) && (st.st_size < (off_t)dstLength))
 			log_err(ctx, _("Device %s is too small."), device_path(device));
 		else

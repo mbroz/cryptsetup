@@ -125,7 +125,7 @@ static int LUKS_check_device_size(struct crypt_device *ctx, const struct luks_ph
 static int LUKS_check_keyslots(struct crypt_device *ctx, const struct luks_phdr *phdr)
 {
 	int i, prev, next, sorted_areas[LUKS_NUMKEYS] = { 0, 1, 2, 3, 4, 5, 6, 7 };
-	uint32_t secs_per_stripes = AF_split_sectors(phdr->keyBytes, LUKS_STRIPES);
+	uint64_t secs_per_stripes = AF_split_sectors(phdr->keyBytes, LUKS_STRIPES);
 
 	if (!secs_per_stripes || phdr->keyBytes < LUKS_KEY_BYTES_MIN) {
 		log_dbg(ctx, "Invalid volume key size.");
@@ -145,7 +145,7 @@ static int LUKS_check_keyslots(struct crypt_device *ctx, const struct luks_phdr 
 		}
 
 		/* First sectors is the header itself */
-		if (phdr->keyblock[i].keyMaterialOffset * SECTOR_SIZE < sizeof(*phdr)) {
+		if ((uint64_t)phdr->keyblock[i].keyMaterialOffset * SECTOR_SIZE < sizeof(*phdr)) {
 			log_dbg(ctx, "Invalid offset %u in keyslot %u.",
 				phdr->keyblock[i].keyMaterialOffset, i);
 			log_err(ctx, _("LUKS keyslot %u is invalid."), i);
@@ -165,7 +165,7 @@ static int LUKS_check_keyslots(struct crypt_device *ctx, const struct luks_phdr 
 		}
 
 		if (phdr->payloadOffset < (phdr->keyblock[i].keyMaterialOffset + secs_per_stripes)) {
-			log_dbg(ctx, "Invalid keyslot size %u (offset %u, stripes %u) in "
+			log_dbg(ctx, "Invalid keyslot size %" PRIu64 " (offset %u, stripes %u) in "
 				"keyslot %u (beyond data area offset %u).",
 				secs_per_stripes,
 				phdr->keyblock[i].keyMaterialOffset,
@@ -250,7 +250,7 @@ int LUKS_hdr_backup(const char *backup_file, struct crypt_device *ctx)
 	}
 
 	/* Wipe unused area, so backup cannot contain old signatures */
-	if (hdr.keyblock[0].keyMaterialOffset * SECTOR_SIZE == LUKS_ALIGN_KEYSLOTS)
+	if ((uint64_t)hdr.keyblock[0].keyMaterialOffset * SECTOR_SIZE == LUKS_ALIGN_KEYSLOTS)
 		memset(buffer + sizeof(hdr), 0, LUKS_ALIGN_KEYSLOTS - sizeof(hdr));
 
 	fd = open(backup_file, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR);
@@ -440,7 +440,7 @@ static int _keyslot_repair(struct luks_phdr *phdr, struct crypt_device *ctx)
 	/* payloadOffset - cannot check */
 	r = LUKS_generate_phdr(&temp_phdr, fake_vk, phdr->cipherName, phdr->cipherMode,
 			       phdr->hashSpec, phdr->uuid,
-			       phdr->payloadOffset * SECTOR_SIZE, 0, 0, ctx);
+			       (uint64_t)phdr->payloadOffset * SECTOR_SIZE, 0, 0, ctx);
 	if (r < 0)
 		goto out;
 
@@ -643,7 +643,7 @@ int LUKS_read_phdr(struct luks_phdr *hdr,
 	 * Disable direct-io to avoid possible IO errors if underlying device
 	 * has bigger sector size.
 	 */
-	if (!r && hdr->keyblock[0].keyMaterialOffset * SECTOR_SIZE < LUKS_ALIGN_KEYSLOTS) {
+	if (!r && (uint64_t)hdr->keyblock[0].keyMaterialOffset * SECTOR_SIZE < LUKS_ALIGN_KEYSLOTS) {
 		log_dbg(ctx, "Old unaligned LUKS keyslot detected, disabling direct-io.");
 		device_disable_direct_io(device);
 	}
@@ -951,8 +951,8 @@ int LUKS_set_key(unsigned int keyIndex,
 	if (r < 0)
 		goto out;
 
-	log_dbg(ctx, "Updating key slot %d [0x%04x] area.", keyIndex,
-		hdr->keyblock[keyIndex].keyMaterialOffset << 9);
+	log_dbg(ctx, "Updating key slot %d [0x%04" PRIx64 "] area.", keyIndex,
+		(uint64_t)hdr->keyblock[keyIndex].keyMaterialOffset * SECTOR_SIZE);
 	/* Encryption via dm */
 	r = LUKS_encrypt_to_storage(AfKey,
 				    AFEKSize,
@@ -1132,7 +1132,7 @@ int LUKS_del_key(unsigned int keyIndex,
 		 struct crypt_device *ctx)
 {
 	struct device *device = crypt_metadata_device(ctx);
-	unsigned int startOffset, endOffset;
+	uint64_t startOffset, endOffset;
 	int r;
 
 	r = LUKS_read_phdr(hdr, 1, 0, ctx);
