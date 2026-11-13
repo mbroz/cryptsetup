@@ -2713,7 +2713,7 @@ out:
 	}
 
 	if (opal_range_reset &&
-	    (opal_reset_segment(cd, crypt_data_device(cd), opal_segment_number,
+	    (opal_reset_segment(cd, crypt_data_device(cd), opal_segment_number, NULL, NULL,
 				opal_params->admin_key, opal_params->admin_key_size) < 0))
 		log_err(cd, _("Locking range %d reset on device %s failed."),
 			opal_segment_number, device_path(crypt_data_device(cd)));

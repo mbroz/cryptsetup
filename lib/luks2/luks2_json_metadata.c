@@ -784,6 +784,7 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 {
 	json_object *jobj_segments, *jobj_digests, *jobj_offset, *jobj_size, *jobj_type, *jobj_flags, *jobj;
 	uint64_t offset, size, opal_segment_size;
+	uint32_t opal_segment_number;
 	int i, r, count, first_backup = -1;
 	struct interval *intervals = NULL;
 
@@ -866,10 +867,22 @@ static int hdr_validate_segments(struct crypt_device *cd, json_object *hdr_jobj)
 					json_object_get_string(jobj_type));
 				return 1;
 			}
-			if (!json_contains(cd, val, key, "Segment", "opal_segment_number", json_type_int) ||
+			if (!(jobj = json_contains(cd, val, key, "Segment", "opal_segment_number", json_type_int)) ||
 			    !json_contains(cd, val, key, "Segment", "opal_key_size", json_type_int) ||
 			    !(jobj_size = json_contains_string(cd, val, key, "Segment", "opal_segment_size")))
 				return 1;
+			/* enforce uint32_t type */
+			if (!validate_json_uint32(jobj)) {
+				log_dbg(cd, "Illegal field \"opal_segment_number\":%s.",
+					json_object_get_string(jobj));
+				return 1;
+			}
+			/* Locking range 0 is the global range, never used by LUKS2 */
+			opal_segment_number = crypt_jobj_get_uint32(jobj);
+			if (!opal_segment_number || opal_segment_number > 8) {
+				log_dbg(cd, "Illegal OPAL segment number: %" PRIu32, opal_segment_number);
+				return 1;
+			}
 			if (!numbered(cd, "opal_segment_size", json_object_get_string(jobj_size)))
 				return 1;
 			if (!json_str_to_uint64(jobj_size, &opal_segment_size) || !opal_segment_size) {
