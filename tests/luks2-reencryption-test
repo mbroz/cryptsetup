@@ -3032,6 +3032,41 @@ fail "Reencrypt used a volume key planted by another user."
 # device is untouched: the original volume key still unlocks it
 $CRYPTSETUP open --test-passphrase --volume-key-keyring $KEY_NAME_VK2 $DEV <&- || fail
 
+echo [40] Reencrypt rejects small LUKS images
+preparebig 32
+
+# create device with 4096 bytes of data
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --offset 65528 --luks2-keyslots-size 16M $FAST_PBKDF_ARGON $DEVBIG || fail
+resize_file $DEVBIG -8192 # shrink device below data offset
+# data offset beyond image end
+# reencryption initialization must fail and not grow the image
+echo $PWD1 | $CRYPTSETUP reencrypt $DEVBIG $FAST_PBKDF_ARGON --init-only --resilience none 2>/dev/null && fail
+[ $(stat --printf="%s" $DEVBIG) -eq 33546240 ] || fail "Image size changed."
+
+resize_file $DEVBIG 8192
+echo $PWD1 | $CRYPTSETUP reencrypt $DEVBIG $FAST_PBKDF_ARGON --init-only --resilience none || fail
+resize_file $DEVBIG -8192 # shrink device below data offset again
+CHECK_HASH1=$(sha256sum $DEVBIG | cut -d' ' -f 1)
+# data image truncated below data offset
+# reencryption resume must fail, not grow the image and not write it
+echo $PWD1 | $CRYPTSETUP reencrypt $DEVBIG --resume-only --force-offline-reencrypt 2>/dev/null && fail
+[ $(stat --printf="%s" $DEVBIG) -eq 33546240 ] || fail "Image size changed."
+CHECK_HASH2=$(sha256sum $DEVBIG | cut -d' ' -f 1)
+[ "$CHECK_HASH1" != "$CHECK_HASH2" ] && fail "Image changed!"
+resize_file $DEVBIG 8192
+
+# create device with 4096 bytes of data (header is detached)
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --header $IMG_HDR --offset 65528 $FAST_PBKDF_ARGON $DEVBIG || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --header $IMG_HDR $DEVBIG $FAST_PBKDF_ARGON --init-only --resilience none || fail
+resize_file $DEVBIG -8192
+CHECK_HASH1=$(sha256sum $DEVBIG | cut -d' ' -f 1)
+# data image truncated below data offset
+# reencryption resume must fail, not grow the image and not write it
+echo $PWD1 | $CRYPTSETUP reencrypt --header $IMG_HDR $DEVBIG --resume-only --force-offline-reencrypt 2>/dev/null && fail
+[ $(stat --printf="%s" $DEVBIG) -eq 33546240 ] || fail "Image size changed."
+CHECK_HASH2=$(sha256sum $DEVBIG | cut -d' ' -f 1)
+[ "$CHECK_HASH1" != "$CHECK_HASH2" ] && fail "Image changed!"
+
 remove_mapping
 cleanup_keyring
 remove_foreign_vk_key $FOREIGN_KEY_NAME_VK
