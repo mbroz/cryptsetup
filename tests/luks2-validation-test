@@ -230,6 +230,8 @@ RUN luks2-segment-wrong-flags-element.img		"F" "Failed to detect invalid flags c
 RUN luks2-segment-wrong-backup-key-0.img		"F" "Failed to detect gap in backup segments"
 RUN luks2-segment-wrong-backup-key-1.img		"F" "Failed to detect gap in backup segments"
 RUN luks2-segment-crypt-empty-encryption.img		"F" "Failed to detect empty encryption field"
+RUN luks2-segment-opal-number-1.img			"R" "Validation rejected valid OPAL segment"
+RUN luks2-segment-opal-number-0.img			"F" "Failed to detect invalid opal_segment_number field"
 
 echo "[6] Test metadata size and keyslots size (config section)"
 RUN luks2-invalid-keyslots-size-c0.img			"F" "Failed to detect too large keyslots_size in config section"

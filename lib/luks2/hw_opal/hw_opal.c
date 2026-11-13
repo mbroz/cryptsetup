@@ -271,10 +271,10 @@ static int opal_geometry_fd(struct crypt_device *cd,
 	return r;
 }
 
-static int opal_range_check_attributes_fd(struct crypt_device *cd,
+/* Locking range attributes are checked in the session (user or Admin1) provided by caller */
+static int opal_range_check_attributes_session_fd(struct crypt_device *cd,
 	int fd,
-	uint32_t segment_number,
-	const struct volume_key *vk,
+	const struct opal_session_info *session,
 	const uint64_t *check_offset_sectors,
 	const uint64_t *check_length_sectors,
 	bool *check_read_locked,
@@ -285,15 +285,17 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 	int r;
 	struct opal_lr_status *lrs;
 	int device_block_bytes;
-	uint32_t opal_block_bytes = 0;
+	uint32_t segment_number, opal_block_bytes = 0;
 	uint64_t offset, length;
 	bool read_locked, write_locked;
 
 	assert(fd >= 0);
 	assert(cd);
-	assert(vk);
+	assert(session);
 	assert(check_offset_sectors);
 	assert(check_length_sectors);
+
+	segment_number = session->opal_key.lr;
 
 	r = opal_geometry_fd(cd, fd, NULL, &opal_block_bytes, NULL, NULL);
 	if (r != OPAL_STATUS_SUCCESS)
@@ -309,16 +311,8 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 		return -ENOMEM;
 
 	*lrs = (struct opal_lr_status) {
-		.session = {
-			.who = segment_number + 1,
-			.opal_key = {
-				.key_len = crypt_volume_key_length(vk),
-				.lr = segment_number
-			}
-		}
+		.session = *session
 	};
-	crypt_safe_memcpy(lrs->session.opal_key.key, crypt_volume_key_get_key(vk),
-			  crypt_volume_key_length(vk));
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_GET_LR_STATUS, lrs);
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -372,6 +366,48 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 		*ret_write_locked = write_locked;
 out:
 	crypt_safe_free(lrs);
+
+	return r;
+}
+
+static int opal_range_check_attributes_fd(struct crypt_device *cd,
+	int fd,
+	uint32_t segment_number,
+	const struct volume_key *vk,
+	const uint64_t *check_offset_sectors,
+	const uint64_t *check_length_sectors,
+	bool *check_read_locked,
+	bool *check_write_locked,
+	bool *ret_read_locked,
+	bool *ret_write_locked)
+{
+	int r;
+	struct opal_session_info *user_session;
+
+	assert(vk);
+	/* FIXME: add assert back when the dependency gets merged */
+	/* assert(crypt_volume_key_length(vk) <= OPAL_KEY_LEN_MAX); */
+
+	user_session = crypt_safe_alloc(sizeof(*user_session));
+	if (!user_session)
+		return -ENOMEM;
+
+	*user_session = (struct opal_session_info) {
+		.who = segment_number + 1,
+		.opal_key = {
+			.key_len = crypt_volume_key_length(vk),
+			.lr = segment_number
+		}
+	};
+	crypt_safe_memcpy(user_session->opal_key.key, crypt_volume_key_get_key(vk),
+			  crypt_volume_key_length(vk));
+
+	r = opal_range_check_attributes_session_fd(cd, fd, user_session,
+						   check_offset_sectors, check_length_sectors,
+						   check_read_locked, check_write_locked,
+						   ret_read_locked, ret_write_locked);
+
+	crypt_safe_free(user_session);
 
 	return r;
 }
@@ -848,6 +884,8 @@ out:
 int opal_reset_segment(struct crypt_device *cd,
 		       struct device *dev,
 		       uint32_t segment_number,
+		       const uint64_t *check_offset_sectors,
+		       const uint64_t *check_length_sectors,
 		       const char *password,
 		       size_t password_len)
 {
@@ -881,6 +919,15 @@ int opal_reset_segment(struct crypt_device *cd,
 	if (fd < 0) {
 		r = -EIO;
 		goto out;
+	}
+
+	/* Locking range number may come from untrusted metadata, check it is set up as expected */
+	if (check_offset_sectors && check_length_sectors) {
+		r = opal_range_check_attributes_session_fd(cd, fd, user_session,
+							   check_offset_sectors, check_length_sectors,
+							   NULL, NULL, NULL, NULL);
+		if (r < 0)
+			goto out;
 	}
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_SECURE_ERASE_LR, user_session);
@@ -1076,6 +1123,8 @@ int opal_factory_reset(struct crypt_device *cd,
 int opal_reset_segment(struct crypt_device *cd,
 		       struct device *dev,
 		       uint32_t segment_number,
+		       const uint64_t *check_offset_sectors,
+		       const uint64_t *check_length_sectors,
 		       const char *password,
 		       size_t password_len)
 {

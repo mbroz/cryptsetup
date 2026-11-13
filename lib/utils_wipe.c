@@ -309,6 +309,7 @@ int crypt_wipe_hw_opal(struct crypt_device *cd,
 	int r;
 	struct luks2_hdr *hdr;
 	uint32_t opal_segment_number;
+	uint64_t range_offset_sectors, range_length_sectors;
 	struct crypt_lock_handle *opal_lh = NULL;
 
 	UNUSED(flags);
@@ -348,6 +349,18 @@ int crypt_wipe_hw_opal(struct crypt_device *cd,
 			log_dbg(cd, "Can not get OPAL segment number.");
 			return r;
 		}
+
+		/*
+		 * Segment number in metadata is not trusted. The locking range
+		 * must match the LUKS2 data area on this device (as in activation).
+		 */
+		range_length_sectors = LUKS2_opal_segment_size(hdr, CRYPT_DEFAULT_SEGMENT, 1);
+		r = device_block_adjust(cd, crypt_data_device(cd), DEV_OK,
+					crypt_get_data_offset(cd), &range_length_sectors, NULL);
+		if (r < 0)
+			return r;
+
+		range_offset_sectors = crypt_get_data_offset(cd) + crypt_dev_partition_offset(device_path(crypt_data_device(cd)));
 	} else
 		opal_segment_number = segment;
 
@@ -360,6 +373,8 @@ int crypt_wipe_hw_opal(struct crypt_device *cd,
 	r = opal_reset_segment(cd,
 			       crypt_data_device(cd),
 			       opal_segment_number,
+			       segment == CRYPT_LUKS2_SEGMENT ? &range_offset_sectors : NULL,
+			       segment == CRYPT_LUKS2_SEGMENT ? &range_length_sectors : NULL,
 			       password,
 			       password_size);
 
