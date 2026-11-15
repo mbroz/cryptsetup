@@ -78,9 +78,9 @@ last_commit util-linux
 echo "Building libraries from git"
 cd openssl
 ./Configure --prefix="$DEPS_PATH" --libdir=lib no-shared no-module no-asm
-make build_generated
-make -j libcrypto.a
-make install_dev
+make -j -s build_generated
+make -j -s libcrypto.a
+make -j -s install_dev
 cd ..
 
 cd util-linux
