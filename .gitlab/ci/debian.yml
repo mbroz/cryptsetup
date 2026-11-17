@@ -5,7 +5,7 @@
   before_script:
     - sudo apt-get -y update
     - >
-      sudo apt-get -y install -y -qq git gcc make autoconf automake autopoint
+      sudo apt-get -y install -y -qq git gcc clang make autoconf automake autopoint
       pkgconf libtool libtool-bin gettext libssl-dev libdevmapper-dev
       libpopt-dev uuid-dev libsepol-dev libjson-c-dev libssh-dev libblkid-dev
       tar libargon2-dev libpwquality-dev sharutils dmsetup jq xxd expect
@@ -16,6 +16,36 @@
     - sudo -E git clean -xdf
     - ./autogen.sh
     - ./configure --enable-libargon2 --enable-asciidoc
+
+test-mergerq-job-compile-debian:
+  extends:
+    - .debian-prep
+  tags:
+    - libvirt
+    - cryptsetup-debian-unstable
+  stage: test
+  interruptible: true
+  variables:
+    DISTRO: cryptsetup-debian-unstable
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - echo "Configuring with GCC / all warnings"
+    - export CFLAGS="-g -O0"
+    - export CC="$CI_PROJECT_DIR/.gitlab/ci/gcc-Wall"
+    - $CC --version
+    - ./configure
+    - make -j CFLAGS="-g -O0 -Werror"
+    - make -j CFLAGS="-g -O0 -Werror" check-programs
+    - echo "Configuring with CLANG / all warnings"
+    - export CFLAGS="-g -O0"
+    - export CC="$CI_PROJECT_DIR/.gitlab/ci/clang-Wall"
+    - $CC --version
+    - ./configure
+    - make -j CFLAGS="-g -O0 -Werror"
+    - make -j CFLAGS="-g -O0 -Werror" check-programs
 
 test-mergerq-job-debian:
   extends:
