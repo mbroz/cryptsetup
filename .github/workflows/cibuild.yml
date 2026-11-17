@@ -16,14 +16,14 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - { COMPILER: "gcc", COMPILER_VERSION: "14",  RUN_SSH_PLUGIN_TEST: "1" }
+          - { COMPILER: "gcc", COMPILER_VERSION: "15",  RUN_SSH_PLUGIN_TEST: "1" }
     env: ${{ matrix.env }}
     steps:
       - name: Repository checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - name: Ubuntu setup
-        run: sudo -E .github/workflows/cibuild-setup-ubuntu.sh
+        run: sudo --preserve-env=COMPILER,COMPILER_VERSION,RUN_SSH_PLUGIN_TEST .github/workflows/cibuild-setup-ubuntu.sh
       - name: Configure & Make
         run: .github/workflows/cibuild.sh CONFIGURE MAKE
       - name: Check
-        run: sudo -E .github/workflows/cibuild.sh CHECK
+        run: sudo --preserve-env=COMPILER,COMPILER_VERSION,RUN_SSH_PLUGIN_TEST .github/workflows/cibuild.sh CHECK

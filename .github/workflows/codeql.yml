@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
@@ -40,11 +40,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo -E .github/workflows/cibuild-setup-ubuntu.sh
+          sudo --preserve-env=COMPILER,COMPILER_VERSION,RUN_SSH_PLUGIN_TEST .github/workflows/cibuild-setup-ubuntu.sh
           # Force autoconf for now, meson is broken in analysis step
           rm meson.build
 
-        env: { COMPILER: "gcc", COMPILER_VERSION: "14",  RUN_SSH_PLUGIN_TEST: "1" }
+        env: { COMPILER: "gcc", COMPILER_VERSION: "15",  RUN_SSH_PLUGIN_TEST: "1" }
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v4

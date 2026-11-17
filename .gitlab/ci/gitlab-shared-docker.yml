@@ -1,6 +1,6 @@
 # Ubuntu
 .gitlab-shared-docker-ubuntu:
-  image: ubuntu:noble
+  image: ubuntu:latest
   tags:
     - gitlab-org-docker
   stage: test
@@ -37,16 +37,16 @@
     - .gitlab-shared-docker-ubuntu
   variables:
     COMPILER: "gcc"
-    COMPILER_VERSION: "14"
-    CC: "gcc-14"
+    COMPILER_VERSION: "15"
+    CC: "gcc-15"
 
 .gitlab-shared-clang:
   extends:
     - .gitlab-shared-docker-ubuntu
   variables:
     COMPILER: "clang"
-    COMPILER_VERSION: "21"
-    CC: "clang-21"
+    COMPILER_VERSION: "22"
+    CC: "clang-22"
 
 .gitlab-shared-gcc-alpine:
   extends:

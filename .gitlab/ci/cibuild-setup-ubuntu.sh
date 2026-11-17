@@ -32,12 +32,15 @@ if [[ $COMPILER == "gcc" ]]; then
 	fi
 	PACKAGES+=(gcc-$COMPILER_VERSION)
 elif [[ $COMPILER == "clang" ]]; then
-	wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-	add-apt-repository -n "deb http://apt.llvm.org/${RELEASE}/   llvm-toolchain-${RELEASE}-${COMPILER_VERSION} main"
+	LLVM_KEY_URL="https://apt.llvm.org/llvm-snapshot.gpg.key"
+	APT_KEYRINGS_DIR="/etc/apt/keyrings"
+	APT_LLVM_SOURCES_LIST="/etc/apt/sources.list.d/apt.llvm.org_$RELEASE-$COMPILER_VERSION.list"
+	LLVM_KEY_PATH="${APT_KEYRINGS_DIR}/apt.llvm.org.gpg"
+
+	mkdir -p "$APT_KEYRINGS_DIR"
 
 	# scan-build
 	PACKAGES+=(clang-tools-$COMPILER_VERSION clang-$COMPILER_VERSION lldb-$COMPILER_VERSION lld-$COMPILER_VERSION clangd-$COMPILER_VERSION)
-	PACKAGES+=(perl)
 else
 	exit 1
 fi
