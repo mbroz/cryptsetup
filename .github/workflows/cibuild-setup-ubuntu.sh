@@ -7,7 +7,7 @@ PACKAGES=(
 	gettext libssl-dev libdevmapper-dev libpopt-dev uuid-dev libsepol-dev
 	libjson-c-dev libssh-dev libblkid-dev tar libargon2-dev libpwquality-dev
 	sharutils dmsetup jq xxd expect keyutils netcat-openbsd passwd openssh-client
-	sshpass asciidoctor meson ninja-build
+	sshpass asciidoctor meson ninja-build dkms
 )
 
 COMPILER="${COMPILER:?}"
@@ -22,7 +22,13 @@ add-apt-repository -y ppa:ubuntu-toolchain-r/test
 PACKAGES+=(gcc-$COMPILER_VERSION)
 
 # scsi_debug
-PACKAGES+=(dkms linux-headers-$(uname -r) linux-modules-extra-$(uname -r))
+if [[ "$QEMU_USER" != "1" ]]; then
+    MODULES_PACKAGE="linux-modules-extra-$(uname -r)"
+    # may not exist anymore
+    if APT_CACHE_OUTPUT=$(apt-cache show "$MODULES_PACKAGE") && [[ -n "$APT_CACHE_OUTPUT" ]]; then
+    PACKAGES+=("$MODULES_PACKAGE")
+    fi
+fi
 
 apt-get -y update --fix-missing
 apt-get -y install "${PACKAGES[@]}"

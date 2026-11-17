@@ -18,7 +18,7 @@ for phase in "${PHASES[@]}"; do
 			--enable-libargon2
 		)
 
-		sudo -E git clean -xdf
+		sudo git clean -xdf
 
 		./autogen.sh
 		CC="$CC" CXX="$CXX" CFLAGS="${CFLAGS[@]}" CXXFLAGS="${CXXFLAGS[@]}" ./configure "${opts[@]}"
