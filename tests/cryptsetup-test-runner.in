@@ -1,0 +1,208 @@
+#!/bin/bash
+#
+# Runner for the installed cryptsetup test suite (--enable-install-tests).
+#
+# This file is a template. The installed cryptsetup-test-runner is generated
+# from it at build time, with the %%...%% markers replaced by the configured
+# directories; do not edit the installed copy.
+#
+# The tests are run in the current working directory. They create their images
+# and temporary files there and remove them again; the runner itself never
+# deletes anything.
+
+set -u
+
+PROGNAME="${0##*/}"
+PROGVERSION="%%VERSION%%"
+
+# Build time defaults. Every one of them can be overridden from the
+# environment, which is also how the test scripts themselves consume them.
+: "${CRYPTSETUP_PATH:=%%CRYPTSETUP_PATH%%}"
+: "${CRYPTSETUP_TESTS_BIN_PATH:=%%CRYPTSETUP_TESTS_BIN_PATH%%}"
+: "${CRYPTSETUP_TESTS_DATA_PATH:=%%CRYPTSETUP_TESTS_DATA_PATH%%}"
+: "${CRYPTSETUP_TESTS_GENERATORS_PATH:=$CRYPTSETUP_TESTS_DATA_PATH/generators}"
+: "${LIBCRYPTSETUP_DIR:=%%LIBCRYPTSETUP_DIR%%}"
+
+# The set of tests configured in this build, in "make check" order.
+ALL_TESTS="%%TESTS_LIST%%"
+
+# Exit status a test uses to report itself as skipped (Automake convention).
+EXIT_SKIP=77
+
+FAIL_FAST=0
+
+PASSED=0
+SKIPPED=0
+FAILED=0
+FAILED_TESTS=""
+
+usage()
+{
+	cat <<EOF
+Usage: $PROGNAME [OPTION]... [TEST]...
+
+Run the installed cryptsetup test suite in the current working directory.
+Without TEST arguments all tests reported by --list are run, in that order.
+
+Options:
+  -l, --list         list the tests available in this build and exit
+  -f, --fail-fast    stop after the first failing test
+  -h, --help         print this help and exit
+  -V, --version      print version and exit
+
+Environment:
+  CRYPTSETUP_PATH                   cryptsetup binaries
+                                    [$CRYPTSETUP_PATH]
+  CRYPTSETUP_TESTS_BIN_PATH         compiled tests and test helpers
+                                    [$CRYPTSETUP_TESTS_BIN_PATH]
+  CRYPTSETUP_TESTS_DATA_PATH        test images and other test data
+                                    [$CRYPTSETUP_TESTS_DATA_PATH]
+  CRYPTSETUP_TESTS_GENERATORS_PATH  LUKS2 header generators
+                                    [$CRYPTSETUP_TESTS_GENERATORS_PATH]
+  LIBCRYPTSETUP_DIR                 directory containing libcryptsetup.so
+                                    [$LIBCRYPTSETUP_DIR]
+  TESTSUITE_NOSKIP                  if set, a skipped test counts as a failure
+  RUN_SSH_PLUGIN_TEST               if set, ssh-test-plugin is not skipped
+
+A test exiting with status $EXIT_SKIP is reported as skipped.
+
+Exit status: 0 if no test failed, 1 if any test failed, 2 on a usage or
+setup error.
+EOF
+}
+
+die()
+{
+	echo "$PROGNAME: $1" >&2
+	exit 2
+}
+
+in_all_tests() # $1 name
+{
+	local t
+
+	for t in $ALL_TESTS; do
+		[ "$t" = "$1" ] && return 0
+	done
+
+	return 1
+}
+
+run_test() # $1 name
+{
+	local name="$1" prog="$CRYPTSETUP_TESTS_BIN_PATH/$1" rc start
+
+	echo "[$name]"
+
+	if [ ! -x "$prog" ]; then
+		echo "$PROGNAME: $prog is missing or not executable" >&2
+		FAILED=$((FAILED + 1))
+		FAILED_TESTS="$FAILED_TESTS $name"
+		return 1
+	fi
+
+	start=$SECONDS
+	"$prog"
+	rc=$?
+
+	if [ $rc -eq 0 ]; then
+		PASSED=$((PASSED + 1))
+		echo "[$name] PASSED ($((SECONDS - start))s)"
+		return 0
+	fi
+
+	if [ $rc -eq $EXIT_SKIP ] && [ -z "${TESTSUITE_NOSKIP:-}" ]; then
+		SKIPPED=$((SKIPPED + 1))
+		echo "[$name] SKIPPED ($((SECONDS - start))s)"
+		return 0
+	fi
+
+	FAILED=$((FAILED + 1))
+	FAILED_TESTS="$FAILED_TESTS $name"
+	echo "[$name] FAILED (status $rc, $((SECONDS - start))s)"
+
+	return 1
+}
+
+REQUESTED_TESTS=""
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+	-l|--list)
+		printf '%s\n' $ALL_TESTS
+		exit 0
+		;;
+	-f|--fail-fast)
+		FAIL_FAST=1
+		shift
+		;;
+	-h|--help)
+		usage
+		exit 0
+		;;
+	-V|--version)
+		echo "$PROGNAME $PROGVERSION"
+		exit 0
+		;;
+	--)
+		shift
+		break
+		;;
+	-*)
+		echo "$PROGNAME: unknown option $1" >&2
+		usage >&2
+		exit 2
+		;;
+	*)
+		break
+		;;
+	esac
+done
+
+for arg in "$@"; do
+	in_all_tests "$arg" || die "unknown test '$arg', see $PROGNAME --list"
+	REQUESTED_TESTS="$REQUESTED_TESTS $arg"
+done
+
+[ -n "$REQUESTED_TESTS" ] || REQUESTED_TESTS="$ALL_TESTS"
+
+[ -d "$CRYPTSETUP_TESTS_BIN_PATH" ] ||
+	die "$CRYPTSETUP_TESTS_BIN_PATH does not exist, is the cryptsetup test suite installed?"
+[ -d "$CRYPTSETUP_TESTS_DATA_PATH" ] ||
+	die "$CRYPTSETUP_TESTS_DATA_PATH does not exist, is the cryptsetup test suite installed?"
+
+# The tests unpack images and create temporary files in the current directory.
+[ -w . ] || die "current directory is not writable"
+
+export CRYPTSETUP_PATH
+export CRYPTSETUP_TESTS_BIN_PATH
+export CRYPTSETUP_TESTS_DATA_PATH
+export CRYPTSETUP_TESTS_GENERATORS_PATH
+export LIBCRYPTSETUP_DIR
+
+# The test scripts fall back to $srcdir when the paths above are unset. They
+# are all set here, but a stale $srcdir inherited from a build environment
+# would still be confusing in test output.
+unset srcdir
+
+[ "$(id -u)" -eq 0 ] ||
+	echo "WARNING: not running as root, most tests will be skipped."
+
+echo "Running the cryptsetup test suite in $PWD"
+
+for t in $REQUESTED_TESTS; do
+	run_test "$t"
+	if [ $? -ne 0 ] && [ $FAIL_FAST -eq 1 ]; then
+		echo "$PROGNAME: stopping after the first failure (--fail-fast)"
+		break
+	fi
+done
+
+echo "Tests passed:  $PASSED"
+echo "Tests skipped: $SKIPPED"
+echo "Tests failed:  $FAILED"
+[ $FAILED -eq 0 ] || echo "Failed tests: ${FAILED_TESTS# }"
+
+[ $FAILED -eq 0 ] || exit 1
+
+exit 0

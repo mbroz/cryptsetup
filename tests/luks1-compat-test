@@ -1,12 +1,12 @@
 #!/bin/bash
 
 [ -z "$CRYPTSETUP_PATH" ] && CRYPTSETUP_PATH=".."
+[ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
 CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
+CRYPTOCHECK=$CRYPTSETUP_TESTS_BIN_PATH/crypto-check
 TST_DIR=luks1-images
 MAP=luks1tst
 KEYFILE=keyfile1
-
-CRYPTOCHECK=./crypto-check
 
 if [ -n "$CRYPTSETUP_TESTS_RUN_IN_MESON" ]; then
 	CRYPTSETUP_VALGRIND=$CRYPTSETUP
@@ -16,6 +16,7 @@ else
 fi
 
 [ -z "$srcdir" ] && srcdir="."
+[ -z "$CRYPTSETUP_TESTS_DATA_PATH" ] && CRYPTSETUP_TESTS_DATA_PATH=$srcdir
 
 remove_mapping()
 {
@@ -87,7 +88,7 @@ export LANG=C
 [ ! -x "$CRYPTOCHECK" ] && skip "Cannot find $CRYPTOCHECK, test skipped."
 command -v blkid >/dev/null || skip "blkid tool required, test skipped."
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
-[ ! -d $TST_DIR ] && tar xJf $srcdir/luks1-images.tar.xz --no-same-owner
+[ ! -d $TST_DIR ] && tar xJf $CRYPTSETUP_TESTS_DATA_PATH/luks1-images.tar.xz --no-same-owner
 test_required
 
 echo "PASSPHRASE CHECK"

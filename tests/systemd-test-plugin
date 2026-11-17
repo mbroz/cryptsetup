@@ -2,6 +2,8 @@
 
 CC="cc"
 
+[ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="$(pwd)"
+
 PASSWD="tpm2_test"
 PASSWD2="tpm2_test2"
 FAST_PBKDF_OPT="--pbkdf pbkdf2 --pbkdf-force-iterations 1000"
@@ -156,7 +158,7 @@ CRYPTSETUP=$CRYPTSETUP_PATH/cryptsetup
     echo "Virtual TPM set up at $TPM_PATH"
 }
 
-FAKE_TPM_PATH="$(pwd)/fake_systemd_tpm_path.so"
+FAKE_TPM_PATH="$CRYPTSETUP_TESTS_BIN_PATH/fake_systemd_tpm_path.so"
 [ ! -z "$CRYPTSETUP_TESTS_RUN_IN_MESON" ] && FAKE_TPM_PATH="$CRYPTSETUP_PATH/../tests/fake_systemd_tpm_path.so"
 [ -f $FAKE_TPM_PATH ] || skip "Please compile $FAKE_TPM_PATH."
 export LD_PRELOAD="$LD_PRELOAD:$FAKE_TPM_PATH"

@@ -883,6 +883,13 @@ AC_DEFINE_UNQUOTED([DEFAULT_LUKS_FORMAT], [$default_luks], [default LUKS format 
 
 dnl ==========================================================================
 
+dnl ==========================================================================
+dnl Installed tests (for distribution as a subpackage)
+AC_ARG_ENABLE([install-tests],
+	AS_HELP_STRING([--enable-install-tests], [install tests for use by a test subpackage]),
+	[], [enable_install_tests=no])
+AM_CONDITIONAL(INSTALL_TESTS, test "x$enable_install_tests" = "xyes")
+
 AC_CONFIG_FILES([ Makefile
 lib/libcryptsetup.pc
 po/Makefile.in
