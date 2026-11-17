@@ -43,7 +43,6 @@ api_test = executable('api-test',
     ],
     dependencies: devmapper,
     link_with: libcryptsetup,
-    c_args: ['-DNO_CRYPTSETUP_PATH'],
     include_directories: includes_lib)
 
 api_test_2 = executable('api-test-2',
@@ -53,9 +52,6 @@ api_test_2 = executable('api-test-2',
     ],
     dependencies: devmapper,
     link_with: libcryptsetup,
-    c_args: [
-        '-DNO_CRYPTSETUP_PATH',
-    ],
     include_directories: includes_lib)
 
 crypto_check = executable('crypto-check',
@@ -74,9 +70,6 @@ vectors_test = executable('vectors-test',
         'crypto-vectors.c',
     ],
     link_with: libcrypto_backend,
-    c_args: [
-        '-DNO_CRYPTSETUP_PATH',
-    ],
     include_directories: includes_lib)
 
 differ = executable('differ',
@@ -93,18 +86,12 @@ unit_utils_io = executable('unit-utils-io',
         'unit-utils-io.c',
     ],
     link_with: libutils_io,
-    c_args: [
-        '-DNO_CRYPTSETUP_PATH',
-    ],
     include_directories: includes_lib)
 
 unit_utils_crypt_test = files('unit-utils-crypt.c',) + lib_utils_crypt_files
 unit_utils_crypt_test = executable('unit-utils-crypt-test',
     unit_utils_crypt_test,
     link_with: libcryptsetup,
-    c_args: [
-        '-DNO_CRYPTSETUP_PATH',
-    ],
     include_directories: includes_lib)
 
 unit_wipe = executable('unit-wipe',
@@ -112,9 +99,6 @@ unit_wipe = executable('unit-wipe',
         'unit-wipe.c',
     ],
     link_with: libcryptsetup,
-    c_args: [
-        '-DNO_CRYPTSETUP_PATH',
-    ],
     include_directories: includes_lib)
 
 generate_symbols_list = find_program('generate-symbols-list')
@@ -136,9 +120,6 @@ all_symbols_test = executable('all-symbols-test',
     ],
     dependencies: dl,
     link_with: libcryptsetup,
-    c_args: [
-        '-DNO_CRYPTSETUP_PATH',
-    ],
     include_directories: includes_lib)
 
 fake_systemd_tpm_path = shared_library('fake_systemd_tpm_path',
