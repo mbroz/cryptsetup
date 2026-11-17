@@ -2350,6 +2350,18 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 	    !opal_params->admin_key || !opal_params->admin_key_size || !opal_params->user_key_size)
 		return -EINVAL;
 
+	if (opal_params->admin_key_size > OPAL_PIN_MAX_LEN) {
+		log_err(cd, _("OPAL Admin password is too long, maximum length is %d bytes."),
+			OPAL_PIN_MAX_LEN);
+		return -EINVAL;
+	}
+
+	if (opal_params->user_key_size > OPAL_PIN_MAX_LEN) {
+		log_err(cd, _("OPAL user key is too long, maximum length is %d bytes."),
+			OPAL_PIN_MAX_LEN);
+		return -EINVAL;
+	}
+
 	if (cd->type) {
 		log_dbg(cd, "Context already formatted as %s.", cd->type);
 		return -EINVAL;
@@ -6314,6 +6326,12 @@ int crypt_get_hw_opal_locking_ranges(struct crypt_device *cd,
 {
 	if (!cd || !crypt_data_device(cd) || !opal_ranges || !opal_ranges_count)
 		return -EINVAL;
+
+	if (opal_pin_size > OPAL_PIN_MAX_LEN) {
+		log_err(cd, _("OPAL Admin password is too long, maximum length is %d bytes."),
+			OPAL_PIN_MAX_LEN);
+		return -EINVAL;
+	}
 
 	return opal_get_ranges_params(cd, crypt_data_device(cd), 0 /* OPAL_ADMIN1 */,
 				 opal_pin, opal_pin_size, opal_ranges, opal_ranges_count);

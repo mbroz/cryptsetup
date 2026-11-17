@@ -1452,6 +1452,43 @@ prepare "[50] luksDump --dump-hw-opal rejects SW-only LUKS2 device" wipe
 echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $OPAL2_DEV || fail
 echo $PWD1 | $CRYPTSETUP luksDump --dump-hw-opal $OPAL2_DEV 2>&1 | grep -q "not configured for OPAL2 encryption" || fail "luksDump --dump-hw-opal did not reject a SW-only LUKS2 device."
 
+prepare "[51] OPAL Admin password and PSID length limit (32 bytes)" wipe
+OPAL_PIN32="0123456789abcdef0123456789abcdef"
+OPAL_PIN33="${OPAL_PIN32}0"
+# All too long secrets below must be rejected before any OPAL drive authentication
+# (no penalty against the drive's TryLimit).
+OLD_UUID=$($CRYPTSETUP luksUUID $OPAL2_DEV 2>/dev/null)
+for opal_mode in --hw-opal-only --hw-opal; do
+	echo -e "$PWD1\n$OPAL_PIN33" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $opal_mode $OPAL2_DEV > $LUKSDUMP_OUT 2>&1 && \
+		fail "luksFormat $opal_mode accepted too long OPAL Admin password."
+	grep -q "OPAL Admin password is too long, maximum length is 32 bytes." $LUKSDUMP_OUT || fail "luksFormat $opal_mode did not report too long OPAL Admin password."
+	test "$($CRYPTSETUP luksUUID $OPAL2_DEV 2>/dev/null)" = "$OLD_UUID" || fail "LUKS2 header was modified."
+done
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only $OPAL2_DEV || fail
+echo $OPAL_PIN33 | $CRYPTSETUP opaldump $OPAL2_DEV > $OPALDUMP_OUT 2>&1 && fail "opaldump accepted too long OPAL Admin password."
+grep -q "OPAL Admin password is too long, maximum length is 32 bytes." $OPALDUMP_OUT || fail "opaldump did not report too long OPAL Admin password."
+echo $OPAL_PIN33 | $CRYPTSETUP luksErase -q $OPAL2_DEV > $LUKSDUMP_OUT 2>&1 && fail "luksErase accepted too long OPAL Admin password."
+grep -q "OPAL Admin password is too long, maximum length is 32 bytes." $LUKSDUMP_OUT || fail "luksErase did not report too long OPAL Admin password."
+$CRYPTSETUP isLuks $OPAL2_DEV || fail "LUKS2 header was erased."
+echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV --test-passphrase || fail
+echo $OPAL2_ADMIN_PIN | $CRYPTSETUP luksErase -q $OPAL2_DEV || fail
+# PSID longer than 32 bytes (explicit --keyfile-size overrides the default PSID read limit)
+echo -n $OPAL_PIN33 > $KEY_FILE0
+$CRYPTSETUP luksErase -q --hw-opal-factory-reset --key-file $KEY_FILE0 --keyfile-size 33 $OPAL2_DEV > $LUKSDUMP_OUT 2>&1 && \
+	fail "luksErase accepted too long OPAL PSID."
+grep -q "OPAL PSID is too long, maximum length is 32 bytes." $LUKSDUMP_OUT || fail "luksErase did not report too long OPAL PSID."
+rm -f $KEY_FILE0 $LUKSDUMP_OUT $OPALDUMP_OUT
+# OPAL Admin password with exactly 32 bytes must work (requires factory state to set a new Admin password)
+prepare "[52] OPAL Admin password with maximal length (32 bytes)" reset
+for opal_mode in --hw-opal-only --hw-opal; do
+	echo -e "$PWD1\n$OPAL_PIN32" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 $opal_mode $OPAL2_DEV || fail
+	echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+	echo $OPAL_PIN32 | $CRYPTSETUP opaldump $OPAL2_DEV >/dev/null || fail
+	echo $OPAL_PIN32 | $CRYPTSETUP luksErase -q $OPAL2_DEV || fail
+done
+reset_device_psid
+
 # FIXME: Add partition based tests
 
 remove_mapping

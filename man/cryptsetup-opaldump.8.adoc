@@ -23,6 +23,7 @@ Unlike *luksDump*, this action does not require the device to contain LUKS2 meta
 The command first prints the OPAL subsystem status of the device (for example, whether the drive supports OPAL2, or OPAL2 with Single User Mode (SUM)).
 
 If the drive is OPAL-enabled, an OPAL Admin password is requested (interactively or with a timeout controlled by --timeout) and used to query the drive.
+Due to TCG OPAL standard limitations, the maximum OPAL Admin password length is 32 characters (bytes).
 On success, a table of the configured OPAL locking ranges is printed, with the following columns:
 
 *ID*::
