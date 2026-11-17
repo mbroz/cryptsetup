@@ -1670,7 +1670,7 @@ static int _crypt_format_plain(struct crypt_device *cd,
 	if (!sector_size)
 		sector_size = SECTOR_SIZE;
 
-	if (sector_size < SECTOR_SIZE || sector_size > MAX_SECTOR_SIZE ||
+	if (sector_size < SECTOR_SIZE || sector_size > MAX_PLAIN_SECTOR_SIZE ||
 	    NOTPOW2(sector_size)) {
 		log_err(cd, _("Unsupported encryption sector size."));
 		return -EINVAL;
