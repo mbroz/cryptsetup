@@ -1461,6 +1461,21 @@ static void set_compatibility_flags(struct crypt_device *cd)
 		crypt_set_compatibility(cd, flags);
 }
 
+static int opal_check_pin_size(size_t pin_size, bool psid)
+{
+	if (pin_size <= OPAL_PIN_MAX_LEN)
+		return 0;
+
+	if (psid)
+		log_err(_("OPAL PSID is too long, maximum length is %d bytes."),
+			OPAL_PIN_MAX_LEN);
+	else
+		log_err(_("OPAL Admin password is too long, maximum length is %d bytes."),
+			OPAL_PIN_MAX_LEN);
+
+	return -EINVAL;
+}
+
 int luksFormat(struct crypt_device **r_cd, struct crypt_keyslot_context **r_kc)
 {
 	bool wipe_signatures = false;
@@ -1657,6 +1672,9 @@ int luksFormat(struct crypt_device **r_cd, struct crypt_keyslot_context **r_kc)
 			r = -EPERM;
 			goto out;
 		}
+		r = opal_check_pin_size(opal_params.admin_key_size, false);
+		if (r < 0)
+			goto out;
 	}
 
 	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
@@ -3064,6 +3082,10 @@ static int action_opaldump(void)
 	if (r < 0)
 		goto out;
 
+	r = opal_check_pin_size(admin_pin_size, false);
+	if (r < 0)
+		goto out;
+
 	r = crypt_get_hw_opal_locking_ranges(cd, admin_pin, admin_pin_size, response, response_count);
 	if (!r) {
 		log_std(_("No OPAL2 segment configured on device %s.\n"), action_argv[0]);
@@ -3186,8 +3208,8 @@ static int opal_erase(struct crypt_device *cd, bool factory_reset) {
 	if (!factory_reset || ARG_SET(OPT_KEYFILE_SIZE_ID))
 		keyfile_size_max = ARG_UINT32(OPT_KEYFILE_SIZE_ID);
 	else {
-		log_dbg("Limiting PSID keyfile size to %d characters.", OPAL_PSID_LEN);
-		keyfile_size_max = OPAL_PSID_LEN;
+		log_dbg("Limiting PSID keyfile size to %d characters.", OPAL_PIN_MAX_LEN);
+		keyfile_size_max = OPAL_PIN_MAX_LEN;
 	}
 
 	r = tools_get_key(factory_reset ? _("Enter OPAL PSID: ") : _("Enter OPAL Admin password: "),
@@ -3196,6 +3218,12 @@ static int opal_erase(struct crypt_device *cd, bool factory_reset) {
 				ARG_UINT32(OPT_TIMEOUT_ID), verify_passphrase(0), 0, cd);
 	if (r < 0)
 		return r;
+
+	r = opal_check_pin_size(password_size, factory_reset);
+	if (r < 0) {
+		crypt_safe_free(password);
+		return r;
+	}
 
 	if (factory_reset && !ARG_SET(OPT_BATCH_MODE_ID) &&
 		!yesDialog(_("WARNING: WHOLE disk will be factory reset and all data will be lost! Continue?"),

@@ -322,6 +322,16 @@ int crypt_wipe_hw_opal(struct crypt_device *cd,
 	if (segment < CRYPT_LUKS2_SEGMENT || segment > 8)
 		return -EINVAL;
 
+	if (password_size > OPAL_PIN_MAX_LEN) {
+		if (segment == CRYPT_NO_SEGMENT)
+			log_err(cd, _("OPAL PSID is too long, maximum length is %d bytes."),
+				OPAL_PIN_MAX_LEN);
+		else
+			log_err(cd, _("OPAL Admin password is too long, maximum length is %d bytes."),
+				OPAL_PIN_MAX_LEN);
+		return -EINVAL;
+	}
+
 	r = crypt_opal_supported(cd, crypt_data_device(cd));
 	if (r < 0)
 		return r;

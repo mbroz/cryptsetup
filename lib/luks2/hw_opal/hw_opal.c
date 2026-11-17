@@ -368,6 +368,17 @@ static int opal_geometry_fd(struct crypt_device *cd,
 	return r;
 }
 
+static int opal_check_user_key_size(struct crypt_device *cd, size_t key_size)
+{
+	if (key_size > OPAL_PIN_MAX_LEN) {
+		log_err(cd, _("OPAL user key is too long, maximum length is %d bytes."),
+			OPAL_PIN_MAX_LEN);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int opal_range_check_attributes_fd(struct crypt_device *cd,
 	int fd,
 	uint32_t segment_number,
@@ -391,6 +402,10 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 	assert(vk);
 	assert(check_offset_sectors);
 	assert(check_length_sectors);
+
+	r = opal_check_user_key_size(cd, crypt_volume_key_length(vk));
+	if (r < 0)
+		return r;
 
 	r = opal_geometry_fd(cd, fd, NULL, &opal_block_bytes, NULL, NULL);
 	if (r != OPAL_STATUS_SUCCESS)
@@ -1072,12 +1087,15 @@ int opal_setup_ranges(struct crypt_device *cd,
 	assert(dev);
 	assert(vk);
 	assert(admin_key);
-	assert(crypt_volume_key_length(vk) <= OPAL_KEY_MAX);
 	assert(opal_block_bytes >= SECTOR_SIZE);
 	assert(r_opal_req_version);
 
-	if (admin_key_len > OPAL_KEY_MAX)
+	if (admin_key_len > OPAL_PIN_MAX_LEN)
 		return -EINVAL;
+
+	r = opal_check_user_key_size(cd, crypt_volume_key_length(vk));
+	if (r < 0)
+		return r;
 
 	if (((UINT64_MAX / opal_block_bytes) < range_start_blocks) ||
 	    ((UINT64_MAX / opal_block_bytes) < range_length_blocks))
@@ -1236,14 +1254,14 @@ static int opal_lock_unlock(struct crypt_device *cd,
 		return -ENOTSUP;
 	if (!lock && !vk)
 		return -EINVAL;
+	if (!lock && (r = opal_check_user_key_size(cd, crypt_volume_key_length(vk))) < 0)
+		return r;
 
 	fd = device_open(cd, dev, O_RDONLY);
 	if (fd < 0)
 		return -EIO;
 
 	if (!lock) {
-		assert(crypt_volume_key_length(vk) <= OPAL_KEY_MAX);
-
 		unlock.session.opal_key.key_len = crypt_volume_key_length(vk);
 		crypt_safe_memcpy(unlock.session.opal_key.key, crypt_volume_key_get_key(vk),
 				  crypt_volume_key_length(vk));
@@ -1333,7 +1351,7 @@ int opal_factory_reset(struct crypt_device *cd,
 	assert(dev);
 	assert(password);
 
-	if (password_len > OPAL_KEY_MAX)
+	if (password_len > OPAL_PIN_MAX_LEN)
 		return -EINVAL;
 
 	/*
@@ -1387,7 +1405,7 @@ int opal_reset_segment(struct crypt_device *cd,
 	assert(dev);
 	assert(password);
 
-	if (password_len > OPAL_KEY_MAX)
+	if (password_len > OPAL_PIN_MAX_LEN)
 		return -EINVAL;
 
 	if (opal_enabled(cd, dev) <= 0)
@@ -1802,8 +1820,9 @@ int opal_get_single_range_params(struct crypt_device *cd,
 
 	assert(ret_opal_range);
 
-	if (opal_key_size > OPAL_KEY_MAX)
-		return -EINVAL;
+	r = opal_check_user_key_size(cd, opal_key_size);
+	if (r < 0)
+		return r;
 
 	fd = device_open(cd, dev, O_RDONLY);
 	if (fd < 0)
@@ -1866,7 +1885,7 @@ int opal_get_ranges_params(struct crypt_device *cd,
 	assert(opal_ranges);
 	assert(opal_ranges_count > 0);
 
-	if (opal_key_size > OPAL_KEY_MAX)
+	if (opal_key_size > OPAL_PIN_MAX_LEN)
 		return -EINVAL;
 
 	fd = device_open(cd, dev, O_RDONLY);

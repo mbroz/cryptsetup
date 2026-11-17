@@ -55,7 +55,8 @@
 #define DM_UUID_PREFIX		"CRYPT-"
 #define DM_UUID_PREFIX_LEN	6
 
-#define OPAL_PSID_LEN		32
+/* Max length of OPAL PSID, Admin password and user key usable with OPAL drives */
+#define OPAL_PIN_MAX_LEN	32
 
 /* LUKS AF stripes, never set to any other value than 4000 */
 #ifndef LUKS_STRIPES
