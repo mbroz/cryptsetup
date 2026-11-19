@@ -8,8 +8,14 @@ SPEC="$GIT_DIR/misc/fedora/cryptsetup.spec"
 
 rm -fr $GIT_DIR
 
-git clone -q --depth 1 https://gitlab.com/cryptsetup/cryptsetup.git $GIT_DIR
-cd $GIT_DIR
+if [ -n "$CI_COMMIT_SHA" ]; then
+	git clone -q --no-checkout "$CI_PROJECT_DIR" $GIT_DIR
+	cd $GIT_DIR
+	git checkout -q --detach "$CI_COMMIT_SHA"
+else
+	git clone -q --depth 1 https://gitlab.com/cryptsetup/cryptsetup.git $GIT_DIR
+	cd $GIT_DIR
+fi
 
 GIT_COMMIT=$(git rev-parse --short=8 HEAD)
 [ -z "$GIT_COMMIT" ] && exit 1

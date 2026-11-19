@@ -59,7 +59,9 @@ last_commit zlib
 [ ! -d xz ] && git clone -q --depth 1 https://github.com/tukaani-project/xz
 last_commit xz
 
-[ ! -d json-c ] && git clone -q --depth 1 https://github.com/json-c/json-c.git
+# Master branch is broken, use json-c-0.19 for now
+[ ! -d json-c ] && git clone -q --depth 1 --branch json-c-0.19 https://github.com/json-c/json-c.git
+#[ ! -d json-c ] && git clone -q --depth 1 https://github.com/json-c/json-c.git
 last_commit json-c
 
 [ ! -d lvm2 ] && git clone -q --depth 1 https://gitlab.com/lvmteam/lvm2
