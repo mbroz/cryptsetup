@@ -29,6 +29,8 @@ test-commit-job-csmock:
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/ || $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
+    - echo "GitLab runner version"
+    - gitlab-runner --version
     - .gitlab/ci/build_srpm
     - .gitlab/ci/run_csmock
   artifacts:
