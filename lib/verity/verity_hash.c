@@ -303,7 +303,7 @@ static int VERITY_create_or_verify_hash(struct crypt_device *cd, bool verify,
 	log_dbg(cd, "Using %d hash levels.", levels);
 
 	r = device_check_size(cd, crypt_metadata_device(cd),
-			      hash_device_offset_max - params->hash_area_offset, 1);
+			      hash_device_offset_max - params->hash_area_offset, !verify);
 	if (r < 0)
 		return r;
 
@@ -422,7 +422,7 @@ int VERITY_create(struct crypt_device *cd,
 {
 	unsigned pgsize = (unsigned)crypt_getpagesize();
 
-	if (verity_hdr->salt_size > 256)
+	if (verity_hdr->salt_size > VERITY_MAX_SALT_SIZE)
 		return -EINVAL;
 
 	if (verity_hdr->data_block_size > pgsize)

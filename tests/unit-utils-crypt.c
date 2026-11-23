@@ -131,6 +131,8 @@ static struct null_test_vector null_test_vectors[] = {
 	{ "cipher_null-ecb", true },
 	{ "cipher_null", true },
 	{ "null", true },
+	{ "null-ecb", true },
+	{ "nullburger-ecb", false },
 	{ "cipher-null", false },
 	{ "aes-ecb", false },
 	{ NULL, false },

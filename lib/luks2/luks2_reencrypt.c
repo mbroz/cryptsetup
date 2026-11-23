@@ -784,7 +784,7 @@ static int reencrypt_make_post_segments(struct crypt_device *cd,
 
 static uint64_t reencrypt_data_shift(struct luks2_hdr *hdr)
 {
-	json_object *jobj_keyslot, *jobj_area, *jobj_data_shift;
+	json_object *jobj_keyslot, *jobj_area, *jobj_type, *jobj_data_shift;
 	int ks = LUKS2_find_keyslot(hdr, "reencrypt");
 
 	if (ks < 0)
@@ -793,6 +793,13 @@ static uint64_t reencrypt_data_shift(struct luks2_hdr *hdr)
 	jobj_keyslot = LUKS2_get_keyslot_jobj(hdr, ks);
 
 	json_object_object_get_ex(jobj_keyslot, "area", &jobj_area);
+	if (!json_object_object_get_ex(jobj_area, "type", &jobj_type))
+		return 0;
+
+	/* shift_size is validated for datashift based resilience types only */
+	if (strncmp(json_object_get_string(jobj_type), "datashift", 9))
+		return 0;
+
 	if (!json_object_object_get_ex(jobj_area, "shift_size", &jobj_data_shift))
 		return 0;
 
@@ -1330,8 +1337,10 @@ static int reencrypt_make_segments(struct crypt_device *cd,
 	r = reencrypt_make_hot_segments(cd, hdr, rh, device_size, data_offset);
 	if (!r) {
 		r = reencrypt_make_post_segments(cd, hdr, rh, data_offset);
-		if (r)
+		if (r) {
 			json_object_put(rh->jobj_segs_hot);
+			rh->jobj_segs_hot = NULL;
+		}
 	}
 
 	if (r)
@@ -1379,6 +1388,11 @@ static int reencrypt_load_crashed(struct crypt_device *cd,
 	if (LUKS2_get_data_size(hdr, &required_device_size, &dynamic))
 		return -EINVAL;
 
+	if (!dynamic && required_device_size > device_size) {
+		log_dbg(cd, "Segments size exceeds data device size.");
+		return -EINVAL;
+	}
+
 	if (dynamic)
 		required_device_size = 0;
 	else
@@ -1392,6 +1406,15 @@ static int reencrypt_load_crashed(struct crypt_device *cd,
 			r = -EINVAL;
 		else
 			(*rh)->length = LUKS2_segment_size(hdr, reenc_seg, 0);
+	}
+
+	/*
+	 * Segment in reencryption is not protected by reencryption digest.
+	 * Recovery must never write hotzone beyond data device end.
+	 */
+	if (!r && (*rh)->length > (*rh)->device_size - (*rh)->offset) {
+		log_dbg(cd, "Segment in reencryption exceeds data device size.");
+		r = -EINVAL;
 	}
 
 	if (!r)
@@ -3060,7 +3083,7 @@ static int reencrypt_init(struct crypt_device *cd,
 	if (r)
 		return r;
 
-	r = device_check_size(cd, crypt_data_device(cd), data_offset_bytes, 1);
+	r = device_check_size(cd, crypt_data_device(cd), data_offset_bytes, 0);
 	if (r)
 		return r;
 
@@ -3881,6 +3904,11 @@ static int reencrypt_init_by_keyslot_context(struct crypt_device *cd,
 	if (flags & CRYPT_REENCRYPT_RECOVERY)
 		return reencrypt_recovery_by_keyslot_context(cd, hdr, keyslot_old, keyslot_new, kc_old, kc_new);
 
+	if (crypt_get_integrity_tag_size(cd)) {
+		log_err(cd, _("Reencryption of device with integrity profile is not supported."));
+		return -ENOTSUP;
+	}
+
 	if (name && !device_direct_io(crypt_data_device(cd))) {
 		log_dbg(cd, "Device %s does not support direct I/O.", device_path(crypt_data_device(cd)));
 		/* FIXME: Add more specific error message for translation later. */
@@ -4078,6 +4106,7 @@ static reenc_status_t reencrypt_step(struct crypt_device *cd,
 
 	if (!rh->offset && rp->type == REENC_PROTECTION_DATASHIFT && rh->jobj_segment_moved) {
 		crypt_storage_wrapper_destroy(rh->cw1);
+		rh->cw1 = NULL;
 		log_dbg(cd, "Reinitializing old segment storage wrapper for moved segment.");
 		r = crypt_storage_wrapper_init(cd, &rh->cw1, crypt_data_device(cd),
 				LUKS2_reencrypt_get_data_offset_moved(hdr),
@@ -4198,18 +4227,38 @@ static int reencrypt_erase_backup_segments(struct crypt_device *cd,
 	return 0;
 }
 
-static int reencrypt_wipe_unused_device_area(struct crypt_device *cd, struct luks2_reencrypt *rh)
+static int reencrypt_wipe_unused_device_area(struct crypt_device *cd,
+		struct luks2_hdr *hdr,
+		struct luks2_reencrypt *rh)
 {
 	uint64_t offset, length, dev_size;
 	int r = 0;
 
 	assert(cd);
+	assert(hdr);
 	assert(rh);
 
 	if (rh->jobj_segment_moved && rh->mode == CRYPT_REENCRYPT_ENCRYPT) {
 		offset = json_segment_get_offset(rh->jobj_segment_moved, 0);
 		length = json_segment_get_size(rh->jobj_segment_moved, 0);
 		log_dbg(cd, "Wiping %" PRIu64 " bytes of backup segment data at offset %" PRIu64,
+			length, offset);
+		r = crypt_wipe_device(cd, crypt_data_device(cd), CRYPT_WIPE_RANDOM,
+				offset, length, 1024 * 1024, NULL, NULL);
+	}
+
+	if (r < 0)
+		return r;
+
+	/*
+	 * After encryption, if the LUKS2 header is placed on data device, wipe any remaining
+	 * plaintext data between LUKS2 header and the data offset.
+	 */
+	if (rh->mode == CRYPT_REENCRYPT_ENCRYPT && !crypt_header_is_detached(cd) &&
+	    LUKS2_hdr_and_areas_size(hdr) < reencrypt_get_data_offset_new(hdr)) {
+		offset = LUKS2_hdr_and_areas_size(hdr);
+		length = reencrypt_get_data_offset_new(hdr) - offset;
+		log_dbg(cd, "Wiping %" PRIu64 " bytes of remaining plaintext data at offset %" PRIu64,
 			length, offset);
 		r = crypt_wipe_device(cd, crypt_data_device(cd), CRYPT_WIPE_RANDOM,
 				offset, length, 1024 * 1024, NULL, NULL);
@@ -4341,7 +4390,7 @@ static int reencrypt_teardown_ok(struct crypt_device *cd, struct luks2_hdr *hdr,
 	}
 
 	if (finished) {
-		if (reencrypt_wipe_unused_device_area(cd, rh))
+		if (reencrypt_wipe_unused_device_area(cd, hdr, rh))
 			log_err(cd, _("Failed to wipe unused data device area."));
 		if (reencrypt_get_data_offset_new(hdr) && LUKS2_set_keyslots_size(hdr, reencrypt_get_data_offset_new(hdr)))
 			log_dbg(cd, "Failed to set new keyslots area size.");
@@ -4441,6 +4490,7 @@ int crypt_reencrypt_run(
 	crypt_reencrypt_info ri;
 	struct luks2_hdr *hdr;
 	struct luks2_reencrypt *rh;
+	struct volume_key *vk;
 	reenc_status_t rs;
 	bool quit = false;
 
@@ -4459,6 +4509,14 @@ int crypt_reencrypt_run(
 	if (!rh || (!rh->reenc_lock && crypt_metadata_locking_enabled())) {
 		log_err(cd, _("Missing or invalid reencrypt context."));
 		return -EINVAL;
+	}
+
+	/* keys uploaded in keyring on reencryption init may have been replaced by another context */
+	for (vk = rh->vks; vk; vk = crypt_volume_key_next(vk)) {
+		if (crypt_volume_key_description(vk) && !crypt_volume_key_loaded_in_keyring(cd, vk)) {
+			log_err(cd, _("Missing or invalid reencrypt context."));
+			return -EINVAL;
+		}
 	}
 
 	log_dbg(cd, "Resuming LUKS2 reencryption.");
@@ -4594,7 +4652,7 @@ int LUKS2_reencrypt_check_device_size(struct crypt_device *cd, struct luks2_hdr 
 
 	data_offset = LUKS2_reencrypt_data_offset(hdr, false);
 
-	r = device_check_size(cd, crypt_data_device(cd), data_offset, 1);
+	r = device_check_size(cd, crypt_data_device(cd), data_offset, 0);
 	if (r)
 		return r;
 

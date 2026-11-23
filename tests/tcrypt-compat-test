@@ -223,6 +223,21 @@ for file in $(ls $TST_DIR/[tv]ck_*) ; do
 	echo " [OK]"
 done
 
+echo "HEADER NOT ENCRYPTED CHECK"
+# Header stored in plaintext (valid magic and CRC32) must never be accepted,
+# even if hash option matches no KDF (with and without keyfiles).
+file=$TST_DIR/plain_hdr
+echo -n " $file"
+dd if=/dev/zero of=$file bs=512 count=1 >/dev/null 2>&1 || fail
+printf 'TRUE\x00\x05\x07\x00\x0d\x96\x85\x58' | dd of=$file bs=1 seek=64 conv=notrunc >/dev/null 2>&1 || fail
+printf '\x2d\x13\x6c\x1f' | dd of=$file bs=1 seek=252 conv=notrunc >/dev/null 2>&1 || fail
+for HASH in sha512 xxxx ; do
+	echo $PASSWORD | $CRYPTSETUP tcryptOpen --test-passphrase -h $HASH $file 2>/dev/null && fail
+	echo $PASSWORD | $CRYPTSETUP tcryptOpen --test-passphrase -d $TST_DIR/keyfile1 -h $HASH $file 2>/dev/null && fail
+	echo $PASSWORD | $CRYPTSETUP tcryptDump -d $TST_DIR/keyfile1 -h $HASH $file >/dev/null 2>&1 && fail
+done
+echo " [OK]"
+
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run activation part of test, test skipped."
 	remove_mapping

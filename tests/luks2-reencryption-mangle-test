@@ -419,6 +419,23 @@ img_prepare
 img_update_json 'del(.digests."2")'
 img_check_fail_repair_ok
 
+# Malformed digest must never pass verification.
+img_prepare
+img_update_json 'del(.digests."2".digest)'
+img_check_fail
+
+img_prepare
+img_update_json '.digests."2".digest = ""'
+img_check_fail
+
+img_prepare
+img_update_json '.digests."2".salt = "AAAA"'
+img_check_fail
+
+img_prepare
+img_update_json 'del(.digests."0".digest)'
+img_check_fail
+
 img_prepare '--reduce-device-size 2M'
 img_update_json '.keyslots."2".area.shift_size = ((.keyslots."2".area.shift_size|tonumber / 2)|tostring)'
 img_check_fail
@@ -464,6 +481,31 @@ img_prepare
 img_update_json '.segments."2".encryption = "aes-cbc-null"'
 img_check_fail
 
+# Backup segment flags must be unique
+img_prepare
+img_update_json '
+	.segments."3" = {
+		"type" : "linear",
+		"offset" : .segments."0".offset,
+		"size" : "dynamic",
+		"flags" : ["backup-final"]
+	}'
+img_check_fail
+
+img_prepare
+img_update_json '
+	.segments."3" = {
+		"type" : "linear",
+		"offset" : .segments."0".offset,
+		"size" : "dynamic",
+		"flags" : ["backup-previous"]
+	}'
+img_check_fail
+
+img_prepare
+img_update_json '.segments."2".flags = ["backup-final", "backup-previous"]'
+img_check_fail
+
 # Mangling digests
 img_prepare
 img_update_json '
@@ -490,6 +532,85 @@ img_update_json '
 	.digests."0".segments = ["1","2"] |
 	.digests."1".segments = ["0","3"]'
 img_check_ok
+
+# Plaintext segment must not match any backup segment
+img_prepare
+img_update_json '
+	.segments = {
+		"0" : (.segments."0" +
+			{"size" : ((1 * 1024 * 1024)|tostring)}),
+		"1" : {"type" : "linear", "offset" : ((17 * 1024 * 1024)|tostring), "size" : "dynamic"},
+		"2" : .segments."1",
+		"3" : .segments."2"
+	} |
+	.digests."0".segments = ["0","2"] |
+	.digests."1".segments = ["3"]'
+img_check_fail
+
+# The same, hidden as backup segment by regular segment stored first but numbered last
+img_prepare
+img_update_json '
+	.segments = {
+		"4" : {"type" : "linear", "offset" : .segments."0".offset, "size" : "512"},
+		"0" : (.segments."0" +
+			{"size" : ((1 * 1024 * 1024)|tostring)}),
+		"1" : {"type" : "linear", "offset" : ((17 * 1024 * 1024)|tostring), "size" : "dynamic", "flags" : ["backup-x"]},
+		"2" : .segments."1",
+		"3" : .segments."2"
+	} |
+	.digests."0".segments = ["0","2"] |
+	.digests."1".segments = ["3"]'
+img_check_fail
+
+# The same, matching duplicate backup segment not covered by reencryption digest
+img_prepare
+img_update_json '
+	.segments = {
+		"0" : (.segments."0" +
+			{"size" : ((1 * 1024 * 1024)|tostring)}),
+		"1" : {"type" : "linear", "offset" : ((17 * 1024 * 1024)|tostring), "size" : "dynamic"},
+		"2" : .segments."1",
+		"3" : .segments."2",
+		"4" : {"type" : "linear", "offset" : .segments."0".offset, "size" : "512", "flags" : ["backup-final"]}
+	} |
+	.digests."0".segments = ["0","2"] |
+	.digests."1".segments = ["3"]'
+img_check_fail
+
+# Segment in reencryption is not covered by reencryption digest.
+# It must not exceed data device size or crash recovery would
+# write hotzone beyond device end.
+img_prepare '--resilience journal'
+img_update_json '
+	.segments = {
+		"0" : (.segments."0" +
+			{"size" : ((16 * 1024 * 1024)|tostring)}),
+		"1" : (.segments."0" +
+			{"offset" : ((32 * 1024 * 1024)|tostring)} +
+			{"size" : ((15 * 1024 * 1024)|tostring)} +
+			{"flags" : ["in-reencryption"]}),
+		"2" : .segments."1",
+		"3" : .segments."2"
+	} |
+	.digests."0".segments = ["2"] |
+	.digests."1".segments = ["0","1","3"]'
+img_check_fail
+
+img_prepare '--resilience journal'
+img_update_json '
+	.segments = {
+		"0" : (.segments."0" +
+			{"size" : "4096"}),
+		"1" : (.segments."0" +
+			{"offset" : ((24 * 1024 * 1024)|tostring)} +
+			{"size" : ((8 * 1024 * 1024 + 4096)|tostring)} +
+			{"flags" : ["in-reencryption"]}),
+		"2" : .segments."1",
+		"3" : .segments."2"
+	} |
+	.digests."0".segments = ["2"] |
+	.digests."1".segments = ["0","1","3"]'
+img_check_fail
 
 # Mangling keyslots
 
@@ -553,6 +674,24 @@ $CRYPTSETUP reencrypt --header $IMG_HDR $IMG $CS_PARAMS --force-offline-reencryp
 img_json_save $IMG_HDR_BCP
 img_update_json '.keyslots."1".area.shift_size = (((.keyslots."1".area.shift_size | tonumber) - 4096) | tostring)' $IMG_HDR
 $CRYPTSETUP reencrypt --header $IMG_HDR $IMG $CS_PARAMS --force-offline-reencrypt 2>/dev/null && fail
+
+# invalid datashift value must fail metadata validation
+for SHIFT_SIZE in '"1000"' '"0"' '4096' 'null' ; do
+	img_json_save $IMG_HDR_BCP
+	img_update_json ".keyslots.\"1\".area.shift_size = $SHIFT_SIZE" $IMG_HDR
+	$CRYPTSETUP luksDump $IMG_HDR >/dev/null 2>&1 && fail
+done
+
+# missing datashift value must fail metadata validation
+img_json_save $IMG_HDR_BCP
+img_update_json 'del(.keyslots."1".area.shift_size)' $IMG_HDR
+$CRYPTSETUP luksDump $IMG_HDR >/dev/null 2>&1 && fail
+
+# datashift value not aligned to checksum block size must fail metadata validation
+img_json_save $IMG_HDR_BCP
+img_update_json '.keyslots."1".area.sector_size = 4096 |
+		 .keyslots."1".area.shift_size = "5120"' $IMG_HDR
+$CRYPTSETUP luksDump $IMG_HDR >/dev/null 2>&1 && fail
 
 remove_mapping
 exit 0

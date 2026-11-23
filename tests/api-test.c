@@ -1694,6 +1694,10 @@ static void VerityTest(void)
 	params.salt_size = 257;
 	FAIL_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params),
 		"Too large salt.");
+	params.flags = 0;
+	FAIL_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params),
+		"Too large salt (superblock only).");
+	params.flags = CRYPT_VERITY_CREATE_HASH;
 	params.salt_size = 32;
 
 	/* hash_type */
@@ -1707,6 +1711,25 @@ static void VerityTest(void)
 	params.hash_name = "sha256";
 
 	OK_(crypt_format(cd, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params));
+
+	/* Root hash from format survives load if superblock hash matches */
+	OK_(crypt_load(cd, CRYPT_VERITY, NULL));
+	EQ_(crypt_get_volume_key_size(cd), 32);
+	OK_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, root_hash_out, &root_hash_out_size, NULL, 0));
+	EQ_(32, root_hash_out_size);
+	OK_(memcmp(root_hash, root_hash_out, root_hash_out_size));
+
+	/* Superblock with different hash size must drop the stale root hash */
+	OK_(crypt_init(&cd2, DEVICE_2));
+	params.hash_name = "sha512";
+	OK_(crypt_format(cd2, CRYPT_VERITY, NULL, NULL, NULL, NULL, 0, &params));
+	CRYPT_FREE(cd2);
+	params.hash_name = "sha256";
+	OK_(crypt_load(cd, CRYPT_VERITY, NULL));
+	EQ_(crypt_get_volume_key_size(cd), 64);
+	root_hash_out_size = 256;
+	FAIL_(crypt_volume_key_get(cd, CRYPT_ANY_SLOT, root_hash_out, &root_hash_out_size, NULL, 0),
+		"Root hash not available.");
 	CRYPT_FREE(cd);
 
 	params.data_device = NULL;

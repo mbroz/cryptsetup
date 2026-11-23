@@ -40,6 +40,8 @@
 
 #define LUKS2_MIN_INTEGRITY_KEY_BYTES 16
 
+#define LUKS2_MIN_KEYSLOT_KEY_BYTES 8
+
 #define CRYPT_ANY_SEGMENT -1
 #define CRYPT_DEFAULT_SEGMENT -2
 #define CRYPT_ONE_SEGMENT -3
@@ -58,6 +60,15 @@
 
 /* see reencrypt_assembly_verification_data() in luks2_reencrypt_digest.c */
 /*	LUKS2_REENCRYPT_MAX_VERSION         UINT8_C(207) */
+
+/*
+ * Supported OPAL requirement versions:
+ *
+ * OPAL requirement versions 1 is legacy. Since versions 2 (base)
+ * volume key digest protects also the OPAL segment metadata.
+ */
+#define LUKS2_OPAL_BASE_REQ_VERSION         UINT8_C(2)
+#define LUKS2_OPAL_SUM_REQ_VERSION          UINT8_C(3) /* Device is configured with SUM */
 
 struct device;
 struct luks2_reencrypt;
@@ -187,7 +198,9 @@ uint64_t LUKS2_hdr_and_areas_size(struct luks2_hdr *hdr);
 uint64_t LUKS2_keyslots_size(struct luks2_hdr *hdr);
 uint64_t LUKS2_metadata_size(struct luks2_hdr *hdr);
 
-int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd, const char *cipher_spec);
+int LUKS2_keyslot_cipher_incompatible(struct crypt_device *cd,
+				      const char *cipher_spec,
+				      size_t key_bytes);
 
 /*
  * Generic LUKS2 keyslot
@@ -351,6 +364,10 @@ int LUKS2_digest_by_segment(struct luks2_hdr *hdr, int segment);
 
 int LUKS2_digest_create(struct crypt_device *cd,
 	const char *type,
+	struct luks2_hdr *hdr,
+	const struct volume_key *vk);
+
+int LUKS2_digest_opal_update(struct crypt_device *cd,
 	struct luks2_hdr *hdr,
 	const struct volume_key *vk);
 

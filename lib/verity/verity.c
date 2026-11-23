@@ -245,7 +245,7 @@ int VERITY_verify_params(struct crypt_device *cd,
 	struct volume_key *root_hash)
 {
 	bool userspace_verification;
-	int v, r;
+	int r;
 	unsigned int fec_errors = 0;
 
 	assert(cd);
@@ -275,18 +275,12 @@ int VERITY_verify_params(struct crypt_device *cd,
 			  crypt_volume_key_length(root_hash));
 
 	if ((r == -EPERM || r == -EFAULT) && fec_device) {
-		v = r;
 		log_dbg(cd, "Verification failed, trying to repair with FEC device.");
-		r = VERITY_FEC_process(cd, hdr, fec_device, 1, &fec_errors);
-		if (r < 0)
+		if (VERITY_FEC_process(cd, hdr, fec_device, 1, &fec_errors) < 0)
 			log_err(cd, _("Errors cannot be repaired with FEC device."));
-		else if (fec_errors) {
+		else if (fec_errors)
 			log_err(cd, _("Found %u repairable errors with FEC device."),
 				fec_errors);
-			/* If root hash failed, we cannot be sure it was properly repaired */
-		}
-		if (v == -EFAULT)
-			r = -EPERM;
 	}
 
 	return r;

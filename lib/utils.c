@@ -398,6 +398,16 @@ int crypt_check_cipher(struct crypt_device *cd,
 
 	log_dbg(cd, "Checking if cipher %s-%s is usable (storage wrapper).", cipher, cipher_mode);
 
+	if (*cipher_mode != '\0')
+		r = snprintf(cipher_spec, sizeof(cipher_spec), "%s-%s", cipher, cipher_mode);
+	else
+		r = snprintf(cipher_spec, sizeof(cipher_spec), "%s", cipher);
+	if (r < 0 || (size_t)r >= sizeof(cipher_spec))
+		return -EINVAL;
+
+	if (crypt_is_cipher_multikey(cipher_spec))
+		return -EINVAL;
+
 	empty_key = malloc(keylength);
 	if (!empty_key)
 		return -ENOMEM;
@@ -416,15 +426,6 @@ int crypt_check_cipher(struct crypt_device *cd,
 	/* dm-crypt backend requires root access */
 	if (!r || (getuid() || geteuid()))
 		goto out;
-
-	if (*cipher_mode != '\0')
-		r = snprintf(cipher_spec, sizeof(cipher_spec), "%s-%s", cipher, cipher_mode);
-	else
-		r = snprintf(cipher_spec, sizeof(cipher_spec), "%s", cipher);
-	if (r < 0 || (size_t)r >= sizeof(cipher_spec)) {
-		r = -EINVAL;
-		goto out;
-	}
 
 	empty_vk = crypt_alloc_volume_key(keylength, empty_key);
 	if (!empty_vk) {

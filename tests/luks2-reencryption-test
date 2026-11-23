@@ -51,6 +51,7 @@ KEY_NAME6="luks2-reencryption-test6"
 KEY_NAME7="luks2-reencryption-key-desc1"
 KEY_NAME_VK1="luks2-reencryption-test-vk1"
 KEY_NAME_VK2="luks2-reencryption-test-vk2"
+FOREIGN_KEY_NAME_VK="luks2-reencryption-test-foreign-vk"
 KEY_SPEC1="${KEYRING}::%${KEY_TYPE}:${KEY_NAME1}"
 KEY_SPEC2="${KEYRING}::%${KEY_TYPE}:${KEY_NAME2}"
 HAVE_KEYRING=0
@@ -148,6 +149,7 @@ fail()
 	while caller $frame; do	((frame++)); done
 	remove_mapping
 	cleanup_keyring
+	remove_foreign_vk_key $FOREIGN_KEY_NAME_VK
 	exit 2
 }
 
@@ -1133,6 +1135,24 @@ prepare_vk_keyring()
 	echo -n $PWD2 | keyctl padd user $KEY_NAME7 %:$KEYRING > /dev/null || fail
 }
 
+# Plant a "user" key carrying a volume key that is owned by another user
+# (uid 65534) and granted view+read for others (perm 0x3f3f0003), so root sees
+# it in /proc/keys and could read its payload, but it is not linked into root's
+# own keyrings. The payload is read from stdin (binary safe).
+# $1 key name.
+plant_foreign_vk_key()
+{
+	setpriv --reuid 65534 --regid 65534 --clear-groups \
+		keyctl session - sh -c "keyctl link @u @s && id=\$(keyctl padd user '$1' @u) && keyctl setperm \$id 0x3f3f0003" >/dev/null 2>&1
+}
+
+# $1 key name
+remove_foreign_vk_key()
+{
+	setpriv --reuid 65534 --regid 65534 --clear-groups \
+		keyctl session - sh -c "keyctl link @u @s && keyctl purge user '$1'" >/dev/null 2>&1 || true
+}
+
 setup_luks2_env() {
 	echo $PWD1 | $CRYPTSETUP luksFormat --type luks2 -c aes-xts-plain64 $FAST_PBKDF_ARGON $DEV || fail
 	echo $PWD1 | $CRYPTSETUP open $DEV $DEV_NAME || fail
@@ -1242,6 +1262,7 @@ dm_crypt_features
 bin_check jq
 bin_check sha256sum
 bin_check xxd
+bin_check setpriv
 
 if [ -n "$DM_SECTOR_SIZE" ]; then
 	TEST_SECTORS="512 4096"
@@ -1422,6 +1443,13 @@ $CRYPTSETUP reencrypt $DEV --encrypt --init-only -c aes-cbc-essiv:sha256 -s 128 
 $CRYPTSETUP status $DEV_NAME >/dev/null 2>&1 || fail
 $CRYPTSETUP close $DEV_NAME
 echo $PWD1 | $CRYPTSETUP open $DEV --test-passphrase || fail
+
+# Original data must not remain between LUKS2 header (smaller than data offset) and data offset
+tr '\0' 'x' < /dev/zero | dd of=$DEV bs=1M iflag=fullblock conv=notrunc >/dev/null 2>&1
+HASH_X=$(dd if=$DEV bs=512 count=$((56*1024*2)) 2>/dev/null | sha1sum | cut -d' ' -f1)
+echo $PWD1 | $CRYPTSETUP reencrypt $DEV --encrypt --luks2-keyslots-size 1M --reduce-device-size 8M -q $FAST_PBKDF_ARGON || fail
+check_hash_head $PWD1 $((56*1024*2)) $HASH_X
+grep -q -a "xxxxxxxxxxxxxxxx" $DEV && fail "Original data not wiped."
 
 # Small device encryption test
 preparebig 65
@@ -2988,6 +3016,58 @@ head -c 31 $VKEY1 | keyctl padd user $KEY_NAME_VK1 %:$KEYRING > /dev/null || fai
 $CRYPTSETUP -q reencrypt --init-only --volume-key-keyring $KEY_NAME_VK2 --new-volume-key-keyring $KEY_NAME_VK1 $DEV <&- 2>/dev/null && fail
 $CRYPTSETUP luksDump $DEV | grep -q "online-reencrypt" && fail "Failed initialization with reencryption flag"
 
+echo "[39] Reencrypt rejects foreign keyring keys"
+prepare dev_size_mb=32
+
+reformat_reencrypt_device
+echo $PWD1 | $CRYPTSETUP luksDump --dump-volume-key --volume-key-file $VKEY2 $DEV >/dev/null || fail
+
+head -c 32 $VKEY1 | plant_foreign_vk_key $FOREIGN_KEY_NAME_VK || skip "Failed to plant another user's volume key (setpriv/uid 65534 unusable)."
+# valid old volume key in our own keyring
+head -c 64 $VKEY2 | keyctl padd user $KEY_NAME_VK2 %:$KEYRING > /dev/null || fail
+# the new volume key must not be read from another user's key
+$CRYPTSETUP -q reencrypt --force-no-keyslots --volume-key-keyring $KEY_NAME_VK2 \
+--new-volume-key-keyring $FOREIGN_KEY_NAME_VK $DEV <&- 2>/dev/null && \
+fail "Reencrypt used a volume key planted by another user."
+# device is untouched: the original volume key still unlocks it
+$CRYPTSETUP open --test-passphrase --volume-key-keyring $KEY_NAME_VK2 $DEV <&- || fail
+
+echo [40] Reencrypt rejects small LUKS images
+preparebig 32
+
+# create device with 4096 bytes of data
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --offset 65528 --luks2-keyslots-size 16M $FAST_PBKDF_ARGON $DEVBIG || fail
+resize_file $DEVBIG -8192 # shrink device below data offset
+# data offset beyond image end
+# reencryption initialization must fail and not grow the image
+echo $PWD1 | $CRYPTSETUP reencrypt $DEVBIG $FAST_PBKDF_ARGON --init-only --resilience none 2>/dev/null && fail
+[ $(stat --printf="%s" $DEVBIG) -eq 33546240 ] || fail "Image size changed."
+
+resize_file $DEVBIG 8192
+echo $PWD1 | $CRYPTSETUP reencrypt $DEVBIG $FAST_PBKDF_ARGON --init-only --resilience none || fail
+resize_file $DEVBIG -8192 # shrink device below data offset again
+CHECK_HASH1=$(sha256sum $DEVBIG | cut -d' ' -f 1)
+# data image truncated below data offset
+# reencryption resume must fail, not grow the image and not write it
+echo $PWD1 | $CRYPTSETUP reencrypt $DEVBIG --resume-only --force-offline-reencrypt 2>/dev/null && fail
+[ $(stat --printf="%s" $DEVBIG) -eq 33546240 ] || fail "Image size changed."
+CHECK_HASH2=$(sha256sum $DEVBIG | cut -d' ' -f 1)
+[ "$CHECK_HASH1" != "$CHECK_HASH2" ] && fail "Image changed!"
+resize_file $DEVBIG 8192
+
+# create device with 4096 bytes of data (header is detached)
+echo $PWD1 | $CRYPTSETUP -q luksFormat --type luks2 --header $IMG_HDR --offset 65528 $FAST_PBKDF_ARGON $DEVBIG || fail
+echo $PWD1 | $CRYPTSETUP reencrypt --header $IMG_HDR $DEVBIG $FAST_PBKDF_ARGON --init-only --resilience none || fail
+resize_file $DEVBIG -8192
+CHECK_HASH1=$(sha256sum $DEVBIG | cut -d' ' -f 1)
+# data image truncated below data offset
+# reencryption resume must fail, not grow the image and not write it
+echo $PWD1 | $CRYPTSETUP reencrypt --header $IMG_HDR $DEVBIG --resume-only --force-offline-reencrypt 2>/dev/null && fail
+[ $(stat --printf="%s" $DEVBIG) -eq 33546240 ] || fail "Image size changed."
+CHECK_HASH2=$(sha256sum $DEVBIG | cut -d' ' -f 1)
+[ "$CHECK_HASH1" != "$CHECK_HASH2" ] && fail "Image changed!"
+
 remove_mapping
 cleanup_keyring
+remove_foreign_vk_key $FOREIGN_KEY_NAME_VK
 exit 0

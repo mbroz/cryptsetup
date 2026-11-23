@@ -217,7 +217,7 @@ static int write_log(struct reenc_ctx *rc)
 	return 0;
 }
 
-static int parse_line_log(struct reenc_ctx *rc, const char *line)
+static int parse_line_log(struct reenc_ctx *rc, const char *line, bool *uuid_found)
 {
 	uint64_t u64;
 	int i;
@@ -237,6 +237,7 @@ static int parse_line_log(struct reenc_ctx *rc, const char *line)
 			log_dbg("Log: Unexpected UUID %s", s);
 			return -EINVAL;
 		}
+		*uuid_found = true;
 	} else if (sscanf(line, "direction = %d", &i) == 1) {
 		log_dbg("Log: direction = %i", i);
 		rc->reencrypt_direction = i;
@@ -262,6 +263,7 @@ static int parse_line_log(struct reenc_ctx *rc, const char *line)
 static int parse_log(struct reenc_ctx *rc)
 {
 	char *start, *end;
+	bool uuid_found = false;
 
 	if (lseek(rc->log_fd, 0, SEEK_SET) == -1 ||
 	    read_buffer(rc->log_fd, rc->log_buf, SECTOR_SIZE) != SECTOR_SIZE) {
@@ -275,7 +277,7 @@ static int parse_log(struct reenc_ctx *rc)
 		end = strchr(start, '\n');
 		if (end) {
 			*end++ = '\0';
-			if (parse_line_log(rc, start)) {
+			if (parse_line_log(rc, start, &uuid_found)) {
 				log_err(_("Wrong log format."));
 				return -EINVAL;
 			}
@@ -283,6 +285,11 @@ static int parse_log(struct reenc_ctx *rc)
 
 		start = end;
 	} while (start);
+
+	if (!uuid_found) {
+		log_err(_("Wrong log format."));
+		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -298,6 +305,7 @@ static void close_log(struct reenc_ctx *rc)
 static int open_log(struct reenc_ctx *rc)
 {
 	int flags = ARG_SET(OPT_USE_FSYNC_ID) ? O_SYNC : 0;
+	struct stat st;
 
 	rc->log_fd = open(rc->log_file, O_RDWR|O_EXCL|O_CREAT|flags, S_IRUSR|S_IWUSR);
 	if (rc->log_fd != -1) {
@@ -305,7 +313,12 @@ static int open_log(struct reenc_ctx *rc)
 		rc->stained = 0;
 	} else if (errno == EEXIST) {
 		log_std(_("Log file %s exists, resuming reencryption.\n"), rc->log_file);
-		rc->log_fd = open(rc->log_file, O_RDWR|flags);
+		/* Existing log must be a regular file we created, never follow symlinks */
+		rc->log_fd = open(rc->log_file, O_RDWR|O_NOFOLLOW|flags);
+		if (rc->log_fd != -1 && (fstat(rc->log_fd, &st) || !S_ISREG(st.st_mode))) {
+			log_dbg("Log file %s is not a regular file.", rc->log_file);
+			close_log(rc);
+		}
 		rc->in_progress = true;
 	}
 
@@ -585,8 +598,8 @@ static int backup_fake_header(struct reenc_ctx *rc)
 	if (r < 0)
 		goto out;
 
-	r = crypt_keyslot_add_by_volume_key(cd_new, rc->keyslot, NULL, 0,
-			rc->p[rc->keyslot].password, rc->p[rc->keyslot].passwordLen);
+	/* Fake header uses null cipher, it must use empty passphrase */
+	r = crypt_keyslot_add_by_volume_key(cd_new, rc->keyslot, NULL, 0, "", 0);
 	check_signal(&r);
 	if (r < 0)
 		goto out;
@@ -1209,8 +1222,8 @@ static void destroy_context(struct reenc_ctx *rc)
 
 	if (!rc->stained) {
 		unlink(rc->log_file);
-		unlink(rc->header_file_org);
-		unlink(rc->header_file_new);
+		luks_remove_header_file(rc->header_file_org);
+		luks_remove_header_file(rc->header_file_new);
 	}
 
 	for (i = 0; i < MAX_SLOT; i++)

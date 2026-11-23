@@ -914,6 +914,30 @@ int crypt_repair(struct crypt_device *cd,
 	void *params);
 
 /**
+ * Try to repair the on-disk metadata of a HW OPAL crypt device.
+ *
+ * OPAL hardware encryption can be used with LUKS2. Legacy LUKS2 metadata may contain
+ * unauthenticated OPAL segment metadata. The repair command upgrades the segment digest so
+ * that it authenticates both the stored volume key and the segment metadata (such as the
+ * segment type or offset). The volume key digest then also protects the OPAL segment
+ * metadata, so nobody without the volume key can turn a software-encrypted segment (or its
+ * key) into an OPAL segment.
+ *
+ * @param cd crypt device handle
+ * @param keyslot requested keyslot to unlock the volume key or @e CRYPT_ANY_SLOT
+ * @param kc keyslot context providing access to the volume key, or @e NULL to only
+ * 	  check whether the upgrade is needed
+ *
+ * @return @e 0 if metadata is protected (also after successful upgrade), @e 1 if
+ * 	   the upgrade is needed (only if @e kc is @e NULL) or negative errno value otherwise.
+ *
+ * @note The caller must be sure the device was really formatted with HW OPAL encryption.
+ */
+int crypt_repair_opal(struct crypt_device *cd,
+	int keyslot,
+	struct crypt_keyslot_context *kc);
+
+/**
  * Resize crypt device.
  *
  * @param cd - crypt device handle

@@ -262,6 +262,33 @@ static int _open_locked(struct crypt_device *cd, struct device *device, int flag
 }
 
 /*
+ * The path can be replaced (rename, symlink) between two opens.
+ * A newly opened fd must refer to the same file or block device
+ * as the already cached one.
+ */
+static int device_verify_fd(struct crypt_device *cd, struct device *device, int devfd)
+{
+	struct stat st, st_cached;
+	int cached_fd;
+
+	cached_fd = device->ro_dev_fd >= 0 ? device->ro_dev_fd : device->dev_fd;
+	if (cached_fd < 0)
+		return 0;
+
+	if (fstat(devfd, &st) < 0 || fstat(cached_fd, &st_cached) < 0)
+		return -EINVAL;
+
+	if (S_ISBLK(st.st_mode) && S_ISBLK(st_cached.st_mode)) {
+		if (st.st_rdev == st_cached.st_rdev)
+			return 0;
+	} else if (st.st_ino == st_cached.st_ino && st.st_dev == st_cached.st_dev)
+		return 0;
+
+	log_dbg(cd, "Device %s does not match already opened device.", device_path(device));
+	return -EINVAL;
+}
+
+/*
  * Common wrapper for device sync.
  */
 void device_sync(struct crypt_device *cd, struct device *device)
@@ -311,6 +338,11 @@ static int device_open_internal(struct crypt_device *cd, struct device *device, 
 			device_path(device),
 			access != O_RDONLY ? " for write" : "");
 		return devfd;
+	}
+
+	if (device_verify_fd(cd, device, devfd)) {
+		close(devfd);
+		return device_locked(device->lh) ? -EINVAL : -1;
 	}
 
 	if (access == O_RDONLY)
@@ -675,7 +707,8 @@ int device_fallocate(struct device *device, uint64_t size)
 	if (devfd == -1)
 		return -EINVAL;
 
-	if (!fstat(devfd, &st) && S_ISREG(st.st_mode) &&
+	if (!device_verify_fd(NULL, device, devfd) &&
+	    !fstat(devfd, &st) && S_ISREG(st.st_mode) &&
 	    ((uint64_t)st.st_size >= size || !(r = posix_fallocate(devfd, 0, size)))) {
 		r = 0;
 		if (device->file_path && crypt_loop_resize(device->path))

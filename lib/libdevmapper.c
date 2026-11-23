@@ -534,6 +534,12 @@ static int cipher_dm2c(const char *org_c, const char *org_i, unsigned tag_size,
 	if (!c_dm || !c_dm_size || !i_dm || !i_dm_size)
 		return -EINVAL;
 
+	if (!crypt_is_cipher_valid(org_c))
+		return -EINVAL;
+
+	if (org_i && !crypt_is_cipher_valid(org_i))
+		return -EINVAL;
+
 	i = sscanf(org_c, "%" MAX_CAPI_ONE_LEN_STR "[^-]-%" MAX_CAPI_ONE_LEN_STR "s", cipher, tmp);
 	if (i != 2)
 		return -EINVAL;
@@ -2265,7 +2271,6 @@ static int _dm_target_query_crypt(struct crypt_device *cd, uint64_t get_flags,
 			}
 		}
 	}
-	memset(key_, 0, strlen(key_));
 
 	if (cipher)
 		tgt->u.crypt.cipher = cipher;
@@ -2901,6 +2906,7 @@ static int _dm_query_device(struct crypt_device *cd, const char *name,
 	struct dm_info dmi;
 	uint64_t start, length;
 	char *target_type, *params;
+	size_t params_size;
 	const char *tmp_uuid;
 	void *next = NULL;
 	int r = -EINVAL;
@@ -2946,7 +2952,12 @@ static int _dm_query_device(struct crypt_device *cd, const char *name,
 		next = dm_get_next_target(dmt, next, &start, &length,
 	                                  &target_type, &params);
 
+		params_size = strlen(params);
 		r = dm_target_query(cd, t, &start, &length, target_type, params, get_flags, &dmd->flags);
+
+		/* Params can contain keys */
+		crypt_safe_memzero(params, params_size);
+
 		if (!r && t->type == DM_VERITY) {
 			r = _dm_status_verity_ok(cd, name);
 			if (r == 0)
@@ -2961,6 +2972,9 @@ static int _dm_query_device(struct crypt_device *cd, const char *name,
 
 		dmd->size += length;
 		t = t->next;
+
+		/* Params can contain keys */
+		crypt_safe_memzero(params, params_size);
 	} while (next && t);
 
 	if (dmi.read_only)

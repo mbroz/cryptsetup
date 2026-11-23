@@ -451,3 +451,30 @@ out:
 
 	return r;
 }
+
+/*
+ * Temporary header files contain keyslots with the volume key.
+ * Overwrite the file before removing it, so that the keyslot
+ * does not survive in free space of the filesystem.
+ */
+void luks_remove_header_file(const char *header_file)
+{
+	struct stat st;
+	struct crypt_device *cd = NULL;
+	int r;
+
+	if (stat(header_file, &st) < 0)
+		return;
+
+	if (S_ISREG(st.st_mode) && st.st_size > 0) {
+		r = crypt_init(&cd, header_file);
+		if (!r)
+			r = crypt_wipe(cd, NULL, CRYPT_WIPE_RANDOM, 0, 0,
+				       DEFAULT_WIPE_BLOCK, 0, NULL, NULL);
+		crypt_free(cd);
+		if (r < 0)
+			log_err(_("Cannot wipe temporary header file %s."), header_file);
+	}
+
+	unlink(header_file);
+}

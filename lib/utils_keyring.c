@@ -68,24 +68,31 @@ static long keyctl_read(key_serial_t key, char *buffer, size_t buflen)
 	return syscall(__NR_keyctl, KEYCTL_READ, key, buffer, buflen);
 }
 
-/* keyctl_link */
-static long keyctl_link(key_serial_t key, key_serial_t keyring)
-{
-	return syscall(__NR_keyctl, KEYCTL_LINK, key, keyring);
-}
-
 /* keyctl_unlink */
 static long keyctl_unlink(key_serial_t key, key_serial_t keyring)
 {
 	return syscall(__NR_keyctl, KEYCTL_UNLINK, key, keyring);
 }
 
+/* keyctl_invalidate */
+static long keyctl_invalidate(key_serial_t key)
+{
+	return syscall(__NR_keyctl, KEYCTL_INVALIDATE, key);
+}
+
+/* keyctl_search */
+static long keyctl_search(key_serial_t keyring, const char *type,
+			  const char *description, key_serial_t destringid)
+{
+	return syscall(__NR_keyctl, KEYCTL_SEARCH, keyring, type, description, destringid);
+}
+
 /* inspired by keyutils written by David Howells (dhowells@redhat.com) */
-static key_serial_t keyring_process_proc_keys_line(char *line, const char *type, const char *desc,
-						   key_serial_t destringid)
+static key_serial_t keyring_process_proc_keys_line(char *line, const char *type, const char *desc)
 {
 	char typebuf[41], rdesc[1024], *kdesc, *cp;
 	int ndesc, n;
+	unsigned int uid;
 	key_serial_t id;
 	int dlen;
 
@@ -119,15 +126,18 @@ static key_serial_t keyring_process_proc_keys_line(char *line, const char *type,
 			return 0;
 		rdesc[n] = '\0';
 
+		/* /proc/keys lists also keys of other users (any key with
+		 * view permission for others). Such a key is not reachable
+		 * via our keyrings, so never trust it by description only
+		 * and accept just keys owned by us (type;uid;gid;perm;desc). */
+		if (sscanf(rdesc, "%*[^;];%u;", &uid) != 1 || uid != geteuid())
+			return 0;
+
 		cp = strrchr(rdesc, ';');
 		if (!cp)
 			return 0;
 		cp++;
 		if (strcmp(cp, desc) != 0)
-			return 0;
-
-
-		if (destringid && keyctl_link(id, destringid) == -1)
 			return 0;
 
 		return id;
@@ -136,9 +146,21 @@ static key_serial_t keyring_process_proc_keys_line(char *line, const char *type,
 	return 0;
 }
 
+key_serial_t keyring_search_key_id(key_serial_t keyring_id,
+				   key_type_t key_type,
+				   const char *key_description)
+{
+	const char *type_name = key_type_name(key_type);
+
+	if (!type_name || !key_description)
+		return -EINVAL;
+
+	return keyctl_search(keyring_id, type_name, key_description, 0);
+}
+
 /* inspired by keyutils written by David Howells (dhowells@redhat.com), returns 0 ID on failure */
 
-static key_serial_t find_key_by_type_and_desc(const char *type, const char *desc, key_serial_t destringid)
+static key_serial_t find_key_by_type_and_desc(const char *type, const char *desc)
 {
 	key_serial_t id;
 	int f;
@@ -170,7 +192,7 @@ static key_serial_t find_key_by_type_and_desc(const char *type, const char *desc
 		while (newline != NULL && buffer_len != 0) {
 			*newline = '\0';
 
-			if ((id = keyring_process_proc_keys_line(buf, type, desc, destringid))) {
+			if ((id = keyring_process_proc_keys_line(buf, type, desc))) {
 				close(f);
 				return id;
 			}
@@ -266,7 +288,8 @@ int keyring_read_key(key_serial_t kid,
 
 	/* retrieve actual payload data */
 	r = keyctl_read(kid, buf, len);
-	if (r < 0) {
+	/* key payload size may change between the two reads (key update) */
+	if (r < 0 || (size_t)r != len) {
 		crypt_safe_free(buf);
 		return -EINVAL;
 	}
@@ -285,6 +308,11 @@ int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id)
 int keyring_unlink_key_from_thread_keyring(key_serial_t kid)
 {
 	return keyctl_unlink(kid, KEY_SPEC_THREAD_KEYRING) < 0 ? -EINVAL : 0;
+}
+
+int keyring_invalidate_key(key_serial_t kid)
+{
+	return keyctl_invalidate(kid) < 0 ? -EINVAL : 0;
 }
 
 const char *key_type_name(key_type_t type)
@@ -376,7 +404,7 @@ key_serial_t keyring_find_key_id_by_name(const char *key_name)
 		if (!*name_copy_p)
 			goto out;
 
-		id = find_key_by_type_and_desc(type, name_copy_p, 0);
+		id = find_key_by_type_and_desc(type, name_copy_p);
 		goto out;
 	}
 
@@ -445,6 +473,13 @@ key_serial_t keyring_request_key_id(key_type_t key_type,
 	return -ENOTSUP;
 }
 
+key_serial_t keyring_search_key_id(key_serial_t keyring_id,
+				   key_type_t key_type,
+				   const char *key_description)
+{
+	return -ENOTSUP;
+}
+
 int keyring_read_keysize(key_serial_t kid,
 		size_t *r_key_size)
 {
@@ -503,6 +538,11 @@ int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id)
 }
 
 int keyring_unlink_key_from_thread_keyring(key_serial_t kid)
+{
+	return -ENOTSUP;
+}
+
+int keyring_invalidate_key(key_serial_t kid)
 {
 	return -ENOTSUP;
 }

@@ -405,3 +405,61 @@ int LUKS2_reencrypt_digest_verify(struct crypt_device *cd,
 
 	return r;
 }
+
+static size_t segment_opal_serialize(json_object *jobj_segment, uint8_t *buffer)
+{
+	struct jtype j[] = {
+		{ JSTR, jobj_segment, "type" },
+		{ JU64, jobj_segment, "offset" },
+		{ JU32, jobj_segment, "opal_segment_number" },
+		{ JU64, jobj_segment, "opal_segment_size" },
+		{ JU32, jobj_segment, "opal_key_size" },
+		{}
+	};
+	return srs(j, buffer);
+}
+
+/*
+ * The OPAL segment metadata decide what part of the volume key is sent
+ * to the device, it must not be possible to change it without the key.
+ */
+int LUKS2_opal_assembly_verification_data(struct luks2_hdr *hdr,
+	const struct volume_key *vk,
+	uint8_t version,
+	struct volume_key **r_verification_data)
+{
+	uint8_t *ptr;
+	json_object *jobj_segment;
+	size_t segment_data_len, data_len = 2;
+	void *data;
+
+	jobj_segment = LUKS2_get_segment_jobj(hdr, CRYPT_DEFAULT_SEGMENT);
+	if (!jobj_segment || !(segment_data_len = segment_opal_serialize(jobj_segment, NULL)))
+		return -EINVAL;
+
+	data_len += blob_serialize(crypt_volume_key_get_key(vk), crypt_volume_key_length(vk), NULL);
+	data_len += segment_data_len;
+
+	data = crypt_safe_alloc(data_len);
+	if (!data)
+		return -ENOMEM;
+
+	ptr = (uint8_t*)data;
+
+	/* the prefix must differ from reencryption verification data */
+	*ptr++ = 0x6f;
+	*ptr++ = 0x30 + version;
+
+	ptr += blob_serialize(crypt_volume_key_get_key(vk), crypt_volume_key_length(vk), ptr);
+	ptr += segment_opal_serialize(jobj_segment, ptr);
+
+	assert((size_t)(ptr - (uint8_t*)data) == data_len);
+
+	*r_verification_data = crypt_alloc_volume_key_by_safe_alloc(&data);
+	if (!*r_verification_data) {
+		crypt_safe_free(data);
+		return -ENOMEM;
+	}
+
+	return 0;
+}

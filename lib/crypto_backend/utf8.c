@@ -231,20 +231,24 @@ static size_t utf16_encode_unichar(char16_t *out, char32_t c)
 /**
  * crypt_utf8_to_utf16()
  * @out: output buffer, should be @length + 1 long
+ * @out_length: length of the converted string in bytes (without terminating zero)
  * @s: string to convert
  * @length: length of @s in bytes
  *
  * Converts a UTF8 encoded string to a UTF16LE encoded string.
  *
+ * Note that @s is not a C string, zero bytes are converted as any other character.
+ *
  * Returns: 0 on success, negative errno otherwise
  */
-int crypt_utf8_to_utf16(char16_t **out, const char *s, size_t length)
+int crypt_utf8_to_utf16(char16_t **out, size_t *out_length, const char *s, size_t length)
 {
 	char16_t *p;
 	size_t i;
 	int r;
 
 	assert(s);
+	assert(out_length);
 
 	p = *out;
 
@@ -272,22 +276,6 @@ int crypt_utf8_to_utf16(char16_t **out, const char *s, size_t length)
 	}
 
 	*p = 0;
+	*out_length = (size_t)(p - *out) * sizeof(char16_t);
 	return 0;
-}
-
-/**
- * crypt_char16_strlen()
- * @s: string to get length of
- *
- * Returns: number of 16-bit words in the string
- */
-size_t crypt_char16_strlen(const char16_t *s) {
-	size_t n = 0;
-
-	assert(s);
-
-	while (*s != 0)
-		n++, s++;
-
-	return n;
 }
