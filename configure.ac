@@ -1,9 +1,9 @@
 AC_PREREQ([2.67])
-AC_INIT([cryptsetup],[2.8.8])
+AC_INIT([cryptsetup],[2.8.9])
 
 dnl library version from <major>.<minor>.<release>[-<suffix>]
 LIBCRYPTSETUP_VERSION=$(echo $PACKAGE_VERSION | cut -f1 -d-)
-LIBCRYPTSETUP_VERSION_INFO=23:0:11
+LIBCRYPTSETUP_VERSION_INFO=24:0:12
 
 AM_SILENT_RULES([yes])
 AC_CONFIG_SRCDIR(src/cryptsetup.c)
