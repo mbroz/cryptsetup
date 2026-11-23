@@ -1,6 +1,8 @@
 #!/bin/bash
 
-WIPE_UNIT=./unit-wipe
+[ -z "$CRYPTSETUP_TESTS_BIN_PATH" ] && CRYPTSETUP_TESTS_BIN_PATH="."
+
+WIPE_UNIT=$CRYPTSETUP_TESTS_BIN_PATH/unit-wipe
 FILE=./wipe_localfile
 FILE_RAND=./wipe_random_localfile
 MB_BYTES=$((1024*1024))

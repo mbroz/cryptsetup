@@ -13,6 +13,7 @@ else
 fi
 
 [ -z "$srcdir" ] && srcdir="."
+[ -z "$CRYPTSETUP_TESTS_DATA_PATH" ] && CRYPTSETUP_TESTS_DATA_PATH=$srcdir
 
 create_mapping()
 {
@@ -105,7 +106,7 @@ export LANG=C
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 
 if [ ! -d $TST_DIR ]; then
-	tar xJSf $srcdir/fvault2-images.tar.xz --no-same-owner 2>/dev/null || skip "Incompatible tar."
+	tar xJSf $CRYPTSETUP_TESTS_DATA_PATH/fvault2-images.tar.xz --no-same-owner 2>/dev/null || skip "Incompatible tar."
 fi
 
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
