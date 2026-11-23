@@ -102,21 +102,21 @@ test-rawhide-wdSN5000S:
 #    PCI_PASSTHROUGH_DEVICE_ID: "5017"
 
 # Samsung SSD 980 PRO 1TB (on trantor machine)
-#test-rawhide-samsung980pro:
-#  rules:
-#    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
-#      when: never
-#    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
-#    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-#  extends:
-#    - .opal-template-fedora
-#  tags:
-#    - trantor
-#  resource_group: samsung980pro-on-trantor
-#  interruptible: false
-#  variables:
-#    PCI_PASSTHROUGH_VENDOR_ID: "144d"
-#    PCI_PASSTHROUGH_DEVICE_ID: "a80a"
+test-rawhide-samsung980pro:
+  rules:
+    - if: $CI_PROJECT_PATH != "cryptsetup/cryptsetup"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /v2\..\.x$/
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  extends:
+    - .opal-template-fedora
+  tags:
+    - trantor
+  resource_group: samsung980pro-on-trantor
+  interruptible: false
+  variables:
+    PCI_PASSTHROUGH_VENDOR_ID: "144d"
+    PCI_PASSTHROUGH_DEVICE_ID: "a80a"
 
 # WD PC SN740 SDDQMQD-256G-1001 (on trantor machine)
 # test-rawhide-wdSN740:
