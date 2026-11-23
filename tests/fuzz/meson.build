@@ -52,4 +52,21 @@ if get_option('fuzz-targets')
             link_args,
         ],
         include_directories: includes_tools)
+    crypt2_meta_fuzz = executable('crypt2_meta_fuzz',
+        [
+            'crypt2_meta_fuzz.cc',
+        ],
+        dependencies: [
+            devmapper,
+            fuzzing_engine,
+        ],
+        link_with: [
+            libcryptsetup,
+            libcrypto_backend,
+            libutils_io,
+        ],
+        link_args: [
+            link_args,
+        ],
+        include_directories: includes_tools)
 endif
