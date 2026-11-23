@@ -94,6 +94,7 @@ dm_crypt_features()
 	[ $VER_MAJ -gt 1 ] && {
 		DM_PERF_CPU=1
 		DM_SECTOR_SIZE=1
+		DM_PLAIN_SECTOR_SIZE_UP_TO_PAGE=1
 		test -d /proc/sys/kernel/keys && DM_KEYRING=1
 		return
 	}
@@ -112,6 +113,9 @@ dm_crypt_features()
 
 	[ $VER_MIN -lt 26 ] && return
 	DM_PERF_HIGH_PRIORITY=1
+
+	[ $VER_MIN -lt 30 ] && return
+	DM_PLAIN_SECTOR_SIZE_UP_TO_PAGE=1
 }
 
 format() # format
@@ -143,6 +147,7 @@ check_io()
 	dd if=/dev/zero of=/dev/mapper/$DEV_NAME bs=1M count=32 oflag=direct 2>/dev/null || fail
 }
 
+export LANG=C
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 [ -n "$VALG" ] && valgrind_setup && CRYPTSETUP=valgrind_run
 if [ $(id -u) != 0 ]; then
@@ -340,6 +345,26 @@ else
 		check_sector_size $S
 		$CRYPTSETUP close $DEV_NAME || fail
 	done
+
+	# Plain device sector size larger than 4096 bytes needs dm-crypt 1.30 and page size >= sector size
+	PAGE_SIZE=$(getconf PAGE_SIZE)
+	for S in 8192 16384 32768 65536; do
+		echo -n "[$S]"
+		if [ -n "$DM_PLAIN_SECTOR_SIZE_UP_TO_PAGE" -a $S -le $PAGE_SIZE ]; then
+			echo -e "$PWD1" | $CRYPTSETUP open -q $PLAIN_OPT $DEV $DEV_NAME --sector-size $S || fail
+			check_sector_size $S
+			check_io
+			$CRYPTSETUP close $DEV_NAME || fail
+			continue
+		fi
+		OUT=$(echo -e "$PWD1" | $CRYPTSETUP open -q $PLAIN_OPT $DEV $DEV_NAME --sector-size $S 2>&1) && fail
+		if [ $S -gt $PAGE_SIZE ]; then
+			echo "$OUT" | grep -q "larger than page size ($PAGE_SIZE bytes)" || fail
+		else
+			echo "$OUT" | grep -q "larger than 4096 bytes" || fail
+		fi
+	done
+	echo -e "$PWD1" | $CRYPTSETUP open -q $PLAIN_OPT $DEV $DEV_NAME --sector-size 131072 >/dev/null 2>&1 && fail
 
 	echo -e "$PWD1" | $CRYPTSETUP open $PLAIN_OPT $DEV $DEV_NAME --iv-large-sectors >/dev/null 2>&1 && fail
 	for S in 1024 2048 4096; do

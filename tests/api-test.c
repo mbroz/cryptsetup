@@ -362,6 +362,18 @@ static void AddDevicePlain(void)
 
 	CRYPT_FREE(cd);
 
+	// encryption sector size, activation with more than 4096 bytes depends on kernel page size
+	OK_(crypt_init(&cd, DEVICE_2));
+	params.sector_size = 131072;
+	FAIL_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params), "sector size too large");
+	params.sector_size = 12288;
+	FAIL_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params), "sector size not power of 2");
+	params.sector_size = 65536;
+	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, &params));
+	EQ_(crypt_get_sector_size(cd), 65536);
+	params.sector_size = 0;
+	CRYPT_FREE(cd);
+
 	// default is "plain" hash - no password hash
 	OK_(crypt_init(&cd, DEVICE_1));
 	OK_(crypt_format(cd, CRYPT_PLAIN, cipher, cipher_mode, NULL, NULL, key_size, NULL));

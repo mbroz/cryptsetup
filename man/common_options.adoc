@@ -949,8 +949,11 @@ endif::[]
 ifndef::ACTION_REENCRYPT[]
 ifdef::ACTION_OPEN[]
 Set encryption sector size for use with _plain_ device type.
-It must be a power of two and in the 512 - 4096 bytes range.
+It must be a power of two and in the 512 - 65536 bytes range.
 The default encryption sector size is 512 bytes.
++
+Encryption sector size larger than 4096 bytes needs kernel 7.4 or later (dm-crypt target version 1.30.0) and the system page size must be at least as large as the encryption sector size.
+Such a device cannot be activated on systems with a smaller page size (for example, x86_64, or arm64 with a kernel configured for 4096-byte pages), so it is not portable between systems.
 endif::[]
 ifdef::ACTION_LUKSFORMAT[]
 Set encryption sector size for use with _LUKS2_ device type.

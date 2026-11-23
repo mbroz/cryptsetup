@@ -164,6 +164,9 @@ static void _dm_set_crypt_compat(struct crypt_device *cd,
 	if (_dm_satisfies_version(1, 28, 0, crypt_maj, crypt_min, crypt_patch))
 		_dm_flags |= DM_CRYPT_INTEGRITY_KEY_SIZE_OPT_SUPPORTED;
 
+	if (_dm_satisfies_version(1, 30, 0, crypt_maj, crypt_min, crypt_patch))
+		_dm_flags |= DM_CRYPT_PLAIN_SECTOR_SIZE_UP_TO_PAGE_SUPPORTED;
+
 	_dm_crypt_checked = true;
 }
 
@@ -1827,6 +1830,15 @@ int dm_create_device(struct crypt_device *cd, const char *name,
 		}
 		if (dmd->segment.u.crypt.sector_size != SECTOR_SIZE && !(dmt_flags & DM_SECTOR_SIZE_SUPPORTED)) {
 			log_err(cd, _("Requested sector_size option is not supported."));
+			r = -EINVAL;
+		} else if (dmd->segment.u.crypt.sector_size > crypt_getpagesize()) {
+			log_err(cd, _("Kernel does not support encryption sector size larger than page size (%zu bytes)."),
+				crypt_getpagesize());
+			r = -EINVAL;
+		} else if (dmd->segment.u.crypt.sector_size > MAX_SECTOR_SIZE &&
+			   !(dmt_flags & DM_CRYPT_PLAIN_SECTOR_SIZE_UP_TO_PAGE_SUPPORTED)) {
+			log_err(cd, _("Kernel does not support encryption sector size larger than %u bytes."),
+				MAX_SECTOR_SIZE);
 			r = -EINVAL;
 		}
 		if (dmd->segment.u.crypt.sector_size > SECTOR_SIZE &&

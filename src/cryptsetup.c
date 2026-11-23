@@ -3737,6 +3737,9 @@ static const char *verify_reencrypt(void)
 	if (ARG_SET(OPT_NEW_VOLUME_KEY_KEYRING_ID) && ARG_SET(OPT_KEEP_KEY_ID))
 		return _("Options --new-volume-key-keyring and --keep-key cannot be combined.");
 
+	if (ARG_UINT32(OPT_SECTOR_SIZE_ID) > MAX_SECTOR_SIZE)
+		return _("Unsupported encryption sector size.");
+
 	return NULL;
 }
 
@@ -3761,6 +3764,9 @@ static const char *verify_format(void)
 
 	if (ARG_SET(OPT_DISABLE_SUM_ID) && !ARG_SET(OPT_HW_OPAL_ID) && !ARG_SET(OPT_HW_OPAL_ONLY_ID))
 		return  _("Option --disable-sum must be used with --hw-opal or --hw-opal-only");
+
+	if (ARG_UINT32(OPT_SECTOR_SIZE_ID) > MAX_SECTOR_SIZE)
+		return _("Unsupported encryption sector size.");
 
 	return NULL;
 }
@@ -4103,7 +4109,7 @@ static void basic_options_cb(poptContext popt_context,
 		break;
 	case OPT_SECTOR_SIZE_ID:
 		if (ARG_UINT32(OPT_SECTOR_SIZE_ID) < SECTOR_SIZE ||
-		    ARG_UINT32(OPT_SECTOR_SIZE_ID) > MAX_SECTOR_SIZE ||
+		    ARG_UINT32(OPT_SECTOR_SIZE_ID) > MAX_PLAIN_SECTOR_SIZE ||
 		    (ARG_UINT32(OPT_SECTOR_SIZE_ID) & (ARG_UINT32(OPT_SECTOR_SIZE_ID) - 1)))
 			usage(popt_context, EXIT_FAILURE,
 			      _("Unsupported encryption sector size."),
