@@ -1,0 +1,4354 @@
+# Latvian translation for cryptsetup.
+# Copyright (C) 2026 Free Software Foundation, Inc.
+# This file is distributed under the same license as the cryptsetup package.
+# Rihards Priedītis <rprieditis@gmail.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: cryptsetup 2.8.8-rc0\n"
+"Report-Msgid-Bugs-To: cryptsetup@lists.linux.dev\n"
+"POT-Creation-Date: 2026-09-02 13:18+0200\n"
+"PO-Revision-Date: 2026-11-07 20:06+0200\n"
+"Last-Translator: Rihards Priedītis <rprieditis@gmail.com>\n"
+"Language-Team: Latvian <translation-team-lv@googlegroups.com>\n"
+"Language: lv\n"
+"X-Bugs: Report translation errors to the Language-Team address.\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==0 || (n%100>=11 && n%100<=19) ? 0 : n%10==1 && n%100!=11 ? 1 : 2);\n"
+"X-Generator: Poedit 3.10\n"
+
+#: lib/libdevmapper.c:422
+msgid "Cannot initialize device-mapper, running as non-root user."
+msgstr "Neizdevās inicializēt device-mapper, jo programma darbojas bez root tiesībām."
+
+#: lib/libdevmapper.c:425
+msgid "Cannot initialize device-mapper. Is dm_mod kernel module loaded?"
+msgstr "Neizdevās inicializēt device-mapper. Vai dm_mod kodola modulis ir ielādēts?"
+
+#: lib/libdevmapper.c:1129
+msgid "Requested deferred flag is not supported."
+msgstr "Pieprasītais atlikšanas karogs netiek atbalstīts."
+
+#: lib/libdevmapper.c:1198
+#, c-format
+msgid "DM-UUID for device %s was truncated."
+msgstr "Ierīces %s DM-UUID tika saīsināts."
+
+#: lib/libdevmapper.c:1602
+msgid "Unknown dm target type."
+msgstr "Nezināms dm mērķa tips."
+
+#: lib/libdevmapper.c:1729 lib/libdevmapper.c:1735 lib/libdevmapper.c:1854
+#: lib/libdevmapper.c:1857
+msgid "Requested dm-crypt performance options are not supported."
+msgstr "Pieprasītās dm-crypt veiktspējas opcijas netiek atbalstītas."
+
+#: lib/libdevmapper.c:1744 lib/libdevmapper.c:1750 lib/libdevmapper.c:1762
+msgid "Requested dm-verity data corruption handling options are not supported."
+msgstr "Pieprasītās dm-verity datu bojājumu apstrādes opcijas netiek atbalstītas."
+
+#: lib/libdevmapper.c:1756
+msgid "Requested dm-verity tasklets option is not supported."
+msgstr "Pieprasītā dm-verity uzdevumu (tasklet) opcija netiek atbalstīta."
+
+#: lib/libdevmapper.c:1768
+msgid "Requested dm-verity FEC options are not supported."
+msgstr "Pieprasītās dm-verity FEC opcijas netiek atbalstītas."
+
+#: lib/libdevmapper.c:1774
+msgid "Requested data integrity options are not supported."
+msgstr "Pieprasītās datu integritātes opcijas netiek atbalstītas."
+
+#: lib/libdevmapper.c:1778
+msgid "Requested sector_size option is not supported."
+msgstr "Pieprasītā sector_size opcija netiek atbalstīta."
+
+#: lib/libdevmapper.c:1783
+msgid "The device size is not multiple of the requested sector size."
+msgstr "Ierīces izmērs nav pieprasītā sektora izmēra daudzkārtnis."
+
+#: lib/libdevmapper.c:1787
+msgid "Requested integrity_key_size option is not supported."
+msgstr "Pieprasītā integrity_key_size opcija netiek atbalstīta."
+
+#: lib/libdevmapper.c:1794 lib/libdevmapper.c:1800
+msgid "Requested automatic recalculation of integrity tags is not supported."
+msgstr "Pieprasītā integritātes tagu automātiskā pārrēķināšana netiek atbalstīta."
+
+#: lib/libdevmapper.c:1806 lib/libdevmapper.c:1860 lib/libdevmapper.c:1863
+#: lib/luks2/luks2_json_metadata.c:2791
+msgid "Discard/TRIM is not supported."
+msgstr "Discard/TRIM netiek atbalstīts."
+
+#: lib/libdevmapper.c:1812
+msgid "Requested dm-integrity bitmap mode is not supported."
+msgstr "Pieprasītais dm-integrity bitmap režīms netiek atbalstīts."
+
+#: lib/libdevmapper.c:1818
+msgid "Requested dm-integrity inline mode is not supported."
+msgstr "Pieprasītais dm-integrity inline režīms netiek atbalstīts."
+
+#: lib/libdevmapper.c:2877
+#, c-format
+msgid "Failed to query dm-%s segment."
+msgstr "Neizdevās pieprasīt dm-%s segmentu."
+
+#: lib/random.c:60
+msgid ""
+"System is out of entropy while generating volume key.\n"
+"Please move mouse or type some text in another window to gather some random events.\n"
+msgstr ""
+"Ģenerējot sējuma atslēgu, sistēmā beidzās entropija.\n"
+"Lūdzu, pakustiniet peli vai ievadiet tekstu citā logā, lai savāktu nejaušus notikumus.\n"
+
+#: lib/random.c:64
+#, c-format
+msgid "Generating key (%d%% done).\n"
+msgstr "Tiek ģenerēta atslēga (%d%% pabeigts).\n"
+
+#: lib/random.c:150
+msgid "Running in FIPS mode."
+msgstr "Darbojas FIPS režīmā."
+
+#: lib/random.c:156
+msgid "Fatal error during RNG initialisation."
+msgstr "Kritiska kļūda RNG inicializācijā."
+
+#: lib/random.c:194
+msgid "Unknown RNG quality requested."
+msgstr "Pieprasīta nezināma RNG kvalitāte."
+
+#: lib/random.c:199
+msgid "Error reading from RNG."
+msgstr "Kļūda, nolasot no RNG."
+
+#: lib/setup.c:251
+msgid "OPAL support is disabled in libcryptsetup."
+msgstr "OPAL atbalsts ir atspējots libcryptsetup."
+
+#: lib/setup.c:253
+#, c-format
+msgid "Device %s or kernel does not support OPAL encryption."
+msgstr "Ierīce %s vai kodols neatbalsta OPAL šifrēšanu."
+
+#: lib/setup.c:269
+msgid "Cannot initialize crypto RNG backend."
+msgstr "Neizdevās inicializēt kripto RNG aizmugursistēmu."
+
+#: lib/setup.c:275
+msgid "Cannot initialize crypto backend."
+msgstr "Neizdevās inicializēt kripto aizmugursistēmu."
+
+#: lib/setup.c:308 lib/setup.c:2779 lib/verity/verity.c:109
+#, c-format
+msgid "Hash algorithm %s not supported."
+msgstr "Hešēšanas algoritms %s netiek atbalstīts."
+
+#: lib/setup.c:311 lib/loopaes/loopaes.c:78
+#, c-format
+msgid "Key processing error (using hash %s)."
+msgstr "Atslēgas apstrādes kļūda (izmanto hešu %s)."
+
+#: lib/setup.c:392 lib/setup.c:429
+msgid "Cannot determine device type. Incompatible activation of device?"
+msgstr "Neizdevās noteikt ierīces tipu. Nesaderīga ierīces aktivizācija?"
+
+#: lib/setup.c:398 lib/setup.c:4193
+msgid "This operation is supported only for LUKS device."
+msgstr "Šī darbība tiek atbalstīta tikai LUKS ierīcēm."
+
+#: lib/setup.c:435
+msgid "This operation is supported only for LUKS2 device."
+msgstr "Šī darbība tiek atbalstīta tikai LUKS2 ierīcēm."
+
+#: lib/setup.c:492 lib/luks2/luks2_reencrypt.c:3102
+msgid "All key slots full."
+msgstr "Visi atslēgu sloti ir aizņemti."
+
+#: lib/setup.c:503
+#, c-format
+msgid "Key slot %d is invalid, please select between 0 and %d."
+msgstr "Atslēgas slots %d ir nederīgs, lūdzu, izvēlieties no 0 līdz %d."
+
+#: lib/setup.c:509
+#, c-format
+msgid "Key slot %d is full, please select another one."
+msgstr "Atslēgas slots %d ir aizņemts, lūdzu, izvēlieties citu."
+
+#: lib/setup.c:534 lib/setup.c:3888
+msgid "Device size is not aligned to device logical block size."
+msgstr "Ierīces izmērs nav izlīdzināts ar ierīces loģiskā bloka izmēru."
+
+#: lib/setup.c:631
+#, c-format
+msgid "Header detected but device %s is too small."
+msgstr "Konstatēta galvene, bet ierīce %s ir pārāk maza."
+
+#: lib/setup.c:672 lib/setup.c:3773 lib/setup.c:5288
+#: lib/luks2/luks2_reencrypt.c:3949 lib/luks2/luks2_reencrypt.c:4438
+msgid "This operation is not supported for this device type."
+msgstr "Šī darbība netiek atbalstīta šim ierīces tipam."
+
+#: lib/setup.c:677
+msgid "Illegal operation with reencryption in-progress."
+msgstr "Neatļauta darbība, kamēr notiek atkārtota šifrēšana."
+
+#: lib/setup.c:809
+msgid "Failed to rollback LUKS2 metadata in memory."
+msgstr "Neizdevās atsaukt LUKS2 metadatus atmiņā."
+
+#: lib/setup.c:896 lib/luks1/keymanage.c:241 lib/luks1/keymanage.c:519
+#: lib/luks2/luks2_json_metadata.c:1365 src/cryptsetup.c:1780
+#: src/cryptsetup.c:1964 src/cryptsetup.c:2019 src/cryptsetup.c:2217
+#: src/cryptsetup.c:2362 src/cryptsetup.c:2640 src/cryptsetup.c:2954
+#: src/cryptsetup.c:3022 src/utils_reencrypt.c:2310
+#: src/utils_reencrypt_luks1.c:1137 tokens/ssh/cryptsetup-ssh.c:72
+#, c-format
+msgid "Device %s is not a valid LUKS device."
+msgstr "Ierīce %s nav derīga LUKS ierīce."
+
+#: lib/setup.c:899 lib/luks1/keymanage.c:522
+#, c-format
+msgid "Unsupported LUKS version %d."
+msgstr "Neatbalstīta LUKS versija %d."
+
+#: lib/setup.c:1279
+#, c-format
+msgid "No known cipher specification pattern detected for active device %s."
+msgstr "Aktīvajai ierīcei %s netika atrasts neviens zināms šifra specifikācijas paraugs."
+
+#: lib/setup.c:1528 lib/setup.c:3520 lib/setup.c:3612 lib/setup.c:3624
+#: lib/setup.c:3796 lib/setup.c:5866
+#, c-format
+msgid "Device %s is not active."
+msgstr "Ierīce %s nav aktīva."
+
+#: lib/setup.c:1545
+#, c-format
+msgid "Underlying device for crypt device %s disappeared."
+msgstr "Šifrēšanas ierīces %s pamatierīce pazuda."
+
+#: lib/setup.c:1627
+msgid "Invalid plain crypt parameters."
+msgstr "Nederīgi vienkāršās šifrēšanas parametri."
+
+#: lib/setup.c:1632 lib/setup.c:2682
+msgid "Invalid key size."
+msgstr "Nederīgs atslēgas izmērs."
+
+#: lib/setup.c:1637 lib/setup.c:2687 lib/setup.c:2892
+msgid "UUID is not supported for this crypt type."
+msgstr "UUID netiek atbalstīts šim šifrēšanas tipam."
+
+#: lib/setup.c:1642 lib/setup.c:2692
+msgid "Detached metadata device is not supported for this crypt type."
+msgstr "Atdalīta metadatu ierīce netiek atbalstīta šim šifrēšanas tipam."
+
+#: lib/setup.c:1652 lib/setup.c:1900 lib/luks2/luks2_reencrypt.c:3035
+#: src/cryptsetup.c:1492 src/cryptsetup.c:3761
+msgid "Unsupported encryption sector size."
+msgstr "Neatbalstīts šifrēšanas sektora izmērs."
+
+#: lib/setup.c:1660 lib/setup.c:1929 lib/setup.c:3882
+msgid "Device size is not aligned to requested sector size."
+msgstr "Ierīces izmērs nav izlīdzināts atbilstoši pieprasītajam sektora izmēram."
+
+#: lib/setup.c:1712 lib/setup.c:1964 lib/setup.c:2341
+msgid "Can't format LUKS without device."
+msgstr "Nevar formatēt LUKS bez ierīces."
+
+#: lib/setup.c:1717 lib/setup.c:1969
+#, c-format
+msgid "Zoned device %s cannot be used for LUKS header."
+msgstr "Zonēto ierīci %s nevar izmantot LUKS galvenei."
+
+#: lib/setup.c:1724 lib/setup.c:1976 lib/setup.c:2347
+msgid "Requested data alignment is not compatible with data offset."
+msgstr "Pieprasītā datu izlīdzināšana nav saderīga ar datu nobīdi."
+
+#: lib/setup.c:1764 lib/setup.c:1994
+msgid "WARNING: DAX device can corrupt data as it does not guarantee atomic sector updates.\n"
+msgstr "BRĪDINĀJUMS: DAX ierīce var sabojāt datus, jo tā negarantē atomārus sektora atjauninājumus.\n"
+
+#: lib/setup.c:1802 lib/setup.c:2101 lib/setup.c:2122 lib/setup.c:2530
+#: lib/setup.c:2577 lib/setup.c:2909
+#, c-format
+msgid "Cannot wipe header on device %s."
+msgstr "Nevar notīrīt galveni ierīcē %s."
+
+#: lib/setup.c:1815 lib/setup.c:2174
+#, c-format
+msgid "Device %s is too small for activation, there is no remaining space for data.\n"
+msgstr "Ierīce %s ir pārāk maza aktivizēšanai, datiem nav atlicis vietas.\n"
+
+#: lib/setup.c:1856
+msgid "Volume key is too small for encryption with integrity extensions."
+msgstr "Sējuma atslēga ir pārāk maza šifrēšanai ar integritātes paplašinājumiem."
+
+#: lib/setup.c:1860
+msgid "Integrity key size is too small."
+msgstr "Integritātes atslēgas izmērs ir pārāk mazs."
+
+#: lib/setup.c:1869
+#, c-format
+msgid "Cipher %s-%s (key size %zd bits) is not available."
+msgstr "Šifrs %s-%s (atslēgas izmērs %zd biti) nav pieejams."
+
+#: lib/setup.c:1910
+msgid "WARNING: The device activation will fail, dm-crypt is missing support for requested encryption sector size.\n"
+msgstr "BRĪDINĀJUMS: Ierīces aktivizēšana neizdosies, dm-crypt neatbalsta pieprasīto šifrēšanas sektora izmēru.\n"
+
+#: lib/setup.c:2104 lib/setup.c:2471 lib/setup.c:2533 lib/utils_device.c:906
+#: lib/luks1/keyencryption.c:245 lib/luks2/luks2_reencrypt.c:3074
+#: lib/luks2/luks2_reencrypt.c:4498
+#, c-format
+msgid "Device %s is too small."
+msgstr "Ierīce %s ir pārāk maza."
+
+#: lib/setup.c:2115 lib/setup.c:2154 lib/setup.c:2570 lib/setup.c:2628
+#, c-format
+msgid "Cannot format device %s in use."
+msgstr "Nevar formatēt ierīci %s, jo tā tiek izmantota."
+
+#: lib/setup.c:2118 lib/setup.c:2157 lib/setup.c:2573 lib/setup.c:2631
+#, c-format
+msgid "Cannot format device %s, permission denied."
+msgstr "Nevar formatēt ierīci %s, piekļuve liegta."
+
+#: lib/setup.c:2142 lib/setup.c:2600 lib/setup.c:2982
+#, c-format
+msgid "Cannot format integrity for device %s."
+msgstr "Nevar formatēt integritāti ierīcei %s."
+
+#: lib/setup.c:2161 lib/setup.c:2639
+#, c-format
+msgid "Cannot format device %s."
+msgstr "Nevar formatēt ierīci %s."
+
+#: lib/setup.c:2204
+msgid "Cannot get OPAL alignment parameters."
+msgstr "Nevar iegūt OPAL izlīdzināšanas parametrus."
+
+#: lib/setup.c:2216
+msgid "Bogus OPAL logical block size."
+msgstr "Nederīgs OPAL loģiskā bloka izmērs."
+
+#: lib/setup.c:2221 lib/luks2/hw_opal/hw_opal.c:305
+msgid "Bogus OPAL logical block size differs from device block size."
+msgstr "Nederīgs OPAL loģiskā bloka izmērs atšķiras no ierīces bloka izmēra."
+
+#: lib/setup.c:2227
+msgid "Requested data offset is not compatible with OPAL block size."
+msgstr "Pieprasītā datu nobīde nav saderīga ar OPAL bloka izmēru."
+
+#: lib/setup.c:2234
+msgid "Requested data alignment is not compatible with OPAL alignment."
+msgstr "Pieprasītais datu izlīdzinājums nav saderīgs ar OPAL izlīdzinājumu."
+
+#: lib/setup.c:2254
+msgid "Data offset does not satisfy OPAL alignment requirements."
+msgstr "Datu nobīde neatbilst OPAL izlīdzināšanas prasībām."
+
+#: lib/setup.c:2267
+msgid "Requested data alignment does not satisfy locking range alignment requirements."
+msgstr "Pieprasītais datu izlīdzinājums neatbilst bloķēšanas diapazona izlīdzināšanas prasībām."
+
+#: lib/setup.c:2481
+#, c-format
+msgid "Compensating device size by %<PRIu64> sectors to align it with OPAL alignment granularity."
+msgstr "Kompensē ierīces izmēru par %<PRIu64> sektoriem, lai to izlīdzinātu ar OPAL izlīdzināšanas granularitāti."
+
+#: lib/setup.c:2541 lib/setup.c:4276 lib/setup.c:4482 lib/utils_wipe.c:356
+#: lib/luks2/luks2_json_metadata.c:2734 lib/luks2/luks2_json_metadata.c:3009
+#, c-format
+msgid "Failed to acquire OPAL lock on device %s."
+msgstr "Neizdevās iegūt OPAL bloķējumu ierīcei %s."
+
+#: lib/setup.c:2551
+msgid "Incorrect OPAL Admin key."
+msgstr "Nepareiza OPAL administratora atslēga."
+
+#: lib/setup.c:2553
+msgid "Cannot setup OPAL segment."
+msgstr "Nevar iestatīt OPAL segmentu."
+
+#: lib/setup.c:2635
+#, c-format
+msgid "Cannot format device %s, OPAL device seems to be fully write-protected now."
+msgstr "Nevar formatēt ierīci %s, OPAL ierīce tagad šķiet pilnībā aizsargāta pret rakstīšanu."
+
+#: lib/setup.c:2637
+msgid "This is perhaps a bug in firmware. Run OPAL PSID reset and reconnect for recovery."
+msgstr "Šī, iespējams, ir programmaparatūras kļūda. Veiciet OPAL PSID atiestatīšanu un pieslēdziet atkārtoti, lai veiktu atjaunošanu."
+
+#: lib/setup.c:2657
+#, c-format
+msgid "Locking range %d reset on device %s failed."
+msgstr "Neizdevās atiestatīt bloķēšanas diapazonu %d ierīcei %s."
+
+#: lib/setup.c:2677
+msgid "Can't format LOOPAES without device."
+msgstr "Nevar formatēt LOOPAES bez ierīces."
+
+#: lib/setup.c:2722
+msgid "Can't format VERITY without device."
+msgstr "Nevar formatēt VERITY bez ierīces."
+
+#: lib/setup.c:2733 lib/verity/verity.c:88
+#, c-format
+msgid "Unsupported VERITY hash type %d."
+msgstr "Neatbalstīts VERITY heša tips %d."
+
+#: lib/setup.c:2739 lib/verity/verity.c:96
+msgid "Unsupported VERITY block size."
+msgstr "Neatbalstīts VERITY bloka izmērs."
+
+#: lib/setup.c:2744 lib/verity/verity.c:61
+msgid "Unsupported VERITY hash offset."
+msgstr "Neatbalstīta VERITY heša nobīde."
+
+#: lib/setup.c:2749
+msgid "Unsupported VERITY FEC offset."
+msgstr "Neatbalstīta VERITY FEC nobīde."
+
+#: lib/setup.c:2773
+msgid "Data area overlaps with hash area."
+msgstr "Datu apgabals pārklājas ar heša apgabalu."
+
+#: lib/setup.c:2798
+msgid "Hash area overlaps with FEC area."
+msgstr "Heša apgabals pārklājas ar FEC apgabalu."
+
+#: lib/setup.c:2805
+msgid "Data area overlaps with FEC area."
+msgstr "Datu apgabals pārklājas ar FEC apgabalu."
+
+#: lib/setup.c:2897
+msgid "Integrity key size mismatch."
+msgstr "Integritātes atslēgas izmērs neatbilst."
+
+#: lib/setup.c:2948
+#, c-format
+msgid "WARNING: Requested tag size %d bytes differs from %s size output (%d bytes).\n"
+msgstr "BRĪDINĀJUMS: Pieprasītais taga izmērs %d baiti atšķiras no %s izvades izmēra (%d baiti).\n"
+
+#: lib/setup.c:3061 lib/setup.c:3163
+#, c-format
+msgid "Unknown or unsupported device type %s requested."
+msgstr "Pieprasīts nezināms vai neatbalstīts ierīces tips %s."
+
+#: lib/setup.c:3077
+#, c-format
+msgid "Device %s does not provide inline integrity data fields."
+msgstr "Ierīce %s nenodrošina iekļautos integritātes datu laukus."
+
+#: lib/setup.c:3083
+#, c-format
+msgid "Inline tag size %<PRIu32> [bytes] is larger than %<PRIu32> provided by device %s."
+msgstr "Iekļautais taga izmērs %<PRIu32> [baiti] ir lielāks par %<PRIu32>, ko nodrošina ierīce %s."
+
+#: lib/setup.c:3098
+#, c-format
+msgid "Sector must be the same as device hardware sector (%zu bytes)."
+msgstr "Sektoram jābūt tādam pašam kā ierīces aparatūras sektoram (%zu baiti)."
+
+#: lib/setup.c:3528 lib/setup.c:3617 lib/setup.c:3630
+#, c-format
+msgid "Unsupported parameters on device %s."
+msgstr "Neatbalstīti parametri ierīcei %s."
+
+#: lib/setup.c:3534 lib/setup.c:3637 lib/luks2/luks2_reencrypt.c:2929
+#: lib/luks2/luks2_reencrypt.c:3198 lib/luks2/luks2_reencrypt.c:3595
+#, c-format
+msgid "Mismatching parameters on device %s."
+msgstr "Nesakrītoši parametri ierīcei %s."
+
+#: lib/setup.c:3660
+msgid "Crypt devices mismatch."
+msgstr "Šifrēšanas ierīces nesakrīt."
+
+#: lib/setup.c:3692 lib/setup.c:3697 lib/luks2/luks2_reencrypt.c:2413
+#: lib/luks2/luks2_reencrypt.c:2945 lib/luks2/luks2_reencrypt.c:4237
+#, c-format
+msgid "Failed to reload device %s."
+msgstr "Neizdevās pārlādēt ierīci %s."
+
+#: lib/setup.c:3703 lib/setup.c:3709 lib/luks2/luks2_reencrypt.c:2383
+#: lib/luks2/luks2_reencrypt.c:2390 lib/luks2/luks2_reencrypt.c:2959
+#, c-format
+msgid "Failed to suspend device %s."
+msgstr "Neizdevās apturēt ierīci %s."
+
+#: lib/setup.c:3715 lib/luks2/luks2_reencrypt.c:2397
+#: lib/luks2/luks2_reencrypt.c:2980 lib/luks2/luks2_reencrypt.c:4150
+#: lib/luks2/luks2_reencrypt.c:4241
+#, c-format
+msgid "Failed to resume device %s."
+msgstr "Neizdevās atsākt ierīces %s darbību."
+
+#: lib/setup.c:3730
+#, c-format
+msgid "Fatal error while reloading device %s (on top of device %s)."
+msgstr "Fatāla kļūda, pārlādējot ierīci %s (virs ierīces %s)."
+
+#: lib/setup.c:3733 lib/setup.c:3735
+#, c-format
+msgid "Failed to switch device %s to dm-error."
+msgstr "Neizdevās pārslēgt ierīci %s uz dm-error."
+
+#: lib/setup.c:3778
+msgid "Can not resize LUKS2 device with static size."
+msgstr "Nevar mainīt statiska izmēra LUKS2 ierīces izmēru."
+
+#: lib/setup.c:3783
+msgid "Resize of LUKS2 device with integrity protection is not supported."
+msgstr "LUKS2 ierīcei ar integritātes aizsardzību izmēra maiņa netiek atbalstīta."
+
+#: lib/setup.c:3829
+msgid "Cannot resize loop device."
+msgstr "Nevar mainīt cilpas ierīces izmēru."
+
+#: lib/setup.c:3873
+msgid "WARNING: Maximum size already set or kernel doesn't support resize.\n"
+msgstr "BRĪDINĀJUMS: Maksimālais izmērs jau ir iestatīts vai kodols neatbalsta izmēra maiņu.\n"
+
+#: lib/setup.c:3939
+msgid "Resize failed, the kernel doesn't support it."
+msgstr "Izmēra maiņa neizdevās, jo kodols to neatbalsta."
+
+#: lib/setup.c:3971
+msgid "Do you really want to change UUID of device?"
+msgstr "Vai tiešām vēlaties mainīt ierīces UUID?"
+
+#: lib/setup.c:4061 lib/setup.c:4069
+msgid "Header backup file does not contain compatible LUKS header."
+msgstr "Galvenes dublējumfails nesatur saderīgu LUKS galveni."
+
+#: lib/setup.c:4176
+#, c-format
+msgid "Volume %s is not active."
+msgstr "Sējums %s nav aktīvs."
+
+#: lib/setup.c:4231
+#, c-format
+msgid "Volume %s is already suspended."
+msgstr "Sējums %s jau ir apturēts."
+
+#: lib/setup.c:4257
+#, c-format
+msgid "Suspend is not supported for device %s."
+msgstr "Ierīcei %s apturēšana netiek atbalstīta."
+
+#: lib/setup.c:4259 lib/setup.c:4267
+#, c-format
+msgid "Error during suspending device %s."
+msgstr "Kļūda, apturot ierīci %s."
+
+#: lib/setup.c:4282
+#, c-format
+msgid "Device %s was suspended but hardware OPAL device cannot be locked."
+msgstr "Ierīce %s tika apturēta, bet aparatūras OPAL ierīci nevar bloķēt."
+
+#: lib/setup.c:4313 lib/setup.c:4507
+#, c-format
+msgid "Resume is not supported for device %s."
+msgstr "Ierīcei %s atsākšana netiek atbalstīta."
+
+#: lib/setup.c:4315 lib/setup.c:4497 lib/setup.c:4509
+#, c-format
+msgid "Error during resuming device %s."
+msgstr "Kļūda, atsākot ierīces %s darbību."
+
+#: lib/setup.c:4351
+msgid "Failed to unlink volume key from user specified keyring."
+msgstr "Neizdevās atvienot sējuma atslēgu no lietotāja norādītā atslēgu gredzena."
+
+#: lib/setup.c:4473 lib/setup.c:5653
+msgid "Failed to link volume key in user defined keyring."
+msgstr "Neizdevās pievienot sējuma atslēgu lietotāja definētajam atslēgu gredzenam."
+
+#: lib/setup.c:4572 src/cryptsetup.c:2722
+#, c-format
+msgid "Volume %s is not suspended."
+msgstr "Sējums %s nav apturēts."
+
+#: lib/setup.c:4683 lib/setup.c:7326 lib/setup.c:7348 src/cryptsetup.c:1856
+#: src/cryptsetup.c:2260 src/cryptsetup.c:2278 src/utils_reencrypt.c:306
+#: src/utils_reencrypt.c:1995
+msgid "Volume key does not match the volume."
+msgstr "Sējuma atslēga neatbilst sējumam."
+
+#: lib/setup.c:4837
+msgid "Failed to swap new key slot."
+msgstr "Neizdevās samainīt jauno atslēgas slotu."
+
+#: lib/setup.c:4935
+#, c-format
+msgid "Key slot %d is invalid."
+msgstr "Atslēgas slots %d ir nederīgs."
+
+#: lib/setup.c:4941 src/cryptsetup.c:1977 src/cryptsetup.c:2437
+#: src/cryptsetup.c:3122 src/cryptsetup.c:3182
+#, c-format
+msgid "Keyslot %d is not active."
+msgstr "Atslēgas slots %d nav aktīvs."
+
+#: lib/setup.c:4960
+msgid "Device header overlaps with data area."
+msgstr "Ierīces galvene pārklājas ar datu apgabalu."
+
+#: lib/setup.c:5181
+msgid "Reencryption in-progress. Cannot activate device."
+msgstr "Notiek atkārtota šifrēšana. Nevar aktivizēt ierīci."
+
+#: lib/setup.c:5183 lib/luks2/luks2_json_metadata.c:2905
+#: lib/luks2/luks2_reencrypt.c:3726
+msgid "Failed to get reencryption lock."
+msgstr "Neizdevās iegūt atkārtotas šifrēšanas bloķējumu."
+
+#: lib/setup.c:5205
+msgid "LUKS2 reencryption recovery using volume key(s) failed."
+msgstr "Neizdevās LUKS2 atkārtotas šifrēšanas atjaunošana, izmantojot sējuma atslēgu(-as)."
+
+#: lib/setup.c:5341
+#, c-format
+msgid "Device %s already exists."
+msgstr "Ierīce %s jau pastāv."
+
+#: lib/setup.c:5348
+#, c-format
+msgid "Cannot use device %s, name is invalid or still in use."
+msgstr "Nevar izmantot ierīci %s, nosaukums ir nederīgs vai joprojām tiek izmantots."
+
+#: lib/setup.c:5360
+msgid "Reencryption volume keys do not match the volume."
+msgstr "Atkārtotas šifrēšanas sējuma atslēgas neatbilst sējumam."
+
+#: lib/setup.c:5377
+msgid "Incorrect volume key specified for plain device."
+msgstr "Vienkāršai ierīcei norādīta nepareiza sējuma atslēga."
+
+#: lib/setup.c:5403 lib/setup.c:5464
+msgid "Device type is not properly initialized."
+msgstr "Ierīces tips nav pareizi inicializēts."
+
+#: lib/setup.c:5502
+msgid "Kernel keyring is not supported by the kernel."
+msgstr "Kodols neatbalsta kodola atslēgu gredzenu."
+
+#: lib/setup.c:5506
+msgid "Kernel keyring missing: required for passing signature to kernel."
+msgstr "Trūkst kodola atslēgu gredzena: tas nepieciešams paraksta nodošanai kodolam."
+
+#: lib/setup.c:5561
+#, c-format
+msgid "Cannot use keyring key %s."
+msgstr "Nevar izmantot atslēgu gredzena atslēgu %s."
+
+#: lib/setup.c:5774
+msgid "Incorrect root hash specified for verity device."
+msgstr "Verity ierīcei norādīta nepareiza saknes hešvērtība."
+
+#: lib/setup.c:5815 lib/setup.c:5840
+msgid "OPAL does not support deferred deactivation."
+msgstr "OPAL neatbalsta atlikto deaktivizāciju."
+
+#: lib/setup.c:5830 lib/setup.c:5861 lib/luks2/luks2_json_metadata.c:2970
+#: src/utils_reencrypt.c:89
+#, c-format
+msgid "Device %s is still in use."
+msgstr "Ierīce %s joprojām tiek izmantota."
+
+#: lib/setup.c:5848
+#, c-format
+msgid "Could not cancel deferred remove from device %s."
+msgstr "Neizdevās atcelt atlikto noņemšanu no ierīces %s."
+
+#: lib/setup.c:5870
+#, c-format
+msgid "Invalid device %s."
+msgstr "Nederīga ierīce %s."
+
+#: lib/setup.c:6017
+msgid "Volume key buffer too small."
+msgstr "Sējuma atslēgas buferis ir pārāk mazs."
+
+#: lib/setup.c:6028
+msgid "Cannot retrieve volume key for LUKS2 device."
+msgstr "Nevar iegūt sējuma atslēgu LUKS2 ierīcei."
+
+#: lib/setup.c:6037
+msgid "Cannot retrieve volume key for LUKS1 device."
+msgstr "Nevar iegūt sējuma atslēgu LUKS1 ierīcei."
+
+#: lib/setup.c:6051
+msgid "Cannot retrieve volume key for plain device."
+msgstr "Nevar iegūt sējuma atslēgu vienkāršai ierīcei."
+
+#: lib/setup.c:6059
+msgid "Cannot retrieve root hash for verity device."
+msgstr "Nevar izgūt verity ierīces saknes hešu."
+
+#: lib/setup.c:6068
+msgid "Cannot retrieve volume key for BITLK device."
+msgstr "Nevar iegūt sējuma atslēgu BITLK ierīcei."
+
+#: lib/setup.c:6073
+msgid "Cannot retrieve volume key for FVAULT2 device."
+msgstr "Nevar iegūt sējuma atslēgu FVAULT2 ierīcei."
+
+#: lib/setup.c:6075
+#, c-format
+msgid "This operation is not supported for %s crypt device."
+msgstr "Šī darbība netiek atbalstīta %s šifrētajai ierīcei."
+
+#: lib/setup.c:6260 lib/setup.c:6271
+msgid "Dump operation is not supported for this device type."
+msgstr "Dump darbība netiek atbalstīta šim ierīces tipam."
+
+#: lib/setup.c:6651
+#, c-format
+msgid "Data offset is not multiple of %u bytes."
+msgstr "Datu nobīde nav %u baitu daudzkārtnis."
+
+#: lib/setup.c:6959
+#, c-format
+msgid "Cannot convert device %s which is still in use."
+msgstr "Nevar pārveidot ierīci %s, kas joprojām tiek izmantota."
+
+#: lib/setup.c:7267 lib/setup.c:7422
+#, c-format
+msgid "Failed to assign keyslot %u as the new volume key."
+msgstr "Neizdevās piešķirt atslēgas slotu %u par jauno sējuma atslēgu."
+
+#: lib/setup.c:7291
+msgid "Failed to initialize default LUKS2 keyslot parameters."
+msgstr "Neizdevās inicializēt noklusējuma LUKS2 atslēgas slota parametrus."
+
+#: lib/setup.c:7297
+#, c-format
+msgid "Failed to assign keyslot %d to digest."
+msgstr "Neizdevās piešķirt atslēgas slotu %d kopsavilkumam."
+
+#: lib/setup.c:7539
+msgid "Cannot add key slot, all slots disabled and no volume key provided."
+msgstr "Nevar pievienot atslēgas slotu: visi sloti ir atspējoti un nav norādīta sējuma atslēga."
+
+#: lib/setup.c:7627 lib/setup.c:7642 lib/verity/verity.c:333
+msgid "Failed to load key in kernel keyring."
+msgstr "Neizdevās ielādēt atslēgu kodola atslēgu gredzenā."
+
+#: lib/setup.c:7823
+#, c-format
+msgid "Could not find keyring described by \"%s\"."
+msgstr "Neizdevās atrast ar \"%s\" aprakstīto atslēgu gredzenu."
+
+#: lib/setup.c:7888
+msgid "Failed to acquire global memory-hard access serialization lock."
+msgstr "Neizdevās iegūt globālo atmiņietilpīgās piekļuves serializācijas slēgni."
+
+#: lib/utils.c:205 lib/tcrypt/tcrypt.c:488
+msgid "Failed to open key file."
+msgstr "Neizdevās atvērt atslēgas failu."
+
+#: lib/utils.c:213
+msgid "Cannot read keyfile from a terminal."
+msgstr "Nevar nolasīt atslēgas failu no termināļa."
+
+#: lib/utils.c:229
+msgid "Failed to stat key file."
+msgstr "Neizdevās iegūt atslēgas faila statusu."
+
+#: lib/utils.c:237 lib/utils.c:258
+msgid "Cannot seek to requested keyfile offset."
+msgstr "Nevar pārvietoties uz pieprasīto atslēgas faila nobīdi."
+
+#: lib/utils.c:252 lib/utils.c:267 src/utils_password.c:219
+#: src/utils_password.c:231
+msgid "Out of memory while reading passphrase."
+msgstr "Nepietiek atmiņas, lasot piekļuves frāzi."
+
+#: lib/utils.c:287
+msgid "Error reading passphrase."
+msgstr "Kļūda, nolasot piekļuves frāzi."
+
+#: lib/utils.c:304
+msgid "Nothing to read on input."
+msgstr "Ievadē nav ko lasīt."
+
+#: lib/utils.c:311
+msgid "Maximum keyfile size exceeded."
+msgstr "Pārsniegts maksimālais atslēgas faila izmērs."
+
+#: lib/utils.c:316
+msgid "Cannot read requested amount of data."
+msgstr "Nevar nolasīt pieprasīto datu apjomu."
+
+#: lib/utils_device.c:207 lib/utils_storage_wrappers.c:99
+#: lib/luks1/keyencryption.c:79 src/utils_reencrypt.c:2283
+#, c-format
+msgid "Device %s does not exist or access denied."
+msgstr "Ierīce %s neeksistē vai piekļuve ir liegta."
+
+#: lib/utils_device.c:217
+#, c-format
+msgid "Device %s is not compatible."
+msgstr "Ierīce %s nav saderīga."
+
+#: lib/utils_device.c:546
+#, c-format
+msgid "Ignoring bogus optimal-io size for data device (%u bytes)."
+msgstr "Ignorē kļūdaino optimal-io izmēru datu ierīcei (%u baiti)."
+
+#: lib/utils_device.c:711
+#, c-format
+msgid "Cannot grow %s to %<PRIu64> bytes (%s)."
+msgstr "Nevar palielināt %s līdz %<PRIu64> baitiem (%s)."
+
+#: lib/utils_device.c:717
+#, c-format
+msgid "Device %s is too small. Need at least %<PRIu64> bytes."
+msgstr "Ierīce %s ir pārāk maza. Nepieciešami vismaz %<PRIu64> baiti."
+
+#: lib/utils_device.c:798
+#, c-format
+msgid "Cannot use device %s which is in use (already mapped or mounted)."
+msgstr "Nevar izmantot ierīci %s, jo tā jau tiek izmantota (jau kartēta vai montēta)."
+
+#: lib/utils_device.c:802
+#, c-format
+msgid "Cannot use device %s, permission denied."
+msgstr "Nevar izmantot ierīci %s, piekļuve liegta."
+
+#: lib/utils_device.c:805
+#, c-format
+msgid "Cannot get info about device %s."
+msgstr "Nevar iegūt informāciju par ierīci %s."
+
+#: lib/utils_device.c:828
+msgid "Cannot use a loopback device, running as non-root user."
+msgstr "Nevar izmantot loopback ierīci, jo darbojas kā neprivileģēts lietotājs."
+
+#: lib/utils_device.c:839
+msgid "Attaching loopback device failed (loop device with autoclear flag is required)."
+msgstr "Neizdevās pievienot loopback ierīci (nepieciešama cilpas ierīce ar autoclear karogu)."
+
+#: lib/utils_device.c:887
+#, c-format
+msgid "Requested offset is beyond real size of device %s."
+msgstr "Pieprasītā nobīde pārsniedz ierīces %s reālo izmēru."
+
+#: lib/utils_device.c:895
+#, c-format
+msgid "Device %s has zero size."
+msgstr "Ierīces %s izmērs ir nulle."
+
+#: lib/utils_pbkdf.c:105
+msgid "Requested PBKDF target time cannot be zero."
+msgstr "Pieprasītais PBKDF mērķa laiks nevar būt nulle."
+
+#: lib/utils_pbkdf.c:111
+#, c-format
+msgid "Unknown PBKDF type %s."
+msgstr "Nezināms PBKDF tips %s."
+
+#: lib/utils_pbkdf.c:116
+#, c-format
+msgid "Requested hash %s is not supported."
+msgstr "Pieprasītais hešs %s nav atbalstīts."
+
+#: lib/utils_pbkdf.c:127
+msgid "Requested PBKDF type is not supported for LUKS1."
+msgstr "Pieprasītais PBKDF tips nav atbalstīts LUKS1."
+
+#: lib/utils_pbkdf.c:133
+msgid "PBKDF max memory or parallel threads must not be set with pbkdf2."
+msgstr "Izmantojot pbkdf2, PBKDF maksimālā atmiņa vai paralēlo pavedienu skaits nedrīkst būt iestatīts."
+
+#: lib/utils_pbkdf.c:138 lib/utils_pbkdf.c:148
+#, c-format
+msgid "Forced iteration count is too low for %s (minimum is %u)."
+msgstr "Piespiedu iterāciju skaits ir pārāk mazs %s (minimums ir %u)."
+
+#: lib/utils_pbkdf.c:153
+#, c-format
+msgid "Forced memory cost is too low for %s (minimum is %u kilobytes)."
+msgstr "Piespiedu atmiņas izmaksas ir pārāk zemas %s (minimums ir %u kilobaiti)."
+
+#: lib/utils_pbkdf.c:160
+#, c-format
+msgid "Requested maximum PBKDF memory cost is too high (maximum is %d kilobytes)."
+msgstr "Pieprasītās maksimālās PBKDF atmiņas izmaksas ir pārāk augstas (maksimums ir %d kilobaiti)."
+
+#: lib/utils_pbkdf.c:165
+msgid "Requested maximum PBKDF memory cost is too high (limited by the integer maximal size)."
+msgstr "Pieprasītās maksimālās PBKDF atmiņas izmaksas ir pārāk augstas (ierobežotas ar veselā skaitļa maksimālo izmēru)."
+
+#: lib/utils_pbkdf.c:169
+msgid "Requested maximum PBKDF memory cannot be zero."
+msgstr "Pieprasītā maksimālā PBKDF atmiņa nevar būt nulle."
+
+#: lib/utils_pbkdf.c:173
+#, c-format
+msgid "Requested maximum PBKDF parallel cost is too high (maximum is %d)."
+msgstr "Pieprasītās maksimālās PBKDF paralēlās izmaksas ir pārāk augstas (maksimums ir %d)."
+
+#: lib/utils_pbkdf.c:178
+msgid "Requested PBKDF parallel threads cannot be zero."
+msgstr "Pieprasītais PBKDF paralēlo pavedienu skaits nevar būt nulle."
+
+#: lib/utils_pbkdf.c:198
+msgid "Only PBKDF2 is supported in FIPS mode."
+msgstr "FIPS režīmā tiek atbalstīts tikai PBKDF2."
+
+#: lib/utils_benchmark.c:175
+msgid "PBKDF benchmark disabled but iterations not set."
+msgstr "PBKDF veiktspējas tests ir atspējots, bet iterācijas nav iestatītas."
+
+#: lib/utils_benchmark.c:194
+#, c-format
+msgid "Not compatible PBKDF2 options (using hash algorithm %s)."
+msgstr "Nesaderīgas PBKDF2 opcijas (tiek izmantots hešalgoritms %s)."
+
+#: lib/utils_benchmark.c:214
+msgid "Not compatible PBKDF options."
+msgstr "Nesaderīgas PBKDF opcijas."
+
+#: lib/utils_device_locking.c:88
+#, c-format
+msgid "Locking aborted. The locking path %s/%s is unusable (not a directory or missing)."
+msgstr "Bloķēšana pārtraukta. Bloķēšanas ceļš %s/%s nav lietojams (nav direktorija vai trūkst)."
+
+#: lib/utils_device_locking.c:105
+#, c-format
+msgid "Locking aborted. The locking path %s/%s is unusable (%s is not a directory)."
+msgstr "Bloķēšana pārtraukta. Bloķēšanas ceļš %s/%s nav lietojams (%s nav direktorija)."
+
+#: lib/utils_wipe.c:143 lib/utils_wipe.c:218 src/utils_reencrypt_luks1.c:700
+#: src/utils_reencrypt_luks1.c:793
+msgid "Cannot seek to device offset."
+msgstr "Neizdevās pārvietoties uz ierīces nobīdi."
+
+#: lib/utils_wipe.c:240
+#, c-format
+msgid "Device wipe error, offset %<PRIu64>."
+msgstr "Ierīces dzēšanas kļūda, nobīde %<PRIu64>."
+
+#: lib/utils_wipe.c:332
+msgid "Incorrect OPAL PSID."
+msgstr "Nepareizs OPAL PSID."
+
+#: lib/utils_wipe.c:334
+msgid "Cannot erase OPAL device."
+msgstr "Neizdevās dzēst OPAL ierīci."
+
+#: lib/luks1/keyencryption.c:27
+#, c-format
+msgid ""
+"Failed to setup dm-crypt key mapping for device %s.\n"
+"Check that kernel supports %s cipher (check syslog for more info)."
+msgstr ""
+"Neizdevās iestatīt dm-crypt atslēgas kartēšanu ierīcei %s.\n"
+"Pārbaudiet, vai kodols atbalsta %s šifru (vairāk informācijas skatiet sistēmas\n"
+"žurnālā)."
+
+#: lib/luks1/keyencryption.c:32
+msgid "Key size in XTS mode must be 256 or 512 bits."
+msgstr "Atslēgas izmēram XTS režīmā jābūt 256 vai 512 bitiem."
+
+#: lib/luks1/keyencryption.c:34
+msgid "Cipher specification should be in [cipher]-[mode]-[iv] format."
+msgstr "Šifra specifikācijai jābūt [šifrs]-[režīms]-[iv] formātā."
+
+#: lib/luks1/keyencryption.c:85 lib/luks1/keymanage.c:358
+#: lib/luks1/keymanage.c:665 lib/luks1/keymanage.c:1133
+#: lib/luks2/luks2_json_metadata.c:1510 lib/luks2/luks2_keyslot.c:711
+#, c-format
+msgid "Cannot write to device %s, permission denied."
+msgstr "Neizdevās rakstīt ierīcē %s, piekļuve liegta."
+
+#: lib/luks1/keyencryption.c:108
+msgid "Failed to open temporary keystore device."
+msgstr "Neizdevās atvērt pagaidu atslēgu glabātuves ierīci."
+
+#: lib/luks1/keyencryption.c:115
+msgid "Failed to access temporary keystore device."
+msgstr "Neizdevās piekļūt pagaidu atslēgu glabātuves ierīcei."
+
+#: lib/luks1/keyencryption.c:189 lib/luks2/luks2_keyslot_luks2.c:47
+#: lib/luks2/luks2_keyslot_reenc.c:184
+msgid "IO error while encrypting keyslot."
+msgstr "I/O kļūda, šifrējot atslēgas slotu."
+
+#: lib/luks1/keyencryption.c:236 lib/luks1/keymanage.c:361
+#: lib/luks1/keymanage.c:619 lib/luks1/keymanage.c:668 lib/tcrypt/tcrypt.c:659
+#: lib/fvault2/fvault2.c:872 lib/verity/verity.c:67 lib/verity/verity.c:183
+#: lib/verity/verity_hash.c:312 lib/verity/verity_hash.c:321
+#: lib/verity/verity_hash.c:350 lib/verity/verity_fec.c:247
+#: lib/verity/verity_fec.c:259 lib/verity/verity_fec.c:264
+#: lib/luks2/luks2_json_metadata.c:1513 src/utils_reencrypt_luks1.c:108
+#: src/utils_reencrypt_luks1.c:120
+#, c-format
+msgid "Cannot open device %s."
+msgstr "Neizdevās atvērt ierīci %s."
+
+#: lib/luks1/keyencryption.c:247 lib/luks2/luks2_keyslot_luks2.c:85
+msgid "IO error while decrypting keyslot."
+msgstr "I/O kļūda, atšifrējot atslēgas slotu."
+
+#: lib/luks1/keymanage.c:117
+#, c-format
+msgid "Device %s is too small. (LUKS1 requires at least %<PRIu64> bytes.)"
+msgstr "Ierīce %s ir pārāk maza. (LUKS1 nepieciešami vismaz %<PRIu64> baiti.)"
+
+#: lib/luks1/keymanage.c:143 lib/luks1/keymanage.c:151
+#: lib/luks1/keymanage.c:163 lib/luks1/keymanage.c:174
+#: lib/luks1/keymanage.c:186
+#, c-format
+msgid "LUKS keyslot %u is invalid."
+msgstr "LUKS atslēgas slots %u ir nederīgs."
+
+#: lib/luks1/keymanage.c:259 lib/luks2/luks2_json_metadata.c:1382
+#, c-format
+msgid "Requested header backup file %s already exists."
+msgstr "Pieprasītais galvenes dublējuma fails %s jau pastāv."
+
+#: lib/luks1/keymanage.c:261 lib/luks2/luks2_json_metadata.c:1384
+#, c-format
+msgid "Cannot create header backup file %s."
+msgstr "Neizdevās izveidot galvenes dublējuma failu %s."
+
+#: lib/luks1/keymanage.c:268 lib/luks2/luks2_json_metadata.c:1391
+#, c-format
+msgid "Cannot write header backup file %s."
+msgstr "Neizdevās rakstīt galvenes dublējuma failā %s."
+
+#: lib/luks1/keymanage.c:300 lib/luks2/luks2_json_metadata.c:1420
+msgid "Backup file does not contain valid LUKS header."
+msgstr "Dublējuma fails nesatur derīgu LUKS galveni."
+
+#: lib/luks1/keymanage.c:313 lib/luks1/keymanage.c:585
+#: lib/luks2/luks2_json_metadata.c:1442
+#, c-format
+msgid "Cannot open header backup file %s."
+msgstr "Neizdevās atvērt galvenes dublējuma failu %s."
+
+#: lib/luks1/keymanage.c:321 lib/luks2/luks2_json_metadata.c:1450
+#, c-format
+msgid "Cannot read header backup file %s."
+msgstr "Neizdevās nolasīt galvenes dublējuma failu %s."
+
+#: lib/luks1/keymanage.c:331
+msgid "Data offset or key size differs on device and backup, restore failed."
+msgstr "Datu nobīde vai atslēgas izmērs ierīcē un dublējumā atšķiras, atjaunošana neizdevās."
+
+#: lib/luks1/keymanage.c:339
+#, c-format
+msgid "Device %s %s%s"
+msgstr "Ierīce %s %s%s"
+
+#: lib/luks1/keymanage.c:340
+msgid "does not contain LUKS header. Replacing header can destroy data on that device."
+msgstr "nesatur LUKS galveni. Galvenes aizstāšana var iznīcināt datus šajā ierīcē."
+
+#: lib/luks1/keymanage.c:341
+msgid "already contains LUKS header. Replacing header will destroy existing keyslots."
+msgstr "jau satur LUKS galveni. Galvenes aizstāšana iznīcinās esošos atslēgu slotus."
+
+#: lib/luks1/keymanage.c:342 lib/luks2/luks2_json_metadata.c:1482
+msgid ""
+"\n"
+"WARNING: real device header has different UUID than backup!"
+msgstr ""
+"\n"
+"BRĪDINĀJUMS: reālās ierīces galvenei ir atšķirīgs UUID nekā dublējumam!"
+
+#: lib/luks1/keymanage.c:390
+msgid "Non standard key size, manual repair required."
+msgstr "Nestandarta atslēgas izmērs, nepieciešama manuāla labošana."
+
+#: lib/luks1/keymanage.c:400
+msgid "Non standard keyslots alignment, manual repair required."
+msgstr "Nestandarta atslēgu slotu izlīdzinājums, nepieciešama manuāla labošana."
+
+#: lib/luks1/keymanage.c:409
+#, c-format
+msgid "Cipher mode repaired (%s -> %s)."
+msgstr "Šifrēšanas režīms salabots (%s -> %s)."
+
+#: lib/luks1/keymanage.c:420
+#, c-format
+msgid "Cipher hash repaired to lowercase (%s)."
+msgstr "Šifrēšanas hešs salabots uz mazajiem burtiem (%s)."
+
+#: lib/luks1/keymanage.c:422 lib/luks1/keymanage.c:528
+#: lib/luks1/keymanage.c:757
+#, c-format
+msgid "Requested LUKS hash %s is not supported."
+msgstr "Pieprasītais LUKS hešs %s nav atbalstīts."
+
+#: lib/luks1/keymanage.c:436
+msgid "Repairing keyslots."
+msgstr "Labo atslēgu slotus."
+
+#: lib/luks1/keymanage.c:455
+#, c-format
+msgid "Keyslot %i: offset repaired (%u -> %u)."
+msgstr "Atslēgas slots %i: nobīde salabota (%u -> %u)."
+
+#: lib/luks1/keymanage.c:463
+#, c-format
+msgid "Keyslot %i: stripes repaired (%u -> %u)."
+msgstr "Atslēgas slots %i: joslas salabotas (%u -> %u)."
+
+#: lib/luks1/keymanage.c:472
+#, c-format
+msgid "Keyslot %i: bogus partition signature."
+msgstr "Atslēgas slots %i: nepareizs nodalījuma paraksts."
+
+#: lib/luks1/keymanage.c:477
+#, c-format
+msgid "Keyslot %i: salt wiped."
+msgstr "Atslēgas slots %i: sāls notīrīts."
+
+#: lib/luks1/keymanage.c:494
+msgid "Writing LUKS header to disk."
+msgstr "Raksta LUKS galveni diskā."
+
+#: lib/luks1/keymanage.c:499
+msgid "Repair failed."
+msgstr "Labošana neizdevās."
+
+#: lib/luks1/keymanage.c:554
+#, c-format
+msgid "LUKS cipher mode %s is invalid."
+msgstr "LUKS šifrēšanas režīms %s ir nederīgs."
+
+#: lib/luks1/keymanage.c:559
+#, c-format
+msgid "LUKS hash %s is invalid."
+msgstr "LUKS hešs %s ir nederīgs."
+
+#: lib/luks1/keymanage.c:566 src/cryptsetup.c:1367
+msgid "No known problems detected for LUKS header."
+msgstr "LUKS galvenei nav konstatētas zināmas problēmas."
+
+#: lib/luks1/keymanage.c:690
+#, c-format
+msgid "Error during update of LUKS header on device %s."
+msgstr "Kļūda, atjauninot LUKS galveni ierīcē %s."
+
+#: lib/luks1/keymanage.c:698
+#, c-format
+msgid "Error re-reading LUKS header after update on device %s."
+msgstr "Kļūda, atkārtoti nolasot LUKS galveni pēc atjaunināšanas ierīcē %s."
+
+#: lib/luks1/keymanage.c:751
+msgid "Data offset for LUKS header must be either 0 or higher than header size."
+msgstr "Datu nobīdei LUKS galvenei jābūt vai nu 0, vai lielākai par galvenes izmēru."
+
+#: lib/luks1/keymanage.c:762 lib/luks1/keymanage.c:833
+#: lib/luks2/luks2_json_format.c:240 lib/luks2/luks2_json_metadata.c:1261
+#: src/utils_reencrypt.c:703
+msgid "Wrong LUKS UUID format provided."
+msgstr "Norādīts nepareizs LUKS UUID formāts."
+
+#: lib/luks1/keymanage.c:784
+msgid "Cannot create LUKS header: reading random salt failed."
+msgstr "Neizdevās izveidot LUKS galveni: neizdevās nolasīt nejaušo sāli."
+
+#: lib/luks1/keymanage.c:812
+#, c-format
+msgid "Cannot create LUKS header: header digest failed (using hash %s)."
+msgstr "Nevar izveidot LUKS galveni: neizdevās galvenes hešošana (izmanto hešu %s)."
+
+#: lib/luks1/keymanage.c:857
+#, c-format
+msgid "Key slot %d active, purge first."
+msgstr "Atslēgas slots %d ir aktīvs, vispirms iztīriet."
+
+#: lib/luks1/keymanage.c:863
+#, c-format
+msgid "Key slot %d material includes too few stripes. Header manipulation?"
+msgstr "Atslēgas slota %d materiāls satur pārāk maz joslu. Manipulācija ar galveni?"
+
+#: lib/luks1/keymanage.c:901 lib/luks2/luks2_keyslot_luks2.c:217
+msgid "PBKDF2 iteration value overflow."
+msgstr "PBKDF2 iterāciju vērtības pārpilde."
+
+#: lib/luks1/keymanage.c:1023
+#, c-format
+msgid "Cannot open keyslot (using hash %s)."
+msgstr "Nevar atvērt atslēgas slotu (izmanto hešu %s)."
+
+#: lib/luks1/keymanage.c:1119
+#, c-format
+msgid "Key slot %d is invalid, please select keyslot between 0 and %d."
+msgstr "Atslēgas slots %d ir nederīgs; lūdzu, izvēlieties atslēgas slotu no 0 līdz %d."
+
+#: lib/luks1/keymanage.c:1137 lib/luks2/luks2_keyslot.c:715
+#, c-format
+msgid "Cannot wipe device %s."
+msgstr "Neizdevās notīrīt ierīci %s."
+
+#: lib/loopaes/loopaes.c:140
+msgid "Detected not yet supported GPG encrypted keyfile."
+msgstr "Konstatēts vēl neatbalstīts, ar GPG šifrēts atslēgas fails."
+
+#: lib/loopaes/loopaes.c:141
+msgid "Please use gpg --decrypt <KEYFILE> | cryptsetup --keyfile=- ...\n"
+msgstr "Lūdzu, izmantojiet gpg --decrypt <ATSLĒGAS_FAILS> | cryptsetup --keyfile=- ...\n"
+
+#: lib/loopaes/loopaes.c:162 lib/loopaes/loopaes.c:182
+msgid "Incompatible loop-AES keyfile detected."
+msgstr "Konstatēts nesaderīgs loop-AES atslēgas fails."
+
+#: lib/loopaes/loopaes.c:238
+msgid "Kernel does not support loop-AES compatible mapping."
+msgstr "Kodols neatbalsta loop-AES saderīgu kartēšanu."
+
+#: lib/tcrypt/tcrypt.c:495
+#, c-format
+msgid "Error reading keyfile %s."
+msgstr "Kļūda, nolasot atslēgas failu %s."
+
+#: lib/tcrypt/tcrypt.c:549
+#, c-format
+msgid "Maximum TCRYPT passphrase length (%zu) exceeded."
+msgstr "Pārsniegts maksimālais TCRYPT piekļuves frāzes garums (%zu)."
+
+#: lib/tcrypt/tcrypt.c:591
+#, c-format
+msgid "PBKDF2 hash algorithm %s not available, skipping."
+msgstr "PBKDF2 heša algoritms %s nav pieejams, izlaiž."
+
+#: lib/tcrypt/tcrypt.c:743
+#, c-format
+msgid "Activation is not supported for %d sector size."
+msgstr "Aktivizācija netiek atbalstīta sektora izmēram %d."
+
+#: lib/tcrypt/tcrypt.c:749
+msgid "Kernel does not support activation for this TCRYPT legacy mode."
+msgstr "Kodols neatbalsta aktivizēšanu šim TCRYPT mantotajam režīmam."
+
+#: lib/tcrypt/tcrypt.c:804
+#, c-format
+msgid "Activating TCRYPT system encryption for partition %s."
+msgstr "Aktivizē TCRYPT sistēmas šifrēšanu nodalījumam %s."
+
+#: lib/tcrypt/tcrypt.c:819
+msgid "Cannot determine TCRYPT system partition offset, activating whole encrypted area."
+msgstr "Nevar noteikt TCRYPT sistēmas nodalījuma nobīdi, aktivizē visu šifrēto apgabalu."
+
+#: lib/tcrypt/tcrypt.c:828
+msgid "Cannot determine TCRYPT system partition offset, activating device as a system partition."
+msgstr "Nevar noteikt TCRYPT sistēmas nodalījuma nobīdi, aktivizē ierīci kā sistēmas nodalījumu."
+
+#: lib/tcrypt/tcrypt.c:908
+msgid "Kernel does not support TCRYPT compatible mapping."
+msgstr "Kodols neatbalsta TCRYPT saderīgu kartēšanu."
+
+#: lib/tcrypt/tcrypt.c:1137
+msgid "This function is not supported without TCRYPT header load."
+msgstr "Šī funkcija netiek atbalstīta bez TCRYPT galvenes ielādes."
+
+#: lib/bitlk/bitlk.c:293
+#, c-format
+msgid "Unexpected metadata entry type '%u' found when parsing supported Volume Master Key."
+msgstr "Atrasts negaidīts metadatu ieraksta tips '%u', analizējot atbalstīto sējuma galveno atslēgu."
+
+#: lib/bitlk/bitlk.c:351
+msgid "Invalid string found when parsing Volume Master Key."
+msgstr "Atrasta nederīga virkne, analizējot sējuma galveno atslēgu."
+
+#: lib/bitlk/bitlk.c:355
+#, c-format
+msgid "Unexpected string ('%s') found when parsing supported Volume Master Key."
+msgstr "Atrasta negaidīta virkne ('%s'), analizējot atbalstīto sējuma galveno atslēgu."
+
+#: lib/bitlk/bitlk.c:375
+#, c-format
+msgid "Unexpected metadata entry value '%u' found when parsing supported Volume Master Key."
+msgstr "Atrasta negaidīta metadatu ieraksta vērtība '%u', analizējot atbalstīto sējuma galveno atslēgu."
+
+#: lib/bitlk/bitlk.c:528
+msgid "BITLK version 1 is currently not supported."
+msgstr "BITLK versija 1 pašlaik nav atbalstīta."
+
+#: lib/bitlk/bitlk.c:534
+msgid "Invalid or unknown boot signature for BITLK device."
+msgstr "Nederīgs vai nezināms sāknēšanas paraksts BITLK ierīcei."
+
+#: lib/bitlk/bitlk.c:546
+#, c-format
+msgid "Unsupported sector size %<PRIu16>."
+msgstr "Neatbalstīts sektora izmērs %<PRIu16>."
+
+#: lib/bitlk/bitlk.c:554
+#, c-format
+msgid "Failed to read BITLK header from %s."
+msgstr "Neizdevās nolasīt BITLK galveni no %s."
+
+#: lib/bitlk/bitlk.c:603
+#, c-format
+msgid "Failed to read and validate BITLK FVE metadata from %s."
+msgstr "Neizdevās nolasīt un pārbaudīt BITLK FVE metadatus no %s."
+
+#: lib/bitlk/bitlk.c:610
+#, c-format
+msgid "Failed to validate the location of BITLK FVE metadata from %s."
+msgstr "Neizdevās pārbaudīt BITLK FVE metadatu atrašanās vietu no %s."
+
+#: lib/bitlk/bitlk.c:621
+#, c-format
+msgid "BITLK FVE metadata changed between reads from %s."
+msgstr "BITLK FVE metadati ir mainījušies starp nolasījumiem no %s."
+
+#: lib/bitlk/bitlk.c:628
+#, c-format
+msgid "Failed to hash BITLK FVE metadata read from %s."
+msgstr "Neizdevās veikt no %s nolasīto BITLK FVE metadatu hešošanu."
+
+#: lib/bitlk/bitlk.c:644
+#, c-format
+msgid "Failed to parse BITLK FVE validation metadata from %s."
+msgstr "Neizdevās analizēt BITLK FVE validācijas metadatus no %s."
+
+#: lib/bitlk/bitlk.c:695
+msgid "Unknown or unsupported encryption type."
+msgstr "Nezināms vai neatbalstīts šifrēšanas veids."
+
+#: lib/bitlk/bitlk.c:733
+#, c-format
+msgid "Failed to check BITLK metadata entries previously read from %s."
+msgstr "Neizdevās pārbaudīt BITLK metadatu ierakstus, kas iepriekš nolasīti no %s."
+
+#: lib/bitlk/bitlk.c:853
+msgid "Failed to convert BITLK volume description"
+msgstr "Neizdevās konvertēt BITLK sējuma aprakstu"
+
+#: lib/bitlk/bitlk.c:1018
+#, c-format
+msgid "Unexpected metadata entry type '%u' found when parsing external key."
+msgstr "Atrasts negaidīts metadatu ieraksta tips '%u', analizējot ārējo atslēgu."
+
+#: lib/bitlk/bitlk.c:1041
+#, c-format
+msgid "BEK file GUID '%s' does not match GUID of the volume."
+msgstr "BEK faila GUID '%s' neatbilst sējuma GUID."
+
+#: lib/bitlk/bitlk.c:1045
+#, c-format
+msgid "Unexpected metadata entry value '%u' found when parsing external key."
+msgstr "Atrasta negaidīta metadatu ieraksta vērtība '%u', analizējot ārējo atslēgu."
+
+#: lib/bitlk/bitlk.c:1084
+#, c-format
+msgid "Unsupported BEK metadata version %<PRIu32>"
+msgstr "Neatbalstīta BEK metadatu versija %<PRIu32>"
+
+#: lib/bitlk/bitlk.c:1089
+#, c-format
+msgid "Unexpected BEK metadata size %<PRIu32> does not match BEK file length"
+msgstr "Negaidīts BEK metadatu izmērs %<PRIu32> neatbilst BEK faila garumam"
+
+#: lib/bitlk/bitlk.c:1115
+msgid "Unexpected metadata entry found when parsing startup key."
+msgstr "Atrasts negaidīts metadatu ieraksts, analizējot palaišanas atslēgu."
+
+#: lib/bitlk/bitlk.c:1218
+msgid "This operation is not supported."
+msgstr "Šī darbība nav atbalstīta."
+
+#: lib/bitlk/bitlk.c:1226
+msgid "Unexpected key data size."
+msgstr "Negaidīts atslēgas datu izmērs."
+
+#: lib/bitlk/bitlk.c:1448
+msgid "This BITLK device is in an unsupported state and cannot be activated."
+msgstr "Šī BITLK ierīce ir neatbalstītā stāvoklī, un to nevar aktivizēt."
+
+#: lib/bitlk/bitlk.c:1453
+#, c-format
+msgid "BITLK devices with type '%s' cannot be activated."
+msgstr "BITLK ierīces ar tipu '%s' nevar aktivizēt."
+
+#: lib/bitlk/bitlk.c:1492
+#, c-format
+msgid "WARNING: BitLocker volume size %<PRIu64> does not match the underlying device size %<PRIu64>"
+msgstr "BRĪDINĀJUMS: BitLocker sējuma izmērs %<PRIu64> neatbilst pamatierīces izmēram %<PRIu64>"
+
+#: lib/bitlk/bitlk.c:1634
+msgid "Cannot activate device, kernel dm-crypt is missing support for BITLK IV."
+msgstr "Nevar aktivizēt ierīci, jo kodola dm-crypt trūkst atbalsta BITLK IV."
+
+#: lib/bitlk/bitlk.c:1638
+msgid "Cannot activate device, kernel dm-crypt is missing support for BITLK Elephant diffuser."
+msgstr "Nevar aktivizēt ierīci, jo kodola dm-crypt trūkst atbalsta BITLK Elephant difuzoram."
+
+#: lib/bitlk/bitlk.c:1642
+msgid "Cannot activate device, kernel dm-crypt is missing support for large sector size."
+msgstr "Nevar aktivizēt ierīci, jo kodola dm-crypt trūkst atbalsta lielam sektora izmēram."
+
+#: lib/bitlk/bitlk.c:1646
+msgid "Cannot activate device, kernel dm-zero module is missing."
+msgstr "Nevar aktivizēt ierīci, jo trūkst kodola dm-zero moduļa."
+
+#: lib/fvault2/fvault2.c:532
+#, c-format
+msgid "Could not read %u bytes of volume header."
+msgstr "Neizdevās nolasīt %u baitus no sējuma galvenes."
+
+#: lib/fvault2/fvault2.c:544
+#, c-format
+msgid "Unsupported FVAULT2 version %<PRIu16>."
+msgstr "Neatbalstīta FVAULT2 versija %<PRIu16>."
+
+#: lib/verity/verity.c:55 lib/verity/verity.c:169
+#, c-format
+msgid "Verity device %s does not use on-disk header."
+msgstr "Verity ierīce %s neizmanto diska galveni."
+
+#: lib/verity/verity.c:83
+#, c-format
+msgid "Unsupported VERITY version %d."
+msgstr "Neatbalstīta VERITY versija %d."
+
+#: lib/verity/verity.c:118
+msgid "VERITY header corrupted."
+msgstr "VERITY galvene ir bojāta."
+
+#: lib/verity/verity.c:163
+#, c-format
+msgid "Wrong VERITY UUID format provided on device %s."
+msgstr "Norādīts nepareizs VERITY UUID formāts ierīcē %s."
+
+#: lib/verity/verity.c:207
+#, c-format
+msgid "Error during update of verity header on device %s."
+msgstr "Kļūda, atjauninot verity galveni ierīcē %s."
+
+#: lib/verity/verity.c:261
+msgid "Root hash signature verification is not supported."
+msgstr "Saknes heša paraksta pārbaude netiek atbalstīta."
+
+#: lib/verity/verity.c:266
+msgid "Root hash signature required."
+msgstr "Nepieciešams saknes heša paraksts."
+
+#: lib/verity/verity.c:282
+msgid "Errors cannot be repaired with FEC device."
+msgstr "Kļūdas nevar izlabot ar FEC ierīci."
+
+#: lib/verity/verity.c:284
+#, c-format
+msgid "Found %u repairable errors with FEC device."
+msgstr "Atrastas %u izlabojamas kļūdas ar FEC ierīci."
+
+#: lib/verity/verity.c:368
+msgid "Kernel does not support dm-verity mapping."
+msgstr "Kodols neatbalsta dm-verity kartēšanu."
+
+#: lib/verity/verity.c:372
+msgid "Kernel does not support dm-verity signature option."
+msgstr "Kodols neatbalsta dm-verity paraksta opciju."
+
+#: lib/verity/verity.c:383
+msgid "Verity device detected corruption after activation."
+msgstr "Verity ierīce konstatēja bojājumu pēc aktivizēšanas."
+
+#: lib/verity/verity_hash.c:53
+#, c-format
+msgid "Spare area is not zeroed at position %<PRIu64>."
+msgstr "Rezerves apgabals nav aizpildīts ar nullēm pozīcijā %<PRIu64>."
+
+#: lib/verity/verity_hash.c:154 lib/verity/verity_hash.c:287
+#: lib/verity/verity_hash.c:298
+msgid "Device offset overflow."
+msgstr "Ierīces nobīdes pārpilde."
+
+#: lib/verity/verity_hash.c:205
+#, c-format
+msgid "Verification failed at position %<PRIu64>."
+msgstr "Pārbaude neizdevās pozīcijā %<PRIu64>."
+
+#: lib/verity/verity_hash.c:294
+msgid "Hash area overflow."
+msgstr "Heša apgabala pārpilde."
+
+#: lib/verity/verity_hash.c:381
+msgid "Verification of data area failed."
+msgstr "Datu apgabala pārbaude neizdevās."
+
+#: lib/verity/verity_hash.c:386
+msgid "Verification of root hash failed."
+msgstr "Saknes heša pārbaude neizdevās."
+
+#: lib/verity/verity_hash.c:392
+msgid "Input/output error while creating hash area."
+msgstr "Ievades/izvades kļūda, veidojot heša apgabalu."
+
+#: lib/verity/verity_hash.c:394
+msgid "Creation of hash area failed."
+msgstr "Neizdevās izveidot heša apgabalu."
+
+#: lib/verity/verity_hash.c:429
+#, c-format
+msgid "WARNING: Kernel cannot activate device if data block size exceeds page size (%u)."
+msgstr "BRĪDINĀJUMS: Kodols nevar aktivizēt ierīci, ja datu bloka izmērs pārsniedz lapas izmēru (%u)."
+
+#: lib/verity/verity_fec.c:118
+msgid "Failed to allocate RS context."
+msgstr "Neizdevās piešķirt RS kontekstu."
+
+#: lib/verity/verity_fec.c:136
+msgid "Failed to allocate buffer."
+msgstr "Neizdevās piešķirt buferi."
+
+#: lib/verity/verity_fec.c:146
+#, c-format
+msgid "Failed to read RS block %<PRIu64> byte %d."
+msgstr "Neizdevās nolasīt RS bloka %<PRIu64> baitu %d."
+
+#: lib/verity/verity_fec.c:159
+#, c-format
+msgid "Failed to read parity for RS block %<PRIu64>."
+msgstr "Neizdevās nolasīt paritāti RS blokam %<PRIu64>."
+
+#: lib/verity/verity_fec.c:167
+#, c-format
+msgid "Failed to repair parity for block %<PRIu64>."
+msgstr "Neizdevās izlabot paritāti blokam %<PRIu64>."
+
+#: lib/verity/verity_fec.c:179
+#, c-format
+msgid "Failed to write parity for RS block %<PRIu64>."
+msgstr "Neizdevās ierakstīt paritāti RS blokam %<PRIu64>."
+
+#: lib/verity/verity_fec.c:195
+msgid "Block sizes must match for FEC."
+msgstr "FEC gadījumā bloku izmēriem jāsakrīt."
+
+#: lib/verity/verity_fec.c:201
+msgid "Invalid number of parity bytes."
+msgstr "Nederīgs paritātes baitu skaits."
+
+#: lib/verity/verity_fec.c:235
+msgid "Invalid FEC segment length."
+msgstr "Nederīgs FEC segmenta garums."
+
+#: lib/verity/verity_fec.c:303
+#, c-format
+msgid "Failed to determine size for device %s."
+msgstr "Neizdevās noteikt ierīces %s izmēru."
+
+#: lib/integrity/integrity.c:50
+#, c-format
+msgid "Incompatible kernel dm-integrity metadata (version %u) detected on %s."
+msgstr "Konstatēti nesaderīgi kodola dm-integrity metadati (versija %u) ierīcē %s."
+
+#: lib/integrity/integrity.c:309 lib/integrity/integrity.c:493
+msgid "Kernel does not support dm-integrity mapping."
+msgstr "Kodols neatbalsta dm-integrity kartēšanu."
+
+#: lib/integrity/integrity.c:315
+msgid "Kernel does not support dm-integrity fixed metadata alignment."
+msgstr "Kodols neatbalsta dm-integrity fiksēto metadatu izlīdzināšanu."
+
+#: lib/integrity/integrity.c:324
+msgid "Kernel refuses to activate insecure recalculate option (see legacy activation options to override)."
+msgstr "Kodols atsakās aktivizēt nedrošo pārrēķināšanas opciju (skatiet mantotās aktivizācijas opcijas, lai to apietu)."
+
+#: lib/integrity/integrity.c:330
+msgid "Kernel does not support dm-integrity inline mode."
+msgstr "Kodols neatbalsta dm-integrity inline režīmu."
+
+#: lib/luks2/luks2_disk_metadata.c:382 lib/luks2/luks2_json_metadata.c:1184
+#: lib/luks2/luks2_json_metadata.c:1502
+#, c-format
+msgid "Failed to acquire write lock on device %s."
+msgstr "Neizdevās iegūt rakstīšanas bloķējumu ierīcei %s."
+
+#: lib/luks2/luks2_disk_metadata.c:391
+msgid "Detected attempt for concurrent LUKS2 metadata update. Aborting operation."
+msgstr "Konstatēts mēģinājums veikt vienlaicīgu LUKS2 metadatu atjaunināšanu. Darbība tiek pārtraukta."
+
+#: lib/luks2/luks2_disk_metadata.c:726 lib/luks2/luks2_disk_metadata.c:747
+msgid ""
+"Device contains ambiguous signatures, cannot auto-recover LUKS2.\n"
+"Please run \"cryptsetup repair\" for recovery."
+msgstr ""
+"Ierīce satur neviennozīmīgus parakstus, nevar automātiski atjaunot LUKS2.\n"
+"Lūdzu, palaidiet \"cryptsetup repair\", lai veiktu atjaunošanu."
+
+#: lib/luks2/luks2_json_format.c:219
+#, c-format
+msgid "WARNING: keyslots area (%<PRIu64> bytes) is very small, available LUKS2 keyslot count is very limited.\n"
+msgstr "BRĪDINĀJUMS: atslēgu slotu apgabals (%<PRIu64> baiti) ir ļoti mazs, pieejamais LUKS2 atslēgu slotu skaits ir ļoti ierobežots.\n"
+
+#: lib/luks2/luks2_json_format.c:427
+msgid "Requested data offset is too small."
+msgstr "Pieprasītā datu nobīde ir pārāk maza."
+
+#: lib/luks2/luks2_json_format.c:468
+#, c-format
+msgid "WARNING: LUKS2 metadata size changed to %<PRIu64> bytes.\n"
+msgstr "BRĪDINĀJUMS: LUKS2 metadatu izmērs mainīts uz %<PRIu64> baitiem.\n"
+
+#: lib/luks2/luks2_json_format.c:472
+#, c-format
+msgid "WARNING: LUKS2 keyslots area size changed to %<PRIu64> bytes.\n"
+msgstr "BRĪDINĀJUMS: LUKS2 atslēgu slotu apgabala izmērs mainīts uz %<PRIu64> baitiem.\n"
+
+#: lib/luks2/luks2_json_metadata.c:1171 lib/luks2/luks2_json_metadata.c:1357
+#: lib/luks2/luks2_json_metadata.c:1412 lib/luks2/luks2_keyslot_luks2.c:71
+#, c-format
+msgid "Failed to acquire read lock on device %s."
+msgstr "Neizdevās iegūt lasīšanas bloķējumu ierīcei %s."
+
+#: lib/luks2/luks2_json_metadata.c:1277
+msgid "Label is too long."
+msgstr "Etiķete ir pārāk gara."
+
+#: lib/luks2/luks2_json_metadata.c:1427
+#, c-format
+msgid "Forbidden LUKS2 requirements detected in backup %s."
+msgstr "Dublējumā %s konstatētas neatļautas LUKS2 prasības."
+
+#: lib/luks2/luks2_json_metadata.c:1466
+msgid "Data offset differ on device and backup, restore failed."
+msgstr "Datu nobīde ierīcē un dublējumā atšķiras; atjaunošana neizdevās."
+
+#: lib/luks2/luks2_json_metadata.c:1472
+msgid "Binary header with keyslot areas size differ on device and backup, restore failed."
+msgstr "Binārās galvenes ar atslēgu slotu apgabaliem izmērs atšķiras ierīcē un dublējumā, atjaunošana neizdevās."
+
+#: lib/luks2/luks2_json_metadata.c:1479
+#, c-format
+msgid "Device %s %s%s%s%s"
+msgstr "Ierīce %s %s%s%s%s"
+
+#: lib/luks2/luks2_json_metadata.c:1480
+msgid "does not contain LUKS2 header. Replacing header can destroy data on that device."
+msgstr "nesatur LUKS2 galveni. Galvenes aizstāšana var iznīcināt datus šajā ierīcē."
+
+#: lib/luks2/luks2_json_metadata.c:1481
+msgid "already contains LUKS2 header. Replacing header will destroy existing keyslots."
+msgstr "jau satur LUKS2 galveni. Galvenes aizstāšana iznīcinās esošos atslēgu slotus."
+
+#: lib/luks2/luks2_json_metadata.c:1483
+msgid ""
+"\n"
+"WARNING: unknown LUKS2 requirements detected in real device header!\n"
+"Replacing header with backup may corrupt the data on that device!"
+msgstr ""
+"\n"
+"BRĪDINĀJUMS: reālās ierīces galvenē konstatētas nezināmas LUKS2 prasības!\n"
+"Galvenes aizstāšana ar dublējumu var sabojāt datus šajā ierīcē!"
+
+#: lib/luks2/luks2_json_metadata.c:1485
+msgid ""
+"\n"
+"WARNING: Unfinished offline reencryption detected on the device!\n"
+"Replacing header with backup may corrupt data."
+msgstr ""
+"\n"
+"BRĪDINĀJUMS: ierīcē konstatēta nepabeigta bezsaistes atkārtotā šifrēšana!\n"
+"Galvenes aizstāšana ar dublējumu var sabojāt datus."
+
+#: lib/luks2/luks2_json_metadata.c:1583
+#, c-format
+msgid "Ignored unknown flag %s."
+msgstr "Ignorēts nezināms karogs %s."
+
+#: lib/luks2/luks2_json_metadata.c:2555 lib/luks2/luks2_reencrypt.c:2110
+#, c-format
+msgid "Missing key for dm-crypt segment %u"
+msgstr "Trūkst atslēgas dm-crypt segmentam %u"
+
+#: lib/luks2/luks2_json_metadata.c:2567 lib/luks2/luks2_reencrypt.c:2123
+msgid "Failed to set dm-crypt segment."
+msgstr "Neizdevās iestatīt dm-crypt segmentu."
+
+#: lib/luks2/luks2_json_metadata.c:2573 lib/luks2/luks2_reencrypt.c:2129
+msgid "Failed to set dm-linear segment."
+msgstr "Neizdevās iestatīt dm-linear segmentu."
+
+#: lib/luks2/luks2_json_metadata.c:2693 src/utils_reencrypt.c:580
+msgid "No known cipher specification pattern detected in LUKS2 header."
+msgstr "LUKS2 galvenē nav konstatēts zināms šifra specifikācijas šablons."
+
+#: lib/luks2/luks2_json_metadata.c:2701
+msgid "OPAL device must have static device size."
+msgstr "OPAL ierīces izmēram jābūt statiskam."
+
+#: lib/luks2/luks2_json_metadata.c:2721
+msgid "Encrypted OPAL device with integrity must be smaller than locking range."
+msgstr "Šifrētai OPAL ierīcei ar integritāti jābūt mazākai par bloķēšanas diapazonu."
+
+#: lib/luks2/luks2_json_metadata.c:2726
+msgid "OPAL device must have same size as locking range."
+msgstr "OPAL ierīces izmēram jābūt tādam pašam kā bloķēšanas diapazonam."
+
+#: lib/luks2/luks2_json_metadata.c:2746
+#, c-format
+msgid "OPAL device is %s already unlocked.\n"
+msgstr "OPAL ierīce %s jau ir atslēgta.\n"
+
+#: lib/luks2/luks2_json_metadata.c:2785
+msgid "Unsupported device integrity configuration."
+msgstr "Neatbalstīta ierīces integritātes konfigurācija."
+
+#: lib/luks2/luks2_json_metadata.c:2801
+msgid "Underlying dm-integrity device with unexpected provided data sectors."
+msgstr "Pamatā esošā dm-integrity ierīce ar negaidītiem sniegtajiem datu sektoriem."
+
+#: lib/luks2/luks2_json_metadata.c:2903
+msgid "Reencryption in-progress. Cannot deactivate device."
+msgstr "Notiek atkārtota šifrēšana. Nevar deaktivizēt ierīci."
+
+#: lib/luks2/luks2_json_metadata.c:2914 lib/luks2/luks2_reencrypt.c:4287
+#, c-format
+msgid "Failed to replace suspended device %s with dm-error target."
+msgstr "Neizdevās aizstāt apturēto ierīci %s ar dm-error mērķi."
+
+#: lib/luks2/luks2_json_metadata.c:2993 lib/luks2/luks2_json_metadata.c:3015
+#, c-format
+msgid "Device %s was deactivated but hardware OPAL device cannot be locked."
+msgstr "Ierīce %s tika deaktivizēta, bet aparatūras OPAL ierīci nevar aizslēgt."
+
+#: lib/luks2/luks2_json_metadata.c:3037
+msgid "Unmet LUKS2 requirements detected."
+msgstr "Konstatētas neizpildītas LUKS2 prasības."
+
+#: lib/luks2/luks2_json_metadata.c:3045
+msgid "Operation incompatible with device marked for legacy reencryption. Aborting."
+msgstr "Operācija nav savietojama ar ierīci, kas atzīmēta mantotajai atkārtotajai šifrēšanai. Pārtrauc darbību."
+
+#: lib/luks2/luks2_json_metadata.c:3047
+msgid "Operation incompatible with device marked for LUKS2 reencryption. Aborting."
+msgstr "Operācija nav savietojama ar ierīci, kas atzīmēta LUKS2 atkārtotai šifrēšanai. Pārtrauc darbību."
+
+#: lib/luks2/luks2_json_metadata.c:3049
+msgid "Operation incompatible with device using OPAL. Aborting."
+msgstr "Operācija nav savietojama ar ierīci, kas izmanto OPAL. Pārtrauc darbību."
+
+#: lib/luks2/luks2_json_metadata.c:3051
+msgid "Operation incompatible with device using inline HW tags. Aborting."
+msgstr "Operācija nav savietojama ar ierīci, kas izmanto iekļautos aparatūras tagus. Pārtrauc darbību."
+
+#: lib/luks2/luks2_keyslot.c:543 lib/luks2/luks2_keyslot.c:601
+msgid "Not enough available memory to open a keyslot."
+msgstr "Nav pietiekami daudz pieejamās atmiņas, lai atvērtu atslēgas slotu."
+
+#: lib/luks2/luks2_keyslot.c:545 lib/luks2/luks2_keyslot.c:603
+msgid "Keyslot open failed."
+msgstr "Neizdevās atvērt atslēgas slotu."
+
+#: lib/luks2/luks2_keyslot_luks2.c:40 lib/luks2/luks2_keyslot_luks2.c:77
+#, c-format
+msgid "Cannot use %s cipher for keyslot encryption."
+msgstr "Nevar izmantot %s šifru atslēgas slota šifrēšanai."
+
+#: lib/luks2/luks2_keyslot_luks2.c:219
+msgid "Not enough memory for keyslot key derivation."
+msgstr "Nav pietiekami daudz atmiņas atslēgas slota atslēgas atvasināšanai."
+
+#: lib/luks2/luks2_keyslot_luks2.c:233 lib/luks2/luks2_keyslot_luks2.c:358
+#: lib/luks2/luks2_keyslot_reenc.c:434 lib/luks2/luks2_reencrypt.c:2734
+#, c-format
+msgid "Hash algorithm %s is not available."
+msgstr "Heša algoritms %s nav pieejams."
+
+#: lib/luks2/luks2_keyslot_luks2.c:475
+msgid "No space for new keyslot."
+msgstr "Nav vietas jaunam atslēgas slotam."
+
+#: lib/luks2/luks2_keyslot_reenc.c:583
+msgid "Invalid reencryption resilience mode change requested."
+msgstr "Pieprasīta nederīga atkārtotās šifrēšanas noturības režīma maiņa."
+
+#: lib/luks2/luks2_keyslot_reenc.c:704
+#, c-format
+msgid "Can not update resilience type. New type only provides %<PRIu64> bytes, required space is: %<PRIu64> bytes."
+msgstr "Nevar atjaunināt noturības veidu. Jaunais veids nodrošina tikai %<PRIu64> baitus, nepieciešamā vieta ir: %<PRIu64> baiti."
+
+#: lib/luks2/luks2_keyslot_reenc.c:714
+msgid "Failed to refresh reencryption verification digest."
+msgstr "Neizdevās atjaunot atkārtotas šifrēšanas verifikācijas kontrolsummu."
+
+#: lib/luks2/luks2_luks1_convert.c:498
+#, c-format
+msgid "Cannot check status of device with uuid: %s."
+msgstr "Nevar pārbaudīt statusu ierīcei ar uuid: %s."
+
+#: lib/luks2/luks2_luks1_convert.c:524
+msgid "Unable to convert header with LUKSMETA additional metadata."
+msgstr "Neizdevās konvertēt galveni ar LUKSMETA papildu metadatiem."
+
+#: lib/luks2/luks2_luks1_convert.c:556 lib/luks2/luks2_reencrypt.c:3894
+#, c-format
+msgid "Unable to use cipher specification %s-%s for LUKS2."
+msgstr "Neizdevās izmantot šifra specifikāciju %s-%s LUKS2 formātam."
+
+#: lib/luks2/luks2_luks1_convert.c:565
+#, c-format
+msgid "Unable to use cipher specification %s-%s for LUKS2 keyslot."
+msgstr "Neizdevās izmantot šifra specifikāciju %s-%s LUKS2 atslēgu slotam."
+
+#: lib/luks2/luks2_luks1_convert.c:580
+msgid "Unable to move keyslot area. Not enough space."
+msgstr "Neizdevās pārvietot atslēgu slotu apgabalu. Nepietiek vietas."
+
+#: lib/luks2/luks2_luks1_convert.c:627
+msgid "Cannot convert to LUKS2 format - invalid metadata."
+msgstr "Nevar konvertēt uz LUKS2 formātu — nederīgi metadati."
+
+#: lib/luks2/luks2_luks1_convert.c:644
+msgid "Unable to move keyslot area. LUKS2 keyslots area too small."
+msgstr "Neizdevās pārvietot atslēgu slotu apgabalu. LUKS2 atslēgu slotu apgabals ir pārāk mazs."
+
+#: lib/luks2/luks2_luks1_convert.c:650 lib/luks2/luks2_luks1_convert.c:980
+msgid "Unable to move keyslot area."
+msgstr "Neizdevās pārvietot atslēgu slotu apgabalu."
+
+#: lib/luks2/luks2_luks1_convert.c:765
+msgid "Cannot convert to LUKS1 format - default segment encryption sector size is not 512 bytes."
+msgstr "Nevar konvertēt uz LUKS1 formātu — noklusējuma segmenta šifrēšanas sektora izmērs nav 512 baiti."
+
+#: lib/luks2/luks2_luks1_convert.c:773
+msgid "Cannot convert to LUKS1 format - key slot digests are not LUKS1 compatible."
+msgstr "Nevar konvertēt uz LUKS1 formātu — atslēgu slotu kontrolsummas nav saderīgas ar LUKS1."
+
+#: lib/luks2/luks2_luks1_convert.c:787
+#, c-format
+msgid "Cannot convert to LUKS1 format - device uses wrapped key cipher %s."
+msgstr "Nevar konvertēt uz LUKS1 formātu — ierīce izmanto iesaiņotas atslēgas šifru %s."
+
+#: lib/luks2/luks2_luks1_convert.c:792
+msgid "Cannot convert to LUKS1 format - device uses more segments."
+msgstr "Nevar konvertēt uz LUKS1 formātu — ierīce izmanto vairākus segmentus."
+
+#: lib/luks2/luks2_luks1_convert.c:800
+#, c-format
+msgid "Cannot convert to LUKS1 format - LUKS2 header contains %u token(s)."
+msgstr "Nevar konvertēt uz LUKS1 formātu — LUKS2 galvenē ir %u marķieris(-i)."
+
+#: lib/luks2/luks2_luks1_convert.c:806
+msgid "Cannot convert to LUKS1 format - there are no active keyslots."
+msgstr "Nevar konvertēt uz LUKS1 formātu — nav aktīvu atslēgu slotu."
+
+#: lib/luks2/luks2_luks1_convert.c:818
+#, c-format
+msgid "Cannot convert to LUKS1 format - keyslot %u is in invalid state."
+msgstr "Nevar konvertēt uz LUKS1 formātu — atslēgu slots %u ir nederīgā stāvoklī."
+
+#: lib/luks2/luks2_luks1_convert.c:823
+#, c-format
+msgid "Cannot convert to LUKS1 format - keyslot %u is unbound."
+msgstr "Nevar konvertēt uz LUKS1 formātu — atslēgu slots %u nav piesaistīts."
+
+#: lib/luks2/luks2_luks1_convert.c:828
+#, c-format
+msgid "Cannot convert to LUKS1 format - slot %u (over maximum slots) is still active."
+msgstr "Nevar konvertēt uz LUKS1 formātu — slots %u (pārsniedz maksimālo slotu skaitu) joprojām ir aktīvs."
+
+#: lib/luks2/luks2_luks1_convert.c:833
+#, c-format
+msgid "Cannot convert to LUKS1 format - keyslot %u is not LUKS1 compatible."
+msgstr "Nevar konvertēt uz LUKS1 formātu — atslēgu slots %u nav saderīgs ar LUKS1."
+
+#: lib/luks2/luks2_reencrypt.c:1199
+#, c-format
+msgid "Hotzone size must be multiple of calculated zone alignment (%zu bytes)."
+msgstr "Karstās zonas izmēram jābūt aprēķinātās zonas izlīdzinājuma (%zu baiti) daudzkārtnim."
+
+#: lib/luks2/luks2_reencrypt.c:1204
+#, c-format
+msgid "Device size must be multiple of calculated zone alignment (%zu bytes)."
+msgstr "Ierīces izmēram jābūt aprēķinātās zonas izlīdzinājuma (%zu baiti) daudzkārtnim."
+
+#: lib/luks2/luks2_reencrypt.c:1411 lib/luks2/luks2_reencrypt.c:1597
+#: lib/luks2/luks2_reencrypt.c:1680 lib/luks2/luks2_reencrypt.c:1722
+#: lib/luks2/luks2_reencrypt.c:4081
+msgid "Failed to initialize old segment storage wrapper."
+msgstr "Neizdevās inicializēt vecā segmenta glabātuves ietvaru."
+
+#: lib/luks2/luks2_reencrypt.c:1425 lib/luks2/luks2_reencrypt.c:1575
+msgid "Failed to initialize new segment storage wrapper."
+msgstr "Neizdevās inicializēt jaunā segmenta glabātuves ietvaru."
+
+#: lib/luks2/luks2_reencrypt.c:1551 lib/luks2/luks2_reencrypt.c:4093
+msgid "Failed to initialize hotzone protection."
+msgstr "Neizdevās inicializēt karstās zonas aizsardzību."
+
+#: lib/luks2/luks2_reencrypt.c:1624
+msgid "Failed to read checksums for current hotzone."
+msgstr "Neizdevās nolasīt pašreizējās karstās zonas kontrolsummas."
+
+#: lib/luks2/luks2_reencrypt.c:1631 lib/luks2/luks2_reencrypt.c:4108
+#, c-format
+msgid "Failed to read hotzone area starting at %<PRIu64>."
+msgstr "Neizdevās nolasīt karstās zonas apgabalu, sākot no %<PRIu64>."
+
+#: lib/luks2/luks2_reencrypt.c:1650
+#, c-format
+msgid "Failed to decrypt sector %zu."
+msgstr "Neizdevās atšifrēt sektoru %zu."
+
+#: lib/luks2/luks2_reencrypt.c:1656
+#, c-format
+msgid "Failed to recover sector %zu."
+msgstr "Neizdevās atjaunot sektoru %zu."
+
+#: lib/luks2/luks2_reencrypt.c:2209
+#, c-format
+msgid "Source and target device sizes don't match. Source %<PRIu64>, target: %<PRIu64>."
+msgstr "Avota un mērķa ierīču izmēri nesakrīt. Avots %<PRIu64>, mērķis: %<PRIu64>."
+
+#: lib/luks2/luks2_reencrypt.c:2311
+#, c-format
+msgid "Failed to activate hotzone device %s."
+msgstr "Neizdevās aktivizēt karstās zonas ierīci %s."
+
+#: lib/luks2/luks2_reencrypt.c:2323
+#, c-format
+msgid "Failed to allocate hotzone device %s."
+msgstr "Neizdevās piešķirt karstās zonas ierīci %s."
+
+#: lib/luks2/luks2_reencrypt.c:2340
+#, c-format
+msgid "Failed to activate overlay device %s with actual origin table."
+msgstr "Neizdevās aktivizēt pārklājuma ierīci %s ar faktisko oriģinālo tabulu."
+
+#: lib/luks2/luks2_reencrypt.c:2347
+#, c-format
+msgid "Failed to load new mapping for device %s."
+msgstr "Neizdevās ielādēt jauno kartējumu ierīcei %s."
+
+#: lib/luks2/luks2_reencrypt.c:2419
+msgid "Failed to refresh reencryption devices stack."
+msgstr "Neizdevās atsvaidzināt atkārtotās šifrēšanas ierīču steku."
+
+#: lib/luks2/luks2_reencrypt.c:2616
+msgid "Failed to set new keyslots area size."
+msgstr "Neizdevās iestatīt jauno atslēgu slotu apgabala izmēru."
+
+#: lib/luks2/luks2_reencrypt.c:2752
+#, c-format
+msgid "Data shift value is not aligned to encryption sector size (%<PRIu32> bytes)."
+msgstr "Datu nobīdes vērtība nav salāgota ar šifrēšanas sektora izmēru (%<PRIu32> baiti)."
+
+#: lib/luks2/luks2_reencrypt.c:2789 src/utils_reencrypt.c:162
+#, c-format
+msgid "Unsupported resilience mode %s"
+msgstr "Neatbalstīts noturības režīms %s"
+
+#: lib/luks2/luks2_reencrypt.c:2825
+msgid "Moved segment size can not be greater than data shift value."
+msgstr "Pārvietotā segmenta izmērs nevar būt lielāks par datu nobīdes vērtību."
+
+#: lib/luks2/luks2_reencrypt.c:2867
+msgid "Invalid reencryption resilience parameters."
+msgstr "Nederīgi atkārtotās šifrēšanas noturības parametri."
+
+#: lib/luks2/luks2_reencrypt.c:2889
+#, c-format
+msgid "Moved segment too large. Requested size %<PRIu64>, available space for: %<PRIu64>."
+msgstr "Pārvietotais segments ir pārāk liels. Pieprasītais izmērs %<PRIu64>, pieejamā vieta: %<PRIu64>."
+
+#: lib/luks2/luks2_reencrypt.c:2978
+msgid "Failed to clear table."
+msgstr "Neizdevās notīrīt tabulu."
+
+#: lib/luks2/luks2_reencrypt.c:3064
+#, c-format
+msgid "Data shift (%<PRIu64> sectors) is less than future data offset (%<PRIu64> sectors)."
+msgstr "Datu pārbīde (%<PRIu64> sektori) ir mazāka par nākotnes datu nobīdi (%<PRIu64> sektori)."
+
+#: lib/luks2/luks2_reencrypt.c:3079 lib/luks2/luks2_reencrypt.c:3086
+msgid "Reduced data size is larger than real device size."
+msgstr "Samazinātais datu izmērs ir lielāks par reālo ierīces izmēru."
+
+#: lib/luks2/luks2_reencrypt.c:3096
+#, c-format
+msgid "Data device is not aligned to encryption sector size (%<PRIu32> bytes)."
+msgstr "Datu ierīce nav izlīdzināta atbilstoši šifrēšanas sektora izmēram (%<PRIu32> baiti)."
+
+#: lib/luks2/luks2_reencrypt.c:3126 lib/luks2/luks2_reencrypt.c:3644
+#: lib/luks2/luks2_reencrypt.c:3665
+#, c-format
+msgid "Failed to open %s in exclusive mode (already mapped or mounted)."
+msgstr "Neizdevās atvērt %s ekskluzīvā režīmā (jau kartēta vai montēta)."
+
+#: lib/luks2/luks2_reencrypt.c:3333
+msgid "Device not marked for LUKS2 reencryption."
+msgstr "Ierīce nav atzīmēta LUKS2 atkārtotai šifrēšanai."
+
+#: lib/luks2/luks2_reencrypt.c:3350 lib/luks2/luks2_reencrypt.c:4404
+msgid "Failed to load LUKS2 reencryption context."
+msgstr "Neizdevās ielādēt LUKS2 atkārtotās šifrēšanas kontekstu."
+
+#: lib/luks2/luks2_reencrypt.c:3445 lib/luks2/luks2_reencrypt.c:3785
+msgid "Device is not in reencryption."
+msgstr "Ierīce neatrodas atkārtotās šifrēšanas procesā."
+
+#: lib/luks2/luks2_reencrypt.c:3452 lib/luks2/luks2_reencrypt.c:3792
+msgid "Reencryption process is already running."
+msgstr "Atkārtotās šifrēšanas process jau darbojas."
+
+#: lib/luks2/luks2_reencrypt.c:3454 lib/luks2/luks2_reencrypt.c:3794
+msgid "Failed to acquire reencryption lock."
+msgstr "Neizdevās iegūt atkārtotās šifrēšanas bloķējumu."
+
+#: lib/luks2/luks2_reencrypt.c:3472
+msgid "Cannot proceed with reencryption. Run reencryption recovery first."
+msgstr "Nevar turpināt atkārtoto šifrēšanu. Vispirms veiciet atkārtotās šifrēšanas atjaunošanu."
+
+#: lib/luks2/luks2_reencrypt.c:3608
+msgid "Active device size and requested reencryption size don't match."
+msgstr "Aktīvās ierīces izmērs un pieprasītais atkārtotās šifrēšanas izmērs nesakrīt."
+
+#: lib/luks2/luks2_reencrypt.c:3622
+msgid "Illegal device size requested in reencryption parameters."
+msgstr "Atkārtotās šifrēšanas parametros pieprasīts neatļauts ierīces izmērs."
+
+#: lib/luks2/luks2_reencrypt.c:3724
+msgid "Reencryption in-progress. Cannot perform recovery."
+msgstr "Notiek atkārtota šifrēšana. Nevar veikt atjaunošanu."
+
+#: lib/luks2/luks2_reencrypt.c:3745
+msgid "LUKS2 reencryption recovery failed."
+msgstr "LUKS2 atkārtotās šifrēšanas atjaunošana neizdevās."
+
+#: lib/luks2/luks2_reencrypt.c:3878 lib/luks2/luks2_reencrypt.c:4357
+msgid "Failed to initialize reencryption device stack."
+msgstr "Neizdevās inicializēt atkārtotās šifrēšanas ierīču steku."
+
+#: lib/luks2/luks2_reencrypt.c:3911
+msgid "LUKS2 reencryption already initialized in metadata."
+msgstr "LUKS2 atkārtotā šifrēšana jau ir inicializēta metadatos."
+
+#: lib/luks2/luks2_reencrypt.c:3919
+msgid "Failed to initialize LUKS2 reencryption in metadata."
+msgstr "Neizdevās inicializēt LUKS2 atkārtoto šifrēšanu metadatos."
+
+#: lib/luks2/luks2_reencrypt.c:3972 lib/luks2/luks2_reencrypt.c:4004
+#: lib/luks2/luks2_reencrypt.c:4034
+msgid "Reencryption is not supported for DAX (persistent memory) devices."
+msgstr "Atkārtotā šifrēšana nav atbalstīta DAX (pastāvīgās atmiņas) ierīcēm."
+
+#: lib/luks2/luks2_reencrypt.c:4063
+msgid "Failed to set device segments for next reencryption hotzone."
+msgstr "Neizdevās iestatīt ierīces segmentus nākamajai atkārtotās šifrēšanas karstajai zonai."
+
+#: lib/luks2/luks2_reencrypt.c:4116
+msgid "Failed to write reencryption resilience metadata."
+msgstr "Neizdevās ierakstīt atkārtotās šifrēšanas noturības metadatus."
+
+#: lib/luks2/luks2_reencrypt.c:4123
+msgid "Decryption failed."
+msgstr "Atšifrēšana neizdevās."
+
+#: lib/luks2/luks2_reencrypt.c:4128
+#, c-format
+msgid "Failed to write hotzone area starting at %<PRIu64>."
+msgstr "Neizdevās ierakstīt karstās zonas apgabalā, sākot no %<PRIu64>."
+
+#: lib/luks2/luks2_reencrypt.c:4133
+msgid "Failed to sync data."
+msgstr "Neizdevās sinhronizēt datus."
+
+#: lib/luks2/luks2_reencrypt.c:4141
+msgid "Failed to update metadata after current reencryption hotzone completed."
+msgstr "Neizdevās atjaunināt metadatus pēc pašreizējās atkārtotās šifrēšanas karstās zonas pabeigšanas."
+
+#: lib/luks2/luks2_reencrypt.c:4230
+msgid "Failed to write LUKS2 metadata."
+msgstr "Neizdevās ierakstīt LUKS2 metadatus."
+
+#: lib/luks2/luks2_reencrypt.c:4253
+msgid "Failed to wipe unused data device area."
+msgstr "Neizdevās notīrīt neizmantoto datu ierīces apgabalu."
+
+#: lib/luks2/luks2_reencrypt.c:4259
+#, c-format
+msgid "Failed to remove unused (unbound) keyslot %d."
+msgstr "Neizdevās noņemt neizmantoto (nepiesaistīto) atslēgas slotu %d."
+
+#: lib/luks2/luks2_reencrypt.c:4269
+msgid "Failed to remove reencryption keyslot."
+msgstr "Neizdevās noņemt atkārtotās šifrēšanas atslēgas slotu."
+
+#: lib/luks2/luks2_reencrypt.c:4279
+#, c-format
+msgid "Fatal error while reencrypting chunk starting at %<PRIu64>, %<PRIu64> sectors long."
+msgstr "Fatāla kļūda, atkārtoti šifrējot fragmentu, sākot no %<PRIu64>, %<PRIu64> sektoru garumā."
+
+#: lib/luks2/luks2_reencrypt.c:4283
+msgid "Online reencryption failed."
+msgstr "Tiešsaistes atkārtotā šifrēšana neizdevās."
+
+#: lib/luks2/luks2_reencrypt.c:4288
+msgid "Do not resume the device unless replaced with error target manually."
+msgstr "Neatsāciet ierīces darbību, ja vien tā nav manuāli aizstāta ar kļūdas mērķi."
+
+#: lib/luks2/luks2_reencrypt.c:4340
+msgid "Cannot proceed with reencryption. Unexpected reencryption status."
+msgstr "Nevar turpināt atkārtoto šifrēšanu. Negaidīts atkārtotās šifrēšanas statuss."
+
+#: lib/luks2/luks2_reencrypt.c:4346
+msgid "Missing or invalid reencrypt context."
+msgstr "Trūkst atkārtotās šifrēšanas konteksta vai tas ir nederīgs."
+
+#: lib/luks2/luks2_reencrypt.c:4380 lib/luks2/luks2_reencrypt.c:4417
+msgid "Failed to update reencryption context."
+msgstr "Neizdevās atjaunināt atkārtotās šifrēšanas kontekstu."
+
+#: lib/luks2/luks2_reencrypt_digest.c:402
+msgid "Reencryption metadata is invalid."
+msgstr "Atkārtotās šifrēšanas metadati ir nederīgi."
+
+#: lib/luks2/hw_opal/hw_opal.c:335
+#, c-format
+msgid "OPAL range %d offset %<PRIu64> does not match expected values %<PRIu64>."
+msgstr "OPAL diapazona %d nobīde %<PRIu64> neatbilst paredzētajai vērtībai %<PRIu64>."
+
+#: lib/luks2/hw_opal/hw_opal.c:342
+#, c-format
+msgid "OPAL range %d length %<PRIu64> does not match device length %<PRIu64>."
+msgstr "OPAL diapazona %d garums %<PRIu64> neatbilst ierīces garumam %<PRIu64>."
+
+#: lib/luks2/hw_opal/hw_opal.c:348
+#, c-format
+msgid "OPAL range %d locking is disabled."
+msgstr "OPAL diapazona %d bloķēšana ir atspējota."
+
+#: lib/luks2/hw_opal/hw_opal.c:358 lib/luks2/hw_opal/hw_opal.c:365
+#, c-format
+msgid "Unexpected OPAL range %d lock state."
+msgstr "Negaidīts OPAL diapazona %d bloķēšanas stāvoklis."
+
+#: src/cryptsetup.c:87
+msgid "Keyslot encryption parameters can be set only for LUKS2 device."
+msgstr "Atslēgas slota šifrēšanas parametrus var iestatīt tikai LUKS2 ierīcei."
+
+#: src/cryptsetup.c:93
+msgid "Keyslot encryption parameters are not compatible with LUKS2 keyslot encryption."
+msgstr "Atslēgas slota šifrēšanas parametri nav saderīgi ar LUKS2 atslēgas slota šifrēšanu."
+
+#: src/cryptsetup.c:150 src/cryptsetup.c:1180 src/cryptsetup.c:1545
+#: src/utils_reencrypt.c:1916 src/utils_reencrypt_luks1.c:502
+#: src/utils_reencrypt_luks1.c:565
+msgid "No known cipher specification pattern detected."
+msgstr "Nav konstatēts neviens zināms šifra specifikācijas paraugs."
+
+#: src/cryptsetup.c:160
+#, c-format
+msgid "WARNING: Using default options for cipher (%s-%s, key size %u bits) that could be incompatible with older versions."
+msgstr "BRĪDINĀJUMS: tiek izmantotas noklusējuma opcijas šifram (%s-%s, atslēgas izmērs %u biti), kas var nebūt saderīgas ar vecākām versijām."
+
+#: src/cryptsetup.c:165
+#, c-format
+msgid "WARNING: Using default options for hash (%s) that could be incompatible with older versions."
+msgstr "BRĪDINĀJUMS: Hešam (%s) tiek izmantotas noklusējuma opcijas, kas varētu nebūt saderīgas ar vecākām versijām."
+
+#: src/cryptsetup.c:169
+msgid "For plain mode, always use options --cipher, --key-size and if no keyfile or keyring is used, then also --hash."
+msgstr "Vienkāršajam režīmam vienmēr izmantojiet opcijas --cipher, --key-size un, ja netiek izmantots atslēgas fails vai atslēgu gredzens, tad arī --hash."
+
+#: src/cryptsetup.c:175
+msgid "WARNING: The --hash parameter is being ignored in plain mode with keyfile specified.\n"
+msgstr "BRĪDINĀJUMS: Parametrs --hash tiek ignorēts vienkāršajā režīmā, ja ir norādīts atslēgas fails.\n"
+
+#: src/cryptsetup.c:189
+msgid "WARNING: The --keyfile-size option is being ignored, the read size is the same as the encryption key size.\n"
+msgstr "BRĪDINĀJUMS: Opcija --keyfile-size tiek ignorēta, nolasīšanas izmērs ir tāds pats kā šifrēšanas atslēgas izmērs.\n"
+
+#: src/cryptsetup.c:226 src/cryptsetup.c:1375 src/cryptsetup.c:1598
+#: src/integritysetup.c:189 src/utils_reencrypt.c:2167
+#, c-format
+msgid "Blkid scan failed for %s."
+msgstr "Neizdevās %s blkid skenēšana."
+
+#: src/cryptsetup.c:232
+#, c-format
+msgid "Detected device signature(s) on %s. Proceeding further may damage existing data."
+msgstr "Uz %s konstatēts(-i) ierīces paraksts(-i). Turpināšana var sabojāt esošos datus."
+
+#: src/cryptsetup.c:238 src/cryptsetup.c:1261 src/cryptsetup.c:1309
+#: src/cryptsetup.c:1382 src/cryptsetup.c:1522 src/cryptsetup.c:1610
+#: src/cryptsetup.c:2495 src/cryptsetup.c:2925 src/integritysetup.c:179
+#: src/utils_reencrypt.c:111 src/utils_reencrypt.c:459
+#: src/utils_reencrypt.c:927
+msgid "Operation aborted.\n"
+msgstr "Operācija pārtraukta.\n"
+
+#: src/cryptsetup.c:323
+msgid "Option --key-file is required."
+msgstr "Opcija --key-file ir obligāta."
+
+#: src/cryptsetup.c:378
+msgid "Enter VeraCrypt PIM: "
+msgstr "Ievadiet VeraCrypt PIM: "
+
+#: src/cryptsetup.c:387
+msgid "Invalid PIM value: parse error."
+msgstr "Nederīga PIM vērtība: parsēšanas kļūda."
+
+#: src/cryptsetup.c:390
+msgid "Invalid PIM value: 0."
+msgstr "Nederīga PIM vērtība: 0."
+
+#: src/cryptsetup.c:393
+msgid "Invalid PIM value: outside of range."
+msgstr "Nederīga PIM vērtība: ārpus diapazona."
+
+#: src/cryptsetup.c:416
+msgid "No device header detected with this passphrase."
+msgstr "Ar šo piekļuves frāzi nav atrasta ierīces galvene."
+
+#: src/cryptsetup.c:493 src/cryptsetup.c:678
+#, c-format
+msgid "Device %s is not a valid BITLK device."
+msgstr "Ierīce %s nav derīga BITLK ierīce."
+
+#: src/cryptsetup.c:501
+msgid "Cannot determine volume key size for BITLK, please use --key-size option."
+msgstr "Neizdevās noteikt BITLK sējuma atslēgas izmēru, lūdzu, izmantojiet opciju --key-size."
+
+#: src/cryptsetup.c:547
+msgid ""
+"Header dump with volume key is sensitive information\n"
+"which allows access to encrypted partition without passphrase.\n"
+"This dump should be always stored encrypted on safe place."
+msgstr ""
+"Galvenes izraksts ar sējuma atslēgu ir sensitīva informācija,\n"
+"kas ļauj piekļūt šifrētajam nodalījumam bez piekļuves frāzes.\n"
+"Šis izraksts vienmēr jāglabā šifrēts drošā vietā."
+
+#: src/cryptsetup.c:614 src/cryptsetup.c:700 src/cryptsetup.c:2520
+msgid ""
+"The header dump with volume key is sensitive information\n"
+"that allows access to encrypted partition without a passphrase.\n"
+"This dump should be stored encrypted in a safe place."
+msgstr ""
+"Galvenes izraksts ar sējuma atslēgu ir sensitīva informācija,\n"
+"kas ļauj piekļūt šifrētajam nodalījumam bez piekļuves frāzes.\n"
+"Šis izraksts jāglabā šifrēts drošā vietā."
+
+#: src/cryptsetup.c:755 src/cryptsetup.c:787
+#, c-format
+msgid "Device %s is not a valid FVAULT2 device."
+msgstr "Ierīce %s nav derīga FVAULT2 ierīce."
+
+#: src/cryptsetup.c:795
+msgid "Cannot determine volume key size for FVAULT2, please use --key-size option."
+msgstr "Nevar noteikt FVAULT2 sējuma atslēgas izmēru; lūdzu, izmantojiet opciju --key-size."
+
+#: src/cryptsetup.c:849 src/veritysetup.c:317 src/integritysetup.c:424
+#, c-format
+msgid "Device %s is still active and scheduled for deferred removal.\n"
+msgstr "Ierīce %s joprojām ir aktīva un ieplānota atliktai noņemšanai.\n"
+
+#: src/cryptsetup.c:882 src/cryptsetup.c:1808 src/cryptsetup.c:2082
+#: src/cryptsetup.c:2229 src/cryptsetup.c:2648 src/cryptsetup.c:2730
+#: src/cryptsetup.c:3263
+#, c-format
+msgid "Failed to set external tokens path %s."
+msgstr "Neizdevās iestatīt ārējo marķieru ceļu %s."
+
+#: src/cryptsetup.c:891
+msgid "Resize of active device requires volume key in keyring but --disable-keyring option is set."
+msgstr "Aktīvas ierīces izmēra maiņai nepieciešama sējuma atslēga atslēgu gredzenā, bet ir iestatīta opcija --disable-keyring."
+
+#: src/cryptsetup.c:1058
+msgid "Benchmark interrupted."
+msgstr "Veiktspējas tests pārtraukts."
+
+#: src/cryptsetup.c:1079
+#, c-format
+msgid "PBKDF2-%-9s     N/A\n"
+msgstr "PBKDF2-%-9s     N/A\n"
+
+#: src/cryptsetup.c:1081
+#, c-format
+msgid "PBKDF2-%-9s %7u iterations per second for %zu-bit key\n"
+msgstr "PBKDF2-%-9s %7u iterācijas sekundē %zu bitu atslēgai\n"
+
+#: src/cryptsetup.c:1095
+#, c-format
+msgid "%-10s N/A\n"
+msgstr "%-10s N/A\n"
+
+#: src/cryptsetup.c:1097
+#, c-format
+msgid "%-10s %4u iterations, %5u memory, %1u parallel threads (CPUs) for %zu-bit key (requested %u ms time)\n"
+msgstr "%-10s %4u iterācijas, %5u atmiņa, %1u paralēlie pavedieni (CPU) %zu bitu atslēgai (pieprasīts %u ms laiks)\n"
+
+#: src/cryptsetup.c:1121
+msgid "Result of benchmark is not reliable."
+msgstr "Veiktspējas testa rezultāts nav uzticams."
+
+#: src/cryptsetup.c:1172
+msgid "# Tests are approximate using memory only (no storage IO).\n"
+msgstr "# Testi ir aptuveni, izmantojot tikai atmiņu (bez krātuves IO).\n"
+
+#. TRANSLATORS: The string is header of a table and must be exactly (right side) aligned.
+#: src/cryptsetup.c:1197
+#, c-format
+msgid "#%*s Algorithm |       Key |      Encryption |      Decryption\n"
+msgstr "#%*s Algoritms |   Atslēga |       Šifrēšana |     Atšifrēšana\n"
+
+#: src/cryptsetup.c:1205
+#, c-format
+msgid "Cipher %s (with %i bits key) is not available."
+msgstr "Šifrs %s (ar %i bitu atslēgu) nav pieejams."
+
+#. TRANSLATORS: The string is header of a table and must be exactly (right side) aligned.
+#: src/cryptsetup.c:1226
+msgid "#     Algorithm |       Key |      Encryption |      Decryption\n"
+msgstr "#     Algoritms |   Atslēga |       Šifrēšana |     Atšifrēšana\n"
+
+#: src/cryptsetup.c:1239
+msgid "N/A"
+msgstr "N/A"
+
+#: src/cryptsetup.c:1242
+msgid "# Cipher speed test is not available.\n"
+msgstr "# Šifra ātruma tests nav pieejams.\n"
+
+#: src/cryptsetup.c:1258
+msgid ""
+"Unprotected LUKS2 reencryption metadata detected. Please verify the reencryption operation is desirable (see luksDump output)\n"
+"and continue (upgrade metadata) only if you acknowledge the operation as genuine."
+msgstr ""
+"Atklāti neaizsargāti LUKS2 atkārtotās šifrēšanas metadati. Lūdzu, pārliecinieties, ka atkārtotās šifrēšanas darbība ir vēlama (skatiet luksDump izvadi)\n"
+"un turpiniet (jauniniet metadatus) tikai tad, ja atzīstat šo darbību par autentisku."
+
+#: src/cryptsetup.c:1264
+msgid "Enter passphrase to protect and upgrade reencryption metadata: "
+msgstr "Ievadiet piekļuves frāzi, lai aizsargātu un jauninātu atkārtotās šifrēšanas metadatus: "
+
+#: src/cryptsetup.c:1308
+msgid "Really proceed with LUKS2 reencryption recovery?"
+msgstr "Vai tiešām turpināt LUKS2 atkārtotās šifrēšanas atjaunošanu?"
+
+#: src/cryptsetup.c:1317
+msgid "Enter passphrase to verify reencryption metadata digest: "
+msgstr "Ievadiet piekļuves frāzi, lai pārbaudītu atkārtotās šifrēšanas metadatu kopsavilkumu: "
+
+#: src/cryptsetup.c:1319
+msgid "Enter passphrase for reencryption recovery: "
+msgstr "Ievadiet piekļuves frāzi atkārtotās šifrēšanas atjaunošanai: "
+
+#: src/cryptsetup.c:1381
+msgid "Really try to repair LUKS device header?"
+msgstr "Vai tiešām mēģināt salabot LUKS ierīces galveni?"
+
+#: src/cryptsetup.c:1409 src/integritysetup.c:76 src/integritysetup.c:246
+msgid ""
+"\n"
+"Wipe interrupted."
+msgstr ""
+"\n"
+"Notīrīšana pārtraukta."
+
+#: src/cryptsetup.c:1414 src/integritysetup.c:81 src/integritysetup.c:291
+msgid ""
+"Wiping device to initialize integrity checksum.\n"
+"You can interrupt this by pressing CTRL+c (rest of not wiped device will contain invalid checksum).\n"
+msgstr ""
+"Notīra ierīci, lai inicializētu integritātes kontrolsummu.\n"
+"To var pārtraukt, nospiežot CTRL+c (nenotīrītā ierīces daļa saturēs nederīgu kontrolsummu).\n"
+
+#: src/cryptsetup.c:1436 src/integritysetup.c:103
+#, c-format
+msgid "Cannot deactivate temporary device %s."
+msgstr "Neizdevās deaktivizēt pagaidu ierīci %s."
+
+#: src/cryptsetup.c:1484
+msgid "OPAL hw-only encryption does not support --cipher and --key-size, options ignored."
+msgstr "OPAL tikai aparatūras šifrēšana neatbalsta --cipher un --key-size, opcijas ignorētas."
+
+#: src/cryptsetup.c:1497
+msgid "Integrity option can be used only for LUKS2 format."
+msgstr "Integritātes opciju var izmantot tikai LUKS2 formātam."
+
+#: src/cryptsetup.c:1502 src/cryptsetup.c:1582
+msgid "Unsupported LUKS2 metadata size options."
+msgstr "Neatbalstītas LUKS2 metadatu izmēra opcijas."
+
+#: src/cryptsetup.c:1507
+msgid "OPAL is supported only for LUKS2 format."
+msgstr "OPAL tiek atbalstīts tikai LUKS2 formātam."
+
+#: src/cryptsetup.c:1512
+msgid "Inline hw tags are supported only for LUKS2 format."
+msgstr "Iekļautie aparatūras tagi tiek atbalstīti tikai LUKS2 formātam."
+
+#: src/cryptsetup.c:1521
+msgid "Header file does not exist, do you want to create it?"
+msgstr "Galvenes fails neeksistē, vai vēlaties to izveidot?"
+
+#: src/cryptsetup.c:1529
+#, c-format
+msgid "Cannot create header file %s."
+msgstr "Neizdevās izveidot galvenes failu %s."
+
+#: src/cryptsetup.c:1555 src/integritysetup.c:127 src/integritysetup.c:142
+#: src/integritysetup.c:151 src/integritysetup.c:330 src/integritysetup.c:338
+#: src/integritysetup.c:348
+msgid "No known integrity specification pattern detected."
+msgstr "Nav atrasts zināms integritātes specifikācijas paraugs."
+
+#: src/cryptsetup.c:1557
+msgid "Cannot use specified integrity key size."
+msgstr "Nevar izmantot norādīto integritātes atslēgas izmēru."
+
+#: src/cryptsetup.c:1575
+#, c-format
+msgid "Cannot use %s as on-disk header."
+msgstr "Nevar izmantot %s kā galveni diskā."
+
+#: src/cryptsetup.c:1604 src/integritysetup.c:173
+#, c-format
+msgid "This will overwrite data on %s irrevocably."
+msgstr "Tas neatgriezeniski pārrakstīs datus uz %s."
+
+#: src/cryptsetup.c:1641
+msgid "OPAL Admin password cannot be empty."
+msgstr "OPAL administratora parole nevar būt tukša."
+
+#: src/cryptsetup.c:1655 src/cryptsetup.c:2099 src/cryptsetup.c:2242
+#: src/cryptsetup.c:2377 src/cryptsetup.c:2443 src/utils_reencrypt_luks1.c:428
+msgid "Failed to set pbkdf parameters."
+msgstr "Neizdevās iestatīt pbkdf parametrus."
+
+#: src/cryptsetup.c:1786
+msgid "Reduced data offset is allowed only for detached LUKS header."
+msgstr "Samazināta datu nobīde ir atļauta tikai atdalītai LUKS galvenei."
+
+#: src/cryptsetup.c:1793
+#, c-format
+msgid "LUKS file container %s is too small for activation, there is no remaining space for data."
+msgstr "LUKS faila konteiners %s ir pārāk mazs aktivizēšanai, datiem nav atlikušas vietas."
+
+#: src/cryptsetup.c:1835 src/cryptsetup.c:2248 src/utils_reencrypt.c:278
+#: src/utils_reencrypt.c:371 src/utils_reencrypt.c:1936
+msgid "Cannot determine volume key size for LUKS without keyslots, please use --key-size option."
+msgstr "Nevar noteikt LUKS sējuma atslēgas izmēru bez atslēgu slotiem, lūdzu, izmantojiet opciju --key-size."
+
+#: src/cryptsetup.c:1854 src/utils_reencrypt.c:304
+msgid "Device requires two volume keys."
+msgstr "Ierīcei nepieciešamas divas sējuma atslēgas."
+
+#: src/cryptsetup.c:1889
+msgid "Some specified activation parameters were ignored with OPAL hw-only encryption."
+msgstr "Daži norādītie aktivizācijas parametri tika ignorēti, izmantojot OPAL tikai aparatūras šifrēšanu."
+
+#: src/cryptsetup.c:1894
+msgid "Device activated but cannot make flags persistent."
+msgstr "Ierīce ir aktivizēta, bet karogus neizdevās padarīt pastāvīgus."
+
+#: src/cryptsetup.c:1974 src/cryptsetup.c:2042
+#, c-format
+msgid "Keyslot %d is selected for deletion."
+msgstr "Atslēgas slots %d ir izvēlēts dzēšanai."
+
+#: src/cryptsetup.c:1986 src/cryptsetup.c:2046
+msgid "This is the last keyslot. Device will become unusable after purging this key."
+msgstr "Šis ir pēdējais atslēgas slots. Ierīce kļūs neizmantojama pēc šīs atslēgas dzēšanas."
+
+#: src/cryptsetup.c:1987
+msgid "Enter any remaining passphrase: "
+msgstr "Ievadiet jebkuru atlikušo piekļuves frāzi: "
+
+#: src/cryptsetup.c:1988 src/cryptsetup.c:2048
+msgid "Operation aborted, the keyslot was NOT wiped.\n"
+msgstr "Operācija pārtraukta, atslēgas slots NETIKA izdzēsts.\n"
+
+#: src/cryptsetup.c:2024
+msgid "Enter passphrase to be deleted: "
+msgstr "Ievadiet dzēšamo piekļuves frāzi: "
+
+#: src/cryptsetup.c:2074 src/cryptsetup.c:2426 src/cryptsetup.c:3087
+#: src/cryptsetup.c:3254
+#, c-format
+msgid "Device %s is not a valid LUKS2 device."
+msgstr "Ierīce %s nav derīga LUKS2 ierīce."
+
+#: src/cryptsetup.c:2113 src/cryptsetup.c:2312
+msgid "Enter new passphrase for key slot: "
+msgstr "Ievadiet jaunu piekļuves frāzi atslēgas slotam: "
+
+#: src/cryptsetup.c:2147 src/utils_luks.c:342
+#, c-format
+msgid "Enter token PIN: "
+msgstr "Ievadiet marķiera PIN: "
+
+#: src/cryptsetup.c:2149 src/utils_luks.c:344
+#, c-format
+msgid "Enter token %d PIN: "
+msgstr "Ievadiet marķiera %d PIN: "
+
+#: src/cryptsetup.c:2208
+msgid "WARNING: The --key-slot parameter is used for new keyslot number.\n"
+msgstr "BRĪDINĀJUMS: Parametrs --key-slot tiek izmantots jaunajam atslēgas slota numuram.\n"
+
+#: src/cryptsetup.c:2285 src/utils_reencrypt_luks1.c:1094
+#, c-format
+msgid "Enter any existing passphrase: "
+msgstr "Ievadiet jebkuru esošo piekļuves frāzi: "
+
+#: src/cryptsetup.c:2381
+msgid "Enter passphrase to be changed: "
+msgstr "Ievadiet maināmo piekļuves frāzi: "
+
+#: src/cryptsetup.c:2397 src/utils_reencrypt_luks1.c:1080
+msgid "Enter new passphrase: "
+msgstr "Ievadiet jauno piekļuves frāzi: "
+
+#: src/cryptsetup.c:2447
+msgid "Enter passphrase for keyslot to be converted: "
+msgstr "Ievadiet konvertējamā atslēgas slota piekļuves frāzi: "
+
+#: src/cryptsetup.c:2471
+msgid "Only one device argument for isLuks operation is supported."
+msgstr "Operācijai isLuks tiek atbalstīts tikai viens ierīces arguments."
+
+#: src/cryptsetup.c:2576
+#, c-format
+msgid "Keyslot %d does not contain unbound key."
+msgstr "Atslēgas slots %d nesatur nesaistītu atslēgu."
+
+#: src/cryptsetup.c:2581
+msgid ""
+"The header dump with unbound key is sensitive information.\n"
+"This dump should be stored encrypted in a safe place."
+msgstr ""
+"Galvenes izraksts ar nesaistītu atslēgu ir sensitīva informācija.\n"
+"Šis izraksts jāglabā šifrēts drošā vietā."
+
+#: src/cryptsetup.c:2676 src/cryptsetup.c:2713
+#, c-format
+msgid "%s is not active %s device name."
+msgstr "%s nav aktīvas %s ierīces nosaukums."
+
+#: src/cryptsetup.c:2708
+#, c-format
+msgid "%s is not active LUKS device name or header is missing."
+msgstr "%s nav aktīvas LUKS ierīces nosaukums vai trūkst galvenes."
+
+#: src/cryptsetup.c:2785 src/cryptsetup.c:2804
+msgid "Option --header-backup-file is required."
+msgstr "Opcija --header-backup-file ir obligāta."
+
+#: src/cryptsetup.c:2835
+#, c-format
+msgid "%s is not cryptsetup managed device."
+msgstr "%s nav cryptsetup pārvaldīta ierīce."
+
+#: src/cryptsetup.c:2846
+#, c-format
+msgid "Refresh is not supported for device type %s"
+msgstr "Atjaunošana netiek atbalstīta ierīces tipam %s"
+
+#: src/cryptsetup.c:2896
+#, c-format
+msgid "Unrecognized metadata device type %s."
+msgstr "Neatpazīts metadatu ierīces tips %s."
+
+#: src/cryptsetup.c:2898
+msgid "Command requires device and mapped name as arguments."
+msgstr "Komandai kā argumenti nepieciešama ierīce un kartētais nosaukums."
+
+#: src/cryptsetup.c:2916
+msgid "Enter OPAL PSID: "
+msgstr "Ievadiet OPAL PSID: "
+
+#: src/cryptsetup.c:2916
+msgid "Enter OPAL Admin password: "
+msgstr "Ievadiet OPAL administratora paroli: "
+
+#: src/cryptsetup.c:2924
+msgid "WARNING: WHOLE disk will be factory reset and all data will be lost! Continue?"
+msgstr "BRĪDINĀJUMS: VISS disks tiks atiestatīts uz rūpnīcas iestatījumiem un visi dati tiks zaudēti! Vai turpināt?"
+
+#: src/cryptsetup.c:2967
+#, c-format
+msgid ""
+"This operation will erase all keyslots on device %s.\n"
+"Device will become unusable after this operation."
+msgstr ""
+"Šī darbība izdzēsīs visus atslēgu slotus ierīcē %s.\n"
+"Pēc šīs darbības ierīce kļūs nelietojama."
+
+#: src/cryptsetup.c:2974
+msgid "Operation aborted, keyslots were NOT wiped.\n"
+msgstr "Darbība pārtraukta, atslēgu sloti NAV izdzēsti.\n"
+
+#: src/cryptsetup.c:3013
+msgid "Invalid LUKS type, only luks1 and luks2 are supported."
+msgstr "Nederīgs LUKS tips, tiek atbalstīti tikai luks1 un luks2."
+
+#: src/cryptsetup.c:3029
+#, c-format
+msgid "Device is already %s type."
+msgstr "Ierīce jau ir %s tipa."
+
+#: src/cryptsetup.c:3036
+#, c-format
+msgid "This operation will convert %s to %s format.\n"
+msgstr "Šī darbība pārveidos %s uz %s formātu.\n"
+
+#: src/cryptsetup.c:3039
+msgid "Operation aborted, device was NOT converted.\n"
+msgstr "Darbība pārtraukta, ierīce NAV pārveidota.\n"
+
+#: src/cryptsetup.c:3079
+msgid "Option --priority, --label or --subsystem is missing."
+msgstr "Trūkst opcijas --priority, --label vai --subsystem."
+
+#: src/cryptsetup.c:3113 src/cryptsetup.c:3153 src/cryptsetup.c:3173
+#, c-format
+msgid "Token %d is invalid."
+msgstr "Marķieris %d ir nederīgs."
+
+#: src/cryptsetup.c:3116 src/cryptsetup.c:3176
+#, c-format
+msgid "Token %d in use."
+msgstr "Marķieris %d tiek izmantots."
+
+#: src/cryptsetup.c:3128
+#, c-format
+msgid "Failed to add luks2-keyring token %d."
+msgstr "Neizdevās pievienot luks2-keyring marķieri %d."
+
+#: src/cryptsetup.c:3139 src/cryptsetup.c:3202
+#, c-format
+msgid "Failed to assign token %d to keyslot %d."
+msgstr "Neizdevās piešķirt marķieri %d atslēgas slotam %d."
+
+#: src/cryptsetup.c:3156
+#, c-format
+msgid "Token %d is not in use."
+msgstr "Marķieris %d netiek izmantots."
+
+#: src/cryptsetup.c:3193
+msgid "Failed to import token from file."
+msgstr "Neizdevās importēt marķieri no faila."
+
+#: src/cryptsetup.c:3218
+#, c-format
+msgid "Failed to get token %d for export."
+msgstr "Neizdevās iegūt marķieri %d eksportēšanai."
+
+#: src/cryptsetup.c:3231
+#, c-format
+msgid "Token %d is not assigned to keyslot %d."
+msgstr "Marķieris %d nav piešķirts atslēgas slotam %d."
+
+#: src/cryptsetup.c:3233 src/cryptsetup.c:3240
+#, c-format
+msgid "Failed to unassign token %d from keyslot %d."
+msgstr "Neizdevās atcelt marķiera %d piešķiršanu atslēgas slotam %d."
+
+#: src/cryptsetup.c:3299
+msgid "Option --tcrypt-hidden, --tcrypt-system or --tcrypt-backup is supported only for TCRYPT device."
+msgstr "Opcija --tcrypt-hidden, --tcrypt-system vai --tcrypt-backup tiek atbalstīta tikai TCRYPT ierīcēm."
+
+#: src/cryptsetup.c:3302
+msgid "Option --veracrypt or --disable-veracrypt is supported only for TCRYPT device type."
+msgstr "Opcija --veracrypt vai --disable-veracrypt tiek atbalstīta tikai TCRYPT ierīču tipam."
+
+#: src/cryptsetup.c:3305
+msgid "Option --veracrypt-pim is supported only for VeraCrypt compatible devices."
+msgstr "Opcija --veracrypt-pim tiek atbalstīta tikai ar VeraCrypt saderīgām ierīcēm."
+
+#: src/cryptsetup.c:3309
+msgid "Option --veracrypt-query-pim is supported only for VeraCrypt compatible devices."
+msgstr "Opcija --veracrypt-query-pim tiek atbalstīta tikai ar VeraCrypt saderīgām ierīcēm."
+
+#: src/cryptsetup.c:3311
+msgid "The options --veracrypt-pim and --veracrypt-query-pim are mutually exclusive."
+msgstr "Opcijas --veracrypt-pim un --veracrypt-query-pim ir savstarpēji izslēdzošas."
+
+#: src/cryptsetup.c:3320
+msgid "Option --persistent is not allowed with --test-passphrase."
+msgstr "Opcija --persistent nav atļauta kopā ar --test-passphrase."
+
+#: src/cryptsetup.c:3323
+msgid "Options --refresh and --test-passphrase are mutually exclusive."
+msgstr "Opcijas --refresh un --test-passphrase ir savstarpēji izslēdzošas."
+
+#: src/cryptsetup.c:3326
+msgid "Option --shared is allowed only for open of plain device."
+msgstr "Opcija --shared ir atļauta tikai vienkāršo ierīču atvēršanai."
+
+#: src/cryptsetup.c:3329
+msgid "Option --skip is supported only for open of plain and loopaes devices."
+msgstr "Opcija --skip tiek atbalstīta tikai vienkāršo un loopaes ierīču atvēršanai."
+
+#: src/cryptsetup.c:3332
+msgid "Option --offset with open action is only supported for plain and loopaes devices."
+msgstr "Opcija --offset ar atvēršanas darbību tiek atbalstīta tikai vienkāršajām un loopaes ierīcēm."
+
+#: src/cryptsetup.c:3335
+msgid "Option --tcrypt-hidden cannot be combined with --allow-discards."
+msgstr "Opciju --tcrypt-hidden nevar kombinēt ar --allow-discards."
+
+#: src/cryptsetup.c:3339
+msgid "Sector size option with open action is supported only for plain devices."
+msgstr "Sektora izmēra opcija ar atvēršanas darbību tiek atbalstīta tikai vienkāršajām ierīcēm."
+
+#: src/cryptsetup.c:3343
+msgid "Large IV sectors option is supported only for opening plain type device with sector size larger than 512 bytes."
+msgstr "Lielo IV sektoru opcija ir atbalstīta tikai vienkārša tipa ierīces atvēršanai ar sektora izmēru, kas ir lielāks par 512 baitiem."
+
+#: src/cryptsetup.c:3348
+msgid "Option --test-passphrase is allowed only for open of LUKS, TCRYPT, BITLK and FVAULT2 devices."
+msgstr "Opcija --test-passphrase ir atļauta tikai LUKS, TCRYPT, BITLK un FVAULT2 ierīču atvēršanai."
+
+#: src/cryptsetup.c:3351 src/cryptsetup.c:3381
+msgid "Options --device-size and --size cannot be combined."
+msgstr "Opcijas --device-size un --size nevar kombinēt."
+
+#: src/cryptsetup.c:3354
+msgid "Option --unbound is allowed only for open of luks device."
+msgstr "Opcija --unbound ir atļauta tikai luks ierīces atvēršanai."
+
+#: src/cryptsetup.c:3357
+msgid "Option --unbound cannot be used without --test-passphrase."
+msgstr "Opciju --unbound nevar izmantot bez --test-passphrase."
+
+#: src/cryptsetup.c:3361
+msgid "Option --volume-key-keyring cannot be combined with --hash or --volume-key-file."
+msgstr "Opciju --volume-key-keyring nevar kombinēt ar --hash vai --volume-key-file."
+
+#: src/cryptsetup.c:3364
+msgid "Both --volume-key-file options must be paired with respective --key-size options."
+msgstr "Abām --volume-key-file opcijām jābūt pārī ar attiecīgajām --key-size opcijām."
+
+#: src/cryptsetup.c:3373 src/veritysetup.c:673 src/integritysetup.c:800
+msgid "Options --cancel-deferred and --deferred cannot be used at the same time."
+msgstr "Opcijas --cancel-deferred un --deferred nevar izmantot vienlaicīgi."
+
+#: src/cryptsetup.c:3389
+msgid "Option --active-name can be set only for LUKS2 device."
+msgstr "Opciju --active-name var iestatīt tikai LUKS2 ierīcei."
+
+#: src/cryptsetup.c:3392
+msgid "Options --active-name and --force-offline-reencrypt cannot be combined."
+msgstr "Opcijas --active-name un --force-offline-reencrypt nevar kombinēt."
+
+#: src/cryptsetup.c:3395
+msgid "Options --new-volume-key-file and --keep-key cannot be combined."
+msgstr "Opcijas --new-volume-key-file un --keep-key nevar kombinēt."
+
+#: src/cryptsetup.c:3398
+msgid "Options --new-volume-key-keyring and --keep-key cannot be combined."
+msgstr "Opcijas --new-volume-key-keyring un --keep-key nevar kombinēt."
+
+#: src/cryptsetup.c:3406 src/cryptsetup.c:3436
+msgid "Keyslot specification is required."
+msgstr "Nepieciešama atslēgas slota specifikācija."
+
+#: src/cryptsetup.c:3414
+msgid "Options --align-payload and --offset cannot be combined."
+msgstr "Opcijas --align-payload un --offset nevar kombinēt."
+
+#: src/cryptsetup.c:3417
+msgid "Option --integrity-no-wipe can be used only for format action with integrity extension."
+msgstr "Opciju --integrity-no-wipe var izmantot tikai formatēšanas darbībai ar integritātes paplašinājumu."
+
+#: src/cryptsetup.c:3420
+msgid "Only one of --use-[u]random options is allowed."
+msgstr "Atļauta tikai viena no --use-[u]random opcijām."
+
+#: src/cryptsetup.c:3428
+msgid "Key size is required with --unbound option."
+msgstr "Ar opciju --unbound ir nepieciešams norādīt atslēgas izmēru."
+
+#: src/cryptsetup.c:3448
+msgid "Invalid token action."
+msgstr "Nederīga marķiera darbība."
+
+#: src/cryptsetup.c:3451
+msgid "--key-description parameter is mandatory for token add action."
+msgstr "Parametrs --key-description ir obligāts marķiera pievienošanas darbībai."
+
+#: src/cryptsetup.c:3455 src/cryptsetup.c:3468
+msgid "Action requires specific token. Use --token-id parameter."
+msgstr "Darbībai nepieciešams konkrēts marķieris. Izmantojiet parametru --token-id."
+
+#: src/cryptsetup.c:3459
+msgid "Option --unbound is valid only with token add action."
+msgstr "Opcija --unbound ir derīga tikai ar darbību \"token add\"."
+
+#: src/cryptsetup.c:3461
+msgid "Options --key-slot and --unbound cannot be combined."
+msgstr "Opcijas --key-slot un --unbound nevar kombinēt."
+
+#: src/cryptsetup.c:3466
+msgid "Action requires specific keyslot. Use --key-slot parameter."
+msgstr "Darbībai nepieciešams konkrēts atslēgas slots. Izmantojiet parametru --key-slot."
+
+#: src/cryptsetup.c:3482
+msgid "<device> [--type <type>] [<name>]"
+msgstr "<ierīce> [--type <tips>] [<nosaukums>]"
+
+#: src/cryptsetup.c:3482 src/veritysetup.c:487 src/integritysetup.c:563
+msgid "open device as <name>"
+msgstr "atvērt ierīci kā <nosaukumu>"
+
+#: src/cryptsetup.c:3483 src/cryptsetup.c:3484 src/cryptsetup.c:3485
+#: src/veritysetup.c:488 src/veritysetup.c:489 src/integritysetup.c:564
+#: src/integritysetup.c:565 src/integritysetup.c:567
+msgid "<name>"
+msgstr "<nosaukums>"
+
+#: src/cryptsetup.c:3483 src/veritysetup.c:488 src/integritysetup.c:564
+msgid "close device (remove mapping)"
+msgstr "aizvērt ierīci (noņemt kartējumu)"
+
+#: src/cryptsetup.c:3484 src/integritysetup.c:567
+msgid "resize active device"
+msgstr "mainīt aktīvās ierīces izmēru"
+
+#: src/cryptsetup.c:3485
+msgid "show device status"
+msgstr "rādīt ierīces statusu"
+
+#: src/cryptsetup.c:3486
+msgid "[--cipher <cipher>]"
+msgstr "[--cipher <šifrs>]"
+
+#: src/cryptsetup.c:3486
+msgid "benchmark cipher"
+msgstr "novērtēt šifra veiktspēju"
+
+#: src/cryptsetup.c:3487 src/cryptsetup.c:3488 src/cryptsetup.c:3489
+#: src/cryptsetup.c:3490 src/cryptsetup.c:3491 src/cryptsetup.c:3498
+#: src/cryptsetup.c:3499 src/cryptsetup.c:3500 src/cryptsetup.c:3501
+#: src/cryptsetup.c:3502 src/cryptsetup.c:3503 src/cryptsetup.c:3504
+#: src/cryptsetup.c:3505 src/cryptsetup.c:3506 src/cryptsetup.c:3507
+msgid "<device>"
+msgstr "<ierīce>"
+
+#: src/cryptsetup.c:3487
+msgid "try to repair on-disk metadata"
+msgstr "mēģināt salabot diska metadatus"
+
+#: src/cryptsetup.c:3488
+msgid "reencrypt LUKS2 device"
+msgstr "atkārtoti šifrēt LUKS2 ierīci"
+
+#: src/cryptsetup.c:3489
+msgid "erase all keyslots (remove encryption key)"
+msgstr "dzēst visus atslēgu slotus (noņemt šifrēšanas atslēgu)"
+
+#: src/cryptsetup.c:3490
+msgid "convert LUKS from/to LUKS2 format"
+msgstr "konvertēt LUKS no/uz LUKS2 formātu"
+
+#: src/cryptsetup.c:3491
+msgid "set permanent configuration options for LUKS2"
+msgstr "iestatīt LUKS2 pastāvīgās konfigurācijas opcijas"
+
+#: src/cryptsetup.c:3492 src/cryptsetup.c:3493
+msgid "<device> [<new key file>]"
+msgstr "<ierīce> [<jauns atslēgas fails>]"
+
+#: src/cryptsetup.c:3492
+msgid "formats a LUKS device"
+msgstr "formatēt LUKS ierīci"
+
+#: src/cryptsetup.c:3493
+msgid "add key to LUKS device"
+msgstr "pievienot atslēgu LUKS ierīcei"
+
+#: src/cryptsetup.c:3494 src/cryptsetup.c:3495 src/cryptsetup.c:3496
+msgid "<device> [<key file>]"
+msgstr "<ierīce> [<atslēgas fails>]"
+
+#: src/cryptsetup.c:3494
+msgid "removes supplied key or key file from LUKS device"
+msgstr "noņem norādīto atslēgu vai atslēgas failu no LUKS ierīces"
+
+#: src/cryptsetup.c:3495
+msgid "changes supplied key or key file of LUKS device"
+msgstr "maina norādīto LUKS ierīces atslēgu vai atslēgas failu"
+
+#: src/cryptsetup.c:3496
+msgid "converts a key to new pbkdf parameters"
+msgstr "pārveido atslēgu uz jauniem pbkdf parametriem"
+
+#: src/cryptsetup.c:3497
+msgid "<device> <key slot>"
+msgstr "<ierīce> <atslēgas slots>"
+
+#: src/cryptsetup.c:3497
+msgid "wipes key with number <key slot> from LUKS device"
+msgstr "izdzēš atslēgu ar numuru <atslēgas slots> no LUKS ierīces"
+
+#: src/cryptsetup.c:3498
+msgid "print UUID of LUKS device"
+msgstr "izvada LUKS ierīces UUID"
+
+#: src/cryptsetup.c:3499
+msgid "tests <device> for LUKS partition header"
+msgstr "pārbauda, vai <ierīcē> ir LUKS nodalījuma galvene"
+
+#: src/cryptsetup.c:3500
+msgid "dump LUKS partition information"
+msgstr "izvada LUKS nodalījuma informāciju"
+
+#: src/cryptsetup.c:3501
+msgid "dump TCRYPT device information"
+msgstr "izvada TCRYPT ierīces informāciju"
+
+#: src/cryptsetup.c:3502
+msgid "dump BITLK device information"
+msgstr "izvada BITLK ierīces informāciju"
+
+#: src/cryptsetup.c:3503
+msgid "dump FVAULT2 device information"
+msgstr "izvada FVAULT2 ierīces informāciju"
+
+#: src/cryptsetup.c:3504
+msgid "Suspend LUKS device and wipe key (all IOs are frozen)"
+msgstr "Aptur LUKS ierīci un izdzēš atslēgu (visas I/O darbības ir iesaldētas)"
+
+#: src/cryptsetup.c:3505
+msgid "Resume suspended LUKS device"
+msgstr "Atjauno apturētu LUKS ierīci"
+
+#: src/cryptsetup.c:3506
+msgid "Backup LUKS device header and keyslots"
+msgstr "Izveido LUKS ierīces galvenes un atslēgu slotu dublējumu"
+
+#: src/cryptsetup.c:3507
+msgid "Restore LUKS device header and keyslots"
+msgstr "Atjauno LUKS ierīces galveni un atslēgu slotus"
+
+#: src/cryptsetup.c:3508
+msgid "<add|remove|import|export> <device>"
+msgstr "<add|remove|import|export> <ierīce>"
+
+#: src/cryptsetup.c:3508
+msgid "Manipulate LUKS2 tokens"
+msgstr "Apstrādāt LUKS2 marķierus"
+
+#: src/cryptsetup.c:3527 src/veritysetup.c:505 src/integritysetup.c:582
+msgid ""
+"\n"
+"<action> is one of:\n"
+msgstr ""
+"\n"
+"<darbība> ir viens no:\n"
+
+#: src/cryptsetup.c:3533
+msgid ""
+"\n"
+"You can also use old <action> syntax aliases:\n"
+"\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen, bitlkOpen, fvault2Open\n"
+"\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose, bitlkClose, fvault2Close\n"
+msgstr ""
+"\n"
+"Varat arī izmantot vecās <darbības> sintakses aizstājvārdus:\n"
+"\topen: create (plainOpen), luksOpen, loopaesOpen, tcryptOpen, bitlkOpen, fvault2Open\n"
+"\tclose: remove (plainClose), luksClose, loopaesClose, tcryptClose, bitlkClose, fvault2Close\n"
+
+#: src/cryptsetup.c:3537
+#, c-format
+msgid ""
+"\n"
+"<name> is the device to create under %s\n"
+"<device> is the encrypted device\n"
+"<key slot> is the LUKS key slot number to modify\n"
+"<key file> optional key file for the new key for luksAddKey action\n"
+msgstr ""
+"\n"
+"<nosaukums> ir ierīce, ko izveidot zem %s\n"
+"<ierīce> ir šifrētā ierīce\n"
+"<atslēgas slots> ir modificējamais LUKS atslēgas slota numurs\n"
+"<atslēgas fails> ir izvēles atslēgas fails jaunajai atslēgai luksAddKey darbībai\n"
+
+#: src/cryptsetup.c:3544
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in metadata format is %s (for luksFormat action).\n"
+msgstr ""
+"\n"
+"Noklusējuma kompilētais metadatu formāts ir %s (darbībai luksFormat).\n"
+
+#: src/cryptsetup.c:3549
+msgid ""
+"\n"
+"LUKS2 external token plugin support is enabled.\n"
+msgstr ""
+"\n"
+"LUKS2 ārējā marķiera spraudņa atbalsts ir iespējots.\n"
+
+#: src/cryptsetup.c:3550
+#, c-format
+msgid "LUKS2 external token plugin path: %s.\n"
+msgstr "LUKS2 ārējā marķiera spraudņa ceļš: %s.\n"
+
+#: src/cryptsetup.c:3552
+msgid ""
+"\n"
+"LUKS2 external token plugin support is disabled.\n"
+msgstr ""
+"\n"
+"LUKS2 ārējā marķiera spraudņa atbalsts ir atspējots.\n"
+
+#: src/cryptsetup.c:3556
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in key and passphrase parameters:\n"
+"\tMaximum keyfile size: %dkB, Maximum interactive passphrase length %d (characters)\n"
+"Default PBKDF for LUKS1: %s, iteration time: %d (ms)\n"
+"Default PBKDF for LUKS2: %s\n"
+"\tIteration time: %d, Memory required: %dkB, Parallel threads: %d\n"
+msgstr ""
+"\n"
+"Noklusējuma iekompilētie atslēgas un piekļuves frāzes parametri:\n"
+"\tMaksimālais atslēgas faila izmērs: %dkB, Maksimālais interaktīvās piekļuves frāzes garums %d (rakstzīmes)\n"
+"Noklusējuma PBKDF LUKS1: %s, iterācijas laiks: %d (ms)\n"
+"Noklusējuma PBKDF LUKS2: %s\n"
+"\tIterācijas laiks: %d, Nepieciešamā atmiņa: %dkB, Paralēlie pavedieni: %d\n"
+
+#: src/cryptsetup.c:3567
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in device cipher parameters:\n"
+"\tloop-AES: %s, Key %d bits\n"
+"\tplain: %s, Key: %d bits, Password hashing: %s\n"
+"\tLUKS: %s, Key: %d bits, LUKS header hashing: %s, RNG: %s\n"
+msgstr ""
+"\n"
+"Noklusējuma kompilētie ierīces šifra parametri:\n"
+"\tloop-AES: %s, Atslēga %d biti\n"
+"\tplain: %s, Atslēga: %d biti, Paroles hešošana: %s\n"
+"\tLUKS: %s, Atslēga: %d biti, LUKS galvenes hešošana: %s, RNG: %s\n"
+
+#: src/cryptsetup.c:3576
+msgid "\tLUKS: Default keysize with XTS mode (two internal keys) will be doubled.\n"
+msgstr "\tLUKS: Noklusējuma atslēgas izmērs XTS režīmā (divas iekšējās atslēgas) tiks dubultots.\n"
+
+#: src/cryptsetup.c:3594 src/veritysetup.c:647 src/integritysetup.c:742
+#, c-format
+msgid "%s: requires %s as arguments"
+msgstr "%s: kā argumentus pieprasa %s"
+
+#: src/cryptsetup.c:3634 src/utils_reencrypt_luks1.c:1143
+msgid "Key slot is invalid."
+msgstr "Atslēgas slots ir nederīgs."
+
+#: src/cryptsetup.c:3662
+msgid "Device size must be multiple of 512 bytes sector."
+msgstr "Ierīces izmēram jābūt 512 baitu sektora daudzkārtnim."
+
+#: src/cryptsetup.c:3667
+msgid "Invalid max reencryption hotzone size specification."
+msgstr "Nederīga maksimālā atkārtotās šifrēšanas karstās zonas izmēra specifikācija."
+
+#: src/cryptsetup.c:3681 src/cryptsetup.c:3698 src/cryptsetup.c:3710
+msgid "Key size must be a multiple of 8 bits"
+msgstr "Atslēgas izmēram jābūt 8 bitu daudzkārtnim"
+
+#: src/cryptsetup.c:3688
+msgid "At most 2 key size specifications can be supplied."
+msgstr "Var norādīt ne vairāk kā 2 atslēgas izmēra specifikācijas."
+
+#: src/cryptsetup.c:3717 src/cryptsetup.c:3728
+#, c-format
+msgid "At most %d volume key specifications can be supplied."
+msgstr "Var norādīt ne vairāk kā %d sējuma atslēgas specifikācijas."
+
+#: src/cryptsetup.c:3740
+#, c-format
+msgid "At most %d keyring link specifications can be supplied."
+msgstr "Var norādīt ne vairāk kā %d atslēgu gredzena saites specifikācijas."
+
+#: src/cryptsetup.c:3749
+msgid "Maximum device reduce size is 1 GiB."
+msgstr "Maksimālais ierīces samazināšanas izmērs ir 1 GiB."
+
+#: src/cryptsetup.c:3752
+msgid "Reduce size must be multiple of 512 bytes sector."
+msgstr "Samazināšanas izmēram jābūt 512 baitu sektora daudzkārtnim."
+
+#: src/cryptsetup.c:3769
+msgid "Option --priority can be only ignore/normal/prefer."
+msgstr "Opcija --priority var būt tikai ignore/normal/prefer."
+
+#: src/cryptsetup.c:3774
+msgid "Invalid maximal tries specification."
+msgstr "Nederīga maksimālā mēģinājumu skaita specifikācija."
+
+#: src/cryptsetup.c:3793 src/veritysetup.c:568 src/integritysetup.c:662
+msgid "Show this help message"
+msgstr "Parādīt šo palīdzības ziņojumu"
+
+#: src/cryptsetup.c:3794 src/veritysetup.c:569 src/integritysetup.c:663
+msgid "Display brief usage"
+msgstr "Parādīt īsu lietošanas pamācību"
+
+#: src/cryptsetup.c:3795 src/veritysetup.c:570 src/integritysetup.c:664
+msgid "Print package version"
+msgstr "Parādīt pakotnes versiju"
+
+#: src/cryptsetup.c:3806 src/veritysetup.c:581 src/integritysetup.c:675
+msgid "Help options:"
+msgstr "Palīdzības opcijas:"
+
+#: src/cryptsetup.c:3829 src/veritysetup.c:602 src/integritysetup.c:695
+msgid "[OPTION...] <action> <action-specific>"
+msgstr "[OPCIJA...] <darbība> <darbībai-specifisks>"
+
+#: src/cryptsetup.c:3838 src/veritysetup.c:611 src/integritysetup.c:706
+msgid "Argument <action> missing."
+msgstr "Trūkst argumenta <darbība>."
+
+#: src/cryptsetup.c:3917 src/veritysetup.c:642 src/integritysetup.c:737
+msgid "Unknown action."
+msgstr "Nezināma darbība."
+
+#: src/cryptsetup.c:3935
+msgid "Option --key-file takes precedence over specified key file argument."
+msgstr "Opcijai --key-file ir prioritāte pār norādīto atslēgas faila argumentu."
+
+#: src/cryptsetup.c:3941
+msgid "Only one --key-file argument is allowed."
+msgstr "Atļauts tikai viens --key-file arguments."
+
+#: src/cryptsetup.c:3946
+msgid "Password-based key derivation function (PBKDF) can be only pbkdf2 or argon2i/argon2id."
+msgstr "Uz paroli balstīta atslēgas atvasināšanas funkcija (PBKDF) var būt tikai pbkdf2 vai argon2i/argon2id."
+
+#: src/cryptsetup.c:3951
+msgid "PBKDF forced iterations cannot be combined with iteration time option."
+msgstr "PBKDF uzspiestās iterācijas nevar kombinēt ar iterācijas laika opciju."
+
+#: src/cryptsetup.c:3956
+msgid "Cannot link volume key to a keyring when keyring is disabled."
+msgstr "Nevar piesaistīt sējuma atslēgu atslēgu gredzenam, ja atslēgu gredzens ir atspējots."
+
+#: src/cryptsetup.c:3961
+msgid "Cannot use keyring key description when keyring is disabled."
+msgstr "Nevar izmantot atslēgu gredzena atslēgas aprakstu, ja atslēgu gredzens ir atspējots."
+
+#: src/cryptsetup.c:3966
+msgid "Inline integrity must be used together with --integrity option."
+msgstr "Iekļautā integritāte ir jāizmanto kopā ar opciju --integrity."
+
+#: src/cryptsetup.c:3977
+msgid "Options --keyslot-cipher and --keyslot-key-size must be used together."
+msgstr "Opcijas --keyslot-cipher un --keyslot-key-size ir jāizmanto kopā."
+
+#: src/cryptsetup.c:3985
+msgid "No action taken. Invoked with --test-args option.\n"
+msgstr "Nekāda darbība netika veikta. Izsaukts ar opciju --test-args.\n"
+
+#: src/cryptsetup.c:3998
+msgid "Cannot disable metadata locking."
+msgstr "Nevar atspējot metadatu bloķēšanu."
+
+#: src/veritysetup.c:41
+msgid "Invalid salt string specified."
+msgstr "Norādīta nederīga sāls virkne."
+
+#: src/veritysetup.c:74
+#, c-format
+msgid "Cannot create hash image %s for writing."
+msgstr "Neizdevās izveidot heša tēlu %s rakstīšanai."
+
+#: src/veritysetup.c:84
+#, c-format
+msgid "Cannot create FEC image %s for writing."
+msgstr "Neizdevās izveidot FEC tēlu %s rakstīšanai."
+
+#: src/veritysetup.c:123
+#, c-format
+msgid "Cannot create root hash file %s for writing."
+msgstr "Nevar izveidot saknes heša failu %s rakstīšanai."
+
+#: src/veritysetup.c:130
+#, c-format
+msgid "Cannot write to root hash file %s."
+msgstr "Nevar ierakstīt saknes heša failā %s."
+
+#: src/veritysetup.c:189 src/veritysetup.c:472
+#, c-format
+msgid "Device %s is not a valid VERITY device."
+msgstr "Ierīce %s nav derīga VERITY ierīce."
+
+#: src/veritysetup.c:206 src/veritysetup.c:223
+#, c-format
+msgid "Cannot read root hash file %s."
+msgstr "Nevar nolasīt saknes heša failu %s."
+
+#: src/veritysetup.c:211
+#, c-format
+msgid "Invalid root hash file %s."
+msgstr "Nederīgs saknes heša fails %s."
+
+#: src/veritysetup.c:232
+msgid "Invalid root hash string specified."
+msgstr "Norādīta nederīga saknes heša virkne."
+
+#: src/veritysetup.c:240
+#, c-format
+msgid "Invalid signature file %s."
+msgstr "Nederīgs paraksta fails %s."
+
+#: src/veritysetup.c:247
+#, c-format
+msgid "Cannot read signature file %s."
+msgstr "Nevar nolasīt paraksta failu %s."
+
+#: src/veritysetup.c:270 src/veritysetup.c:287
+msgid "Command requires <root_hash> or --root-hash-file option as argument."
+msgstr "Komandai kā arguments nepieciešams <root_hash> vai opcija --root-hash-file."
+
+#: src/veritysetup.c:485
+msgid "<data_device> <hash_device>"
+msgstr "<datu_ierīce> <heša_ierīce>"
+
+#: src/veritysetup.c:485 src/integritysetup.c:562
+msgid "format device"
+msgstr "formatēt ierīci"
+
+#: src/veritysetup.c:486
+msgid "<data_device> <hash_device> [<root_hash>]"
+msgstr "<datu_ierīce> <heša_ierīce> [<saknes_hešs>]"
+
+#: src/veritysetup.c:486
+msgid "verify device"
+msgstr "pārbaudīt ierīci"
+
+#: src/veritysetup.c:487
+msgid "<data_device> <name> <hash_device> [<root_hash>]"
+msgstr "<datu_ierīce> <nosaukums> <heša_ierīce> [<saknes_hešs>]"
+
+#: src/veritysetup.c:489 src/integritysetup.c:565
+msgid "show active device status"
+msgstr "parādīt aktīvās ierīces statusu"
+
+#: src/veritysetup.c:490
+msgid "<hash_device>"
+msgstr "<heša_ierīce>"
+
+#: src/veritysetup.c:490 src/integritysetup.c:566
+msgid "show on-disk information"
+msgstr "rādīt uz diska esošo informāciju"
+
+#: src/veritysetup.c:509
+#, c-format
+msgid ""
+"\n"
+"<name> is the device to create under %s\n"
+"<data_device> is the data device\n"
+"<hash_device> is the device containing verification data\n"
+"<root_hash> hash of the root node on <hash_device>\n"
+msgstr ""
+"\n"
+"<nosaukums> ir ierīce, kas jāizveido zem %s\n"
+"<datu_ierīce> ir datu ierīce\n"
+"<heša_ierīce> ir ierīce, kas satur verifikācijas datus\n"
+"<saknes_hešs> ir saknes mezgla hešs ierīcē <heša_ierīce>\n"
+
+#: src/veritysetup.c:516
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in dm-verity parameters:\n"
+"\tHash: %s, Data block (bytes): %u, Hash block (bytes): %u, Salt size: %u, Hash format: %u\n"
+msgstr ""
+"\n"
+"Noklusējuma iekompilētie dm-verity parametri:\n"
+"\tHešs: %s, Datu bloks (baiti): %u, Heša bloks (baiti): %u, Sāls izmērs: %u, Heša formāts: %u\n"
+
+#: src/veritysetup.c:657
+msgid "Option --ignore-corruption and --restart-on-corruption cannot be used together."
+msgstr "Opcijas --ignore-corruption un --restart-on-corruption nevar izmantot kopā."
+
+#: src/veritysetup.c:662
+msgid "Option --panic-on-corruption and --restart-on-corruption cannot be used together."
+msgstr "Opcijas --panic-on-corruption un --restart-on-corruption nevar izmantot kopā."
+
+#: src/veritysetup.c:668
+msgid "Option --error-as-corruption must be used with --panic-on-corruption or --restart-on-corruption."
+msgstr "Opcija --error-as-corruption jāizmanto kopā ar --panic-on-corruption vai --restart-on-corruption."
+
+#: src/integritysetup.c:169
+#, c-format
+msgid ""
+"This will overwrite data on %s and %s irrevocably.\n"
+"To preserve data device use --no-wipe option (and then activate with --integrity-recalculate)."
+msgstr ""
+"Tas neatgriezeniski pārrakstīs datus uz %s un %s.\n"
+"Lai saglabātu datu ierīci, izmantojiet opciju --no-wipe (un pēc tam aktivizējiet ar --integrity-recalculate)."
+
+#: src/integritysetup.c:215
+#, c-format
+msgid "Formatted with tag size %u%s, internal integrity %s.\n"
+msgstr "Formatēts ar taga izmēru %u%s, iekšējā integritāte %s.\n"
+
+#: src/integritysetup.c:216
+msgid " (inline hw tags)"
+msgstr " (iekļautie aparatūras tagi)"
+
+#: src/integritysetup.c:305
+msgid "Setting recalculate flag is not supported, you may consider using --wipe instead."
+msgstr "Pārrēķināšanas karoga iestatīšana netiek atbalstīta, tā vietā varat izmantot --wipe."
+
+#: src/integritysetup.c:382 src/integritysetup.c:549
+#, c-format
+msgid "Device %s is not a valid INTEGRITY device."
+msgstr "Ierīce %s nav derīga INTEGRITY ierīce."
+
+#: src/integritysetup.c:562 src/integritysetup.c:566
+msgid "<integrity_device>"
+msgstr "<integritātes_ierīce>"
+
+#: src/integritysetup.c:563
+msgid "<integrity_device> <name>"
+msgstr "<integritātes_ierīce> <nosaukums>"
+
+#: src/integritysetup.c:586
+#, c-format
+msgid ""
+"\n"
+"<name> is the device to create under %s\n"
+"<integrity_device> is the device containing data with integrity tags\n"
+msgstr ""
+"\n"
+"<nosaukums> ir ierīce, kas jāizveido zem %s\n"
+"<integritātes_ierīce> ir ierīce, kas satur datus ar integritātes tagiem\n"
+
+#: src/integritysetup.c:591
+#, c-format
+msgid ""
+"\n"
+"Default compiled-in dm-integrity parameters:\n"
+"\tChecksum algorithm: %s\n"
+"\tMaximum keyfile size: %dkB\n"
+msgstr ""
+"\n"
+"Noklusējuma iekompilētie dm-integrity parametri:\n"
+"\tKontrolsummas algoritms: %s\n"
+"\tMaksimālais atslēgas faila izmērs: %dkB\n"
+
+#: src/integritysetup.c:648
+#, c-format
+msgid "Invalid --%s size. Maximum is %u bytes."
+msgstr "Nederīgs --%s izmērs. Maksimālais ir %u baiti."
+
+#: src/integritysetup.c:751
+msgid "Both key file and key size options must be specified."
+msgstr "Jānorāda gan atslēgas faila, gan atslēgas izmēra opcijas."
+
+#: src/integritysetup.c:755
+msgid "Both journal integrity key file and key size options must be specified."
+msgstr "Jānorāda gan žurnāla integritātes atslēgas faila, gan atslēgas izmēra opcijas."
+
+#: src/integritysetup.c:758
+msgid "Journal integrity algorithm must be specified if journal integrity key is used."
+msgstr "Ja tiek izmantota žurnāla integritātes atslēga, jānorāda žurnāla integritātes algoritms."
+
+#: src/integritysetup.c:762
+msgid "Both journal encryption key file and key size options must be specified."
+msgstr "Jānorāda gan žurnāla šifrēšanas atslēgas faila, gan atslēgas izmēra opcijas."
+
+#: src/integritysetup.c:765
+msgid "Journal encryption algorithm must be specified if journal encryption key is used."
+msgstr "Ja tiek izmantota žurnāla šifrēšanas atslēga, jānorāda žurnāla šifrēšanas algoritms."
+
+#: src/integritysetup.c:769
+msgid "Recovery and bitmap mode options are mutually exclusive."
+msgstr "Atjaunošanas un bitkartes režīma opcijas ir savstarpēji izslēdzošas."
+
+#: src/integritysetup.c:776
+msgid "Journal options cannot be used in bitmap mode."
+msgstr "Žurnāla opcijas nevar izmantot bitkartes režīmā."
+
+#: src/integritysetup.c:781
+msgid "Bitmap options can be used only in bitmap mode."
+msgstr "Bitkartes opcijas var izmantot tikai bitkartes režīmā."
+
+#: src/integritysetup.c:787
+msgid "Inline mode cannot be combined with journal or bitmap options."
+msgstr "Iekļauto režīmu nevar apvienot ar žurnāla vai bitkartes opcijām."
+
+#: src/integritysetup.c:791
+msgid "Inline mode cannot be combined with separate data device."
+msgstr "Iekļauto režīmu nevar apvienot ar atsevišķu datu ierīci."
+
+#: src/integritysetup.c:795
+msgid "Keyed discards can be enabled only with keyed algorithms like HMAC."
+msgstr "Atslēgotu atmešanu var iespējot tikai ar atslēgotiem algoritmiem, piemēram, HMAC."
+
+#: src/utils_tools.c:105
+msgid ""
+"\n"
+"WARNING!\n"
+"========\n"
+msgstr ""
+"\n"
+"BRĪDINĀJUMS!\n"
+"========\n"
+
+#. TRANSLATORS: User must type "YES" (in capital letters), do not translate this word.
+#: src/utils_tools.c:107
+#, c-format
+msgid ""
+"%s\n"
+"\n"
+"Are you sure? (Type 'yes' in capital letters): "
+msgstr ""
+"%s\n"
+"\n"
+"Vai esat pārliecināts? (Ievadiet 'YES' ar lielajiem burtiem): "
+
+#: src/utils_tools.c:113
+msgid "Error reading response from terminal."
+msgstr "Kļūda, nolasot atbildi no termināļa."
+
+#: src/utils_tools.c:145
+msgid "Command successful."
+msgstr "Komanda izpildīta veiksmīgi."
+
+#: src/utils_tools.c:153
+msgid "wrong or missing parameters"
+msgstr "nepareizi vai trūkstoši parametri"
+
+#: src/utils_tools.c:155
+msgid "no permission or bad passphrase"
+msgstr "nav atļaujas vai nepareiza piekļuves frāze"
+
+#: src/utils_tools.c:157
+msgid "out of memory"
+msgstr "nepietiek atmiņas"
+
+#: src/utils_tools.c:159
+msgid "wrong device or file specified"
+msgstr "norādīta nepareiza ierīce vai fails"
+
+#: src/utils_tools.c:161
+msgid "device already exists or device is busy"
+msgstr "ierīce jau pastāv vai ir aizņemta"
+
+#: src/utils_tools.c:163
+msgid "unknown error"
+msgstr "nezināma kļūda"
+
+#: src/utils_tools.c:165
+#, c-format
+msgid "Command failed with code %i (%s)."
+msgstr "Komandas izpilde neizdevās ar kodu %i (%s)."
+
+#: src/utils_tools.c:243
+#, c-format
+msgid "Key slot %i created."
+msgstr "Atslēgas slots %i izveidots."
+
+#: src/utils_tools.c:245
+#, c-format
+msgid "Key slot %i unlocked."
+msgstr "Atslēgas slots %i atbloķēts."
+
+#: src/utils_tools.c:247
+#, c-format
+msgid "Key slot %i removed."
+msgstr "Atslēgas slots %i noņemts."
+
+#: src/utils_tools.c:256
+#, c-format
+msgid "Token %i created."
+msgstr "Marķieris %i izveidots."
+
+#: src/utils_tools.c:258
+#, c-format
+msgid "Token %i removed."
+msgstr "Marķieris %i noņemts."
+
+#: src/utils_tools.c:268
+msgid "No token could be unlocked with this PIN."
+msgstr "Nevienu marķieri neizdevās atbloķēt ar šo PIN."
+
+#: src/utils_tools.c:270
+#, c-format
+msgid "Token %i requires PIN."
+msgstr "Marķierim %i nepieciešams PIN."
+
+#: src/utils_tools.c:272
+#, c-format
+msgid "Token (type %s) requires PIN."
+msgstr "Marķierim (tips %s) nepieciešams PIN."
+
+#: src/utils_tools.c:275
+#, c-format
+msgid "Token %i cannot unlock assigned keyslot(s) (wrong keyslot passphrase)."
+msgstr "Marķieris %i nevar atbloķēt piešķirto(-s) atslēgas slotu(-s) (nepareiza atslēgas slota piekļuves frāze)."
+
+#: src/utils_tools.c:277
+#, c-format
+msgid "Token (type %s) cannot unlock assigned keyslot(s) (wrong keyslot passphrase)."
+msgstr "Marķieris (tips %s) nevar atbloķēt piešķirto(-s) atslēgas slotu(-s) (nepareiza atslēgas slota piekļuves frāze)."
+
+#: src/utils_tools.c:280
+#, c-format
+msgid "Token %i requires additional missing resource."
+msgstr "Marķierim %i nepieciešams papildu trūkstošais resurss."
+
+#: src/utils_tools.c:282
+#, c-format
+msgid "Token (type %s) requires additional missing resource."
+msgstr "Marķierim (tips %s) nepieciešams papildu trūkstošais resurss."
+
+#: src/utils_tools.c:285
+#, c-format
+msgid "No usable token (type %s) is available."
+msgstr "Nav pieejams izmantojams marķieris (tips %s)."
+
+#: src/utils_tools.c:287
+msgid "No usable token is available."
+msgstr "Nav pieejams izmantojams marķieris."
+
+#: src/utils_tools.c:380
+#, c-format
+msgid "Cannot read keyfile %s."
+msgstr "Neizdevās nolasīt atslēgas failu %s."
+
+#: src/utils_tools.c:385
+#, c-format
+msgid "Cannot read %d bytes from keyfile %s."
+msgstr "Neizdevās nolasīt %d baitus no atslēgas faila %s."
+
+#: src/utils_tools.c:410
+#, c-format
+msgid "Cannot open keyfile %s for write."
+msgstr "Neizdevās atvērt atslēgas failu %s rakstīšanai."
+
+#: src/utils_tools.c:417
+#, c-format
+msgid "Cannot write to keyfile %s."
+msgstr "Neizdevās rakstīt atslēgas failā %s."
+
+#: src/utils_tools.c:468
+msgid "Name is too long."
+msgstr "Nosaukums ir pārāk garš."
+
+#: src/utils_tools.c:471
+msgid "Name must not contain '/' character."
+msgstr "Nosaukumā nedrīkst būt rakstzīme '/'."
+
+#: src/utils_progress.c:61
+#, c-format
+msgid "%02<PRIu64>m%02<PRIu64>s"
+msgstr "%02<PRIu64>m%02<PRIu64>s"
+
+#: src/utils_progress.c:63
+#, c-format
+msgid "%02<PRIu64>h%02<PRIu64>m%02<PRIu64>s"
+msgstr "%02<PRIu64>h%02<PRIu64>m%02<PRIu64>s"
+
+#: src/utils_progress.c:65
+#, c-format
+msgid "%02<PRIu64> days"
+msgstr "%02<PRIu64> dienas"
+
+#: src/utils_progress.c:92 src/utils_progress.c:125
+#, c-format
+msgid "%4<PRIu64> %s written"
+msgstr "%4<PRIu64> %s ierakstīts"
+
+#: src/utils_progress.c:96 src/utils_progress.c:129
+#, c-format
+msgid "speed %5.1f %s/s"
+msgstr "ātrums %5.1f %s/s"
+
+#. TRANSLATORS: 'time', 'written' and 'speed' string are supposed
+#. to get translated as well. 'eol' is always new-line or empty.
+#. See above.
+#.
+#: src/utils_progress.c:105
+#, c-format
+msgid "Progress: %5.1f%%, ETA %s, %s, %s%s"
+msgstr "Progress: %5.1f%%, paredzamais laiks %s, %s, %s%s"
+
+#. TRANSLATORS: 'time', 'written' and 'speed' string are supposed
+#. to get translated as well. See above
+#.
+#: src/utils_progress.c:137
+#, c-format
+msgid "Finished, time %s, %s, %s\n"
+msgstr "Pabeigts, laiks %s, %s, %s\n"
+
+#: src/utils_password.c:28 src/utils_password.c:59
+#, c-format
+msgid "Cannot check password quality: %s"
+msgstr "Nevar pārbaudīt paroles kvalitāti: %s"
+
+#: src/utils_password.c:36
+#, c-format
+msgid ""
+"Password quality check failed:\n"
+" %s"
+msgstr ""
+"Paroles kvalitātes pārbaude neizdevās:\n"
+" %s"
+
+#: src/utils_password.c:66
+#, c-format
+msgid "Password quality check failed: Bad passphrase (%s)"
+msgstr "Paroles kvalitātes pārbaude neizdevās: slikta piekļuves frāze (%s)"
+
+#: src/utils_password.c:197
+msgid "Read stopped at maximal interactive input length, passphrase can be trimmed."
+msgstr "Nolasīšana apturēta pie maksimālā interaktīvās ievades garuma, piekļuves frāze var tikt apgriezta."
+
+#: src/utils_password.c:224 src/utils_password.c:238
+msgid "Error reading passphrase from terminal."
+msgstr "Kļūda, nolasot piekļuves frāzi no termināļa."
+
+#: src/utils_password.c:236
+msgid "Verify passphrase: "
+msgstr "Apstipriniet piekļuves frāzi: "
+
+#: src/utils_password.c:243
+msgid "Passphrases do not match."
+msgstr "Piekļuves frāzes nesakrīt."
+
+#: src/utils_password.c:281
+msgid "Cannot use offset with terminal input."
+msgstr "Nevar izmantot nobīdi ar termināļa ievadi."
+
+#: src/utils_password.c:285
+#, c-format
+msgid "Enter passphrase: "
+msgstr "Ievadiet piekļuves frāzi: "
+
+#: src/utils_password.c:288
+#, c-format
+msgid "Enter passphrase for %s: "
+msgstr "Ievadiet piekļuves frāzi %s: "
+
+#: src/utils_password.c:322
+msgid "No key available with this passphrase."
+msgstr "Ar šo piekļuves frāzi nav pieejama neviena atslēga."
+
+#: src/utils_password.c:324
+msgid "No usable keyslot is available."
+msgstr "Nav pieejams neviens lietojams atslēgas slots."
+
+#: src/utils_luks.c:55
+msgid "Can't do passphrase verification on non-tty inputs."
+msgstr "Nevar veikt piekļuves frāzes pārbaudi ne-tty ievadēm."
+
+#: src/utils_luks.c:179
+#, c-format
+msgid "Failed to open file %s in read-only mode."
+msgstr "Neizdevās atvērt failu %s tikai lasīšanas režīmā."
+
+#: src/utils_luks.c:193
+msgid "Provide valid LUKS2 token JSON:\n"
+msgstr "Norādiet derīgu LUKS2 marķiera JSON:\n"
+
+#: src/utils_luks.c:200
+msgid "Failed to read JSON file."
+msgstr "Neizdevās nolasīt JSON failu."
+
+#: src/utils_luks.c:205
+msgid ""
+"\n"
+"Read interrupted."
+msgstr ""
+"\n"
+"Lasīšana pārtraukta."
+
+#: src/utils_luks.c:246
+#, c-format
+msgid "Failed to open file %s in write mode."
+msgstr "Neizdevās atvērt failu %s rakstīšanas režīmā."
+
+#: src/utils_luks.c:255
+msgid ""
+"\n"
+"Write interrupted."
+msgstr ""
+"\n"
+"Rakstīšana pārtraukta."
+
+#: src/utils_luks.c:259
+msgid "Failed to write JSON file."
+msgstr "Neizdevās ierakstīt JSON failu."
+
+#: src/utils_reencrypt.c:93
+#, c-format
+msgid "Auto-detected active dm device '%s' for data device %s.\n"
+msgstr "Automātiski noteikta aktīvā dm ierīce '%s' datu ierīcei %s.\n"
+
+#: src/utils_reencrypt.c:97
+#, c-format
+msgid "Failed to auto-detect device %s holders."
+msgstr "Neizdevās automātiski noteikt ierīces %s turētājus."
+
+#: src/utils_reencrypt.c:103
+#, c-format
+msgid "Device %s is not a block device.\n"
+msgstr "Ierīce %s nav blokierīce.\n"
+
+#: src/utils_reencrypt.c:105
+#, c-format
+msgid ""
+"Unable to decide if device %s is activated or not.\n"
+"Are you sure you want to proceed with reencryption in offline mode?\n"
+"It may lead to data corruption if the device is actually activated.\n"
+"To run reencryption in online mode, use --active-name parameter instead.\n"
+msgstr ""
+"Neizdevās noteikt, vai ierīce %s ir aktivizēta vai nav.\n"
+"Vai tiešām vēlaties turpināt atkārtotu šifrēšanu bezsaistes režīmā?\n"
+"Tas var izraisīt datu bojājumus, ja ierīce patiesībā ir aktivizēta.\n"
+"Lai veiktu atkārtotu šifrēšanu tiešsaistes režīmā, tā vietā izmantojiet\n"
+"parametru --active-name.\n"
+
+#: src/utils_reencrypt.c:114 src/utils_reencrypt.c:247
+#, c-format
+msgid ""
+"Device %s is not a block device. Can not auto-detect if it is active or not.\n"
+"Use --force-offline-reencrypt to bypass the check and run in offline mode (dangerous!)."
+msgstr ""
+"Ierīce %s nav blokierīce. Nevar automātiski noteikt, vai tā ir aktīva vai nav.\n"
+"Izmantojiet --force-offline-reencrypt, lai apietu pārbaudi un darbotos bezsaistes režīmā (bīstami!)."
+
+#: src/utils_reencrypt.c:151 src/utils_reencrypt.c:194
+#: src/utils_reencrypt.c:204
+msgid "Requested --resilience option cannot be applied to current reencryption operation."
+msgstr "Pieprasīto parametru --resilience nevar piemērot pašreizējai atkārtotās šifrēšanas operācijai."
+
+#: src/utils_reencrypt.c:176
+msgid "Device is not in LUKS2 encryption. Conflicting option --encrypt."
+msgstr "Ierīce nav LUKS2 šifrēšanā. Konfliktējošs parametrs --encrypt."
+
+#: src/utils_reencrypt.c:181
+msgid "Device is not in LUKS2 decryption. Conflicting option --decrypt."
+msgstr "Ierīce nav LUKS2 atšifrēšanā. Konfliktējošs parametrs --decrypt."
+
+#: src/utils_reencrypt.c:188
+msgid "Device is in reencryption using datashift resilience. Requested --resilience option cannot be applied."
+msgstr "Ierīce ir atkārtotā šifrēšanā, izmantojot datu nobīdes noturību. Pieprasīto parametru --resilience nevar piemērot."
+
+#: src/utils_reencrypt.c:283 src/utils_reencrypt.c:1953
+msgid "Cannot determine volume key size for LUKS without keyslots, please use --new-key-size option."
+msgstr "Nevar noteikt sējuma atslēgas izmēru LUKS bez atslēgu slotiem, lūdzu, izmantojiet parametru --new-key-size."
+
+#: src/utils_reencrypt.c:438
+msgid "Device requires reencryption recovery. Run repair first."
+msgstr "Ierīcei nepieciešama atkārtotās šifrēšanas atjaunošana. Vispirms veiciet labošanu."
+
+#: src/utils_reencrypt.c:452
+#, c-format
+msgid "Device %s is already in LUKS2 reencryption. Do you wish to resume previously initialised operation?"
+msgstr "Ierīce %s jau ir LUKS2 atkārtotās šifrēšanas procesā. Vai vēlaties turpināt iepriekš sākto operāciju?"
+
+#: src/utils_reencrypt.c:563
+msgid "Legacy LUKS2 reencryption is no longer supported."
+msgstr "Novecojusī LUKS2 atkārtotā šifrēšana vairs netiek atbalstīta."
+
+#: src/utils_reencrypt.c:568
+msgid "Can not reencrypt LUKS2 device configured to use OPAL."
+msgstr "Nevar atkārtoti šifrēt LUKS2 ierīci, kas konfigurēta OPAL izmantošanai."
+
+#: src/utils_reencrypt.c:574
+msgid "Reencryption of device with integrity profile is not supported."
+msgstr "Ierīces ar integritātes profilu atkārtota šifrēšana netiek atbalstīta."
+
+#: src/utils_reencrypt.c:611
+#, c-format
+msgid ""
+"Requested --sector-size %<PRIu32> is incompatible with %s superblock\n"
+"(block size: %<PRIu32> bytes) detected on device %s."
+msgstr ""
+"Pieprasītais --sector-size %<PRIu32> nav saderīgs ar %s superbloku\n"
+"(bloka izmērs: %<PRIu32> baiti), kas konstatēts ierīcē %s."
+
+#: src/utils_reencrypt.c:680 src/utils_reencrypt.c:2233
+msgid "Encryption without detached header (--header) is not possible without data device size reduction (--reduce-device-size)."
+msgstr "Šifrēšana bez atdalītas galvenes (--header) nav iespējama bez datu ierīces izmēra samazināšanas (--reduce-device-size)."
+
+#: src/utils_reencrypt.c:689
+msgid "Requested data offset must be less than or equal to half of --reduce-device-size parameter."
+msgstr "Pieprasītajai datu nobīdei jābūt mazākai vai vienādai ar pusi no parametra --reduce-device-size."
+
+#: src/utils_reencrypt.c:699
+#, c-format
+msgid "Adjusting --reduce-device-size value to twice the --offset %<PRIu64> (sectors).\n"
+msgstr "Pielāgo parametra --reduce-device-size vērtību uz divkāršu --offset %<PRIu64> (sektori).\n"
+
+#: src/utils_reencrypt.c:729
+#, c-format
+msgid "Temporary header file %s already exists. Aborting."
+msgstr "Pagaidu galvenes fails %s jau pastāv. Darbība pārtraukta."
+
+#: src/utils_reencrypt.c:731 src/utils_reencrypt.c:738
+#, c-format
+msgid "Cannot create temporary header file %s."
+msgstr "Neizdevās izveidot pagaidu galvenes failu %s."
+
+#: src/utils_reencrypt.c:763
+msgid "LUKS2 metadata size is larger than data shift value."
+msgstr "LUKS2 metadatu izmērs ir lielāks par datu nobīdes vērtību."
+
+#: src/utils_reencrypt.c:802
+#, c-format
+msgid "Failed to place new header at head of device %s."
+msgstr "Neizdevās ievietot jauno galveni ierīces %s sākumā."
+
+#: src/utils_reencrypt.c:815
+#, c-format
+msgid "%s/%s is now active and ready for online encryption.\n"
+msgstr "%s/%s tagad ir aktīvs un gatavs tiešsaistes šifrēšanai.\n"
+
+#: src/utils_reencrypt.c:852
+#, c-format
+msgid "Active device %s is not LUKS2."
+msgstr "Aktīvā ierīce %s nav LUKS2."
+
+#: src/utils_reencrypt.c:880
+msgid "Restoring original LUKS2 header."
+msgstr "Atjauno sākotnējo LUKS2 galveni."
+
+#: src/utils_reencrypt.c:888
+msgid "Original LUKS2 header restore failed."
+msgstr "Neizdevās atjaunot sākotnējo LUKS2 galveni."
+
+#: src/utils_reencrypt.c:920
+#, c-format
+msgid "Header file %s does not exist. Do you want to initialize LUKS2 decryption of device %s and export LUKS2 header to file %s?"
+msgstr "Galvenes fails %s neeksistē. Vai vēlaties inicializēt ierīces %s LUKS2 atšifrēšanu un eksportēt LUKS2 galveni uz failu %s?"
+
+#: src/utils_reencrypt.c:963
+msgid "Failed to add read/write permissions to exported header file."
+msgstr "Neizdevās piešķirt lasīšanas/rakstīšanas tiesības eksportētajam galvenes failam."
+
+#: src/utils_reencrypt.c:1017
+#, c-format
+msgid "Reencryption initialization failed. Header backup is available in %s."
+msgstr "Neizdevās inicializēt atkārtotu šifrēšanu. Galvenes dublējums ir pieejams %s."
+
+#: src/utils_reencrypt.c:1045
+msgid "LUKS2 decryption is supported with detached header device only (with data offset set to 0)."
+msgstr "LUKS2 atšifrēšana tiek atbalstīta tikai ar atdalītas galvenes ierīci (ar datu nobīdi iestatītu uz 0)."
+
+#: src/utils_reencrypt.c:1506 src/utils_reencrypt.c:1531
+#: src/utils_reencrypt.c:1548 src/utils_reencrypt.c:1557
+msgid "Not enough free keyslots for reencryption."
+msgstr "Nepietiek brīvu atslēgu slotu atkārtotai šifrēšanai."
+
+#: src/utils_reencrypt.c:1513
+msgid "No token could unlock the device."
+msgstr "Neviens marķieris nevarēja atbloķēt ierīci."
+
+#: src/utils_reencrypt.c:1588
+msgid "Key file or keyring key description can be used only with --key-slot or with exactly one key slot active."
+msgstr "Atslēgas failu vai atslēgu gredzena atslēgas aprakstu var izmantot tikai ar --key-slot vai ar tieši vienu aktīvu atslēgas slotu."
+
+#: src/utils_reencrypt.c:1595 src/utils_reencrypt.c:1608
+#: src/utils_reencrypt_luks1.c:1092 src/utils_reencrypt_luks1.c:1103
+#, c-format
+msgid "Enter passphrase for key slot %d: "
+msgstr "Ievadiet piekļuves frāzi atslēgas slotam %d: "
+
+#: src/utils_reencrypt.c:1905
+#, c-format
+msgid "Switching data encryption cipher to %s.\n"
+msgstr "Pārslēdz datu šifrēšanas šifru uz %s.\n"
+
+#: src/utils_reencrypt.c:2006 src/utils_reencrypt.c:2027
+msgid "Use --force-no-keyslots to reencrypt device with active keyslots by passing volume keys directly."
+msgstr "Izmantojiet --force-no-keyslots, lai atkārtoti šifrētu ierīci ar aktīviem atslēgu slotiem, tieši nododot sējuma atslēgas."
+
+#: src/utils_reencrypt.c:2022
+msgid "Option --new-volume-key-file must be paired with --new-key-size"
+msgstr "Opcija --new-volume-key-file jānorāda kopā ar --new-key-size"
+
+#: src/utils_reencrypt.c:2064
+msgid "No data segment parameters changed. Reencryption aborted."
+msgstr "Datu segmenta parametri netika mainīti. Atkārtota šifrēšana pārtraukta."
+
+#: src/utils_reencrypt.c:2101
+msgid ""
+"Encryption sector size increase on offline device is not supported.\n"
+"Activate the device first or use --force-offline-reencrypt option (dangerous!)."
+msgstr ""
+"Šifrēšanas sektora izmēra palielināšana bezsaistes ierīcē nav atbalstīta.\n"
+"Vispirms aktivizējiet ierīci vai izmantojiet opciju --force-offline-reencrypt\n"
+"(bīstami!)."
+
+#: src/utils_reencrypt.c:2143 src/utils_reencrypt_luks1.c:688
+#: src/utils_reencrypt_luks1.c:759
+msgid ""
+"\n"
+"Reencryption interrupted."
+msgstr ""
+"\n"
+"Atkārtotā šifrēšana pārtraukta."
+
+#: src/utils_reencrypt.c:2148
+msgid "Resuming LUKS reencryption in forced offline mode.\n"
+msgstr "Atsāk LUKS atkārtoto šifrēšanu piespiedu bezsaistes režīmā.\n"
+
+#: src/utils_reencrypt.c:2171
+#, c-format
+msgid "Device %s contains broken LUKS metadata. Aborting operation."
+msgstr "Ierīcē %s ir bojāti LUKS metadati. Operācija pārtraukta."
+
+#: src/utils_reencrypt.c:2187 src/utils_reencrypt.c:2209
+#, c-format
+msgid "Device %s is already LUKS device. Aborting operation."
+msgstr "Ierīce %s jau ir LUKS ierīce. Operācija pārtraukta."
+
+#: src/utils_reencrypt.c:2215
+#, c-format
+msgid "Device %s is already in LUKS reencryption. Aborting operation."
+msgstr "Ierīce %s jau ir LUKS atkārtotās šifrēšanas procesā. Operācija pārtraukta."
+
+#: src/utils_reencrypt.c:2298
+msgid "LUKS2 decryption requires --header option."
+msgstr "LUKS2 atšifrēšanai nepieciešama opcija --header."
+
+#: src/utils_reencrypt.c:2346
+msgid "Command requires device as argument."
+msgstr "Komandai nepieciešama ierīce kā arguments."
+
+#: src/utils_reencrypt.c:2359
+#, c-format
+msgid "Conflicting versions. Device %s is LUKS1."
+msgstr "Versiju nesaskaņotība. Ierīce %s ir LUKS1."
+
+#: src/utils_reencrypt.c:2365
+#, c-format
+msgid "Conflicting versions. Device %s is in LUKS1 reencryption."
+msgstr "Versiju nesaskaņotība. Ierīce %s ir LUKS1 atkārtotās šifrēšanas procesā."
+
+#: src/utils_reencrypt.c:2371
+#, c-format
+msgid "Conflicting versions. Device %s is LUKS2."
+msgstr "Versiju nesaskaņotība. Ierīce %s ir LUKS2."
+
+#: src/utils_reencrypt.c:2377
+#, c-format
+msgid "Conflicting versions. Device %s is in LUKS2 reencryption."
+msgstr "Versiju nesaskaņotība. Ierīce %s ir LUKS2 atkārtotās šifrēšanas procesā."
+
+#: src/utils_reencrypt.c:2383
+msgid "LUKS2 reencryption already initialized. Aborting operation."
+msgstr "LUKS2 atkārtotā šifrēšana jau ir inicializēta. Operācija pārtraukta."
+
+#: src/utils_reencrypt.c:2390
+msgid "Device reencryption not in progress."
+msgstr "Ierīces atkārtotā šifrēšana nenotiek."
+
+#: src/utils_reencrypt_luks1.c:116 src/utils_blockdev.c:285
+#, c-format
+msgid "Cannot exclusively open %s, device in use."
+msgstr "Nevar ekskluzīvi atvērt %s, ierīce tiek izmantota."
+
+#: src/utils_reencrypt_luks1.c:130 src/utils_reencrypt_luks1.c:883
+msgid "Allocation of aligned memory failed."
+msgstr "Izlīdzinātas atmiņas piešķiršana neizdevās."
+
+#: src/utils_reencrypt_luks1.c:137
+#, c-format
+msgid "Cannot read device %s."
+msgstr "Nevar nolasīt ierīci %s."
+
+#: src/utils_reencrypt_luks1.c:148
+#, c-format
+msgid "Marking LUKS1 device %s unusable."
+msgstr "Atzīmē LUKS1 ierīci %s kā nelietojamu."
+
+#: src/utils_reencrypt_luks1.c:164
+#, c-format
+msgid "Cannot write device %s."
+msgstr "Nevar rakstīt ierīcē %s."
+
+#: src/utils_reencrypt_luks1.c:213
+msgid "Cannot write reencryption log file."
+msgstr "Nevar ierakstīt atkārtotās šifrēšanas žurnāla failu."
+
+#: src/utils_reencrypt_luks1.c:268
+msgid "Cannot read reencryption log file."
+msgstr "Neizdevās nolasīt atkārtotas šifrēšanas žurnāla failu."
+
+#: src/utils_reencrypt_luks1.c:279
+msgid "Wrong log format."
+msgstr "Nepareizs žurnāla formāts."
+
+#: src/utils_reencrypt_luks1.c:307
+#, c-format
+msgid "Log file %s exists, resuming reencryption.\n"
+msgstr "Žurnāla fails %s pastāv, tiek atsākta atkārtota šifrēšana.\n"
+
+#: src/utils_reencrypt_luks1.c:354
+msgid "Activating temporary device using old LUKS header."
+msgstr "Aktivizē pagaidu ierīci, izmantojot veco LUKS galveni."
+
+#: src/utils_reencrypt_luks1.c:364
+msgid "Activating temporary device using new LUKS header."
+msgstr "Aktivizē pagaidu ierīci, izmantojot jauno LUKS galveni."
+
+#: src/utils_reencrypt_luks1.c:374
+msgid "Activation of temporary devices failed."
+msgstr "Neizdevās aktivizēt pagaidu ierīces."
+
+#: src/utils_reencrypt_luks1.c:434
+msgid "Failed to set data offset."
+msgstr "Neizdevās iestatīt datu nobīdi."
+
+#: src/utils_reencrypt_luks1.c:440
+msgid "Failed to set metadata size."
+msgstr "Neizdevās iestatīt metadatu izmēru."
+
+#: src/utils_reencrypt_luks1.c:448
+#, c-format
+msgid "New LUKS header for device %s created."
+msgstr "Ierīcei %s izveidota jauna LUKS galvene."
+
+#: src/utils_reencrypt_luks1.c:485
+#, c-format
+msgid "%s header backup of device %s created."
+msgstr "Izveidots %s galvenes dublējums ierīcei %s."
+
+#: src/utils_reencrypt_luks1.c:541
+msgid "Creation of LUKS backup headers failed."
+msgstr "Neizdevās izveidot LUKS rezerves galvenes."
+
+#: src/utils_reencrypt_luks1.c:670
+#, c-format
+msgid "Cannot restore %s header on device %s."
+msgstr "Neizdevās atjaunot %s galveni ierīcē %s."
+
+#: src/utils_reencrypt_luks1.c:672
+#, c-format
+msgid "%s header on device %s restored."
+msgstr "Ierīcē %s atjaunota %s galvene."
+
+#: src/utils_reencrypt_luks1.c:855 src/utils_reencrypt_luks1.c:861
+msgid "Cannot open temporary LUKS device."
+msgstr "Neizdevās atvērt pagaidu LUKS ierīci."
+
+#: src/utils_reencrypt_luks1.c:866 src/utils_reencrypt_luks1.c:871
+msgid "Cannot get device size."
+msgstr "Neizdevās iegūt ierīces izmēru."
+
+#: src/utils_reencrypt_luks1.c:913
+msgid "IO error during reencryption."
+msgstr "Ievades/izvades kļūda atkārtotas šifrēšanas laikā."
+
+#: src/utils_reencrypt_luks1.c:943
+msgid "Provided UUID is invalid."
+msgstr "Norādītais UUID ir nederīgs."
+
+#: src/utils_reencrypt_luks1.c:1045
+msgid "Key file can be used only with --key-slot or with exactly one key slot active."
+msgstr "Atslēgas failu var izmantot tikai ar --key-slot vai ar tieši vienu aktīvu atslēgas slotu."
+
+#: src/utils_reencrypt_luks1.c:1169
+msgid "Cannot open reencryption log file."
+msgstr "Neizdevās atvērt atkārtotas šifrēšanas žurnāla failu."
+
+#: src/utils_reencrypt_luks1.c:1175
+msgid "No decryption in progress, provided UUID can be used only to resume suspended decryption process."
+msgstr "Atšifrēšana nenotiek, norādīto UUID var izmantot tikai, lai atsāktu apturētu atšifrēšanas procesu."
+
+#: src/utils_reencrypt_luks1.c:1231
+#, c-format
+msgid "Reencryption will change: %s%s%s%s%s%s."
+msgstr "Atkārtotā šifrēšana mainīs: %s%s%s%s%s%s."
+
+#: src/utils_reencrypt_luks1.c:1232
+msgid "volume key"
+msgstr "sējuma atslēga"
+
+#: src/utils_reencrypt_luks1.c:1234
+msgid "set hash to "
+msgstr "iestatīt hešu uz "
+
+#: src/utils_reencrypt_luks1.c:1235
+msgid ", set cipher to "
+msgstr ", iestatīt šifru uz "
+
+#: src/utils_blockdev.c:179
+#, c-format
+msgid "WARNING: Device %s already contains a '%s' partition signature.\n"
+msgstr "BRĪDINĀJUMS: Ierīce %s jau satur '%s' nodalījuma atpazīšanas zīmi.\n"
+
+#: src/utils_blockdev.c:187
+#, c-format
+msgid "WARNING: Device %s already contains a '%s' superblock signature.\n"
+msgstr "BRĪDINĀJUMS: Ierīce %s jau satur '%s' superbloka atpazīšanas zīmi.\n"
+
+#: src/utils_blockdev.c:209 src/utils_blockdev.c:292 src/utils_blockdev.c:344
+msgid "Failed to initialize device signature probes."
+msgstr "Neizdevās inicializēt ierīces atpazīšanas zīmes pārbaudes."
+
+#: src/utils_blockdev.c:272
+#, c-format
+msgid "Failed to stat device %s."
+msgstr "Neizdevās iegūt ierīces %s statusu."
+
+#: src/utils_blockdev.c:287
+#, c-format
+msgid "Failed to open file %s in read/write mode."
+msgstr "Neizdevās atvērt failu %s lasīšanas/rakstīšanas režīmā."
+
+#: src/utils_blockdev.c:307
+#, c-format
+msgid "Existing '%s' partition signature on device %s will be wiped."
+msgstr "Esošā '%s' nodalījuma atpazīšanas zīme ierīcē %s tiks notīrīta."
+
+#: src/utils_blockdev.c:310
+#, c-format
+msgid "Existing '%s' superblock signature on device %s will be wiped."
+msgstr "Esošā '%s' superbloka atpazīšanas zīme ierīcē %s tiks notīrīta."
+
+#: src/utils_blockdev.c:313
+msgid "Failed to wipe device signature."
+msgstr "Neizdevās notīrīt ierīces atpazīšanas zīmi."
+
+#: src/utils_blockdev.c:320
+#, c-format
+msgid "Failed to probe device %s for a signature."
+msgstr "Neizdevās pārbaudīt, vai ierīcē %s ir atpazīšanas zīme."
+
+#: src/utils_args.c:52
+#, c-format
+msgid "Invalid size specification in parameter --%s."
+msgstr "Nederīgs izmēra norādījums parametrā --%s."
+
+#: src/utils_args.c:112
+#, c-format
+msgid "Option --%s is not allowed with %s action."
+msgstr "Opcija --%s nav atļauta ar %s darbību."
+
+#: src/utils_key_description.c:66
+msgid "Type specification in --link-vk-to-keyring keyring specification is ignored."
+msgstr "Tipa norādījums --link-vk-to-keyring atslēgu gredzena specifikācijā tiek ignorēts."
+
+#: src/utils_key_description.c:131
+msgid "Key types have to be the same for both volume keys."
+msgstr "Atslēgu tipiem jābūt vienādiem abām sējuma atslēgām."
+
+#: src/utils_key_description.c:136
+msgid "Both volume keys have to be linked to the same keyring."
+msgstr "Abām sējuma atslēgām jābūt piesaistītām vienam un tam pašam atslēgu gredzenam."
+
+#: src/utils_key_description.c:146
+msgid "You need to supply more key names."
+msgstr "Jānorāda vairāk atslēgu nosaukumu."
+
+#: src/utils_key_description.c:150
+msgid "Invalid --link-vk-to-keyring value."
+msgstr "Nederīga --link-vk-to-keyring vērtība."
+
+#: src/utils_keyslot_check.c:114
+#, c-format
+msgid "Keyslot %d binary data could be corrupted.\n"
+msgstr "Atslēgas slota %d binārie dati varētu būt bojāti.\n"
+
+#: src/utils_keyslot_check.c:124
+#, c-format
+msgid "  Suspected offset: 0x%<PRIx64>\n"
+msgstr "  Iespējamā nobīde: 0x%<PRIx64>\n"
+
+#: src/utils_keyslot_check.c:127
+msgid "  Subsequent suspected offsets are suppressed.\n"
+msgstr "  Turpmākās iespējamās nobīdes netiek rādītas.\n"
+
+#: src/utils_keyslot_check.c:178 src/utils_keyslot_check.c:183
+#, c-format
+msgid "Keyslot %d cannot be read from the device."
+msgstr "Atslēgas slotu %d nevar nolasīt no ierīces."
+
+#: src/utils_keyslot_check.c:194
+#, c-format
+msgid "You can use hexdump -v -C -n 128 -s <offset_0xXXXX> \"%s\" to inspect the data.\n"
+msgstr "Datu pārbaudei varat izmantot komandu hexdump -v -C -n 128 -s <offset_0xXXXX> \"%s\".\n"
+
+#: tokens/ssh/cryptsetup-ssh.c:110
+msgid "Failed to write ssh token json."
+msgstr "Neizdevās ierakstīt SSH marķiera JSON."
+
+#: tokens/ssh/cryptsetup-ssh.c:128
+msgid ""
+"Experimental cryptsetup plugin for unlocking LUKS2 devices with token connected to an SSH server\vThis plugin currently allows only adding a token to an existing key slot.\n"
+"\n"
+"Specified SSH server must contain a key file on the specified path with a passphrase for an existing key slot on the device.\n"
+"Provided credentials will be used by cryptsetup to get the password when opening the device using the token.\n"
+"\n"
+"Note: The information provided when adding the token (SSH server address, user and paths) will be stored in the LUKS2 header in plaintext."
+msgstr ""
+"Eksperimentāls cryptsetup spraudnis LUKS2 ierīču atbloķēšanai ar marķieri, kas savienots ar SSH serveri\\vŠis spraudnis pašlaik ļauj tikai pievienot marķieri esošam atslēgas slotam.\n"
+"\n"
+"Norādītajā SSH serverī norādītajā ceļā jāatrodas atslēgas failam ar piekļuves frāzi esošam ierīces atslēgas slotam.\n"
+"cryptsetup izmantos norādītos akreditācijas datus, lai iegūtu paroli, atverot ierīci ar marķieri.\n"
+"\n"
+"Piezīme: informācija, kas norādīta, pievienojot marķieri (SSH servera adrese, lietotājs un ceļi), tiks saglabāta LUKS2 galvenē kā atklāts teksts."
+
+#: tokens/ssh/cryptsetup-ssh.c:138
+msgid "<action> <device>"
+msgstr "<darbība> <ierīce>"
+
+#: tokens/ssh/cryptsetup-ssh.c:141
+msgid "Options for the 'add' action:"
+msgstr "Darbības 'add' opcijas:"
+
+#: tokens/ssh/cryptsetup-ssh.c:142
+msgid "IP address/URL of the remote server for this token"
+msgstr "Attālā servera IP adrese/URL šim marķierim"
+
+#: tokens/ssh/cryptsetup-ssh.c:143
+msgid "Username used for the remote server"
+msgstr "Lietotājvārds attālajam serverim"
+
+#: tokens/ssh/cryptsetup-ssh.c:144
+msgid "Path to the key file on the remote server"
+msgstr "Ceļš uz atslēgas failu attālajā serverī"
+
+#: tokens/ssh/cryptsetup-ssh.c:145
+msgid "Path to the SSH key for connecting to the remote server"
+msgstr "Ceļš uz SSH atslēgu savienošanai ar attālo serveri"
+
+#: tokens/ssh/cryptsetup-ssh.c:147
+msgid "Path to directory containinig libcryptsetup external tokens"
+msgstr "Ceļš uz direktoriju, kurā atrodas libcryptsetup ārējie marķieri"
+
+#: tokens/ssh/cryptsetup-ssh.c:148
+msgid "Keyslot to assign the token to. If not specified, token will be assigned to the first keyslot matching provided passphrase."
+msgstr "Atslēgas slots, kuram piešķirt marķieri. Ja nav norādīts, marķieris tiks piešķirts pirmajam atslēgas slotam, kas atbilst norādītajai piekļuves frāzei."
+
+#: tokens/ssh/cryptsetup-ssh.c:150
+msgid "Generic options:"
+msgstr "Vispārīgās opcijas:"
+
+#: tokens/ssh/cryptsetup-ssh.c:151
+msgid "Shows more detailed error messages"
+msgstr "Rādīt detalizētākus kļūdu ziņojumus"
+
+#: tokens/ssh/cryptsetup-ssh.c:152
+msgid "Show debug messages"
+msgstr "Rādīt atkļūdošanas ziņojumus"
+
+#: tokens/ssh/cryptsetup-ssh.c:153
+msgid "Show debug messages including JSON metadata"
+msgstr "Rādīt atkļūdošanas ziņojumus, ieskaitot JSON metadatus"
+
+#: tokens/ssh/cryptsetup-ssh.c:268
+msgid "Failed to open and import private key:\n"
+msgstr "Neizdevās atvērt un importēt privāto atslēgu:\n"
+
+#: tokens/ssh/cryptsetup-ssh.c:272
+msgid "Failed to import private key (password protected?).\n"
+msgstr "Neizdevās importēt privāto atslēgu (varbūt aizsargāta ar paroli?).\n"
+
+#. TRANSLATORS: SSH credentials prompt, e.g. "user@server's password: "
+#: tokens/ssh/cryptsetup-ssh.c:274
+#, c-format
+msgid "%s@%s's password: "
+msgstr "%s@%s parole: "
+
+#: tokens/ssh/cryptsetup-ssh.c:363
+#, c-format
+msgid "Failed to parse arguments.\n"
+msgstr "Neizdevās parsēt argumentus.\n"
+
+#: tokens/ssh/cryptsetup-ssh.c:374
+#, c-format
+msgid "An action must be specified\n"
+msgstr "Jānorāda darbība\n"
+
+#: tokens/ssh/cryptsetup-ssh.c:380
+#, c-format
+msgid "Device must be specified for '%s' action.\n"
+msgstr "Darbībai '%s' jānorāda ierīce.\n"
+
+#: tokens/ssh/cryptsetup-ssh.c:385
+#, c-format
+msgid "SSH server must be specified for '%s' action.\n"
+msgstr "Darbībai '%s' jānorāda SSH serveris.\n"
+
+#: tokens/ssh/cryptsetup-ssh.c:390
+#, c-format
+msgid "SSH user must be specified for '%s' action.\n"
+msgstr "Darbībai '%s' jānorāda SSH lietotājs.\n"
+
+#: tokens/ssh/cryptsetup-ssh.c:395
+#, c-format
+msgid "SSH path must be specified for '%s' action.\n"
+msgstr "Darbībai '%s' jānorāda SSH ceļš.\n"
+
+#: tokens/ssh/cryptsetup-ssh.c:400
+#, c-format
+msgid "SSH key path must be specified for '%s' action.\n"
+msgstr "Darbībai '%s' jānorāda SSH atslēgas ceļš.\n"
+
+#: tokens/ssh/cryptsetup-ssh.c:407
+#, c-format
+msgid "Failed open %s using provided credentials.\n"
+msgstr "Neizdevās atvērt %s, izmantojot norādītos akreditācijas datus.\n"
+
+#: tokens/ssh/cryptsetup-ssh.c:424
+#, c-format
+msgid "Only 'add' action is currently supported by this plugin.\n"
+msgstr "Šis spraudnis pašlaik atbalsta tikai darbību 'add'.\n"
+
+#: tokens/ssh/ssh-utils.c:33
+msgid "Cannot create sftp session: "
+msgstr "Neizdevās izveidot sftp sesiju: "
+
+#: tokens/ssh/ssh-utils.c:40
+msgid "Cannot init sftp session: "
+msgstr "Neizdevās inicializēt sftp sesiju: "
+
+#: tokens/ssh/ssh-utils.c:46
+msgid "Cannot open sftp session: "
+msgstr "Neizdevās atvērt sftp sesiju: "
+
+#: tokens/ssh/ssh-utils.c:53
+msgid "Cannot stat sftp file: "
+msgstr "Neizdevās iegūt sftp faila statusu: "
+
+#: tokens/ssh/ssh-utils.c:61
+msgid "Not enough memory.\n"
+msgstr "Nepietiek atmiņas.\n"
+
+#: tokens/ssh/ssh-utils.c:68
+msgid "Cannot read remote key: "
+msgstr "Neizdevās nolasīt attālo atslēgu: "
+
+#: tokens/ssh/ssh-utils.c:109
+msgid "Connection failed: "
+msgstr "Savienojums neizdevās: "
+
+#: tokens/ssh/ssh-utils.c:119
+msgid "Server not known: "
+msgstr "Serveris nav zināms: "
+
+#: tokens/ssh/ssh-utils.c:147
+msgid "Public key auth method not allowed on host.\n"
+msgstr "Publiskās atslēgas autentifikācijas metode resursdatorā nav atļauta.\n"
+
+#: tokens/ssh/ssh-utils.c:158
+msgid "Public key authentication error: "
+msgstr "Publiskās atslēgas autentifikācijas kļūda: "
