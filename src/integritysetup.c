@@ -51,6 +51,7 @@ static int _read_keys(char **integrity_key, struct crypt_params_integrity *param
 		if (r < 0) {
 			crypt_safe_free(int_key);
 			crypt_safe_free(journal_integrity_key);
+			params->journal_integrity_key = NULL;
 			return r;
 		}
 		params->journal_crypt_key = journal_crypt_key;

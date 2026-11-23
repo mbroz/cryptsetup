@@ -30,6 +30,10 @@ int keyring_check(void);
 key_serial_t keyring_request_key_id(key_type_t key_type,
 		const char *key_description);
 
+key_serial_t keyring_search_key_id(key_serial_t keyring_id,
+				   key_type_t key_type,
+				   const char *key_description);
+
 int keyring_read_keysize(key_serial_t kid,
 		size_t *r_key_size);
 
@@ -47,5 +51,6 @@ key_serial_t keyring_add_key_to_keyring(key_type_t ktype, const char *key_desc, 
 				      size_t key_size, key_serial_t keyring_to_link);
 int keyring_unlink_key_from_keyring(key_serial_t kid, key_serial_t keyring_id);
 int keyring_unlink_key_from_thread_keyring(key_serial_t kid);
+int keyring_invalidate_key(key_serial_t kid);
 
 #endif

@@ -170,6 +170,11 @@ void luks_check_keyslots(struct crypt_device *cd, const char *device)
 		 */
 		data_length = (uint64_t)r * LUKS_STRIPES;
 
+		if (data_length > length) {
+			log_err(_("Keyslot %d cannot be read from the device."), i);
+			goto out;
+		}
+
 		buffer = malloc(data_length);
 		if (!buffer)
 			goto out;

@@ -732,6 +732,11 @@ static int fvault2Dump_with_volume_key(struct crypt_device *cd)
 	if (r < 0)
 		goto out;
 
+	if (ARG_SET(OPT_VOLUME_KEY_FILE_ID)) {
+		log_std("Key stored to file %s.\n", ARG_STR(OPT_VOLUME_KEY_FILE_ID));
+		goto out;
+	}
+
 	log_std("Volume key:       \t");
 	crypt_log_hex(cd, vk, vk_size, " ", 0, NULL);
 	log_std("\n");
@@ -1345,6 +1350,50 @@ out:
 	return r;
 }
 
+static int luks2_opal_repair(struct crypt_device *cd)
+{
+	char *password;
+	size_t passwordLen;
+	int r;
+	struct crypt_keyslot_context *kc = NULL;
+
+	r = crypt_repair_opal(cd, CRYPT_ANY_SLOT, NULL);
+	if (r <= 0)
+		return r;
+
+	if (!ARG_SET(OPT_BATCH_MODE_ID) &&
+	    !yesDialog(_("Legacy LUKS2 OPAL metadata without authentication detected.\n"
+			 "This command will upgrade the metadata to authenticated metadata.\n"
+			 "Continue ONLY if you are sure that this device uses OPAL HW encryption."),
+		       _("Operation aborted.\n")))
+		return -EINVAL;
+
+	r = tools_get_key(_("Enter passphrase to upgrade OPAL metadata: "),
+			  &password, &passwordLen, ARG_UINT64(OPT_KEYFILE_OFFSET_ID),
+			  ARG_UINT32(OPT_KEYFILE_SIZE_ID), ARG_STR(OPT_KEY_FILE_ID), ARG_UINT32(OPT_TIMEOUT_ID),
+			  verify_passphrase(0), 0, cd);
+	if (r < 0)
+		return r;
+
+	r = crypt_keyslot_context_init_by_passphrase(cd, password, passwordLen, &kc);
+	crypt_safe_free(password);
+	if (r < 0)
+		goto out;
+
+	/* test passphrase */
+	r = crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0);
+	tools_passphrase_msg(r);
+	tools_keyslot_msg(r, UNLOCKED);
+	if (r < 0)
+		goto out;
+
+	r = crypt_repair_opal(cd, ARG_INT32(OPT_KEY_SLOT_ID), kc);
+	tools_passphrase_msg(r);
+out:
+	crypt_keyslot_context_free(kc);
+	return r;
+}
+
 static int action_luksRepair(void)
 {
 	struct crypt_device *cd = NULL;
@@ -1384,9 +1433,14 @@ static int action_luksRepair(void)
 	else
 		r = crypt_repair(cd, luksType(device_type), NULL);
 out:
-	/* Header is ok, check if reencryption metadata needs repair/recovery. */
-	if (!r && isLUKS2(crypt_get_type(cd)))
-		r = luks2_reencrypt_repair(cd);
+	/* Header is ok, check if OPAL or reencryption metadata needs repair/recovery. */
+	if (!r && isLUKS2(crypt_get_type(cd))) {
+		r = crypt_get_hw_encryption_type(cd);
+		if (r == CRYPT_OPAL_HW_ONLY || r == CRYPT_SW_AND_OPAL_HW)
+			r = luks2_opal_repair(cd);
+		else if (r == CRYPT_SW_ONLY)
+			r = luks2_reencrypt_repair(cd);
+	}
 
 	/* Randomness analysis of LUKS keyslot binary data, this is only a hint */
 	if (r == 0)
@@ -1930,6 +1984,7 @@ static int verify_keyslot(struct crypt_device *cd, int key_slot, crypt_keyslot_i
 			goto out;
 		max = r;
 
+		r = -ENOENT;
 		for (i = 0; i < max ; i++) {
 			if (i == key_slot)
 				continue;
@@ -1999,6 +2054,8 @@ static int action_luksKillSlot(void)
 	}
 
 	r = crypt_keyslot_destroy(cd, ARG_INT32(OPT_KEY_SLOT_ID));
+	if (r < 0)
+		goto out;
 	tools_keyslot_msg(ARG_INT32(OPT_KEY_SLOT_ID), REMOVED);
 out:
 	crypt_free(cd);
@@ -2051,6 +2108,8 @@ static int action_luksRemoveKey(void)
 	}
 
 	r = crypt_keyslot_destroy(cd, ARG_INT32(OPT_KEY_SLOT_ID));
+	if (r < 0)
+		goto out;
 	tools_keyslot_msg(ARG_INT32(OPT_KEY_SLOT_ID), REMOVED);
 out:
 	crypt_safe_free(password);
@@ -3814,7 +3873,7 @@ int main(int argc, const char **argv)
 	poptContext popt_context;
 	struct action_type *action;
 	const char *aname, *error_message;
-	int r;
+	int r, tmp_slot;
 
 	/* initialize aliases */
 	cryptsetup_init_arg_aliases();
@@ -3928,7 +3987,10 @@ int main(int argc, const char **argv)
 	tools_check_args(action->type, tool_core_args, ARRAY_SIZE(tool_core_args), popt_context);
 
 	if (!strcmp(aname, KILLKEY_ACTION) && action_argc > 1) {
-		ARG_SET_INT32(OPT_KEY_SLOT_ID, atoi(action_argv[1]));
+		if (crypt_str_to_int(action_argv[1], &tmp_slot) < 0)
+			usage(popt_context, EXIT_FAILURE, _("Key slot is invalid."),
+			      poptGetInvocationName(popt_context));
+		ARG_SET_INT32(OPT_KEY_SLOT_ID, tmp_slot);
 		check_key_slot_value(popt_context);
 	}
 

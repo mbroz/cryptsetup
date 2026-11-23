@@ -144,6 +144,22 @@ for file in $(ls $TST_DIR/bitlk-*) ; do
 	echo " [OK]"
 done
 
+echo "BINARY KEYFILE CHECK"
+# data after a zero byte in keyfile must not be ignored for passphrase keyslot
+file=$TST_DIR/bitlk-aes-xts-128.img
+load_vars $file
+echo -n " $file"
+echo -n "$PW" | $CRYPTSETUP bitlkOpen -r $file --test-passphrase --key-file - >/dev/null 2>&1
+ret=$?
+if [ $ret -eq 1 ]; then
+	echo " [N/A]"
+else
+	[ $ret -eq 0 ] || fail " failed to open $file using keyfile ($ret)"
+	printf "%s\0%s" "$PW" "$PW" | $CRYPTSETUP bitlkOpen -r $file --test-passphrase --key-file - >/dev/null 2>&1 && \
+		fail " keyfile with data after zero byte unexpectedly accepted"
+	echo " [OK]"
+fi
+
 if [ $(id -u) != 0 ]; then
 	echo "WARNING: You must be root to run activation part of test, test skipped."
 	remove_mapping

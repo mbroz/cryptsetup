@@ -14,11 +14,30 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 
 #include "libcryptsetup.h"
 #include "utils_crypt.h"
 
 #define MAX_CAPI_LEN_STR "143" /* for sscanf of crypto API string + 16  + \0 */
+
+int crypt_str_to_int(const char *str, int *value)
+{
+	char *endptr;
+	long l;
+
+	if (!str || !value)
+		return -EINVAL;
+
+	errno = 0;
+	l = strtol(str, &endptr, 10);
+
+	if (endptr == str || *endptr || errno || l > INT_MAX || l < INT_MIN)
+		return -EINVAL;
+
+	*value = (int)l;
+	return 0;
+}
 
 int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
 			      char *cipher_mode)
@@ -40,9 +59,11 @@ int crypt_parse_name_and_mode(const char *s, char *cipher, int *key_nums,
 			strcpy(cipher_mode, "cbc-plain");
 		if (key_nums) {
 			char *tmp = strchr(cipher, ':');
-			*key_nums = tmp ? atoi(++tmp) : 1;
-			if (!*key_nums)
-				return -EINVAL;
+			if (tmp) {
+				if (crypt_str_to_int(++tmp, key_nums) || !*key_nums)
+					return -EINVAL;
+			} else
+				*key_nums = 1;
 		}
 
 		return 0;
@@ -283,7 +304,10 @@ bool crypt_is_cipher_null(const char *cipher_spec)
 {
 	if (!cipher_spec)
 		return false;
-	return (strstr(cipher_spec, "cipher_null") || !strcmp(cipher_spec, "null"));
+
+	return (strstr(cipher_spec, "cipher_null") ||
+		!strcmp(cipher_spec, "null") ||
+		!strncmp(cipher_spec, "null-", 5));
 }
 
 int crypt_capi_to_cipher(char **org_c, char **org_i, const char *c_dm, const char *i_dm)
@@ -370,4 +394,66 @@ int crypt_capi_to_cipher(char **org_c, char **org_i, const char *c_dm, const cha
 	}
 
 	return 0;
+}
+
+/*
+ * Validate cipher specification (valid characters, length)
+ */
+bool crypt_is_cipher_valid(const char *cipher_spec)
+{
+	unsigned char c;
+	size_t len = 0;
+
+	if (!cipher_spec || !*cipher_spec)
+		return false;
+
+	for (; *cipher_spec; cipher_spec++) {
+		c = (unsigned char)*cipher_spec;
+
+		if (++len >= MAX_CAPI_LEN)
+			return false;
+
+		if (c >= 'A' && c <= 'Z')
+			continue;
+		if (c >= 'a' && c <= 'z')
+			continue;
+		if (c >= '0' && c <= '9')
+			continue;
+		switch (c) {
+		case '-':
+		case '_':
+		case '(':
+		case ')':
+		case ',':
+		case ':':
+			continue;
+		}
+
+		return false;
+	}
+
+	return true;
+}
+
+/*
+ * Check if cipher_spec uses multikey (N == 1 is here multikey too)
+ * "cipher:N-mode-iv[:ivopts]" or "capi:<spec>-lmk[:ivopts]"
+ */
+bool crypt_is_cipher_multikey(const char *cipher_spec)
+{
+	const char *ivopts;
+	size_t len;
+
+	if (!cipher_spec || !*cipher_spec)
+		return false;
+
+	if (strncmp(cipher_spec, "capi:", 5))
+		return strcspn(cipher_spec, ":") < strcspn(cipher_spec, "-");
+
+	cipher_spec += 5; /* "capi:" */
+	ivopts = strrchr(cipher_spec, ':');
+	len = ivopts ? (size_t)(ivopts - cipher_spec) : strlen(cipher_spec);
+
+	/* "-lmk" means 64 keys */
+	return len >= 4 && !strncmp(cipher_spec + len - 4, "-lmk", 4);
 }

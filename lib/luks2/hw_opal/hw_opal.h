@@ -36,6 +36,8 @@ int opal_factory_reset(struct crypt_device *cd,
 int opal_reset_segment(struct crypt_device *cd,
 		       struct device *dev,
 		       uint32_t segment_number,
+		       const uint64_t *check_offset_sectors,
+		       const uint64_t *check_length_sectors,
 		       const char *password,
 		       size_t password_len);
 int opal_geometry(struct crypt_device *cd,

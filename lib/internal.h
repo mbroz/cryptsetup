@@ -233,6 +233,7 @@ int crypt_get_integrity_tag_size(struct crypt_device *cd);
 int crypt_key_in_keyring(struct crypt_device *cd);
 void crypt_set_key_in_keyring(struct crypt_device *cd, unsigned key_in_keyring);
 int crypt_volume_key_load_in_keyring(struct crypt_device *cd, struct volume_key *vk);
+bool crypt_volume_key_loaded_in_keyring(struct crypt_device *cd, const struct volume_key *vk);
 int crypt_keyring_get_user_key(struct crypt_device *cd,
 		const char *key_description,
 		char **key,

@@ -767,6 +767,7 @@ static void UseLuks2Device(void)
 	FAIL_(crypt_volume_key_verify(cd, key, key_size), "key mismatch");
 	FAIL_(crypt_activate_by_volume_key(cd, CDEVICE_1, key, key_size, 0), "key mismatch");
 	CRYPT_FREE(cd);
+	key[1] = ~key[1];
 
 #if KERNEL_KEYRING
 	OK_(crypt_init(&cd, DEVICE_1));
@@ -774,6 +775,9 @@ static void UseLuks2Device(void)
 	if (t_dm_crypt_keyring_support()) {
 		OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
 		OK_(_intermediary_keyring_in_thread_keyring(DEVICE_1_UUID));
+		OK_(_volume_key_in_keyring(cd, 0));
+		/* check same context can reupload kernel key w/ same description and type */
+		OK_(crypt_activate_by_volume_key(cd, NULL, key, key_size, CRYPT_ACTIVATE_KEYRING_KEY));
 		OK_(_volume_key_in_keyring(cd, 0));
 	}
 	// All keys uploaded via current device context must be freed.
@@ -784,6 +788,23 @@ static void UseLuks2Device(void)
 	}
 	OK_(crypt_init_by_name(&cd, CDEVICE_1));
 	OK_(crypt_deactivate(cd, CDEVICE_1));
+	CRYPT_FREE(cd);
+
+	/*
+	 * Volume key must be dropped from the kernel keyring when the device is
+	 * deactivated through a second context while the activating context is
+	 * still alive.
+	 */
+	OK_(crypt_init(&cd, DEVICE_1));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	if (t_dm_crypt_keyring_support()) {
+		OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
+		OK_(_volume_key_in_keyring(cd, 0));
+		OK_(crypt_init_by_name(&cd2, CDEVICE_1));
+		OK_(crypt_deactivate(cd2, CDEVICE_1));
+		FAIL_(_volume_key_in_keyring(cd, 0), "VK not dropped on deactivation via second context");
+		CRYPT_FREE(cd2);
+	}
 	CRYPT_FREE(cd);
 #endif
 }
@@ -831,6 +852,25 @@ static void SuspendDevice(void)
 	FAIL_(crypt_resume_by_keyfile(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEYFILE1, 0), "not suspended");
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	CRYPT_FREE(cd);
+
+#if KERNEL_KEYRING
+	/* Volume key uploaded via another (still existing) context must be dropped too */
+	if (t_dm_crypt_keyring_support()) {
+		OK_(crypt_init(&cd, DEVICE_1));
+		OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+		OK_(crypt_activate_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1), 0));
+		OK_(_volume_key_in_keyring(cd, 0));
+		OK_(crypt_init_by_name(&cd2, CDEVICE_1));
+		OK_(crypt_suspend(cd2, CDEVICE_1));
+		FAIL_(_volume_key_in_keyring(cd, 0), "VK not dropped on suspend");
+		OK_(crypt_resume_by_passphrase(cd, CDEVICE_1, CRYPT_ANY_SLOT, KEY1, strlen(KEY1)));
+		OK_(_volume_key_in_keyring(cd, 0));
+		OK_(crypt_deactivate(cd2, CDEVICE_1));
+		FAIL_(_volume_key_in_keyring(cd, 0), "VK not dropped on deactivation");
+		CRYPT_FREE(cd2);
+		CRYPT_FREE(cd);
+	}
+#endif
 
 	/* create LUKS device with detached header */
 	OK_(crypt_init(&cd, DEVICE_1));
@@ -1925,9 +1965,23 @@ static void ResizeDeviceLuks2(void)
 	/* create second LUKS2 device */
 	OK_(crypt_init(&cd2, DMDIR L_DEVICE_WRONG));
 	OK_(crypt_format(cd2, CRYPT_LUKS2, cipher, cipher_mode, crypt_get_uuid(cd), key, key_size, &params));
+
+	/* drop keys held by cd context */
+	CRYPT_FREE(cd);
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, NULL, NULL));
+
 	OK_(crypt_activate_by_volume_key(cd2, CDEVICE_2, key, key_size, 0));
 	/* do not allow resize of other device */
 	FAIL_(crypt_resize(cd2, CDEVICE_1, 1), "Device got resized by wrong device context.");
+#if KERNEL_KEYRING
+	/* must not allow resize with foreign key reachable from other context */
+	if (t_dm_crypt_keyring_support()) {
+		EQ_(crypt_resize(cd, CDEVICE_1, 42), -EPERM);
+		/* do not upload conflicting keys (type and description) with other contexts in same keyring tree */
+		FAIL_(crypt_activate_by_volume_key(cd, NULL, key, key_size, CRYPT_ACTIVATE_KEYRING_KEY), "Uploaded duplicate key by type and description.");
+	}
+#endif
 	OK_(crypt_deactivate(cd2, CDEVICE_2));
 	CRYPT_FREE(cd2);
 
@@ -2442,6 +2496,12 @@ static void Tokens(void)
 	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0), 5);
 	crypt_keyslot_context_free(kc);
 
+	/* token 2 does not exist */
+	OK_(crypt_keyslot_context_init_by_token(cd, 2, NULL, NULL, 0, NULL, &kc));
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, CRYPT_ANY_SLOT, kc, CRYPT_ANY_SLOT, NULL, 0), -ENOENT);
+	EQ_(crypt_activate_by_keyslot_context(cd, NULL, 1, kc, CRYPT_ANY_SLOT, NULL, 0), -ENOENT);
+	crypt_keyslot_context_free(kc);
+
 	CRYPT_FREE(cd);
 
 	EQ_(crypt_token_max(CRYPT_LUKS2), 32);
@@ -2525,6 +2585,9 @@ static void LuksConvert(void)
 	OK_(crypt_deactivate(cd, CDEVICE_1));
 	OK_(crypt_convert(cd, CRYPT_LUKS1, NULL));
 	OK_(strcmp(crypt_get_type(cd), CRYPT_LUKS1));
+	// LUKSv2 default PBKDF must not stay in LUKSv1 context
+	NOTNULL_(crypt_get_pbkdf_type(cd));
+	OK_(strcmp(crypt_get_pbkdf_type(cd)->type, CRYPT_KDF_PBKDF2));
 	CRYPT_FREE(cd);
 
 	// check result
@@ -2973,6 +3036,16 @@ static void LuksConvert(void)
 	OK_(crypt_convert(cd, CRYPT_LUKS2, NULL));
 	CRYPT_FREE(cd);
 
+	// header file replaced (rename + symlink) after load must not be written to
+	OK_(_system("cp " IMAGE_EMPTY_SMALL " " IMAGE_EMPTY_SMALL ".bcp", 1));
+	OK_(crypt_init(&cd, IMAGE_EMPTY_SMALL_2));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	OK_(_system("mv " IMAGE_EMPTY_SMALL_2 " " IMAGE_EMPTY_SMALL_2 ".orig && ln -s " IMAGE_EMPTY_SMALL " " IMAGE_EMPTY_SMALL_2, 1));
+	FAIL_(crypt_convert(cd, CRYPT_LUKS1, NULL), "Header file was replaced.");
+	CRYPT_FREE(cd);
+	OK_(_system("cmp " IMAGE_EMPTY_SMALL " " IMAGE_EMPTY_SMALL ".bcp", 1));
+	OK_(_system("rm -f " IMAGE_EMPTY_SMALL ".bcp " IMAGE_EMPTY_SMALL_2 " && mv " IMAGE_EMPTY_SMALL_2 ".orig " IMAGE_EMPTY_SMALL_2, 1));
+
 	_cleanup_dmdevices();
 }
 
@@ -2994,7 +3067,7 @@ static void Pbkdf(void)
 	}, bad = {
 		.type = "hamster_pbkdf",
 		.hash = default_luks1_hash
-	};
+	}, copy;
 	struct crypt_params_plain params = {
 		.hash = "sha256",
 		.skip = 0,
@@ -3050,6 +3123,17 @@ static void Pbkdf(void)
 	OK_(crypt_set_pbkdf_type(cd, NULL));
 	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
 	EQ_(pbkdf->time_ms, default_luks1_iter_time);
+	CRYPT_FREE(cd);
+	// test unsupported PBKDF set before load is replaced by LUKSv1 default
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_set_pbkdf_type(cd, &argon2));
+	OK_(crypt_load(cd, CRYPT_LUKS, NULL));
+	OK_(strcmp(crypt_get_type(cd), CRYPT_LUKS1));
+	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
+	OK_(strcmp(pbkdf->type, CRYPT_KDF_PBKDF2));
+	EQ_(pbkdf->time_ms, default_luks1_iter_time);
+	EQ_(pbkdf->max_memory_kb, 0);
+	EQ_(pbkdf->parallel_threads, 0);
 	CRYPT_FREE(cd);
 	// test value set in crypt_set_iteration_time() can be obtained via following crypt_get_pbkdf_type()
 	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
@@ -3220,6 +3304,26 @@ static void Pbkdf(void)
 	EQ_(pbkdf->max_memory_kb, 2 * 1024 *1024);
 	EQ_(pbkdf->parallel_threads, 4); /* hard maximum*/
 	EQ_(pbkdf->flags, CRYPT_PBKDF_NO_BENCHMARK);
+
+	// test a modified copy of crypt_get_pbkdf_type() can be set back (strings are owned by context)
+	copy = *pbkdf;
+	copy.iterations = 7;
+	OK_(crypt_set_pbkdf_type(cd, &copy));
+	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
+	OK_(strcmp(pbkdf->type, CRYPT_KDF_ARGON2I));
+	EQ_(pbkdf->iterations, 7);
+	EQ_(pbkdf->max_memory_kb, 2 * 1024 *1024);
+	EQ_(pbkdf->parallel_threads, 4);
+
+	OK_(crypt_set_pbkdf_type(cd, &pbkdf2));
+	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
+	copy = *pbkdf;
+	copy.time_ms = 11;
+	OK_(crypt_set_pbkdf_type(cd, &copy));
+	NOTNULL_(pbkdf = crypt_get_pbkdf_type(cd));
+	OK_(strcmp(pbkdf->type, CRYPT_KDF_PBKDF2));
+	OK_(strcmp(pbkdf->hash, "sha256"));
+	EQ_(pbkdf->time_ms, 11);
 
 	CRYPT_FREE(cd);
 
@@ -3425,6 +3529,7 @@ static void Luks2KeyslotParams(void)
 	EQ_(6, crypt_keyslot_add_by_keyfile(cd, 6, KEYFILE1, 0, KEYFILE2, 0));
 
 	// Slots with different encryption type
+	FAIL_(crypt_keyslot_set_encryption(cd, cipher_keyslot, 1), "keyslot key size is too small");
 	OK_(crypt_keyslot_set_encryption(cd, cipher_keyslot, keyslot_key_size));
 	OK_(strcmp(crypt_keyslot_get_encryption(cd, CRYPT_ANY_SLOT, &key_size_ret), cipher_keyslot));
 	EQ_(key_size_ret, keyslot_key_size);
@@ -3946,6 +4051,15 @@ static void Luks2Integrity(void)
 	struct crypt_params_luks2 params = {
 		.sector_size = 512,
 		.integrity = "hmac(sha256)"
+	}, params2 = {
+		.sector_size = 512
+	};
+	struct crypt_params_reencrypt rparams = {
+		.direction = CRYPT_REENCRYPT_FORWARD,
+		.resilience = "checksum",
+		.hash = "sha256",
+		.luks2 = &params2,
+		.flags = CRYPT_REENCRYPT_INITIALIZE_ONLY
 	};
 	size_t key_size = 32 + 32;
 	const char *cipher = "aes";
@@ -3974,6 +4088,17 @@ static void Luks2Integrity(void)
 	EQ_(32, ip.integrity_key_size);
 	EQ_(32+16, ip.tag_size);
 	OK_(crypt_deactivate(cd, CDEVICE_2));
+	CRYPT_FREE(cd);
+
+	/* reencryption must be refused before any metadata is written */
+	OK_(crypt_init(&cd, DEVICE_2));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	OK_(crypt_set_pbkdf_type(cd, &min_pbkdf2));
+	EQ_(crypt_keyslot_add_by_key(cd, 8, NULL, key_size, PASSPHRASE, strlen(PASSPHRASE), CRYPT_VOLUME_KEY_NO_SEGMENT), 8);
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 7, 8, cipher, "xts-plain64", &rparams), "Reencryption of device with integrity profile is not supported.");
+	rparams.mode = CRYPT_REENCRYPT_DECRYPT;
+	FAIL_(crypt_reencrypt_init_by_passphrase(cd, NULL, PASSPHRASE, strlen(PASSPHRASE), 7, CRYPT_ANY_SLOT, NULL, NULL, &rparams), "Decryption of device with integrity profile is not supported.");
+	EQ_(crypt_reencrypt_status(cd, NULL), CRYPT_REENCRYPT_NONE);
 	CRYPT_FREE(cd);
 
 	OK_(crypt_init(&cd, DEVICE_2));
@@ -4084,6 +4209,11 @@ static void Luks2Refresh(void)
 	OK_(check_flag(cad.flags, CRYPT_ACTIVATE_READONLY));
 	cad.flags = 0;
 
+	/* drop kernel keys held by cd */
+	CRYPT_FREE(cd);
+	OK_(crypt_init(&cd, DMDIR L_DEVICE_OK));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+
 	/* check LUKS2 with auth. enc. reload */
 	OK_(crypt_init(&cd2, DMDIR L_DEVICE_WRONG));
 	if (!crypt_format(cd2, CRYPT_LUKS2, "aes", "gcm-random", crypt_get_uuid(cd), key, 32, &params)) {
@@ -4168,6 +4298,17 @@ static void Luks2Flags(void)
 	OK_(crypt_set_label(cd, "label", "subsystem"));
 	OK_(strcmp("label", crypt_get_label(cd)));
 	OK_(strcmp("subsystem", crypt_get_subsystem(cd)));
+
+	/* values returned by getters (pointers to the header) can be passed back */
+	OK_(crypt_set_label(cd, crypt_get_label(cd), "subsystem2"));
+	OK_(strcmp("label", crypt_get_label(cd)));
+	OK_(strcmp("subsystem2", crypt_get_subsystem(cd)));
+	OK_(crypt_set_label(cd, "label2", crypt_get_subsystem(cd)));
+	OK_(strcmp("label2", crypt_get_label(cd)));
+	OK_(strcmp("subsystem2", crypt_get_subsystem(cd)));
+	OK_(crypt_set_label(cd, crypt_get_subsystem(cd), crypt_get_label(cd)));
+	OK_(strcmp("subsystem2", crypt_get_label(cd)));
+	OK_(strcmp("label2", crypt_get_subsystem(cd)));
 
 	OK_(crypt_set_label(cd, NULL, NULL));
 	OK_(strcmp("", crypt_get_label(cd)));
@@ -4907,6 +5048,13 @@ static void Luks2Reencryption(void)
 	OK_(crypt_format(cd, CRYPT_LUKS2, "aes", "cbc-essiv:sha256", NULL, NULL, 32, &params2));
 	EQ_(crypt_keyslot_add_by_volume_key(cd, 6, NULL, 32, PASSPHRASE, strlen(PASSPHRASE)), 6);
 	EQ_(crypt_activate_by_passphrase(cd, CDEVICE_1, 6, PASSPHRASE, strlen(PASSPHRASE), 0), 6);
+
+	/* drop keyring in cd, we do not allow duplicate UUID in thread keyring */
+	CRYPT_FREE(cd);
+	OK_(crypt_init(&cd, IMAGE_EMPTY_SMALL));
+	OK_(crypt_load(cd, CRYPT_LUKS2, NULL));
+	OK_(crypt_set_data_device(cd, DMDIR L_DEVICE_WRONG));
+
 	/* activate second device using same header */
 	OK_(crypt_init_data_device(&cd2, IMAGE_EMPTY_SMALL, DMDIR L_DEVICE_OK));
 	OK_(crypt_load(cd2, CRYPT_LUKS2, NULL));

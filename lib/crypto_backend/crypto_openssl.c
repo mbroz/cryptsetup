@@ -876,7 +876,7 @@ bool crypt_cipher_kernel_only(struct crypt_cipher *ctx)
 	return ctx->use_kernel;
 }
 
-int crypt_bitlk_decrypt_key(const void *key, size_t key_length __attribute__((unused)),
+int crypt_bitlk_decrypt_key(const void *key, size_t key_length,
 			    const char *in, char *out, size_t length,
 			    const char *iv, size_t iv_length,
 			    const char *tag, size_t tag_length)
@@ -884,6 +884,9 @@ int crypt_bitlk_decrypt_key(const void *key, size_t key_length __attribute__((un
 #ifdef EVP_CTRL_CCM_SET_IVLEN
 	EVP_CIPHER_CTX *ctx;
 	int len = 0, r = -EINVAL;
+
+	if (EVP_CIPHER_key_length(EVP_aes_256_ccm()) != (int)key_length)
+		return -EINVAL;
 
 	ctx = EVP_CIPHER_CTX_new();
 	if (!ctx)

@@ -119,6 +119,7 @@ check_root_hash_fail()
 	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH || fail
 	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH_BAD >/dev/null 2>&1 && fail
 	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH_BAD --fec-device $FEC_DEV --fec-roots 2 >/dev/null 2>&1 && fail
+	$VERITYSETUP verify $IMG $IMG_HASH --root-hash-file $IMG.missing >/dev/null 2>&1 && fail
 
 	$VERITYSETUP open $IMG $DEV_NAME $IMG_HASH $ROOT_HASH || fail
 	check_exists
@@ -131,6 +132,21 @@ check_root_hash_fail()
 	dd if=/dev/mapper/$DEV_NAME of=/dev/null bs=4096 count=1 >/dev/null 2>&1
 	dmsetup status $DEV_NAME | grep "verity C" >/dev/null || fail
 	$VERITYSETUP close $DEV_NAME >/dev/null 2>&1 || fail
+
+	echo "[OK]"
+}
+
+check_verify_no_alloc()
+{
+	echo -n "Verify does not grow hash image "
+	ROOT_HASH=$($VERITYSETUP format $IMG $IMG_HASH -h sha256 | grep -e "Root hash" | cut -d: -f2 | tr -d "\t\n ")
+	HASH_SIZE=$(stat --printf="%s" $IMG_HASH)
+
+	# Set data_blocks in superblock to 2^21 (hash image would need 64MiB)
+	echo -n -e "\x00\x00\x20\x00\x00\x00\x00\x00" | dd of=$IMG_HASH bs=1 seek=72 conv=notrunc >/dev/null 2>&1
+	$VERITYSETUP verify $IMG $IMG_HASH $ROOT_HASH >/dev/null 2>&1 && fail
+	[ $(stat --printf="%s" $IMG_HASH) -eq $HASH_SIZE ] || fail "Hash image size changed."
+	rm -f $IMG_HASH >/dev/null 2>&1
 
 	echo "[OK]"
 }
@@ -303,10 +319,12 @@ check_fec()
 		echo -n "[userspace verify failed]"
 		RET=1
 	else
-		echo -n "[repaired in kernel]"
-		$VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS >/dev/null 2>&1 || fail "Userspace verify failed"
-		echo "[userspace verify][OK]"
 		RET=0
+		echo -n "[repaired in kernel]"
+		# Userspace FEC check is only advisory, verify of corrupted device must still fail
+		OUT=$($VERITYSETUP verify $1 $2 $ROOT_HASH --fec-device=$3 $PARAMS 2>&1) && { RET=5; echo "Userspace verify should fail"; }
+		echo "$OUT" | grep -q "repairable errors" || { RET=5; echo "Userspace FEC check failed"; }
+		echo "[userspace verify][OK]"
 	fi
 	rm $1 $2 $3 $IMG_TMP > /dev/null 2>&1
 	return $RET
@@ -413,9 +431,11 @@ checkUserSpaceRepair()
 
 	echo -n "[Errors can be corrected]"
 	corrupt_device $IMG $(($BS*$COUNT)) $7
-	$VERITYSETUP verify $IMG $HASH_DEV $ROOT_HASH --fec-device=$FEC $PARAMS >/dev/null 2>&1
+	# Userspace FEC check is only advisory, verify of corrupted device must still fail
+	OUT=$($VERITYSETUP verify $IMG $HASH_DEV $ROOT_HASH --fec-device=$FEC $PARAMS 2>&1)
 	RET=$?
-	[ "$RET" -ne 0 ] && fail "Device can be corrected, but it wasn't."
+	[ "$RET" -eq 0 ] && fail "Device is corrupted, but verify didn't fail."
+	echo "$OUT" | grep -q "repairable errors" || fail "Device can be corrected, but it wasn't."
 	echo -n "[OK]"
 
 	echo -n "[Errors cannot be corrected]"
@@ -471,6 +491,7 @@ SALT=e48da609055204e89ae53b655ca2216dd983cf3cb829f34f63a297d106d53e2d
 echo "Verity tests [separate devices]"
 prepare 8192 1024
 check_root_hash_fail
+check_verify_no_alloc
 
 check_root_hash  512 9de18652fe74edfb9b805aaed72ae2aa48f94333f1ba5c452ac33b1c39325174 $SALT 1 sha256
 check_root_hash 1024 54d92778750495d1f80832b486ebd007617d746271511bbf0e295e143da2b3df $SALT 1 sha256

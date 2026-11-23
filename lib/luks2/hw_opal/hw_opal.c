@@ -31,6 +31,14 @@
 #include <linux/sed-opal.h>
 #include <linux/fs.h>
 
+/*
+ * The key array in struct opal_key is OPAL_KEY_MAX (256 bytes) long, but the
+ * key_len member is __u8, max value 255, so OPAL_KEY_MAX would be truncated to empty key.
+ */
+#define OPAL_KEY_LEN_MAX UINT8_MAX
+/* Never use OPAL_KEY_MAX in hw_opal.c again */
+#undef OPAL_KEY_MAX
+
 /* Error codes are defined in the specification:
  * TCG_Storage_Architecture_Core_Spec_v2.01_r1.00
  * Section 5.1.5: Method Status Codes
@@ -271,10 +279,10 @@ static int opal_geometry_fd(struct crypt_device *cd,
 	return r;
 }
 
-static int opal_range_check_attributes_fd(struct crypt_device *cd,
+/* Locking range attributes are checked in the session (user or Admin1) provided by caller */
+static int opal_range_check_attributes_session_fd(struct crypt_device *cd,
 	int fd,
-	uint32_t segment_number,
-	const struct volume_key *vk,
+	const struct opal_session_info *session,
 	const uint64_t *check_offset_sectors,
 	const uint64_t *check_length_sectors,
 	bool *check_read_locked,
@@ -285,15 +293,17 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 	int r;
 	struct opal_lr_status *lrs;
 	int device_block_bytes;
-	uint32_t opal_block_bytes = 0;
+	uint32_t segment_number, opal_block_bytes = 0;
 	uint64_t offset, length;
 	bool read_locked, write_locked;
 
 	assert(fd >= 0);
 	assert(cd);
-	assert(vk);
+	assert(session);
 	assert(check_offset_sectors);
 	assert(check_length_sectors);
+
+	segment_number = session->opal_key.lr;
 
 	r = opal_geometry_fd(cd, fd, NULL, &opal_block_bytes, NULL, NULL);
 	if (r != OPAL_STATUS_SUCCESS)
@@ -309,16 +319,8 @@ static int opal_range_check_attributes_fd(struct crypt_device *cd,
 		return -ENOMEM;
 
 	*lrs = (struct opal_lr_status) {
-		.session = {
-			.who = segment_number + 1,
-			.opal_key = {
-				.key_len = crypt_volume_key_length(vk),
-				.lr = segment_number
-			}
-		}
+		.session = *session
 	};
-	crypt_safe_memcpy(lrs->session.opal_key.key, crypt_volume_key_get_key(vk),
-			  crypt_volume_key_length(vk));
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_GET_LR_STATUS, lrs);
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -376,6 +378,48 @@ out:
 	return r;
 }
 
+static int opal_range_check_attributes_fd(struct crypt_device *cd,
+	int fd,
+	uint32_t segment_number,
+	const struct volume_key *vk,
+	const uint64_t *check_offset_sectors,
+	const uint64_t *check_length_sectors,
+	bool *check_read_locked,
+	bool *check_write_locked,
+	bool *ret_read_locked,
+	bool *ret_write_locked)
+{
+	int r;
+	struct opal_session_info *user_session;
+
+	assert(vk);
+	/* FIXME: add assert back when the dependency gets merged */
+	/* assert(crypt_volume_key_length(vk) <= OPAL_KEY_LEN_MAX); */
+
+	user_session = crypt_safe_alloc(sizeof(*user_session));
+	if (!user_session)
+		return -ENOMEM;
+
+	*user_session = (struct opal_session_info) {
+		.who = segment_number + 1,
+		.opal_key = {
+			.key_len = crypt_volume_key_length(vk),
+			.lr = segment_number
+		}
+	};
+	crypt_safe_memcpy(user_session->opal_key.key, crypt_volume_key_get_key(vk),
+			  crypt_volume_key_length(vk));
+
+	r = opal_range_check_attributes_session_fd(cd, fd, user_session,
+						   check_offset_sectors, check_length_sectors,
+						   check_read_locked, check_write_locked,
+						   ret_read_locked, ret_write_locked);
+
+	crypt_safe_free(user_session);
+
+	return r;
+}
+
 static int opal_query_status(struct crypt_device *cd, struct device *dev, unsigned expected)
 {
 	struct opal_status st = { };
@@ -420,10 +464,9 @@ int opal_setup_ranges(struct crypt_device *cd,
 	assert(dev);
 	assert(vk);
 	assert(admin_key);
-	assert(crypt_volume_key_length(vk) <= OPAL_KEY_MAX);
 	assert(opal_block_bytes >= SECTOR_SIZE);
 
-	if (admin_key_len > OPAL_KEY_MAX)
+	if (admin_key_len > OPAL_KEY_LEN_MAX || crypt_volume_key_length(vk) > OPAL_KEY_LEN_MAX)
 		return -EINVAL;
 
 	if (((UINT64_MAX / opal_block_bytes) < range_start_blocks) ||
@@ -695,7 +738,22 @@ static int opal_lock_unlock(struct crypt_device *cd,
 			    const struct volume_key *vk,
 			    bool lock)
 {
-	struct opal_lock_unlock unlock = {
+	struct opal_lock_unlock *unlock;
+	int r, fd;
+
+	if (opal_supported(cd, dev) <= 0)
+		return -ENOTSUP;
+	if (!lock && (!vk || crypt_volume_key_length(vk) > OPAL_KEY_LEN_MAX))
+		return -EINVAL;
+
+	fd = device_open(cd, dev, O_RDONLY);
+	if (fd < 0)
+		return -EIO;
+
+	unlock = crypt_safe_alloc(sizeof(struct opal_lock_unlock));
+	if (!unlock)
+		return -ENOMEM;
+	*unlock = (struct opal_lock_unlock) {
 		.l_state = lock ? OPAL_LK : OPAL_RW,
 		.session = {
 			.who = segment_number + 1,
@@ -704,26 +762,14 @@ static int opal_lock_unlock(struct crypt_device *cd,
 			},
 		},
 	};
-	int r, fd;
-
-	if (opal_supported(cd, dev) <= 0)
-		return -ENOTSUP;
-	if (!lock && !vk)
-		return -EINVAL;
-
-	fd = device_open(cd, dev, O_RDONLY);
-	if (fd < 0)
-		return -EIO;
 
 	if (!lock) {
-		assert(crypt_volume_key_length(vk) <= OPAL_KEY_MAX);
-
-		unlock.session.opal_key.key_len = crypt_volume_key_length(vk);
-		crypt_safe_memcpy(unlock.session.opal_key.key, crypt_volume_key_get_key(vk),
+		unlock->session.opal_key.key_len = crypt_volume_key_length(vk);
+		crypt_safe_memcpy(unlock->session.opal_key.key, crypt_volume_key_get_key(vk),
 				  crypt_volume_key_length(vk));
 	}
 
-	r = opal_ioctl(cd, fd, IOC_OPAL_LOCK_UNLOCK, &unlock);
+	r = opal_ioctl(cd, fd, IOC_OPAL_LOCK_UNLOCK, unlock);
 	if (r < 0) {
 		r = -ENOTSUP;
 		log_dbg(cd, "OPAL not supported on this kernel version, refusing.");
@@ -752,9 +798,9 @@ static int opal_lock_unlock(struct crypt_device *cd,
 	 * on purpose (crypt_deactivate* or crypt_suspend)
 	 */
 	if (!lock)
-		unlock.flags = OPAL_SAVE_FOR_LOCK;
+		unlock->flags = OPAL_SAVE_FOR_LOCK;
 
-	r = opal_ioctl(cd, fd, IOC_OPAL_SAVE, &unlock);
+	r = opal_ioctl(cd, fd, IOC_OPAL_SAVE, unlock);
 	if (r < 0)
 		goto out;
 	if (r != OPAL_STATUS_SUCCESS) {
@@ -767,8 +813,7 @@ static int opal_lock_unlock(struct crypt_device *cd,
 		r = 0;
 	}
 out:
-	if (!lock)
-		crypt_safe_memzero(unlock.session.opal_key.key, unlock.session.opal_key.key_len);
+	crypt_safe_free(unlock);
 
 	return r;
 }
@@ -798,16 +843,14 @@ int opal_factory_reset(struct crypt_device *cd,
 		       const char *password,
 		       size_t password_len)
 {
-	struct opal_key reset = {
-		.key_len = password_len,
-	};
+	struct opal_key *reset;
 	int r, fd;
 
 	assert(cd);
 	assert(dev);
 	assert(password);
 
-	if (password_len > OPAL_KEY_MAX)
+	if (password_len > OPAL_KEY_LEN_MAX)
 		return -EINVAL;
 
 	/*
@@ -818,9 +861,15 @@ int opal_factory_reset(struct crypt_device *cd,
 	if (fd < 0)
 		return -EIO;
 
-	crypt_safe_memcpy(reset.key, password, password_len);
+	reset = crypt_safe_alloc(sizeof(struct opal_key));
+	if (!reset)
+		return -ENOMEM;
+	*reset = (struct opal_key) {
+		.key_len = password_len,
+	};
+	crypt_safe_memcpy(reset->key, password, password_len);
 
-	r = opal_ioctl(cd, fd, IOC_OPAL_PSID_REVERT_TPR, &reset);
+	r = opal_ioctl(cd, fd, IOC_OPAL_PSID_REVERT_TPR, reset);
 	if (r < 0) {
 		r = -ENOTSUP;
 		log_dbg(cd, "OPAL not supported on this kernel version, refusing.");
@@ -839,7 +888,7 @@ int opal_factory_reset(struct crypt_device *cd,
 		goto out;
 	}
 out:
-	crypt_safe_memzero(reset.key, reset.key_len);
+	crypt_safe_free(reset);
 
 	return r;
 }
@@ -848,6 +897,8 @@ out:
 int opal_reset_segment(struct crypt_device *cd,
 		       struct device *dev,
 		       uint32_t segment_number,
+		       const uint64_t *check_offset_sectors,
+		       const uint64_t *check_length_sectors,
 		       const char *password,
 		       size_t password_len)
 {
@@ -859,7 +910,7 @@ int opal_reset_segment(struct crypt_device *cd,
 	assert(dev);
 	assert(password);
 
-	if (password_len > OPAL_KEY_MAX)
+	if (password_len > OPAL_KEY_LEN_MAX)
 		return -EINVAL;
 
 	if (opal_enabled(cd, dev) <= 0)
@@ -881,6 +932,15 @@ int opal_reset_segment(struct crypt_device *cd,
 	if (fd < 0) {
 		r = -EIO;
 		goto out;
+	}
+
+	/* Locking range number may come from untrusted metadata, check it is set up as expected */
+	if (check_offset_sectors && check_length_sectors) {
+		r = opal_range_check_attributes_session_fd(cd, fd, user_session,
+							   check_offset_sectors, check_length_sectors,
+							   NULL, NULL, NULL, NULL);
+		if (r < 0)
+			goto out;
 	}
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_SECURE_ERASE_LR, user_session);
@@ -909,9 +969,13 @@ int opal_reset_segment(struct crypt_device *cd,
 		.range_length = 0,
 		.session = {
 			.who = OPAL_ADMIN1,
-			.opal_key = user_session->opal_key,
+			.opal_key = {
+				.lr = segment_number,
+				.key_len = password_len,
+			},
 		},
 	};
+	crypt_safe_memcpy(setup->session.opal_key.key, password, password_len);
 
 	r = opal_ioctl(cd, fd, IOC_OPAL_LR_SETUP, setup);
 	if (r < 0)
@@ -975,6 +1039,9 @@ int opal_range_check_attributes_and_get_lock_state(struct crypt_device *cd,
 	assert(cd);
 	assert(dev);
 	assert(vk);
+
+	if (crypt_volume_key_length(vk) > OPAL_KEY_LEN_MAX)
+		return -EINVAL;
 
 	fd = device_open(cd, dev, O_RDONLY);
 	if (fd < 0)
@@ -1076,6 +1143,8 @@ int opal_factory_reset(struct crypt_device *cd,
 int opal_reset_segment(struct crypt_device *cd,
 		       struct device *dev,
 		       uint32_t segment_number,
+		       const uint64_t *check_offset_sectors,
+		       const uint64_t *check_length_sectors,
 		       const char *password,
 		       size_t password_len)
 {

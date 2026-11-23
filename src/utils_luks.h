@@ -68,4 +68,6 @@ int luks_init_keyslot_contexts_by_volume_keys(struct crypt_device *cd,
 
 void luks_check_keyslots(struct crypt_device *cd, const char *device);
 
+void luks_remove_header_file(const char *header_file);
+
 #endif /* UTILS_LUKS_H */

@@ -26,6 +26,9 @@ You may enforce LUKS version by adding --type option.
 
 It also repairs (upgrades) LUKS2 reencryption metadata by adding a metadata digest that protects it against malicious changes.
 
+Similarly, it upgrades LUKS2 metadata of devices formatted with hardware OPAL encryption by older releases.
+The volume key digest then also protects the OPAL segment metadata, which determines what part of the volume key is sent to the drive. A passphrase or keyfile is needed for the upgrade.
+
 If LUKS2 reencryption was interrupted while writing the reencryption segment, the repair command can perform reencryption recovery so that reencryption can continue later.
 Repairing reencryption requires verification of the reencryption keyslot, so a passphrase or keyfile is needed.
 

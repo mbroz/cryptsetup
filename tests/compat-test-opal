@@ -231,6 +231,11 @@ setup_luks2_env() {
 	else
 		HAVE_BLKID=0
 	fi
+	if $($CRYPTSETUP --version | grep -q "OPAL_DIGEST"); then
+		STRICT_OPAL_POLICY=1
+	else
+		STRICT_OPAL_POLICY=0
+	fi
 	$CRYPTSETUP close $DEV_NAME || fail
 }
 
@@ -425,6 +430,32 @@ test_device_detached_header() #hdr, #opal_mode, #format_params, #--integrity-no-
 	rm -f $1
 }
 
+# $1 header image (default 16 KiB metadata area), $2.. jq arguments
+hdr_mangle_json()
+{
+	local _json="$1.json"
+	local _bin_size=4096
+	local _json_size=12288
+
+	$CRYPTSETUP luksDump --dump-json-metadata $1 | jq -c -M "${@:2}" | tr -d '\n' > $_json || fail
+
+	# write JSON in both metadata areas, fix both sha256 checksums
+	_dd if=/dev/zero of=$1 count=$_json_size seek=$_bin_size
+	_dd if=/dev/zero of=$1 count=$_json_size seek=$(($_bin_size + $_json_size + $_bin_size))
+	_dd if=$_json of=$1 count=$_json_size seek=$_bin_size
+	_dd if=$_json of=$1 count=$_json_size seek=$(($_bin_size + $_json_size + $_bin_size))
+	_dd if=/dev/zero of=$1 count=64 seek=448
+	_dd if=/dev/zero of=$1 count=64 seek=$(($_bin_size + $_json_size + 448))
+	_dd if=$1 count=$(($_bin_size + $_json_size)) | sha256sum | cut -d ' ' -f 1 | xxd -r -p | _dd of=$1 seek=448 count=64 || fail
+	_dd if=$1 skip=$(($_bin_size + $_json_size)) count=$(($_bin_size + $_json_size)) | sha256sum | cut -d ' ' -f 1 | xxd -r -p | _dd of=$1 seek=$(($_bin_size + $_json_size + 448)) count=64 || fail
+	rm -f $_json
+}
+
+_dd()
+{
+	dd $@ status=none conv=notrunc bs=1
+}
+
 run_token_tests() {
 	$CRYPTSETUP token add $OPAL2_DEV --key-description $TEST_TOKEN0 --token-id 3 || fail
 	$CRYPTSETUP luksDump $OPAL2_DEV | grep -q -e "3: luks2-keyring" || fail
@@ -483,6 +514,10 @@ export LANG=C
 
 [ ! -x "$CRYPTSETUP" ] && skip "Cannot find $CRYPTSETUP, test skipped."
 [ $(id -u) != 0 ] && skip "WARNING: You must be root to run this test, test skipped."
+
+command -v jq >/dev/null || skip "Cannot find jq."
+command -v xxd >/dev/null || skip "Cannot find xxd."
+command -v sha256sum >/dev/null || skip "Cannot find sha256sum."
 
 # Do not run automatically.
 [ -z "$OPAL2_DEV" ] && skip "WARNING: Variable OPAL2_DEV must be defined (partition or block dev), test skipped."
@@ -1364,6 +1399,82 @@ test_device_detached_header $HEADER_IMG --hw-opal
 prepare "[47] OPAL2 + auth encryption test (detached header)" wipe
 test_device_detached_header $HEADER_IMG --hw-opal "-c aes-gcm-random --integrity aead" --integrity-no-wipe
 test_device_detached_header $HEADER_IMG --hw-opal "-s 280 -c aes-ccm-random --integrity aead" --integrity-no-wipe
+
+prepare "[48] OPAL segment metadata protected by volume key digest" wipe
+SW_HEADER_IMG=test_image_sw_hdr
+dd if=/dev/urandom of=$VK_FILE bs=32 count=1 2>/dev/null || fail
+# software encrypted LUKS2 header and OPAL header sharing the same 256bit volume key and UUID
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 -s 256 --volume-key-file $VK_FILE --header $SW_HEADER_IMG $OPAL2_DEV || fail
+UUID=$($CRYPTSETUP luksDump $SW_HEADER_IMG | grep "UUID:" | cut -f2)
+test -n "$UUID" || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only --volume-key-file $VK_FILE --header $HEADER_IMG $OPAL2_DEV --uuid $UUID || fail
+$CRYPTSETUP luksDump $HEADER_IMG | grep -q -e "opal-v2" || fail
+OPAL_SEGMENT=$($CRYPTSETUP luksDump --dump-json-metadata $HEADER_IMG | jq -c -M '.segments."0"') || fail
+# legacy metadata (volume key digest does not cover the OPAL segment) must be upgraded first
+hdr_mangle_json $SW_HEADER_IMG --argjson seg "$OPAL_SEGMENT" '.segments."0" = $seg | .config.requirements.mandatory = ["opal"]'
+$CRYPTSETUP luksDump $SW_HEADER_IMG | grep -q "0: hw-opal" || fail
+
+# reject activation with strict segment policy
+if [ $STRICT_OPAL_POLICY -gt 0 ]; then
+	echo $PWD1 | $CRYPTSETUP open --header $SW_HEADER_IMG $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+	[ -b /dev/mapper/$DEV_NAME ] && fail
+else
+	echo $PWD1 | $CRYPTSETUP open --header $SW_HEADER_IMG $OPAL2_DEV $DEV_NAME 2>/dev/null || fail
+	$CRYPTSETUP close $DEV_NAME || fail
+fi
+
+echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --header $HEADER_IMG || fail
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+
+# reject luksResume with strict segment policy
+if [ $STRICT_OPAL_POLICY -gt 0 ]; then
+	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $SW_HEADER_IMG 2>/dev/null && fail
+	# resume with correct header
+	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
+else
+	echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $SW_HEADER_IMG 2>/dev/null || fail
+fi
+$CRYPTSETUP close $DEV_NAME || fail
+
+echo $PWD1 | $CRYPTSETUP open --header $SW_HEADER_IMG --test-passphrase $OPAL2_DEV || fail
+echo $PWDW | $CRYPTSETUP repair -q --header $SW_HEADER_IMG $OPAL2_DEV 2>/dev/null && fail
+$CRYPTSETUP luksDump $SW_HEADER_IMG | grep -q -e "opal-v2" && fail
+echo $PWD1 | $CRYPTSETUP repair -q --header $SW_HEADER_IMG $OPAL2_DEV || fail
+$CRYPTSETUP luksDump $SW_HEADER_IMG | grep -q -e "opal-v2" || fail
+echo $PWD1 | $CRYPTSETUP repair -q --header $SW_HEADER_IMG $OPAL2_DEV || fail
+echo $PWD1 | $CRYPTSETUP open --header $SW_HEADER_IMG $OPAL2_DEV $DEV_NAME || fail
+$CRYPTSETUP luksSuspend $DEV_NAME --header $SW_HEADER_IMG || fail
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $SW_HEADER_IMG || fail
+$CRYPTSETUP close $DEV_NAME --header $SW_HEADER_IMG || fail
+# OPAL segment metadata cannot be changed without the volume key
+hdr_mangle_json $SW_HEADER_IMG '.segments."0".opal_segment_number = 2'
+echo $PWD1 | $CRYPTSETUP open --header $SW_HEADER_IMG $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+[ $? -ne 2 ] && fail "open should return EPERM exit code"
+
+# software encrypted device retyped to OPAL (v2) by attacker: it must fail and can not be repaired
+dd if=/dev/urandom of=$VK_FILE bs=32 count=1 2>/dev/null || fail
+echo $PWD1 | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 -s 256 --volume-key-file $VK_FILE --header $SW_HEADER_IMG $OPAL2_DEV --uuid $UUID || fail
+echo -e "$PWD1\n$OPAL2_ADMIN_PIN" | $CRYPTSETUP -q luksFormat $FAST_PBKDF_OPT --type luks2 --hw-opal-only --volume-key-file $VK_FILE --header $HEADER_IMG $OPAL2_DEV --uuid $UUID || fail
+hdr_mangle_json $SW_HEADER_IMG --argjson seg "$OPAL_SEGMENT" '.segments."0" = $seg | .config.requirements.mandatory = ["opal-v2"]'
+
+# it must fail even in permissive mode
+echo $PWD1 | $CRYPTSETUP open --header $SW_HEADER_IMG $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+[ $? -ne 2 ] && fail "open should return EPERM exit code"
+[ -b /dev/mapper/$DEV_NAME ] && fail
+# repair returns "already repaired", but it does not change anything
+echo $PWD1 | $CRYPTSETUP repair -q --header $SW_HEADER_IMG $OPAL2_DEV 2>/dev/null
+# and must not fix the issue
+echo $PWD1 | $CRYPTSETUP open --header $SW_HEADER_IMG $OPAL2_DEV $DEV_NAME 2>/dev/null && fail
+
+echo $PWD1 | $CRYPTSETUP open $OPAL2_DEV $DEV_NAME --header $HEADER_IMG || fail
+$CRYPTSETUP luksSuspend $DEV_NAME || fail
+# same for luksResume
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $SW_HEADER_IMG 2>/dev/null && fail
+[ $? -ne 2 ] && fail "open should return EPERM exit code"
+echo $PWD1 | $CRYPTSETUP luksResume $DEV_NAME --header $HEADER_IMG || fail
+$CRYPTSETUP close $DEV_NAME || fail
+
+rm -f $SW_HEADER_IMG $VK_FILE
 
 # FIXME: Add partition based tests
 

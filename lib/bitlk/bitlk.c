@@ -326,6 +326,8 @@ static int parse_vmk_entry(struct crypt_device *cd, uint8_t *data, int start, in
 		/* clear key for a partially decrypted volume */
 		} else if (key_entry_value == BITLK_ENTRY_VALUE_KEY) {
 			/* For clearkey protection, we need to store this key */
+			if (key_entry_size < (BITLK_ENTRY_HEADER_LEN + 4))
+				return -EINVAL;
 			key_size = key_entry_size - (BITLK_ENTRY_HEADER_LEN + 4);
 			key = (const char *) data + start + BITLK_ENTRY_HEADER_LEN + 4;
 			vk = crypt_alloc_volume_key(key_size, key);
@@ -858,6 +860,11 @@ int BITLK_read_sb(struct crypt_device *cd, struct bitlk_metadata *params)
 
 		start += entry_size;
 	}
+
+	if (!params->fvek) {
+		log_err(cd, _("Failed to find FVEK entry in BITLK FVE metadata from %s."), device_path(device));
+		r = -EINVAL;
+	}
 out:
 	free(fve_entries);
 	free(fve_validated_block);
@@ -940,6 +947,7 @@ static int get_recovery_key(struct crypt_device *cd,
 	uint16_t parts[BITLK_RECOVERY_PARTS] = {0};
 	char part_str[BITLK_RECOVERY_PART_LEN + 1] = {0};
 	long part_num = 0;
+	int r = 0;
 
 	/* check the passphrase it should be:
 	    - 55 characters
@@ -966,19 +974,23 @@ static int get_recovery_key(struct crypt_device *cd,
 		errno = 0;
 		part_num = strtol(part_str, NULL, 10);
 		if ((errno == ERANGE && (part_num == LONG_MAX || part_num == LONG_MIN)) ||
-		    (errno != 0 && part_num == 0))
-			return -errno;
+		    (errno != 0 && part_num == 0)) {
+			r = -errno;
+			goto out;
+		}
 
 		if (part_num % 11 != 0)
-			return 0;
+			goto out;
 		parts[j] = cpu_to_le16(part_num / 11);
 	}
 
 	*rc_key = crypt_alloc_volume_key(16, (const char*) parts);
 	if (*rc_key == NULL)
-		return -ENOMEM;
-
-	return 0;
+		r = -ENOMEM;
+out:
+	crypt_safe_memzero(parts, sizeof(parts));
+	crypt_safe_memzero(part_str, sizeof(part_str));
+	return r;
 }
 
 static int parse_external_key_entry(struct crypt_device *cd,
@@ -1153,12 +1165,11 @@ static int bitlk_kdf(const char *password,
 			r = -ENOMEM;
 			goto out;
 		}
-		r = crypt_utf8_to_utf16(&utf16Password, CONST_CAST(char*)password, passwordLen);
+		r = crypt_utf8_to_utf16(&utf16Password, &utf16Len, CONST_CAST(char*)password, passwordLen);
 		if (r < 0)
 			goto out;
 
-		utf16Len = crypt_char16_strlen(utf16Password);
-		crypt_hash_write(hd, (char*)utf16Password, utf16Len * 2);
+		crypt_hash_write(hd, (char*)utf16Password, utf16Len);
 		r = crypt_hash_final(hd, kdf.initial_sha256, len);
 		if (r < 0)
 			goto out;
@@ -1186,6 +1197,7 @@ static int bitlk_kdf(const char *password,
 	*vk = crypt_alloc_volume_key(len, kdf.last_sha256);
 
 out:
+	crypt_safe_memzero(&kdf, sizeof(kdf));
 	crypt_safe_free(utf16Password);
 	if (hd)
 		crypt_hash_destroy(hd);
@@ -1247,6 +1259,14 @@ static int decrypt_key(struct crypt_device *cd,
 		key_size = 32 + BITLK_OPEN_KEY_METADATA_LEN;
 	}
 
+	if (is_fvek && (key_size - BITLK_OPEN_KEY_METADATA_LEN) != crypt_get_volume_key_size(cd)) {
+		log_dbg(cd, "Unexpected volume key size: %i, decrypted key size %i",
+			crypt_get_volume_key_size(cd),
+			key_size - BITLK_OPEN_KEY_METADATA_LEN);
+		r = -EINVAL;
+		goto out;
+	}
+
 	*vk = crypt_alloc_volume_key(key_size - BITLK_OPEN_KEY_METADATA_LEN,
 					(const char *)(outbuf + BITLK_OPEN_KEY_METADATA_LEN));
 	r = *vk ? 0 : -ENOMEM;
@@ -1304,6 +1324,11 @@ int BITLK_get_volume_key(struct crypt_device *cd,
 	const struct bitlk_vmk *next_vmk = NULL;
 
 	next_vmk = params->vmks;
+	if (!next_vmk) {
+		log_dbg(cd, "No VMK found in BITLK FVE metadata.");
+		return -EPERM;
+	}
+
 	while (next_vmk) {
 		bool is_decrypted = false;
 

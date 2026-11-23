@@ -1,0 +1,331 @@
+Cryptsetup 2.8.9 Release Notes
+==============================
+Stable security bug-fix release.
+
+All users of cryptsetup must upgrade to this version.
+
+Changes since version 2.8.8
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This release fixes several bugs found by the OSS Scanner project,
+which uses Anthropic AI models. Full unedited descriptions of the reported bugs
+(without reproducers and AI-generated patches) can be found in the cryptsetup project issues
+(https://gitlab.com/cryptsetup/cryptsetup/-/work_items?state=closed&search=ANT-2026).
+
+Many of the bugs assume that an attacker can modify on-disk metadata and let
+the user activate such a crafted device. While this is not the default threat model,
+we try to harden the code (extend metadata validation) to eliminate such issues.
+Although such a metadata attack can, e.g., weaken encryption for new writes, confidentiality
+of existing encrypted data is preserved (decryption will return only garbage).
+
+High severity fixes
+~~~~~~~~~~~~~~~~~~~
+
+* Add OPAL segment digest (ANT-2026-HPXPQMWG).
+
+  NOTE: The fix for this issue is backward incompatible (for OPAL HW-encrypted drives only).
+
+  LUKS2 optionally supports hardware-encrypted OPAL drives.
+  The LUKS keyslot then contains the OPAL unlocking passphrase instead of the volume key.
+
+  As the metadata entry for the encrypted data segment type is not authenticated, an attacker
+  can change a regular LUKS data segment to the OPAL type in LUKS metadata.
+  The next activation of such a crafted device will then send the volume key to the underlying
+  hardware device. This breaks the LUKS security model, in which, for software encryption,
+  the disk is always treated as an untrusted device where only ciphertext is stored.
+
+  To exploit this issue, the attacker also needs to control the underlying device.
+  This is mainly a problem in confidential computing environments that require strong
+  isolation from the hypervisor. Regular (non-OPAL) drives reject such an operation.
+
+  This issue is an unfortunate design flaw in the LUKS2 OPAL segment definition.
+  It is fixed by redesigning the digest for the OPAL data segment type.
+
+  The new version of the OPAL data segment digest is now also calculated from segment
+  attributes (such as type and key size), so an attacker can no longer create such a crafted device.
+
+  All new devices formatted with OPAL encryption now use LUKS metadata with OPAL requirement
+  version 2. Such devices cannot be opened with older cryptsetup versions.
+
+  Support for older OPAL metadata can be disabled (enforcing the new digest only) at compile time:
+    - with autoconf option --enable-enforce-opal-segment-digest, or
+    - with meson option: -Denforce-opal-segment-digest=true.
+
+  Metadata can always be upgraded in place with the cryptsetup repair command.
+
+  The next cryptsetup version 2.9 will enforce the new digest by default (old devices will
+  not be activated and will require a metadata update with the repair command).
+
+  For metadata changes, please see the updated LUKS2 format specification included in the tarball.
+
+* LUKS2: Validate that the PBKDF2 digest in metadata is complete (ANT-2026-EM3CT2VN).
+
+  A flaw in LUKS2 digest verification allows a crafted LUKS2 header to be accepted
+  and partially reintroduces CVE-2021-4122 (a forged "crashed decryption" attack:
+  crafted reencryption metadata allowed decryption of a selected region of data on the next
+  ordinary unlock). (The issue was introduced in version 2.5.0.)
+
+* Do not accept keyring keys owned by other users (ANT-2026-AIEJAWT4).
+
+  Cryptsetup scans /proc/keys when it cannot resolve a key or keyring by name
+  in the caller's own keyrings. This can cause a different key in the keyring to be loaded.
+  A local unprivileged user could therefore plant a keyring key that will be used
+  by a different user to store the volume key if the --link-vk-to-keyring option is used.
+
+  The code now accepts a keyring key only when it is owned by the calling user.
+
+Fixes for null (empty) cipher detection (security-relevant)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Fix null cipher detection if set as null-ecb (ANT-2026-76MNV0CY).
+
+* LUKS1: Harden detection of null cipher (ANT-2026-TFQUDZT2).
+
+  A null cipher can be used only with an empty passphrase, even with LUKS1.
+
+Key size checks hardening (security-relevant)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* LUKS: Limit minimum key size (ANT-2026-EGL2YP2V).
+
+  Require at least an 8-byte key to avoid accepting crafted images.
+  If the key size is set to 1 byte, a random password will unlock the device
+  with a probability of 1/256 without any warning.
+
+  Note that such a setting requires a cipher with a variable key size, such as Serpent.
+  As the volume key changes, decryption of existing data returns only garbage.
+
+* LUKS2: Limit minimum encryption key size if an integrity profile is used (ANT-2026-WGZ9TGAN).
+
+  In the integrity profile, the encryption and integrity protection keys (e.g., for HMAC)
+  are stored as one value. With a variable key size algorithm such as Serpent, metadata
+  can be crafted to weaken the integrity key and eliminate integrity protection.
+
+* OPAL: Reject volume keys longer than 255 bytes (ANT-2026-RL4YGVAD).
+  Add a check for the maximum OPAL volume key length to prevent overflow.
+
+* OPAL: Fix off-by-one check for key length (ANT-2026-UDAHEINW).
+
+  While the kernel syscall uses a 256-byte buffer, the maximum length is 255.
+
+* BITLK: Reject short clear-key/VMK key entries from metadata (ANT-2026-TD4Y5TFX).
+
+* BITLK: Reject FVEK (volume key) if its size differs from the header (ANT-2026-W0WPK43B).
+
+LUKS metadata validation hardening (security-relevant)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* LUKS2: Reject duplicate backup segment flags (ANT-2026-G8FJOKAF).
+
+  If the device is in active reencryption and contains additional segment metadata,
+  a crafted duplicate backup segment can introduce a null cipher or a similar change
+  on the next activation.
+
+* LUKS2: Fix order-independent validation of segments behind the backup segment (ANT-2026-JXTV6TLM).
+
+* LUKS2: Reject backup segments without the requirement flag (ANT-2026-QYA1BDCQ).
+
+  The requirement flag indicates that reencryption is running.
+  Without it, backup segments are invalid.
+
+* LUKS: Enforce validation of cipher specification for on-disk metadata (ANT-2026-IA2TNSPO).
+
+  The cipher specification can be used as a device-mapper table parameter, and an intentionally
+  crafted specification can corrupt the mapping table (specifically if it contains spaces).
+
+  The cipher and mode specification is now strictly validated to contain only valid characters.
+
+* LUKS: Enforce validation and reject multikey cipher specification (ANT-2026-KF5OJAIT).
+
+  Multikey dm-crypt cipher specifications are never used for valid LUKS devices.
+
+* LUKS2: Reject algorithms with authentication tag without integrity (ANT-2026-X7A1WEAS).
+
+  All allowed integrity-protected algorithms for LUKS2 must use a proper integrity mode.
+  Using "none" must be rejected to avoid insecure combinations, possibly created
+  by crafted LUKS2 metadata.
+
+* OPAL: Harden OPAL locking range checks before erasing (ANT-2026-TRE9CTGV).
+
+  Check that the configured locking range on the device matches the hw-opal segment configured
+  in LUKS2 metadata before running luksErase.
+
+* LUKS2: Fix validation of datashift option in reencryption metadata (ANT-2026-X8MIOXOO).
+
+  With datashift-checksum resilience, the shift-size has to be aligned to a multiple
+  of the area sector size.
+
+* LUKS2: Reject wrong JSON object IDs (ANT-2026-UYIESGUA).
+
+  Tokens, keyslots and digests use numeric names with a strict maximum value.
+  The name should be in a simple form like "0", without any prefix like "00".
+
+* LUKS2: Reject JSON token metadata nested too deeply (ANT-2026-RYR6LO8H).
+
+* LUKS2: Allow linear data segment only for hw-opal devices (ANT-2026-QGXBEPOR).
+
+Other security-relevant fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Wipe area between LUKS2 header and data offset after encryption (ANT-2026-P8F3E3LW).
+
+  After in-place encryption, wipe the area between LUKS2 metadata and the new data offset,
+  as it could contain stale plaintext data.
+
+* Reject invalid log file for LUKS1 offline reencryption (ANT-2026-I0244IJM).
+
+* veritysetup: Do not overwrite verification with FEC repair status (ANT-2026-SFC4NG8Z).
+
+  If verification failed and an FEC (Forward Error Correction) image was provided,
+  the verification result was replaced with the FEC repair status.
+
+  The FEC repairable status was meant as a hint, so the whole operation now uses only
+  the hash verification status and reports only an advisory FEC message.
+
+* plain: Fix hashing of passphrase if variable-size hash is used (ANT-2026-ECGSC1G5).
+
+  A variable-size hash caused a failure that was not detected.
+
+* LUKS2: Do not grow (invalid) LUKS2 images during reencryption (ANT-2026-SUCSFBPX).
+
+  Reject invalid LUKS2 images (files smaller than the LUKS2 data offset) early and do not
+  accidentally grow them to the data offset stored in LUKS2 metadata.
+
+* verity: Do not enlarge hash file during verification (ANT-2026-J1JUL9XO).
+
+  Verification must not touch hash images, only use stored data.
+
+* LUKS2: Wipe temporary reencryption LUKS header files before removal (ANT-2026-XO7DALE6).
+
+  Overwrite the header file with random data before unlinking it.
+
+* Harden reencryption hotzone checks before crash recovery (ANT-2026-OERDOWB7).
+
+  The hotzone offset and length from the metadata must be checked against
+  the real size of the data device.
+
+* Detect volume key keyring collisions between same-UUID contexts (ANT-2026-ANZY284A).
+
+  The kernel keyring key description used for a LUKS2 volume key is derived
+  from the device UUID. When two crypt_device contexts in the same thread
+  operate on distinct devices that share a UUID, a key uploaded later by
+  one context replaces (shadows) the key previously uploaded by the other.
+
+  Using two LUKS2 devices with the same UUID is an unsupported configuration.
+  The code now fails if such a collision is detected.
+
+  The collision cannot happen with standard system utilities (these utilities do not
+  use threads for activation).
+
+* LUKS1: Force reset PBKDF to PBKDF2 on load and format API calls (ANT-2026-S8SVEDK4).
+
+  If the user explicitly sets PBKDF to Argon2 (not supported for LUKS1) before a metadata
+  load operation, PBKDF2 could end up with default settings (1000 iterations).
+  This requires a very specific order of API operations (not used in cryptsetup).
+
+* Invalidate volume key loaded by another context on suspend/deactivate (ANT-2026-BXEJ9Q4N).
+
+  If the device was activated by one context that is still kept in memory,
+  and it was later suspended or deactivated through a second context, the
+  key was not dropped from the keyring.
+
+  Fix it by invalidating the volume key in the kernel keyring when it is still reachable
+  from the calling process but cannot be unlinked from the current context's keyring.
+
+* OPAL: Do not store Admin1 PIN on the stack (ANT-2026-XY6O9WYT).
+
+  Use safe memory instead.
+
+* LUKS2: Fix possible double free in reencryption step (ANT-2026-N0710LP2).
+
+* TCRYPT: Lock decrypted header memory (ANT-2026-P6N65ETW).
+
+  The TCRYPT decrypted header contains encryption keys, so handle it as key material.
+
+* Validate device in internal device helper on reopen (ANT-2026-FFOPB8HP).
+
+  The internal device helper should validate that a newly opened descriptor points to the same
+  device/file as the cached file descriptor.
+
+* LUKS2: Fix error path in LUKS2 token processing (ANT-2026-X7WXQ9J0).
+
+  In some specific situations, LUKS2 token unlock returned success
+  without allocating the key. Return failure in such a case.
+
+* Always wipe device-mapper parameters table buffer (ANT-2026-BHXQHFIH).
+
+  Mapping table parameters can contain key material.
+
+* BITLK: Fix parsing of metadata with missing FVEK and VMK entries (ANT-2026-XQGBJCZV).
+
+  Fixes a NULL dereference when parsing devices with these keys missing.
+
+* Refuse LUKS2 to LUKS1 conversion when salt is not LUKS_SALTSIZE bytes (ANT-2026-BGUYYG1L).
+
+  Fail the conversion if the decoded salt length is incorrect.
+
+Other regular bug fixes
+~~~~~~~~~~~~~~~~~~~~~~~
+
+* LUKS1: Avoid possible overflow in device offset calculations (ANT-2026-VS7IELK0).
+
+* verity: Fail on partial read/write of parity bytes (ANT-2026-UV34BH2W).
+
+* Reject key from keyring if its payload has a different size (ANT-2026-TBEUPMOU).
+
+* Fix error returned in crypt_wipe_device to be negative errno (ANT-2026-S5DZP6KQ).
+
+* Avoid using uninitialized memory in write_lseek_blockwise (ANT-2026-Q03W7V15).
+
+* verity: Reject salt size larger than superblock salt field (ANT-2026-JMBB0A9W).
+
+* LUKS1: Reject conversion from LUKS2 if integrity profile is used (ANT-2026-IL1V8134).
+
+* LUKS2: Reject keyslot if it cannot fit into keyslot area (ANT-2026-H2SH9JCE).
+
+* cryptsetup: Properly fail if no keyslot is available for checking (ANT-2026-GPTLKHBD).
+
+* verity: Properly reinitialize context if already set on reload (ANT-2026-E73D430W).
+
+* FVAULT2: Do not print volume key to terminal if keyfile is requested (ANT-2026-CV4ZFKER).
+
+* TCRYPT: Properly fail if no PBKDF variant can be used (ANT-2026-AFK35TK1).
+
+* LUKS2: Reject reencryption if integrity profile is used (ANT-2026-3FHALHXU).
+
+* Do not use a possibly deallocated PBKDF2 type (ANT-2026-30185VH0).
+
+* BITLK: Wipe recovery key and kdf after use (ANT-2026-E7DZOCRM).
+
+* BITLK: Process key file as binary array (regression in 2.8.1) (ANT-2026-28IC8PZP).
+
+* LUKS1: Reject data offset that cannot fit into a 32-bit integer (ANT-2026-C4OQQQA5).
+
+* LUKS2: Wipe buffer for header backup (ANT-2026-ACZ5BYDZ).
+
+* integritysetup: Set the deallocated journal integrity key pointer to NULL (ANT-2026-7QDRANDJ).
+
+* Fix setting of LUKS2 labels if used with crypt_get_label (ANT-2026-4O3O0R5R).
+
+* LoopAES: Fix off-by-one keyfile size processing (ANT-2026-2M94362Y).
+
+* veritysetup: Fix error path for invalid root hash file (ANT-2026-08GARYXF).
+
+* verity: Work around false positive clang warning in RS decode.
+
+* integrity: Drop stray 's' in sscanf format.
+
+* LUKS2: Fix regenerating binary header salt if one header copy is corrupted.
+
+* OPAL: Always print error for cryptsetup erase with wrong password.
+
+* Add asserts for device locking to silence cppcheck warnings.
+
+* Remove tests that depend on the AF_ALG interface, which can be disabled.
+
+Libcryptsetup API extensions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The libcryptsetup API is backward compatible with all existing symbols.
+
+New symbols:
+ crypt_repair_opal

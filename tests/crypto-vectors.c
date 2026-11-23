@@ -1566,13 +1566,16 @@ static int utf8_16_test(void)
 	unsigned int i;
 	char s8[128], *s;
 	char16_t c16[256], s16[256], *su;
+	size_t s16_len;
 
 	for (i = 0; i < ARRAY_SIZE(utf8_16_test_vectors); i++) {
 		printf("UTF8/16 %02d ", i);
 		crypt_backend_memzero(s16, sizeof(s16));
 		su = &s16[0];
-		if (crypt_utf8_to_utf16(&su, utf8_16_test_vectors[i].utf8,
+		s16_len = 0;
+		if (crypt_utf8_to_utf16(&su, &s16_len, utf8_16_test_vectors[i].utf8,
 					utf8_16_test_vectors[i].len8) < 0 ||
+			utf8_16_test_vectors[i].len16 != s16_len ||
 			memcmp(utf8_16_test_vectors[i].utf16, s16,
 			       utf8_16_test_vectors[i].len16)) {
 			printf("[UTF8_TO_UTF16 FAILED]\n");
@@ -1592,6 +1595,18 @@ static int utf8_16_test(void)
 		}
 		printf("[UTF16_TO_UTF8]\n");
 	}
+
+	/* Input is not a C string, embedded zero must not truncate the output. */
+	printf("UTF8/16 zero ");
+	crypt_backend_memzero(s16, sizeof(s16));
+	su = &s16[0];
+	s16_len = 0;
+	if (crypt_utf8_to_utf16(&su, &s16_len, "a\0b", 3) < 0 ||
+	    s16_len != 6 || memcmp("\x61\x00\x00\x00\x62\x00", s16, 6)) {
+		printf("[UTF8_TO_UTF16 FAILED]\n");
+		return EXIT_FAILURE;
+	}
+	printf("[UTF8_TO_UTF16]\n");
 
 	return EXIT_SUCCESS;
 }
