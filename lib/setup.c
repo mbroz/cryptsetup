@@ -2318,6 +2318,13 @@ static int opal_topology_alignment(struct crypt_device *cd,
 		return 0;
 	}
 
+	if (!opal_alignment_granularity_blocks ||
+	    NOTPOW2(opal_alignment_granularity_blocks) ||
+	    opal_alignment_granularity_blocks > (UINT64_MAX / opal_block_bytes)) {
+		log_err(cd, _("Bogus OPAL alignment granularity."));
+		return -EINVAL;
+	}
+
 	if (data_offset_sectors) {
 		if (MISALIGNED((((data_offset_sectors + partition_offset_sectors) * SECTOR_SIZE) / opal_block_bytes) - opal_lowest_lba_blocks,
 			       opal_alignment_granularity_blocks)) {
@@ -2546,8 +2553,11 @@ int crypt_format_luks2_opal(struct crypt_device *cd,
 
 	device_size_bytes -= data_offset_bytes;
 	range_size_bytes = device_size_bytes - (device_size_bytes % (opal_block_bytes * opal_alignment_granularity_blocks));
-	if (!range_size_bytes)
+	if (!range_size_bytes) {
+		log_err(cd, _("Device %s is too small for OPAL alignment granularity."),
+			device_path(crypt_data_device(cd)));
 		goto out;
+	}
 
 	if (device_size_bytes != range_size_bytes)
 		log_err(cd, _("Compensating device size by %" PRIu64 " sectors to align it with OPAL alignment granularity."),

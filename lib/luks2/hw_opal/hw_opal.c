@@ -1671,6 +1671,7 @@ static crypt_status_hw_encryption_info opal_discovery0(struct crypt_device *cd)
 	char buf[4096];
 	const char *feature;
 	void *feat_ptr, *feat_end;
+	size_t disc_len;
 	crypt_status_hw_encryption_info hw_enc, hw_enc_final;
 
 	fd = device_open(cd, crypt_data_device(cd), O_RDONLY);
@@ -1686,14 +1687,24 @@ static crypt_status_hw_encryption_info opal_discovery0(struct crypt_device *cd)
 		return CRYPT_HW_INVALID;
 
 	dh = (struct level_0_discovery_header *)buf;
+	disc_len = be32_to_cpu(dh->length);
+	/* Length defines parameter data excluding the length field [3.3.6 Core spec] */
+	if (disc_len < sizeof(*dh) - 4)
+		return CRYPT_HW_INVALID;
+
+	if (disc_len > sizeof(buf) - 4)
+		disc_len = sizeof(buf) - 4;
+
 	feat_ptr = buf + sizeof(*dh);
-	feat_end = buf + be32_to_cpu(dh->length);
+	feat_end = buf + 4 + disc_len;
 
 	hw_enc = hw_enc_final = CRYPT_HW_INVALID;
-	while (feat_ptr < feat_end) {
+	while ((char *)feat_ptr + sizeof(*feat_hdr) <= (char *)feat_end) {
 		feat_hdr = feat_ptr;
 		/* Length defines data following the header [3.3.6 Core spec] */
 		feat_length = feat_hdr->length + sizeof(*feat_hdr);
+		if ((char *)feat_ptr + feat_length > (char *)feat_end)
+			break;
 
 		switch (be16_to_cpu(feat_hdr->feature_code)) {
 		/*   0x0000: reserved */
