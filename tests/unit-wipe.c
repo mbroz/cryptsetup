@@ -98,13 +98,6 @@ int main(int argc, char **argv)
 	struct crypt_device *cd;
 	int r;
 
-#ifndef NO_CRYPTSETUP_PATH
-	if (getenv("CRYPTSETUP_PATH")) {
-		printf("Cannot run this test with CRYPTSETUP_PATH set.\n");
-		exit(77);
-	}
-#endif
-
 	if (!parse_input_params(argc, argv))
 		return EXIT_FAILURE;
 
